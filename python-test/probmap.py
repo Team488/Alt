@@ -13,17 +13,18 @@ class ProbMap:
 
     #After testing speed, see if we need some sort of hashmap to detection patches
     def add_detection(self, x, y, obj_x, obj_y, prob):
+        print("confidence", prob)
         # Given the object size, spread the detection out by stddevs of probabilities
         # Consider making the blobs themselves larger or smaller based on probabilities instead?
-        # gauss_x, gauss_y = np.meshgrid(np.linspace(-3.0*(1.0-prob), 3.0*(1.0-prob), obj_x), np.linspace(-3.0*(1.0-prob), 3.0*(1.0-prob), obj_y))
-        sigma = max(0.2, 1 - prob) * 1
-        gauss_x, gauss_y = np.meshgrid(np.linspace(-2.5, 2.5, obj_x), np.linspace(-2.5, 2.5, obj_y))
+        scale = 3.0 * (2.0 - prob)
+        gauss_x, gauss_y = np.meshgrid(np.linspace(-scale, scale, obj_x), np.linspace(-scale, scale, obj_y))
+        sigma = max(0.2, 1.0 - prob)
+        # gauss_x, gauss_y = np.meshgrid(np.linspace(-2.5, 2.5, obj_x), np.linspace(-2.5, 2.5, obj_y))
         
         # print("gauss_x", gauss_x, "gauss_y", gauss_y)
-        # gaussian_blob = np.exp(-0.5 * (gauss_x**2 + gauss_y**2)) # OLD CODE
-        gaussian_blob = np.exp(-0.5 * (gauss_x**2 + gauss_y**2) // (2 * sigma**2))
+        gaussian_blob = np.exp(-0.5 * (gauss_x**2 + gauss_y**2) / sigma**2)
 
-        # print('\n' + 'gaussian_blob before: ')
+        # print('\n' + 'gaussian_bQlob before: ')
         # print(gaussian_blob.dtype)
         # print(gaussian_blob.shape)
         # print('min = ' + str(np.min(gaussian_blob)) + ' (s/b 0.0)')
@@ -32,7 +33,7 @@ class ProbMap:
 
         blob_height, blob_width = gaussian_blob.shape[0:2]
         blob_height = Decimal(blob_height)
-        print('\n' + ' gaussian size: ' + str(blob_height) + ', ' + str(blob_width))
+        # print('\n' + ' gaussian size: ' + str(blob_height) + ', ' + str(blob_width))
 
         precision = Decimal('1.')   
         blob_left_edge_loc = int((x - (blob_width * Decimal('0.5'))).quantize(precision, rounding=ROUND_FLOOR))
@@ -40,27 +41,27 @@ class ProbMap:
         blob_top_edge_loc = int((y - (blob_height * Decimal('0.5'))).quantize(precision, rounding=ROUND_FLOOR))
         blob_bottom_edge_loc = int((y + (blob_height * Decimal('0.5'))).quantize(precision, rounding=ROUND_FLOOR))
 
-        print("before trimming left + right", blob_left_edge_loc, blob_right_edge_loc)
-        print("before trimming + bottom", blob_top_edge_loc, blob_bottom_edge_loc)
+        # print("before trimming left + right", blob_left_edge_loc, blob_right_edge_loc)
+        # print("before trimming + bottom", blob_top_edge_loc, blob_bottom_edge_loc)
 
         # Trimming functions to make sure we don't overflow        
         if blob_left_edge_loc < 0:
-            print("left edge out of bounds")
+            # print("left edge out of bounds")
             gaussian_blob = gaussian_blob[-blob_left_edge_loc:, :]
             blob_left_edge_loc = 0
 
         if blob_right_edge_loc > self.size_x:
-            print("right edge out of bounds")
+            # print("right edge out of bounds")
             gaussian_blob = gaussian_blob[:-(blob_right_edge_loc - self.size_x), :]
             blob_right_edge_loc = self.size_x
 
         if blob_top_edge_loc < 0:
-            print("top edge out of bounds")
+            # print("top edge out of bounds")
             gaussian_blob = gaussian_blob[:, -blob_top_edge_loc:]
             blob_top_edge_loc = 0
 
         if blob_bottom_edge_loc > self.size_y:
-            print("bottom edge out of bounds")
+            # print("bottom edge out of bounds")
             gaussian_blob = gaussian_blob[:, :-(blob_bottom_edge_loc - self.size_y)]
             blob_bottom_edge_loc = self.size_y
             
