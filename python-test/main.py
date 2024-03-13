@@ -4,7 +4,7 @@ import traceback
 import socket
 import numpy as np
 import struct
-#import ntcore as nt
+import ntcore as nt
 
 def main():
     fieldMap = probmap.ProbMap(1654, 821, 1) #Width x Height at 1 cm resolution
