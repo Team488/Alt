@@ -44,14 +44,12 @@ def test_run():
 
     # axis aligned so robot detections will be need to be adjusted for accuracy
     fieldMap = probmap.ProbMap(fieldX, fieldY, 1,objSize,objSize,robotSizeX,robotSizeY) #Width x Height at 1 cm resolution
-    fieldMap.display_maps()
+    fieldMap.displayHeatMaps()
     for i in range(20000):
-        # fieldMap.add_detection(300, 150, 250, 250, 0.5)
-        fieldMap.disspateOverTime()
         test_randomization_ranges(fieldMap, int(fieldMap.get_shape()[0]), int(fieldMap.get_shape()[1]))
         if(i % 2 == 0):
             fieldMap.disspateOverTime()
-        fieldMap.display_maps()
+        fieldMap.displayHeatMaps()
         # fieldMap.clear_map()
 
 def test_randomization_ranges(map : probmap, width, height):
@@ -80,7 +78,7 @@ def go_inorder_top_bottom_left_right():
 
     # axis aligned so robot detections will be need to be adjusted for accuracy
     fieldMap = probmap.ProbMap(fieldX, fieldY, 1,objSize,objSize,robotSizeX,robotSizeY) #Width x Height at 1 cm resolution
-    fieldMap.display_maps()
+    fieldMap.displayHeatMaps()
     for j in range(100,fieldY-100,100):
         for i in range(100,fieldX-100,100):
             # obj_size = 36*6 #size*total potential STD #random.randrange(36, 36) 
@@ -92,7 +90,7 @@ def go_inorder_top_bottom_left_right():
             except Exception:
                 traceback.print_exc()
             time.sleep(1)
-            fieldMap.display_maps()
+            fieldMap.displayHeatMaps()
 
 
 
