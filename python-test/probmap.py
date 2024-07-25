@@ -5,8 +5,9 @@ from decimal import Decimal, ROUND_HALF_UP, ROUND_HALF_DOWN, ROUND_FLOOR, ROUND_
 # This whole thing is axis aligned for speed, but that may not work great
 class ProbMap:
     def __init__(self, x, y, resolution,gameObjectX,gameObjectY,robotX,robotY,sigma = 1,maxSpeedRobots = 100,maxSpeedGameObjects = 5): # gameobjects most likely not very fast
-        self.size_x = x
-        self.size_y = y
+        # flip values
+        self.size_x = y
+        self.size_y = x
         self.gameObjectX = gameObjectX;
         self.gameObjectY = gameObjectY;
         self.robotX = robotX;
@@ -330,8 +331,8 @@ class ProbMap:
 
     def __getPredictions(self,lastMap,currentMap,timeBetweenMaps,timePrediction,maxSpeedOfType) -> list[tuple[int,int,int,int,float,float,np.float64]]:
         predictions = [] # curX,curY,prednewX,prednewY,vX,vY,prob
-        self.__displayHeatMap(lastMap,"lastmap")
-        self.__displayHeatMap(currentMap,"currentmap")
+        # self.__displayHeatMap(lastMap,"lastmap")
+        # self.__displayHeatMap(currentMap,"currentmap")
         currentDetectionCoords = self.__getCoordinatesAboveThreshold(currentMap,.25) # very low threshold
         # print("current\n",currentDetectionCoords)
         lastDetectionCoords = self.__getCoordinatesAboveThreshold(lastMap,.25) # very low threshold
@@ -378,9 +379,14 @@ class ProbMap:
         sizeY = self.gameObjectY if isGameObj else self.robotY
         for prediction in Predictions:
             (cx,cy,nx,ny,vx,vy,prob) = prediction
+            # current loc
+            cv2.circle(blankMap,(cx,cy),4,(255),2)
+            cv2.line(blankMap,(cx,cy),(nx,ny),(180),2)
+            # predicted location
+            cv2.circle(blankMap,(nx,ny),6,(255),2)
             self.__add_detection(blankMap,nx,ny,sizeX,sizeY,prob)
             print(prediction)
-            cv2.line(blankMap,(nx,ny),(nx+int(vx),ny+int(vy)),(255,255,255),2)
+            cv2.arrowedLine(blankMap,(nx,ny),(nx+int(vx),ny+int(vy)),(255),2)
         return blankMap
     
     def getGameObjectMapPredictionsAsHeatmap(self,timePrediction):

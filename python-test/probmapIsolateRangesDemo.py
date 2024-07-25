@@ -30,7 +30,7 @@ def isolateRangeHighest(x,y):
     print(f"px{px} py{py} prob{prob}")
     if(prob > 0):
         cv2.putText(objMap,f"prob{prob}",(x,y),1,1,(255,255,255))
-        cv2.circle(objMap,(px,py),int(6/prob),(255,0,0),2)
+        cv2.circle(objMap,(px,py),int(6-prob),(255,0,0),2)
     else:
         cv2.putText(objMap,"No detections in region",(x,y),1,1,(255,255,255))
 

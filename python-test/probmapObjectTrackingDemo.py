@@ -14,12 +14,12 @@ fieldMap = probmap.ProbMap(fieldX, fieldY, res,objSize,objSize,robotSizeX,robotS
 
 def loop():
     while(True):
-        for j in range(100,fieldY-100,100):
-            for i in range(100,fieldX-100,100):
+        for j in range(10,fieldY,50):
+            for i in range(10,fieldX,50):
                 fieldMap.disspateOverTime(10)
-                fieldMap.addCustomObjectDetection(i,j,100,100,.75,1) # 1s since last update
+                fieldMap.addCustomObjectDetection(i,j,100,100,.75,5) # 1s since last update
 
-                heatmap = fieldMap.getGameObjectMapPredictionsAsHeatmap(1) # 1s ahead
+                heatmap = fieldMap.getGameObjectMapPredictionsAsHeatmap(10) # 1s ahead
                 cv2.imshow("Predictions",heatmap)
                 k = cv2.waitKey(1000) & 0xff
                 if k == ord("q"):

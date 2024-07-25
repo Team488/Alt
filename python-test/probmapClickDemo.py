@@ -7,7 +7,7 @@ map = probmap.ProbMap(2000,1000,res,100,100,1000,1000)
 isMouseDownG = False
 isMouseDownR = False
 def mouseDownCallbackGameObj(event,x,y,flags,param):
- global isMouseDown
+ global isMouseDownG
  if event == cv2.EVENT_LBUTTONDOWN:
     isMouseDownG = True
    #  print("clicked at ", x," ", y)
