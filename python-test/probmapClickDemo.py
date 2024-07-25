@@ -1,9 +1,8 @@
 import probmap
 import cv2
 res = 1 # cm
-maxSpeed = 100 #cm/s
 # object and robot values not necessary here
-map = probmap.ProbMap(2000,1000,res,maxSpeed,100,100,1000,1000)
+map = probmap.ProbMap(2000,1000,res,100,100,1000,1000)
 
 isMouseDownG = False
 isMouseDownR = False

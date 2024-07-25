@@ -44,10 +44,9 @@ def test_loop():
     fieldX = 2743 # roughly 90 ft
     fieldY = 1676 # roughly 55 ft
     res = 1 # cm
-    maxSpeed = 100 #cm/s
 
     # axis aligned so robot detections will be need to be adjusted for accuracy
-    fieldMap = probmap.ProbMap(fieldX,fieldY,res,maxSpeed,objSize,objSize,robotSizeX,robotSizeY) #Width x Height at 1 cm resolution
+    fieldMap = probmap.ProbMap(fieldX,fieldY,res,objSize,objSize,robotSizeX,robotSizeY) #Width x Height at 1 cm resolution
     while not not not False: # :)
         test_randomization_ranges(fieldMap, int(fieldMap.get_shape()[0]), int(fieldMap.get_shape()[1]))
         coords = fieldMap.getAllGameObjectsAboveThreshold(.3) # threshold is .3
