@@ -4,7 +4,7 @@ import math
 from decimal import Decimal, ROUND_HALF_UP, ROUND_HALF_DOWN, ROUND_FLOOR, ROUND_CEILING
 # This whole thing is axis aligned for speed, but that may not work great
 class ProbMap:
-    def __init__(self, x, y, resolution,gameObjectX,gameObjectY,robotX,robotY,sigma = 1):
+    def __init__(self, x, y, resolution,gameObjectX,gameObjectY,robotX,robotY,sigma = 1,maxSpeedRobots = 100,maxSpeedGameObjects = 5): # gameobjects most likely not very fast
         self.size_x = x
         self.size_y = y
         self.gameObjectX = gameObjectX;
@@ -17,7 +17,15 @@ class ProbMap:
         self.robotWindowName = "Robot Map"
         # create a blank probability map
         self.probmapGameObj = np.zeros((self.size_x, self.size_y), dtype=np.float64)
+        self.lastGameObjMap = None # object tracking for calculating changes
+        self.tempObjMap = None # save map state before disspation
+        self.timeSinceLastUpdateGameObj = -1 # time param for velocity
         self.probmapRobots = np.zeros((self.size_x, self.size_y), dtype=np.float64)
+        self.lastRobotMap = None # object tracking for calculating changes
+        self.tempRobotMap = None # save map state before disspation
+        self.timeSinceLastUpdateRobot = -1 # time param for velocity
+        self.maxSpeedRobots = maxSpeedRobots # probably like 
+        self.maxSpeedGameObjects = maxSpeedGameObjects
 
     
     """ Adding detections to the probability maps"""
@@ -105,19 +113,56 @@ class ProbMap:
         # slicing 
         probmap[blob_left_edge_loc:blob_right_edge_loc,blob_top_edge_loc:blob_bottom_edge_loc] += gaussian_blob
     
-    
-    """ Exposed methods for adding detections"""
+    def __updateLastParams(self,isGameObj : bool,timeSinceLastUpdate):
+        lastMap = None
+        if isGameObj:
+            # if there was a dissipation or clearing of map, the map state was saved to a temp map for tracking
+            # here we check if there was a temp map and if there was we use it then clear
+            if(self.tempObjMap is not None):
+                lastMap = self.tempObjMap
+                self.tempObjMap = None
+            else:
+                lastMap = self.probmapGameObj
+        else:
+            if(self.tempRobotMap is not None):
+                lastMap = self.tempRobotMap
+                self.tempRobotMap = None
+            else:
+                lastMap = self.probmapRobots
+        if(isGameObj):
+            self.lastGameObjMap = np.copy(lastMap)
+            self.timeSinceLastUpdateGameObj = timeSinceLastUpdate
+        else:
+            self.lastRobotMap =  np.copy(lastMap)
+            self.timeSinceLastUpdateRobot = timeSinceLastUpdate
 
-    def addDetectedGameObject(self,x,y,prob):
+    def __saveToTemp(self,gameObjProbmap,robotProbmap):
+        self.tempObjMap = gameObjProbmap
+        self.tempRobotMap = robotProbmap
+
+        
+
+    """ Exposed methods for adding detections """
+    """ Time parameter used in object tracking, to calculate velocity as distance/time """
+
+    """ Regular detection methods use sizes provided in constructor """
+    
+    def addDetectedGameObject(self,x,y,prob,timeSinceLastUpdate):
+        self.__updateLastParams(True,timeSinceLastUpdate)
         self.__add_detection(self.probmapGameObj,x,y,self.gameObjectX,self.gameObjectX,prob);
 
-    def addDetectedRobot(self,x,y,prob):
+    def addDetectedRobot(self,x,y,prob,timeSinceLastUpdate):
+        self.__updateLastParams(False,timeSinceLastUpdate)
         self.__add_detection(self.probmapRobots,x,y,self.robotX,self.robotY,prob);
     
-    def addCustomObjectDetection(self,x,y,objX,objY,prob):
+    """ Custom size detection methods """
+    
+    def addCustomObjectDetection(self,x,y,objX,objY,prob,timeSinceLastUpdate):
+        self.__updateLastParams(True,timeSinceLastUpdate)
         self.__add_detection(self.probmapGameObj,x,y,objX,objY,prob);
     
-    def addCustomRobotDetection(self,x,y,objX,objY,prob):
+    def addCustomRobotDetection(self,x,y,objX,objY,prob,timeSinceLastUpdate):
+        self.__updateLastParams(False,timeSinceLastUpdate)
         self.__add_detection(self.probmapRobots,x,y,objX,objY,prob);
 
 
@@ -160,7 +205,7 @@ class ProbMap:
     """ Getting highest probability objects """
     
     
-    def __getHighest(self,probmap):
+    def __getHighest(self,probmap) -> tuple[int,int,np.float64]:
         # for now just traversing the array manually but the hashmap idea sounds very powerfull
         flat_index = np.argmax(probmap)
         # Convert the flattened index to 2D coordinates
@@ -169,7 +214,7 @@ class ProbMap:
         coordinates = np.unravel_index(flat_index, probmap.shape)
         return (coordinates[1],coordinates[0],probmap[coordinates[0]][coordinates[1]])
     
-    def __getHighestRange(self,probmap,x,y,rangeX,rangeY):
+    def __getHighestRange(self,probmap,x,y,rangeX,rangeY) -> tuple[int,int,np.float64]:
         chunk = self.__getChunkOfMap(probmap,x,y,rangeX,rangeY)
         # for now just traversing the array manually but the hashmap idea sounds very powerfull
         flat_index = np.argmax(chunk)
@@ -191,25 +236,25 @@ class ProbMap:
     
     
     """ Exposed highest probabilty methods"""
-    def getHighestGameObject(self) -> tuple[int,int,np.float64]:
+    def getHighestGameObject(self):
         return self.__getHighest(self.probmapGameObj)
 
-    def getHighestRobot(self) -> tuple[int,int,np.float64]:
+    def getHighestRobot(self):
         return self.__getHighest(self.probmapRobots)
     
     """ Highest probability within a rectangular range"""
-    def getHighestGameObjectWithinRange(self,posX,posY,rangeX,rangeY) -> tuple[int,int,np.float64]:
+    def getHighestGameObjectWithinRange(self,posX,posY,rangeX,rangeY):
         # chunk = self.__getChunkOfMap(self.probmapGameObj,posX,posY,rangeX,rangeY)
         # chunk =1
         # self.__setChunkOfMap(self.probmapGameObj,posX,posY,rangeX,rangeY,chunk)
         return self.__getHighestRange(self.probmapGameObj,posX,posY,rangeX,rangeY)
     
-    def getHighestRobotWithinRange(self,posX,posY,rangeX,rangeY) -> tuple[int,int,np.float64]:
+    def getHighestRobotWithinRange(self,posX,posY,rangeX,rangeY):
         return self.__getHighestRange(self.probmapRobots,posX,posY,rangeX,rangeY)
     
     """ Get List of all coordinates where the probability is above threshold"""
     
-    def __getCoordinatesAboveThreshold(self,probmap,threshold):
+    def __getCoordinatesAboveThreshold(self,probmap,threshold) -> list[tuple[int,int,int,np.float64]]:
         # using contours + minareacircle to find the centers of blobs, not 100% perfect if the blob is elliptic but should work fine
         _,binary = cv2.threshold(probmap,threshold,255,cv2.THRESH_BINARY)
         # float 64 to uint
@@ -227,7 +272,7 @@ class ProbMap:
         
         return coords
 
-    def __getCoordinatesAboveThresholdRangeLimited(self,probmap,x,y,rangeX,rangeY,threshold):
+    def __getCoordinatesAboveThresholdRangeLimited(self,probmap,x,y,rangeX,rangeY,threshold) -> list[tuple[int,int,int,np.float64]]:
         chunk = self.__getChunkOfMap(probmap,x,y,rangeX,rangeY)
         
         _,binary = cv2.threshold(chunk,threshold,255,cv2.THRESH_BINARY)
@@ -256,21 +301,107 @@ class ProbMap:
     
     """ Exposed get threshold methods"""
 
-    def getAllGameObjectsAboveThreshold(self,threshold) -> list[tuple[int,int,int,np.float64]]:
+    def getAllGameObjectsAboveThreshold(self,threshold):
         return self.__getCoordinatesAboveThreshold(self.probmapGameObj,threshold)
 
-    def getAllRobotsAboveThreshold(self,threshold) -> list[tuple[int,int,int,np.float64]]:
+    def getAllRobotsAboveThreshold(self,threshold):
         return self.__getCoordinatesAboveThreshold(self.probmapRobots,threshold)
     
     """ All above threshold within a rectangular range"""
-    def getAllGameObjectsWithinRangeT(self,posX,posY,rangeX,rangeY,threshold) -> list[tuple[int,int,int,np.float64]]:
+    def getAllGameObjectsWithinRangeT(self,posX,posY,rangeX,rangeY,threshold):
         return self.__getCoordinatesAboveThresholdRangeLimited(self.probmapGameObj,posX,posY,rangeX,rangeY,threshold)
     
-    def getAllRobotsWithinRangeT(self,posX,posY,rangeX,rangeY,threshold) -> list[tuple[int,int,int,np.float64]]:
+    def getAllRobotsWithinRangeT(self,posX,posY,rangeX,rangeY,threshold):
         return self.__getCoordinatesAboveThresholdRangeLimited(self.probmapRobots,posX,posY,rangeX,rangeY,threshold)
+    
 
+    """ In progress probmap prediction methods | These methods currently find the closest detections between old and new probmaps and calculate velocity based on distance and timestep"""
+    def __getNearestPredToCoords(self,coords,x,y,timepassed,maxSpeed) -> tuple[int,int,np.float64,float,float]:
+        maxDistance = timepassed*maxSpeed # s*cm/s for the max possible distance traveled in one map update
+        minDist = 100000
+        minCoord = None # x,y,prob,vx,vy 
+        for coord in coords:
+            (cx,cy,r,prob) = coord
+            dist = np.sqrt((x-cx)**2 + (y-cy)**2)
+            if(dist <= maxDistance and dist < minDist):
+                minDist = dist
+                minCoord = (cx,cy,prob,(cx-x)/timepassed,(cy-y)/timepassed)
+        return minCoord
+
+    def __getPredictions(self,lastMap,currentMap,timeBetweenMaps,timePrediction,maxSpeedOfType) -> list[tuple[int,int,int,int,float,float,np.float64]]:
+        predictions = [] # curX,curY,prednewX,prednewY,vX,vY,prob
+        self.__displayHeatMap(lastMap,"lastmap")
+        self.__displayHeatMap(currentMap,"currentmap")
+        currentDetectionCoords = self.__getCoordinatesAboveThreshold(currentMap,.25) # very low threshold
+        # print("current\n",currentDetectionCoords)
+        lastDetectionCoords = self.__getCoordinatesAboveThreshold(lastMap,.25) # very low threshold
+        # print("last\n",lastDetectionCoords)
+
+        # now we will go over every coordinate from the old map and try to find the closest match to it on the new set of coordinates. If match is found it will also contain velocity approximations
+        for oldCoord in lastDetectionCoords:
+            (oldX,oldY,r,prob) = oldCoord
+            pred = self.__getNearestPredToCoords(currentDetectionCoords,oldX,oldY,timeBetweenMaps,maxSpeedOfType)
+            if pred is not None:
+                (cx,cy,prob,vx,vy) = pred
+                newX = cx + int(vx*timePrediction)
+                newY = cy + int(vy*timePrediction)
+                # handle edge clipping
+                if(newX > self.size_x):
+                    newX = self.size_x
+                if(newX < 0):
+                    newX = 0
+                if(newY > self.size_y):
+                    newY = self.size_y
+                if(newY < 0):
+                    newY = 0
+                predictions.append((cx,cy,newX,newY,vx,vy,prob))
+        return predictions
+
+        
+    """ Exposed prediction methods (Time scaled)"""
     
+    def getGameObjectMapPredictions(self,timePrediction):
+        if(self.timeSinceLastUpdateGameObj != -1):
+            return self.__getPredictions(self.lastGameObjMap,self.probmapGameObj,self.timeSinceLastUpdateGameObj,timePrediction,self.maxSpeedGameObjects)
+        
+        print("Probmap needs to be updated more than once to make predictions!")
+        return []
+    def getRobotMapPredictions(self,timePrediction):
+        if(self.timeSinceLastUpdateRobot != -1):
+            return self.__getPredictions(self.lastRobotMap,self.probmapRobots,self.timeSinceLastUpdateRobot,timePrediction,self.maxSpeedRobots)
+        
+        print("Probmap needs to be updated more than once to make predictions!")
+        return []
+
+    def __drawPredictionsOnMap(self,blankMap,Predictions,isGameObj):
+        sizeX = self.gameObjectX if isGameObj else self.robotX
+        sizeY = self.gameObjectY if isGameObj else self.robotY
+        for prediction in Predictions:
+            (cx,cy,nx,ny,vx,vy,prob) = prediction
+            self.__add_detection(blankMap,nx,ny,sizeX,sizeY,prob)
+            print(prediction)
+            cv2.line(blankMap,(nx,ny),(nx+int(vx),ny+int(vy)),(255,255,255),2)
+        return blankMap
     
+    def getGameObjectMapPredictionsAsHeatmap(self,timePrediction):
+        objPredMap = np.zeros((self.size_x, self.size_y), dtype=np.float64)
+        if(self.timeSinceLastUpdateGameObj != -1):
+            predictions = self.getGameObjectMapPredictions(timePrediction)
+            self.__drawPredictionsOnMap(objPredMap,predictions,True)
+        else:
+            print("Probmap needs to be updated more than once to make predictions!")
+        return objPredMap
+    def getRobotMapPredictionsAsHeatmap(self,timePrediction):
+        robPredMap = np.zeros((self.size_x, self.size_y), dtype=np.float64)
+        if(self.timeSinceLastUpdateRobot != -1):
+            predictions = self.getGameObjectMapPredictions(timePrediction)
+            self.__drawPredictionsOnMap(robPredMap,predictions,True)
+        else:
+            print("Probmap needs to be updated more than once to make predictions!")
+        return robPredMap    
+        
+
+
     """ cutting out and manipulating the map (hidden methods)"""
     
     
@@ -345,6 +476,7 @@ class ProbMap:
     """ Clearing the probability maps"""
     
     def clear_maps(self) -> None:
+        self.__saveToTemp(self.probmapGameObj,self.probmapRobots)
         self.probmapGameObj = np.zeros((self.size_x, self.size_y), dtype=np.float64)
         self.probmapRobots = np.zeros((self.size_x, self.size_y), dtype=np.float64)
 
@@ -355,7 +487,7 @@ class ProbMap:
     
     """ Used in dissipating over time, need to find best smoothing function"""
     
-    def __smooth(self,probmap):
+    def __smooth(self,probmap,timeParam):
         # kernel = np.array([0.23, 0.5, 0.23]) # Here you would insert your actual kernel of any size
         # probmap = np.apply_along_axis(lambda x: np.convolve(x, kernel, mode='same'), 0, probmap)
         # probmap = np.apply_along_axis(lambda y: np.convolve(y, kernel, mode='same'), 1, probmap)
@@ -367,13 +499,13 @@ class ProbMap:
 
         # maybe exponential decay will represent time dependent changes better
         decayFac = .88
-        return probmap * decayFac
+        return probmap * decayFac * (1/timeParam)
 
-    """ Exposed dissipate over time method, needs a time scaled parameter"""
-    # thinking of adding some sort of time parameter here to scale the smoothing based on how much time has passed
-    def disspateOverTime(self) -> None:
-        self.probmapGameObj = self.__smooth(self.probmapGameObj)
-        self.probmapRobots = self.__smooth(self.probmapRobots)
+    """ Exposed dissipate over time method, timepassed parameter in seconds"""
+    def disspateOverTime(self,timeSeconds) -> None:
+        self.__saveToTemp(self.probmapGameObj,self.probmapRobots)
+        self.probmapGameObj = self.__smooth(self.probmapGameObj,timeSeconds)
+        self.probmapRobots = self.__smooth(self.probmapRobots,timeSeconds)
 
 
 

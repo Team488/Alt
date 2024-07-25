@@ -1,7 +1,9 @@
 import probmap
 import cv2
+res = 1 # cm
+maxSpeed = 100 #cm/s
 # object and robot values not necessary here
-map = probmap.ProbMap(2000,1000,1,100,100,1000,1000)
+map = probmap.ProbMap(2000,1000,res,maxSpeed,100,100,1000,1000)
 
 isMouseDownG = False
 isMouseDownR = False
@@ -10,11 +12,11 @@ def mouseDownCallbackGameObj(event,x,y,flags,param):
  if event == cv2.EVENT_LBUTTONDOWN:
     isMouseDownG = True
    #  print("clicked at ", x," ", y)
-    map.addCustomObjectDetection(x,y,200,200,.75) # adding as a 75% probability
+    map.addCustomObjectDetection(x,y,200,200,.75,1) # adding as a 75% probability
  elif event == cv2.EVENT_MOUSEMOVE:
     if isMouseDownG:
       #   print("dragged at ", x," ", y)
-        map.addCustomObjectDetection(x,y,200,200,.75) # adding as a 75% probability
+        map.addCustomObjectDetection(x,y,200,200,.75,1) # adding as a 75% probability
  elif event == cv2.EVENT_LBUTTONUP:
     isMouseDownG = False
 
@@ -23,11 +25,11 @@ def mouseDownCallbackRobot(event,x,y,flags,param):
  if event == cv2.EVENT_LBUTTONDOWN:
     isMouseDownR = True
    #  print("clicked at ", x," ", y)
-    map.addCustomRobotDetection(x,y,200,200,.75) # adding as a 75% probability
+    map.addCustomRobotDetection(x,y,200,200,.75,1) # adding as a 75% probability
  elif event == cv2.EVENT_MOUSEMOVE:
     if isMouseDownR:
       #   print("dragged at ", x," ", y)
-        map.addCustomRobotDetection(x,y,200,200,.75) # adding as a 75% probability
+        map.addCustomRobotDetection(x,y,200,200,.75,1) # adding as a 75% probability
  elif event == cv2.EVENT_LBUTTONUP:
     isMouseDownR = False
 
@@ -41,7 +43,7 @@ cv2.setMouseCallback(map.robotWindowName,mouseDownCallbackRobot)
 def loop():
     # get mouse event
     while(True):
-        map.disspateOverTime()
+        map.disspateOverTime(1) # 1s
         map.displayHeatMaps()
         print("Best game obj:", map.getHighestGameObject())
         print("Best robot:", map.getHighestRobot())

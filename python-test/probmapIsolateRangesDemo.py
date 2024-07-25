@@ -4,18 +4,19 @@ import random
 import cv2
 
 # test sizes all in cm
-robotSizeX = 71 # using max dimensions for this of 28 inch
-robotSizeY = 96 # using max dimensions for this of 38 inch
-
-objSize = 35 # using notes from last year with a outside diameter of 14 inch
-fieldX = 1000 # roughly 90 ft
-fieldY = 1600 # roughly 55 ft
+robotSizeX = 71 
+robotSizeY = 96 
+objSize = 35 
+fieldX = 1000 
+fieldY = 1600 
+res = 1 # cm
+maxSpeed = 100 #cm/s
 
 wX = int(fieldX/3)
 wY = int(fieldY/3)
 
 # values other than field x,y not used in this demo
-fieldMap = probmap.ProbMap(fieldX, fieldY, 1,objSize,objSize,robotSizeX,robotSizeY) #Width x Height at 1 cm resolution
+fieldMap = probmap.ProbMap(fieldX, fieldY, res,maxSpeed,objSize,objSize,robotSizeX,robotSizeY) #Width x Height at 1 cm resolution
 
 isdown = False
 lastX = -1
@@ -37,7 +38,7 @@ def isolateRangeHighest(x,y):
 
 def isolateRangeAll(x,y):
 
-    coords = fieldMap.getAllGameObjectsWithinRangeT(x,y,wX,wY,.5)
+    coords = fieldMap.getAllGameObjectsWithinRangeT(x,y,wX,wY,.3) # threshold is .3
     (objMap,robtMap) = fieldMap.getHeatMaps()
     cv2.rectangle(objMap,(int(x-wX/2),int(y-wY/2)),(int(x+wX/2),int(y+wY/2)),(255,255,255),2)
     print(coords)
@@ -64,7 +65,7 @@ def isolateRangeCallback(event,x,y,flags,param):
         global lastY
         lastX = x
         lastY = y
-        isolateRangeAll(x,y)
+        isolateRangeHighest(x,y)
         
 cv2.namedWindow(fieldMap.gameObjWindowName)
 cv2.setMouseCallback(fieldMap.gameObjWindowName,isolateRangeCallback)
@@ -72,11 +73,6 @@ cv2.setMouseCallback(fieldMap.gameObjWindowName,isolateRangeCallback)
 
 def run():
     
-    
-    wX = 0
-    wY = 0
-    cX = 0
-    cY = 0
     for i in range(20000):
         if i % 5 == 0:
             print("here")
@@ -85,9 +81,9 @@ def run():
         
         if(i % 15 == 0):
             # slowly dissipate
-            fieldMap.disspateOverTime()    
+            fieldMap.disspateOverTime(1) # 1s   
         if lastX != -1:
-            isolateRangeAll(lastX,lastY)
+            isolateRangeHighest(lastX,lastY)
         else:
             # dont want to be drawing twice
             (objMap,robtMap) = fieldMap.getHeatMaps()
@@ -97,7 +93,7 @@ def run():
         if k == ord("q"):
            break
         if k == ord("c"):
-            map.clear_maps()
+            fieldMap.clear_maps()
         # fieldMap.clear_map()
 
 
@@ -110,7 +106,7 @@ def test_randomization_ranges(map : probmap, width, height):
     # obj_size = 36*6 #size*total potential STD #random.randrange(36, 36) 
     confidence = random.randrange(65, 95, 1)/100 # generates a confidence threshold between 0.65 - 0.95
     try:
-        map.addCustomObjectDetection(x,y,100,100,confidence)
+        map.addCustomObjectDetection(x,y,100,100,confidence,1) # 1s since last update
         
     except Exception:
         traceback.print_exc()

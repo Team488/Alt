@@ -1,4 +1,6 @@
 import time
+
+import cv2
 import probmap
 import random
 import traceback
@@ -9,7 +11,7 @@ import ntcore as nt
 
 def main():
     # fieldMap = probmap.ProbMap(1654, 821, 1) #Width x Height at 1 cm resolution
-    test_run()
+    test_loop()
     # go_inorder_top_bottom_left_right()
 
 
@@ -33,7 +35,7 @@ def main():
 
 
 # randomizes values for stress testing algorithm
-def test_run():
+def test_loop():
     # test sizes all in cm
     robotSizeX = 71 # using max dimensions for this of 28 inch
     robotSizeY = 96 # using max dimensions for this of 38 inch
@@ -41,18 +43,36 @@ def test_run():
     objSize = 35 # using notes from last year with a outside diameter of 14 inch
     fieldX = 2743 # roughly 90 ft
     fieldY = 1676 # roughly 55 ft
+    res = 1 # cm
+    maxSpeed = 100 #cm/s
 
     # axis aligned so robot detections will be need to be adjusted for accuracy
-    fieldMap = probmap.ProbMap(fieldX, fieldY, 1,objSize,objSize,robotSizeX,robotSizeY) #Width x Height at 1 cm resolution
-    fieldMap.displayHeatMaps()
-    for i in range(20000):
+    fieldMap = probmap.ProbMap(fieldX,fieldY,res,maxSpeed,objSize,objSize,robotSizeX,robotSizeY) #Width x Height at 1 cm resolution
+    while not not not False: # :)
         test_randomization_ranges(fieldMap, int(fieldMap.get_shape()[0]), int(fieldMap.get_shape()[1]))
-        if(i % 2 == 0):
-            fieldMap.disspateOverTime()
-        fieldMap.displayHeatMaps()
-        # fieldMap.clear_map()
+        coords = fieldMap.getAllGameObjectsAboveThreshold(.3) # threshold is .3
+        (objMap,robtMap) = fieldMap.getHeatMaps()
+        cv2.rectangle(objMap,(0,0),(fieldX,fieldY),(255,255,255),2)
+        # print(coords)
+        if coords:
+            for coord in coords:
+                (px,py,r,prob) = coord
+                if(prob > 0):
+                    # cv2.putText(objMap,f"prob{prob}",(x,y),1,1,(255,255,255))
+                    cv2.circle(objMap,(px,py),r+4,(255,0,0),2)
+        else:
+            cv2.putText(objMap,"No detections in map",(int(fieldX/2),int(fieldY/2)),1,1,(255,255,255))
 
-def test_randomization_ranges(map : probmap, width, height):
+        cv2.imshow(fieldMap.gameObjWindowName,objMap)
+        fieldMap.disspateOverTime(1)  # 1s
+        # fieldMap.clear_map()
+        k = cv2.waitKey(100) & 0xff
+        if k == ord("q"):
+           break
+        if k == ord("c"):
+            map.clear_maps()
+
+def test_randomization_ranges(map : probmap.ProbMap, width, height):
     #for i in range(1):
     x = random.randrange(0, width)
     y = random.randrange(0, height)
@@ -60,10 +80,10 @@ def test_randomization_ranges(map : probmap, width, height):
     confidence = random.randrange(65, 95, 1)/100 # generates a confidence threshold between 0.65 - 0.95
     typeRand = random.random() # 50% chance robot / 50% chance object
     try:
-        if typeRand >= .50:
-            map.addDetectedRobot(x,y,confidence)
-        else:
-            map.addDetectedGameObject(x,y,confidence)
+        # if typeRand >= .50:
+        #     map.addDetectedRobot(x,y,confidence,1)
+        # else:
+        map.addDetectedGameObject(x,y,confidence,1) # 1s time passed
     except Exception:
         traceback.print_exc()
 
