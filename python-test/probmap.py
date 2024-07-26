@@ -2,6 +2,9 @@ import numpy as np
 import cv2
 import math
 from decimal import Decimal, ROUND_HALF_UP, ROUND_HALF_DOWN, ROUND_FLOOR, ROUND_CEILING
+
+largeValue = 10000000000000000000 # for cv2 thresholding we want a large max value as np.float64 is veeerry large
+
 # This whole thing is axis aligned for speed, but that may not work great
 class ProbMap:
     def __init__(self, x, y, resolution,gameObjectX,gameObjectY,robotX,robotY,sigma = 1,maxSpeedRobots = 100,maxSpeedGameObjects = 5): # gameobjects most likely not very fast
@@ -235,6 +238,37 @@ class ProbMap:
         # probmap array access also y,x
         return (int(ogX + relX),int(ogY + relY),chunk[relY][relX])
     
+    def __getHighestT(self,probmap,Threshold) -> tuple[int,int,np.float64]:
+        # for now just traversing the array manually but the hashmap idea sounds very powerfull
+        _,mapThresh = cv2.threshold(probmap,Threshold,largeValue,cv2.THRESH_TOZERO)
+        flat_index = np.argmax(mapThresh)
+        # Convert the flattened index to 2D coordinates
+
+        # y,x coords given so flip
+        coordinates = np.unravel_index(flat_index, mapThresh.shape)
+        return (coordinates[1],coordinates[0],mapThresh[coordinates[0]][coordinates[1]])
+    
+    def __getHighestRangeT(self,probmap,x,y,rangeX,rangeY,Threshold) -> tuple[int,int,np.float64]:
+        chunk = self.__getChunkOfMap(probmap,x,y,rangeX,rangeY)
+        _,chunkThresh = cv2.threshold(chunk,Threshold,largeValue,cv2.THRESH_TOZERO)
+        # for now just traversing the array manually but the hashmap idea sounds very powerfull
+        flat_index = np.argmax(chunkThresh)
+        # Convert the flattened index to 2D coordinates
+
+        # y,x format
+        (relY,relX) = np.unravel_index(flat_index, chunkThresh.shape)
+        ogX = x-rangeX/2
+        ogY = y-rangeY/2
+        # clipping
+        if(ogX < 0):
+            ogX = 0
+        if(ogY < 0):
+            ogY = 0
+
+        # print(coordinates)
+        # probmap array access also y,x
+        return (int(ogX + relX),int(ogY + relY),chunkThresh[relY][relX])
+    
     
     """ Exposed highest probabilty methods"""
     def getHighestGameObject(self):
@@ -242,6 +276,13 @@ class ProbMap:
 
     def getHighestRobot(self):
         return self.__getHighest(self.probmapRobots)
+    
+    """ Thresholded versions"""
+    def getHighestGameObjectT(self,threshold):
+        return self.__getHighestT(self.probmapGameObj,threshold)
+
+    def getHighestRobotT(self,threshold):
+        return self.__getHighestT(self.probmapRobots,threshold)
     
     """ Highest probability within a rectangular range"""
     def getHighestGameObjectWithinRange(self,posX,posY,rangeX,rangeY):
@@ -253,6 +294,17 @@ class ProbMap:
     def getHighestRobotWithinRange(self,posX,posY,rangeX,rangeY):
         return self.__getHighestRange(self.probmapRobots,posX,posY,rangeX,rangeY)
     
+    """ Thresholded versions of the get highest"""
+
+    def getHighestGameObjectWithinRangeT(self,posX,posY,rangeX,rangeY,threshold):
+        # chunk = self.__getChunkOfMap(self.probmapGameObj,posX,posY,rangeX,rangeY)
+        # chunk =1
+        # self.__setChunkOfMap(self.probmapGameObj,posX,posY,rangeX,rangeY,chunk)
+        return self.__getHighestRangeT(self.probmapGameObj,posX,posY,rangeX,rangeY,threshold)
+    
+    def getHighestRobotWithinRangeT(self,posX,posY,rangeX,rangeY,threshold):
+        return self.__getHighestRangeT(self.probmapRobots,posX,posY,rangeX,rangeY,threshold)
+
     """ Get List of all coordinates where the probability is above threshold"""
     
     def __getCoordinatesAboveThreshold(self,probmap,threshold) -> list[tuple[int,int,int,np.float64]]:

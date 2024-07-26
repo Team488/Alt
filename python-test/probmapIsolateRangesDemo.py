@@ -10,13 +10,12 @@ objSize = 35
 fieldX = 1000 
 fieldY = 1600 
 res = 1 # cm
-maxSpeed = 100 #cm/s
 
 wX = int(fieldX/3)
 wY = int(fieldY/3)
 
 # values other than field x,y not used in this demo
-fieldMap = probmap.ProbMap(fieldX, fieldY, res,maxSpeed,objSize,objSize,robotSizeX,robotSizeY) #Width x Height at 1 cm resolution
+fieldMap = probmap.ProbMap(fieldX, fieldY, res,objSize,objSize,robotSizeX,robotSizeY) #Width x Height at 1 cm resolution
 
 isdown = False
 lastX = -1
