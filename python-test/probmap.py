@@ -85,11 +85,16 @@ class ProbMap:
         heatmap = np.rint(heatmap).astype(np.uint8)
         heatmap = np.where(heatmap > 255, 255, heatmap).astype(np.uint8)
         cv2.imshow('heatmap', heatmap)
-        cv2.waitKey()
+        cv2.waitKey(10)
         
     def clear_map(self):
         self.probmap = np.zeros((self.size_x, self.size_y), dtype=np.float64)
     
     def get_shape(self):
         return np.shape(self.probmap)
+    
+    def smooth(self):
+        kernel = np.array([0.23, 0.5, 0.23]) # Here you would insert your actual kernel of any size
+        self.probmap = np.apply_along_axis(lambda x: np.convolve(x, kernel, mode='same'), 0, self.probmap)
+        self.probmap = np.apply_along_axis(lambda y: np.convolve(y, kernel, mode='same'), 1, self.probmap)
         
