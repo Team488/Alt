@@ -78,11 +78,11 @@ def getRandomMove(robotX,robotY,fieldX,fieldY,maxDistance) -> tuple[int,int]:
     if(robotX + randDx > fieldX):
         randDx = fieldX-robotX-safetyoffset
     if(robotX + randDx < 0):
-        randDx = -robotX+safetyoffset
+        randDx = robotX+safetyoffset
     if(robotY + randDy > fieldY):
         randDy = fieldY-robotY-safetyoffset
     if(robotX + randDy < 0):
-        randDy = -robotY+safetyoffset
+        randDy = robotY+safetyoffset
 
     return (int(randDx),int(randDy))
 

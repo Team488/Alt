@@ -14,9 +14,9 @@ fieldMap = probmap.ProbMap(fieldX, fieldY, res,objSize,objSize,robotSizeX,robotS
 
 def loop():
     while(True):
-        for j in range(10,fieldY,50):
-            for i in range(10,fieldX,50):
-                fieldMap.disspateOverTime(10)
+        for i in range(10,fieldX,50):
+            for j in range(10,fieldY,50):
+                fieldMap.clear_maps()
                 fieldMap.addCustomObjectDetection(i,j,100,100,.75,5) # 1s since last update
 
                 heatmap = fieldMap.getGameObjectMapPredictionsAsHeatmap(10) # 1s ahead

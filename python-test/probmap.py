@@ -153,21 +153,33 @@ class ProbMap:
     
     def addDetectedGameObject(self,x,y,prob,timeSinceLastUpdate):
         self.__updateLastParams(True,timeSinceLastUpdate)
-        self.__add_detection(self.probmapGameObj,x,y,self.gameObjectX,self.gameObjectX,prob);
+        self.__add_detection(self.probmapGameObj,x,y,self.gameObjectX,self.gameObjectX,prob)
 
     def addDetectedRobot(self,x,y,prob,timeSinceLastUpdate):
         self.__updateLastParams(False,timeSinceLastUpdate)
-        self.__add_detection(self.probmapRobots,x,y,self.robotX,self.robotY,prob);
+        self.__add_detection(self.probmapRobots,x,y,self.robotX,self.robotY,prob)
+
+    def addDetectedGameObject(self,coords:list[tuple],timeSinceLastUpdate):
+        self.__updateLastParams(True,timeSinceLastUpdate)
+        for coord in coords:
+            (x,y) = coord
+            self.__add_detection(self.probmapGameObj,x,y,self.gameObjectX,self.gameObjectX,prob)
+
+    def addDetectedRobot(self,coords:list[tuple],timeSinceLastUpdate):
+        self.__updateLastParams(False,timeSinceLastUpdate)
+        for coord in coords:
+            (x,y,prob) = coord
+            self.__add_detection(self.probmapRobots,x,y,self.robotX,self.robotY,prob)
     
     """ Custom size detection methods """
     
     def addCustomObjectDetection(self,x,y,objX,objY,prob,timeSinceLastUpdate):
         self.__updateLastParams(True,timeSinceLastUpdate)
-        self.__add_detection(self.probmapGameObj,x,y,objX,objY,prob);
+        self.__add_detection(self.probmapGameObj,x,y,objX,objY,prob)
     
     def addCustomRobotDetection(self,x,y,objX,objY,prob,timeSinceLastUpdate):
         self.__updateLastParams(False,timeSinceLastUpdate)
-        self.__add_detection(self.probmapRobots,x,y,objX,objY,prob);
+        self.__add_detection(self.probmapRobots,x,y,objX,objY,prob)
 
 
     """ Displaying heat maps"""
@@ -221,6 +233,9 @@ class ProbMap:
     def __getHighestRange(self,probmap,x,y,rangeX,rangeY) -> tuple[int,int,np.float64]:
         chunk = self.__getChunkOfMap(probmap,x,y,rangeX,rangeY)
         # for now just traversing the array manually but the hashmap idea sounds very powerfull
+        if(chunk is None):
+            print("Empty Chunk!")
+            return (0,0,0)
         flat_index = np.argmax(chunk)
         # Convert the flattened index to 2D coordinates
 
@@ -250,6 +265,9 @@ class ProbMap:
     
     def __getHighestRangeT(self,probmap,x,y,rangeX,rangeY,Threshold) -> tuple[int,int,np.float64]:
         chunk = self.__getChunkOfMap(probmap,x,y,rangeX,rangeY)
+        if(chunk is None):
+            print("Empty Chunk!")
+            return (0,0,0)
         _,chunkThresh = cv2.threshold(chunk,Threshold,largeValue,cv2.THRESH_TOZERO)
         # for now just traversing the array manually but the hashmap idea sounds very powerfull
         flat_index = np.argmax(chunkThresh)
@@ -327,7 +345,9 @@ class ProbMap:
 
     def __getCoordinatesAboveThresholdRangeLimited(self,probmap,x,y,rangeX,rangeY,threshold) -> list[tuple[int,int,int,np.float64]]:
         chunk = self.__getChunkOfMap(probmap,x,y,rangeX,rangeY)
-        
+        if(chunk is None):
+            print("Empty Chunk!")
+            return []
         _,binary = cv2.threshold(chunk,threshold,255,cv2.THRESH_BINARY)
         # float 64 to uint
         binary = binary.astype(np.uint8)
@@ -426,25 +446,39 @@ class ProbMap:
         print("Probmap needs to be updated more than once to make predictions!")
         return []
 
-    def __drawPredictionsOnMap(self,blankMap,Predictions,isGameObj):
-        sizeX = self.gameObjectX if isGameObj else self.robotX
-        sizeY = self.gameObjectY if isGameObj else self.robotY
+    """ Adds detections where predicted"""
+    def __addPredictionsOnMap(self,blankMap,Predictions,isGameObj):
+            # will not work well with custom detections, one way is to use radius value provided when finding blob coordinates using cv2 minareacircle 
+            sizeX = self.gameObjectX if isGameObj else self.robotX
+            sizeY = self.gameObjectY if isGameObj else self.robotY
+            for prediction in Predictions:
+                (cx,cy,nx,ny,vx,vy,prob) = prediction
+                self.__add_detection(blankMap,nx,ny,sizeX,sizeY,prob)
+            return blankMap
+    
+    """ Adds arrows with velocity, this is done after being turned into a heatmap """
+    def __drawPredictionsOnMap(self,heatmap,Predictions,isGameObj):
         for prediction in Predictions:
             (cx,cy,nx,ny,vx,vy,prob) = prediction
             # current loc
-            cv2.circle(blankMap,(cx,cy),4,(255),2)
-            cv2.line(blankMap,(cx,cy),(nx,ny),(180),2)
+            cv2.circle(heatmap,(cx,cy),4,(255),2)
+            cv2.line(heatmap,(cx,cy),(nx,ny),(180),2)
             # predicted location
-            cv2.circle(blankMap,(nx,ny),6,(255),2)
-            self.__add_detection(blankMap,nx,ny,sizeX,sizeY,prob)
-            print(prediction)
-            cv2.arrowedLine(blankMap,(nx,ny),(nx+int(vx),ny+int(vy)),(255),2)
-        return blankMap
+            cv2.circle(heatmap,(nx,ny),6,(255),2)
+            # print(prediction)
+            cv2.arrowedLine(heatmap,(nx,ny),(nx+int(vx),ny+int(vy)),(255),2)
+        return heatmap
     
+    
+
     def getGameObjectMapPredictionsAsHeatmap(self,timePrediction):
         objPredMap = np.zeros((self.size_x, self.size_y), dtype=np.float64)
         if(self.timeSinceLastUpdateGameObj != -1):
             predictions = self.getGameObjectMapPredictions(timePrediction)
+            self.__addPredictionsOnMap(objPredMap,predictions,True)
+            # turn to heatmap
+            objPredMap = self.__getHeatMap(objPredMap)
+            # now draw all those pretty arrows
             self.__drawPredictionsOnMap(objPredMap,predictions,True)
         else:
             print("Probmap needs to be updated more than once to make predictions!")
@@ -452,8 +486,13 @@ class ProbMap:
     def getRobotMapPredictionsAsHeatmap(self,timePrediction):
         robPredMap = np.zeros((self.size_x, self.size_y), dtype=np.float64)
         if(self.timeSinceLastUpdateRobot != -1):
-            predictions = self.getGameObjectMapPredictions(timePrediction)
-            self.__drawPredictionsOnMap(robPredMap,predictions,True)
+            predictions = self.getRobotMapPredictions(timePrediction)
+            print(predictions)
+            self.__drawPredictionsOnMap(robPredMap,predictions,False)
+            # turn to heatmap
+            robPredMap = self.__getHeatMap(robPredMap)
+            # now draw all those pretty arrows
+            self.__drawPredictionsOnMap(robPredMap,predictions,False)
         else:
             print("Probmap needs to be updated more than once to make predictions!")
         return robPredMap    
