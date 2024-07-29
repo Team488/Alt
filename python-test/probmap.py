@@ -159,13 +159,13 @@ class ProbMap:
         self.__updateLastParams(False,timeSinceLastUpdate)
         self.__add_detection(self.probmapRobots,x,y,self.robotX,self.robotY,prob)
 
-    def addDetectedGameObject(self,coords:list[tuple],timeSinceLastUpdate):
+    def addDetectedGameObjectCoords(self,coords:list[tuple],timeSinceLastUpdate):
         self.__updateLastParams(True,timeSinceLastUpdate)
         for coord in coords:
             (x,y) = coord
             self.__add_detection(self.probmapGameObj,x,y,self.gameObjectX,self.gameObjectX,prob)
 
-    def addDetectedRobot(self,coords:list[tuple],timeSinceLastUpdate):
+    def addDetectedRobotCoords(self,coords:list[tuple],timeSinceLastUpdate):
         self.__updateLastParams(False,timeSinceLastUpdate)
         for coord in coords:
             (x,y,prob) = coord

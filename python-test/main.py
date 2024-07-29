@@ -49,23 +49,23 @@ def test_loop():
     fieldMap = probmap.ProbMap(fieldX,fieldY,res,objSize,objSize,robotSizeX,robotSizeY) #Width x Height at 1 cm resolution
     while not not not False: # :)
         test_randomization_ranges(fieldMap, int(fieldMap.get_shape()[0]), int(fieldMap.get_shape()[1]))
-        coords = fieldMap.getAllGameObjectsAboveThreshold(.3) # threshold is .3
-        (objMap,robtMap) = fieldMap.getHeatMaps()
-        cv2.rectangle(objMap,(0,0),(fieldX,fieldY),(255,255,255),2)
+        coords = fieldMap.getAllGameObjectsAboveThreshold(.4) # threshold is .4
+        (objMap,robtMap) = fieldMap.getH eatMaps()
+        # cv2.rectangle(objMap,(0,0),(fieldX,fieldY),(255,255,255),2)
         # print(coords)
         if coords:
             for coord in coords:
                 (px,py,r,prob) = coord
                 if(prob > 0):
                     # cv2.putText(objMap,f"prob{prob}",(x,y),1,1,(255,255,255))
-                    cv2.circle(objMap,(px,py),r+4,(255,0,0),2)
+                    cv2.circle(objMap,(px,py),r+10,(255,0,0),2)
         else:
             cv2.putText(objMap,"No detections in map",(int(fieldX/2),int(fieldY/2)),1,1,(255,255,255))
 
         cv2.imshow(fieldMap.gameObjWindowName,objMap)
         fieldMap.disspateOverTime(1)  # 1s
         # fieldMap.clear_map()
-        k = cv2.waitKey(100) & 0xff
+        k = cv2.waitKey(1) & 0xff
         if k == ord("q"):
            break
         if k == ord("c"):
@@ -73,18 +73,20 @@ def test_loop():
 
 def test_randomization_ranges(map : probmap.ProbMap, width, height):
     #for i in range(1):
+    print("testing")
     x = random.randrange(0, width)
     y = random.randrange(0, height)
     # obj_size = 36*6 #size*total potential STD #random.randrange(36, 36) 
     confidence = random.randrange(65, 95, 1)/100 # generates a confidence threshold between 0.65 - 0.95
-    typeRand = random.random() # 50% chance robot / 50% chance object
-    try:
-        # if typeRand >= .50:
-        #     map.addDetectedRobot(x,y,confidence,1)
-        # else:
-        map.addDetectedGameObject(x,y,confidence,1) # 1s time passed
-    except Exception:
-        traceback.print_exc()
+    # typeRand = random.random() # 50% chance robot / 50% chance object
+    print(f"x{x} y{y} conf{confidence}")
+    map.addCustomObjectDetection(x,y,150,150,confidence,.1) 
+    # try:
+    #     # if typeRand >= .50:
+    #     #     map.addDetectedRobot(x,y,confidence,1)
+    #     # else:
+    # except Exception:
+    #     traceback.print_exc()
 
 def go_inorder_top_bottom_left_right():
     #for i in range(1):

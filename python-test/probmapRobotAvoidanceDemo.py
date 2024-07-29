@@ -253,7 +253,7 @@ def addRandomRobotsMovingAround(map : probmap.ProbMap, width, height,currentRobo
         newDetections.append((robotX,robotY,.75))
         currentRobotsAndPositions[i] = (robotX,robotY)
         
-    map.addDetectedRobot(newDetections,1) # 1s 
+    map.addDetectedRobotCoords(newDetections,1) # 1s 
 
 
 
