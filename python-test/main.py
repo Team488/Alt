@@ -41,16 +41,19 @@ def test_loop():
     robotSizeY = 96 # using max dimensions for this of 38 inch
 
     objSize = 35 # using notes from last year with a outside diameter of 14 inch
-    fieldX = 2743 # roughly 90 ft
-    fieldY = 1676 # roughly 55 ft
+    # fieldX = 2743 # roughly 90 ft
+    # fieldY = 1676 # roughly 55 ft
+    fieldX = 1680 
+    fieldY = 1000
     res = 1 # cm
 
     # axis aligned so robot detections will be need to be adjusted for accuracy
     fieldMap = probmap.ProbMap(fieldX,fieldY,res,objSize,objSize,robotSizeX,robotSizeY) #Width x Height at 1 cm resolution
+    fieldMap.setObstacleRegions([((20,20),(100,100))])
     while not not not False: # :)
-        test_randomization_ranges(fieldMap, int(fieldMap.get_shape()[0]), int(fieldMap.get_shape()[1]))
+        test_randomization_ranges(fieldMap, int(fieldMap.get_shape()[1]), int(fieldMap.get_shape()[0]))
         coords = fieldMap.getAllGameObjectsAboveThreshold(.4) # threshold is .4
-        (objMap,robtMap) = fieldMap.getH eatMaps()
+        (objMap,robtMap) = fieldMap.getHeatMaps()
         # cv2.rectangle(objMap,(0,0),(fieldX,fieldY),(255,255,255),2)
         # print(coords)
         if coords:
@@ -63,7 +66,7 @@ def test_loop():
             cv2.putText(objMap,"No detections in map",(int(fieldX/2),int(fieldY/2)),1,1,(255,255,255))
 
         cv2.imshow(fieldMap.gameObjWindowName,objMap)
-        fieldMap.disspateOverTime(1)  # 1s
+        # fieldMap.disspateOverTime(1)  # 1s
         # fieldMap.clear_map()
         k = cv2.waitKey(1) & 0xff
         if k == ord("q"):

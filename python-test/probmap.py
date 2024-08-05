@@ -19,19 +19,52 @@ class ProbMap:
         self.resolution = resolution
         self.gameObjWindowName = "GameObject Map"
         self.robotWindowName = "Robot Map"
-        # create a blank probability map
+        # create blank probability maps
+        
+        # game objects
         self.probmapGameObj = np.zeros((self.size_x, self.size_y), dtype=np.float64)
+        # robots
+        self.probmapRobots = np.zeros((self.size_x, self.size_y), dtype=np.float64)
+
+
+        """Internal Variables mainly related to object tracking"""
+        # game objects
         self.lastGameObjMap = None # object tracking for calculating changes
         self.tempObjMap = None # save map state before disspation
+        self.velocityTableGameObj = {} # hashmaps(dicts) to store previous velocities
         self.timeSinceLastUpdateGameObj = -1 # time param for velocity
-        self.probmapRobots = np.zeros((self.size_x, self.size_y), dtype=np.float64)
+        # robots
         self.lastRobotMap = None # object tracking for calculating changes
         self.tempRobotMap = None # save map state before disspation
+        self.velocityTableRobot = {} # hashmaps(dicts) to store previous velocities
         self.timeSinceLastUpdateRobot = -1 # time param for velocity
+        
+        """ User constants related to object tracking (Will probably be removed)"""
         self.maxSpeedRobots = maxSpeedRobots # probably like 
         self.maxSpeedGameObjects = maxSpeedGameObjects
+        
+        """ Lists storing regions with obstacles, right now rectangular."""
+        """ Important note, as internally alot of numpy functions use a row-column(y,x) format, and other things such as cv2 mainly use a column-row(x,y), 
+            i figure its best to avoid flipping each time and store a flipped version on update of the obstacles"""
+        self.obstacleRegionsReg = []
+        self.obstacleRegionsRC = []
 
+
+    """ List of rectanglular regions that are blocked"""
     
+    # coordinates in a top left corner, bottom right corner format
+    def setObstacleRegions(self,rectangleCoords : list[tuple[tuple[int,int],tuple[int,int]]]):
+        self.obstacleRegionsReg = rectangleCoords
+        self.obstacleRegionsRC = [((y1, x1), (y2, x2)) for ((x1, y1), (x2, y2)) in rectangleCoords]    
+    
+
+    def isPointInsideObstacles(self,x,y):
+        for obstacle in self.obstacleRegionsRC:
+            (x1,y1) = obstacle[0]
+            (x2,y2) = obstacle[1]
+            if x > x1 and x < x2 and y > y1 and y < y2:
+                return True
+        return False
     """ Adding detections to the probability maps"""
     
     #After testing speed, see if we need some sort of hashmap to detection patches
@@ -44,6 +77,14 @@ class ProbMap:
         tmpX = obj_x
         obj_x = obj_y
         obj_y = tmpX
+        
+        # for now we will just print a simple warning if the center of the blob is inside an obstacle region
+        # proper way is to adjust the gaussian based on the obstacle. Not sure exactly how as of right now
+        if(self.isPointInsideObstacles(x,y)):
+            print("Center of blob is inside of obstacles!")
+        
+        
+        
         # print("confidence", prob)
         # Given the object size, spread the detection out by stddevs of probabilities
         # Consider making the blobs themselves larger or smaller based on probabilities instead?
@@ -103,7 +144,7 @@ class ProbMap:
 
         gaussian_blob = gaussian_blob.astype(np.float64)
         # blob_height, blob_width = gaussian_blob.shape[0:2]
-        # print('\n' + 'gaussian size: ' + str(blob_height) + ', ' + str(blob_width))
+        print('\n' + 'gaussian size: ' + str(blob_height) + ', ' + str(blob_width))
 
         
         # print("gaussian x edges", blob_left_edge_loc, blob_right_edge_loc, "diff:", (blob_right_edge_loc - blob_left_edge_loc))        
@@ -124,15 +165,18 @@ class ProbMap:
             # here we check if there was a temp map and if there was we use it then clear
             if(self.tempObjMap is not None):
                 lastMap = self.tempObjMap
+                # reset temp maps
                 self.tempObjMap = None
             else:
                 lastMap = self.probmapGameObj
         else:
             if(self.tempRobotMap is not None):
                 lastMap = self.tempRobotMap
+                # reset temp maps
                 self.tempRobotMap = None
             else:
                 lastMap = self.probmapRobots
+        
         if(isGameObj):
             self.lastGameObjMap = np.copy(lastMap)
             self.timeSinceLastUpdateGameObj = timeSinceLastUpdate
@@ -185,12 +229,7 @@ class ProbMap:
     """ Displaying heat maps"""
     
     def __displayHeatMap(self,probmap,name : str):
-        heatmap = np.copy(probmap)
-        heatmap = heatmap * 255.0
-        heatmap = np.clip(heatmap, a_min=0.0, a_max=255.0)
-        heatmap = np.rint(heatmap).astype(np.uint8)
-        heatmap = np.where(heatmap > 255, 255, heatmap).astype(np.uint8)
-        cv2.imshow(name, heatmap)
+        cv2.imshow(name, self.__getHeatMap(probmap))
         cv2.waitKey(10)
     
     """ Exposed display heatmap method"""
@@ -209,6 +248,13 @@ class ProbMap:
         heatmap = np.rint(heatmap).astype(np.uint8)
         # dont know if this line is neccesary, we can just reduce the clip value above
         heatmap = np.where(heatmap > 255, 255, heatmap).astype(np.uint8)
+        
+        # draw obstacle regions
+        for setOfCoords in self.obstacleRegionsReg:
+            p1 = setOfCoords[0] # tuple of x,y top left
+            p2 = setOfCoords[1] # tuple of x,y bottom right
+            cv2.rectangle(heatmap,p1,p2,(175),3)
+
         return heatmap
     
     """ Exposed get heatmap method"""
@@ -600,7 +646,7 @@ class ProbMap:
 
     """ Exposed dissipate over time method, timepassed parameter in seconds"""
     def disspateOverTime(self,timeSeconds) -> None:
-        self.__saveToTemp(self.probmapGameObj,self.probmapRobots)
+        # self.__saveToTemp(self.probmapGameObj,self.probmapRobots)
         self.probmapGameObj = self.__smooth(self.probmapGameObj,timeSeconds)
         self.probmapRobots = self.__smooth(self.probmapRobots,timeSeconds)
 
