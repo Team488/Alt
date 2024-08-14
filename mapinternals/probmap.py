@@ -226,6 +226,13 @@ class ProbMap:
         self.__add_detection(self.probmapRobots,x,y,objX,objY,prob)
 
 
+    """ Getting views of the map"""
+    def getRobotMap(self):
+        return self.probmapRobots
+
+    def getGameObjectMap(self):
+        return self.probmapGameObj
+    
     """ Displaying heat maps"""
     
     def __displayHeatMap(self,probmap,name : str):
@@ -642,7 +649,7 @@ class ProbMap:
 
         # maybe exponential decay will represent time dependent changes better
         decayFac = .88
-        return probmap * decayFac * (1/timeParam)
+        return probmap * decayFac **timeParam
 
     """ Exposed dissipate over time method, timepassed parameter in seconds"""
     def disspateOverTime(self,timeSeconds) -> None:

@@ -1,7 +1,7 @@
 import time
 
 import cv2
-import probmap
+from mapinternals import probmap
 import random
 import traceback
 import socket
