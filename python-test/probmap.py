@@ -13,16 +13,17 @@ class ProbMap:
 
     #After testing speed, see if we need some sort of hashmap to detection patches
     def add_detection(self, x, y, obj_x, obj_y, prob):
-        print("confidence", prob)
+        print("confidence: ", prob)
         # Given the object size, spread the detection out by stddevs of probabilities
         # Consider making the blobs themselves larger or smaller based on probabilities instead?
         scale = 3.0 * (2.0 - prob)
+        print('Scale: ' + str(scale))
         gauss_x, gauss_y = np.meshgrid(np.linspace(-scale, scale, obj_x), np.linspace(-scale, scale, obj_y))
-        sigma = max(0.2, 1.0 - prob)
+        sigma = max(0.01, 1.0 - prob)
         # gauss_x, gauss_y = np.meshgrid(np.linspace(-2.5, 2.5, obj_x), np.linspace(-2.5, 2.5, obj_y))
         
         # print("gauss_x", gauss_x, "gauss_y", gauss_y)
-        gaussian_blob = np.exp(-0.5 * (gauss_x**2 + gauss_y**2) / sigma**2)
+        gaussian_blob = prob*np.exp(-0.5 * (gauss_x**2 + gauss_y**2) / sigma**2)
 
         # print('\n' + 'gaussian_bQlob before: ')
         # print(gaussian_blob.dtype)
@@ -94,7 +95,7 @@ class ProbMap:
         return np.shape(self.probmap)
     
     def smooth(self):
-        kernel = np.array([0.23, 0.5, 0.23]) # Here you would insert your actual kernel of any size
+        kernel = 0.99*np.array([0.06136, 0.24477, 0.38774, 0.24477, 0.06136]) # Here you would insert your actual kernel of any size
         self.probmap = np.apply_along_axis(lambda x: np.convolve(x, kernel, mode='same'), 0, self.probmap)
         self.probmap = np.apply_along_axis(lambda y: np.convolve(y, kernel, mode='same'), 1, self.probmap)
         
