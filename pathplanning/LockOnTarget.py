@@ -1,6 +1,6 @@
 """
     Goals for this class
-    Given a target XYCoord, save the coordinate and have the robot "lock on" to it. 
+    Given a target XYCoord, save the coordinate and have the robot "lock on" to it.
     The important part is to check the map when it is updated to see if the target is still there / Probability above a threshold
     EX: Asked to lock on to a note at (50,50) while it is above 75% chance of being there. When they ask for the target, you give them this target until one check where the target probability drops below 75%
     Now you have to reroute as your target has dissapeared, so find the new closest target.

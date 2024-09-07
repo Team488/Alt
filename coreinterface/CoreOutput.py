@@ -1,6 +1,6 @@
 """
     Goals for this class
-    
+
     This class will be the sole output to every other system. So any calls that are inputted by core input will be processed then sent out throught here
     This includes but is not limited to, movement vectors for the robot, coordinates for various things(Highest note etc), A view of the map, etc
 
