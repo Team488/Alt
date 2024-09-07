@@ -8,7 +8,13 @@ import DetectionType
 
 
 class MapDetection:
-    def __init__(self, detectionCoords : tuple[int,int], detectionType : DetectionType, detectionProbablility : float, detectionLabel : str):
+    def __init__(
+        self,
+        detectionCoords: tuple[int, int],
+        detectionType: DetectionType,
+        detectionProbablility: float,
+        detectionLabel: str,
+    ):
         self.detectionCoords = detectionCoords
         self.detectionType = detectionType
         self.detectionProbablilty = detectionProbablility

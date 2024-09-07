@@ -1,6 +1,12 @@
 # Alt
 The only way to get a map through the Blackwall
 
+## Getting Started
+
+Install pyenv and pyenv virtualenv.
+
+Run `./setup.sh` afterwards.
+
 Alt ingests NetworkTable inputs of:
 * Robot Self Pose in Field Frame
 * Robot Frame bboxes of
