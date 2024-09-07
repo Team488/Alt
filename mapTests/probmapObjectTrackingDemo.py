@@ -22,7 +22,7 @@ fieldMap = probmap.ProbMap(
 )  # Width x Height at 1 cm resolution
 
 
-def loop():
+def startDemo():
     while True:
         for j in range(10, fieldY, 50):
             for i in range(10, fieldX, 50):
@@ -40,4 +40,4 @@ def loop():
                     map.clear_maps()
 
 
-loop()
+startDemo()

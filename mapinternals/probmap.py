@@ -3,7 +3,7 @@ import cv2
 import math
 from decimal import Decimal, ROUND_HALF_UP, ROUND_HALF_DOWN, ROUND_FLOOR, ROUND_CEILING
 
-largeValue = 10000000000000000000  # for cv2 thresholding we want a large max value as np.float64 is veeerry large
+largeValue = 10000000000000000000  # for cv2 thresholding 
 
 # This whole thing is axis aligned for speed, but that may not work great
 class ProbMap:
@@ -236,7 +236,7 @@ class ProbMap:
     def addDetectedGameObjectCoords(self, coords: list[tuple], timeSinceLastUpdate):
         self.__updateLastParams(True, timeSinceLastUpdate)
         for coord in coords:
-            (x, y) = coord
+            (x, y,prob) = coord
             self.__add_detection(
                 self.probmapGameObj, x, y, self.gameObjectX, self.gameObjectX, prob
             )

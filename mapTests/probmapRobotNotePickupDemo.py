@@ -158,4 +158,3 @@ def test_randomization_ranges(map: probmap, width, height):
         traceback.print_exc()
 
 
-run()

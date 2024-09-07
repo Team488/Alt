@@ -39,7 +39,7 @@ deltaM = 0.4
 deltaB = 1
 
 
-def check_and_get_collision_coords(
+def __check_and_get_collision_coords(
     robotStartX,
     robotStartY,
     robotGoalX,
@@ -98,7 +98,7 @@ def check_and_get_collision_coords(
             return None
 
 
-def calcTime(cx, cy, nx, ny, vx, vy) -> float:
+def __calcTime(cx, cy, nx, ny, vx, vy) -> float:
     dx = abs(nx - cx)
     dy = abs(ny - cy)
     if vx == 0 and vy == 0:
@@ -123,7 +123,7 @@ colisionsDetected = 0
 timeDelta = 1  # 1s
 
 
-def getNextMove(cx, cy, goalX, goalY, time) -> tuple[int, int]:
+def __getNextMove(cx, cy, goalX, goalY, time) -> tuple[int, int]:
     global colisionsDetected
     # # reset collisions detected
     # colisionsDetected = 0
@@ -147,7 +147,7 @@ def getNextMove(cx, cy, goalX, goalY, time) -> tuple[int, int]:
     for prediction in preds:
         (curPx, curPy, newPx, newPy, vx, vy, prob) = prediction
         # for each prediction, check if collision is possible
-        collision = check_and_get_collision_coords(
+        collision = __check_and_get_collision_coords(
             cx, cy, cx + dx, cy + dy, curPx, curPy, newPx, newPy
         )
         if collision is not None:
@@ -155,7 +155,7 @@ def getNextMove(cx, cy, goalX, goalY, time) -> tuple[int, int]:
             (collisionX, collisionY) = collision
             # first check if both robot + obstacle reach the collision around the same time
             # calculate new dx dy to avoid collision
-            obstacleTimeToC = calcTime(curPx, curPy, newPx, newPy, vx, vy)
+            obstacleTimeToC = __calcTime(curPx, curPy, newPx, newPy, vx, vy)
 
             robotTimeToC = mag / maxRobotSpeed
             print("obstacleTimeToC:", obstacleTimeToC)
@@ -175,7 +175,7 @@ def getNextMove(cx, cy, goalX, goalY, time) -> tuple[int, int]:
 
 
 # robot will try to go back and forth
-def flipGoalToOtherSide(goalX):
+def __flipGoalToOtherSide(goalX):
     if goalX == 0:
         goalX = fieldX - 1
     else:
@@ -183,28 +183,28 @@ def flipGoalToOtherSide(goalX):
     return goalX
 
 
-def generateRobotPositions(nRobots, fieldX, fieldY) -> list[int, int]:
+def __generateRobotPositions(nRobots, fieldX, fieldY) -> list[int, int]:
     curRobots = []
     for i in range(1, nRobots + 1):
         curRobots.append((100 * i, int(fieldY / 2)))
     return curRobots
 
 
-def run():
+def startDemo():
     # default starting position for robot is left side of the field
     robotX = 0
     robotY = int(fieldY / 2)
 
     goalX = fieldX - 1
     goalY = int(fieldY / 2)
-    currentRobots = generateRobotPositions(10, fieldX, fieldY)  # 10 random robots
+    currentRobots = __generateRobotPositions(10, fieldX, fieldY)  # 10 random robots
 
     time = 1  # 1s for now
     print(fieldX, fieldY)
     while True:
         for i in range(20000):
             # move around sim robot detections
-            addRandomRobotsMovingAround(fieldMap, fieldX, fieldY, currentRobots)
+            __addRandomRobotsMovingAround(fieldMap, fieldX, fieldY, currentRobots)
             # get heatmap + velocity map to display
             velocityMap = fieldMap.getRobotMapPredictionsAsHeatmap(time)
             (objMap, robotMap) = fieldMap.getHeatMaps()
@@ -212,12 +212,12 @@ def run():
             mergedMap = cv2.bitwise_or(velocityMap, robotMap)
 
             # move own robot
-            (dx, dy) = getNextMove(robotX, robotY, goalX, goalY, time)
+            (dx, dy) = __getNextMove(robotX, robotY, goalX, goalY, time)
             robotX += dx
             robotY += dy
             if abs(robotX - goalX) < 5:
                 # now start moving to the other side
-                goalX = flipGoalToOtherSide(goalX)
+                goalX = __flipGoalToOtherSide(goalX)
             # print(robotX)
             cv2.circle(mergedMap, (robotX, robotY), 4, (255), -1)
             global colisionsDetected
@@ -238,15 +238,15 @@ def run():
             # fieldMap.clear_map()
 
 
-def myRandom(random, a, b):
+def __myRandom(random, a, b):
     return a + random * (b - a)
 
 
-def getRandomMove(
+def __getRandomMove(
     robotX, robotY, fieldX, fieldY, maxDistancePerMove
 ) -> tuple[int, int]:
     randDist = random.randint(int(maxDistancePerMove / 2), maxDistancePerMove)
-    randAng = myRandom(random.random(), 0, 2 * math.pi)
+    randAng = __myRandom(random.random(), 0, 2 * math.pi)
     randDx = math.cos(randAng) * randDist
     randDy = math.sin(randAng) * randDist
     # handle clipping
@@ -263,7 +263,7 @@ def getRandomMove(
     return (int(randDx), int(randDy))
 
 
-def getUpOrDown(robotX, robotY, maxDistancePerMove) -> tuple[int, int]:
+def __getUpOrDown(robotX, robotY, maxDistancePerMove) -> tuple[int, int]:
     randDist = random.randint(int(maxDistancePerMove / 2), maxDistancePerMove)
     ref = int(fieldY / 2)
     if robotY > ref:
@@ -273,13 +273,13 @@ def getUpOrDown(robotX, robotY, maxDistancePerMove) -> tuple[int, int]:
 
 
 # simulate robots moving around
-def addRandomRobotsMovingAround(
+def __addRandomRobotsMovingAround(
     map: probmap.ProbMap, width, height, currentRobotsAndPositions: list
 ):
     newDetections = []
     for i in range(len(currentRobotsAndPositions)):
         (robotX, robotY) = currentRobotsAndPositions[i]
-        (dx, dy) = getUpOrDown(robotX, robotY, maxDist1Sec)
+        (dx, dy) = __getUpOrDown(robotX, robotY, maxDist1Sec)
         robotX += dx
         robotY += dy
         # print(i)
@@ -291,4 +291,3 @@ def addRandomRobotsMovingAround(
     map.addDetectedRobotCoords(newDetections, 1)  # 1s
 
 
-run()

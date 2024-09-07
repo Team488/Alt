@@ -1,4 +1,4 @@
-from mapinternals.probmap import ProbMap
+import probmap
 import cv2
 
 res = 1  # cm
@@ -65,6 +65,5 @@ def startDemo():
             break
         if k == ord("c"):
             map.clear_maps()
-       
-loop()
+
 

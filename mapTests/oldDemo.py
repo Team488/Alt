@@ -10,9 +10,9 @@ import struct
 # import ntcore as nt
 
 
-def main():
+# def main():
     # fieldMap = probmap.ProbMap(1654, 821, 1) #Width x Height at 1 cm resolution
-    test_loop()
+    # runDemo()
     # go_inorder_top_bottom_left_right()
 
     # Initialize Network Tables
@@ -30,7 +30,7 @@ def main():
 
 
 # randomizes values for stress testing algorithm
-def test_loop():
+def runDemo():
     # test sizes all in cm
     robotSizeX = 71  # using max dimensions for this of 28 inch
     robotSizeY = 96  # using max dimensions for this of 38 inch
@@ -48,7 +48,7 @@ def test_loop():
     )  # Width x Height at 1 cm resolution
     fieldMap.setObstacleRegions([((20, 20), (100, 100))])
     while not not not False:  # :)
-        test_randomization_ranges(
+        __test_randomization_ranges(
             fieldMap, int(fieldMap.get_shape()[1]), int(fieldMap.get_shape()[0])
         )
         coords = fieldMap.getAllGameObjectsAboveThreshold(0.4)  # threshold is .4
@@ -81,7 +81,7 @@ def test_loop():
             map.clear_maps()
 
 
-def test_randomization_ranges(map: probmap.ProbMap, width, height):
+def __test_randomization_ranges(map: probmap.ProbMap, width, height):
     # for i in range(1):
     print("testing")
     x = random.randrange(0, width)
@@ -101,7 +101,7 @@ def test_randomization_ranges(map: probmap.ProbMap, width, height):
     #     traceback.print_exc()
 
 
-def go_inorder_top_bottom_left_right():
+def __go_inorder_top_bottom_left_right():
     # for i in range(1):
     robotSizeX = 71  # using max dimensions for this of 28 inch
     robotSizeY = 96  # using max dimensions for this of 38 inch

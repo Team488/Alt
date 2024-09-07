@@ -24,7 +24,7 @@ lastX = -1
 lastY = -1
 
 
-def isolateRangeHighest(x, y):
+def __isolateRangeHighest(x, y):
 
     (px, py, prob) = fieldMap.getHighestGameObjectWithinRange(x, y, wX, wY)
     (objMap, robtMap) = fieldMap.getHeatMaps()
@@ -45,7 +45,7 @@ def isolateRangeHighest(x, y):
     cv2.imshow(fieldMap.gameObjWindowName, objMap)
 
 
-def isolateRangeAll(x, y):
+def __isolateRangeAll(x, y):
 
     coords = fieldMap.getAllGameObjectsWithinRangeT(
         x, y, wX, wY, 0.3
@@ -71,7 +71,7 @@ def isolateRangeAll(x, y):
     cv2.imshow(fieldMap.gameObjWindowName, objMap)
 
 
-def isolateRangeCallback(event, x, y, flags, param):
+def __isolateRangeCallback(event, x, y, flags, param):
     global isdown
     if event == cv2.EVENT_LBUTTONDOWN:
         isdown = True
@@ -82,19 +82,19 @@ def isolateRangeCallback(event, x, y, flags, param):
         global lastY
         lastX = x
         lastY = y
-        isolateRangeHighest(x, y)
+        __isolateRangeHighest(x, y)
 
 
 cv2.namedWindow(fieldMap.gameObjWindowName)
-cv2.setMouseCallback(fieldMap.gameObjWindowName, isolateRangeCallback)
+cv2.setMouseCallback(fieldMap.gameObjWindowName, __isolateRangeCallback)
 
 
-def run():
+def startDemo():
 
     for i in range(20000):
         if i % 5 == 0:
             print("here")
-            test_randomization_ranges(
+            __test_randomization_ranges(
                 fieldMap, int(fieldMap.get_shape()[0]), int(fieldMap.get_shape()[1])
             )
 
@@ -102,7 +102,7 @@ def run():
             # slowly dissipate
             fieldMap.disspateOverTime(1)  # 1s
         if lastX != -1:
-            isolateRangeHighest(lastX, lastY)
+            __isolateRangeHighest(lastX, lastY)
         else:
             # dont want to be drawing twice
             (objMap, robtMap) = fieldMap.getHeatMaps()
@@ -116,7 +116,7 @@ def run():
         # fieldMap.clear_map()
 
 
-def test_randomization_ranges(map: probmap, width, height):
+def __test_randomization_ranges(map: probmap, width, height):
     # for i in range(1):
     x = random.randrange(0, width)
     y = random.randrange(0, height)
@@ -133,4 +133,4 @@ def test_randomization_ranges(map: probmap, width, height):
         traceback.print_exc()
 
 
-run()
+startDemo()
