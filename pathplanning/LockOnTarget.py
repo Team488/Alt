@@ -33,10 +33,17 @@ map = probmap.ProbMap(
     fieldX, fieldY, res, objSize, objSize, robotSizeX, robotSizeY
 ) 
 
-def onPressSpawnGameObj(event, x, y, flags, param):
-    if event == cv2.EVENT_LBUTTONDOWN:
-        probability = random.randint(1, 10) / 10
-        map.addCustomObjectDetection(x, y, 200, 200, probability, 1)
+# def onPressSpawnGameObj(event, x, y, flags, param):
+#     if event == cv2.EVENT_LBUTTONDOWN:
+#         probability = random.randint(1, 10) / 10
+#         map.addCustomObjectDetection(x, y, 200, 200, probability, 1)
+
+def spawnGameObj():
+    randomX = random.randint(0, fieldX)
+    randomY = random.randint(0, fieldY)
+    
+    probability = random.randint(1, 10) / 10
+    map.addCustomObjectDetection(randomX, randomY, 200, 200, probability, 1)
 
 def getDistanceBetweenTwo(x1, y1, x2, y2):
     return math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
@@ -45,7 +52,7 @@ def getClosestDetectionAboveThreshold(robotX, robotY):
     detections = map.getAllGameObjectsAboveThreshold(0.4)
 
     if not detections:
-        print("No objects detected currently")
+        # print("No objects detected currently")
         return None
 
     closest_detection = detections[0]
@@ -60,8 +67,8 @@ def getClosestDetectionAboveThreshold(robotX, robotY):
     print("Closest distance: " + str(closest_distance))
     print("Object closest: " + str(closest_detection[:2]))
 
-cv2.namedWindow(map.gameObjWindowName)
-cv2.setMouseCallback(map.gameObjWindowName, onPressSpawnGameObj)
+# cv2.namedWindow(map.gameObjWindowName)
+# cv2.setMouseCallback(map.gameObjWindowName, onPressSpawnGameObj)
 
 def loop():
     # center of field robot spawn position
@@ -72,10 +79,10 @@ def loop():
         map.disspateOverTime(1)
         map.displayHeatMaps()
 
-        (objMap, robotMap) = map.getHeatMaps()
+        (objMap, roboMap) = map.getHeatMaps()
 
         cv2.imshow(map.gameObjWindowName, objMap)
-
+        spawnGameObj()
         getClosestDetectionAboveThreshold(defaultRobotX, defaultRobotY)
 
         k = cv2.waitKey(100) & 0xFF 
