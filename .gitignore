@@ -173,3 +173,7 @@ cython_debug/
 *.mpeg
 *.ogv
 *.264
+
+*.csv
+
+*.pb

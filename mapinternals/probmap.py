@@ -84,6 +84,7 @@ class ProbMap:
     # After testing speed, see if we need some sort of hashmap to detection patches
     # We could add the center of detections to the hashmap, then on every smooth cycle we traverse each patch in the map and see if the probability has dissipated to zero, if so then we remove from map
     def __add_detection(self, probmap, x, y, obj_x, obj_y, prob):
+        
         # not perfect workaround, but transpose fix leads to x and y values being flipped, we can get by this by just flipping before putting in to map
         tmp = x
         x = y
@@ -91,6 +92,22 @@ class ProbMap:
         tmpX = obj_x
         obj_x = obj_y
         obj_y = tmpX
+
+        if(x > self.size_x):
+            print("Error X too large! clipping")
+            x = self.size_x
+
+        if(x < 0):
+            print("Error X too small! clipping")
+            x = 0
+        
+        if(y > self.size_y):
+            print("Error y too large! clipping")
+            y = self.size_y
+        
+        if(y < 0):
+            print("Error y too small! clipping")
+            y = 0
 
         # for now we will just print a simple warning if the center of the blob is inside an obstacle region
         # proper way is to adjust the gaussian based on the obstacle. Not sure exactly how as of right now
@@ -187,6 +204,8 @@ class ProbMap:
             blob_left_edge_loc:blob_right_edge_loc,
             blob_top_edge_loc:blob_bottom_edge_loc,
         ] += gaussian_blob
+
+        
 
     def __updateLastParams(self, isGameObj: bool, timeSinceLastUpdate):
         lastMap = None
@@ -746,7 +765,7 @@ class ProbMap:
         # return probmap
 
         # maybe exponential decay will represent time dependent changes better
-        decayFac = 0.88
+        decayFac = 0.36
         return probmap * decayFac**timeParam
 
     """ Exposed dissipate over time method, timepassed parameter in seconds"""
