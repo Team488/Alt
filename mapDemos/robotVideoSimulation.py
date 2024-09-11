@@ -29,7 +29,7 @@ def startDemo():
     cameraIntr = CameraIntrinsics.OAKDLITE
     cap = cv2.VideoCapture("assets/video12qual25clipped.mp4")
     firstRun = True
-    cap_out = None
+    cap_outM = None
     model = YOLO("..\\..\\Braindance\\bestV8.pt")  # Open the model
     estimator = PositionEstimator()
     translator = CameraToRobotTranslator()
@@ -41,7 +41,7 @@ def startDemo():
         ret,frame = cap.read()
         if firstRun:
             firstRun = False
-            cap_out = cv2.VideoWriter("out.mp4", cv2.VideoWriter_fourcc(*'MP4V'), fps,
+            cap_outM = cv2.VideoWriter("out.mp4", cv2.VideoWriter_fourcc(*'mp4v'), fps,
                           (frame.shape[1], frame.shape[0]))
         if ret:
             # read and draw robot location
@@ -96,15 +96,22 @@ def startDemo():
             mapView = cv2.merge((zeros,gameObjMap,robotMap))
             __drawRobot(mapView,robotWidth,robotHeight,positionX,positionY,-rotationRad,cameraIntr,cameraExtr)
             frame = __embed_frame(frame,mapView,scale_factor=1/2.7)
-            cap_out.write(frame)
+            cap_outM.write(frame)
             cv2.imshow("view",frame)
             if cv2.waitKey(1) & 0xff == ord('q'):
+                cap_outM.release()
+                cap.release()
                 return
             simMap.disspateOverTime(timePerFrame)
             
             timePassed+=timePerFrame
         else:
             break
+
+    
+    cap_outM.release()
+    cap.release()
+    cv2.destroyAllWindows()
 
         
         
