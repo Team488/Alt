@@ -3,13 +3,38 @@ import cv2
 from filterpy.kalman import UnscentedKalmanFilter as UKF
 from filterpy.kalman import MerweScaledSigmaPoints
 
+def __addFieldBoundsAsObstacles(obstacles,fieldX,fieldY,fieldObstacleDepth = 10):
+        # add obstacles to represent field bounds
+        # offset field bounds so its visible
+        topRightCorner = (fieldObstacleDepth,fieldObstacleDepth)
+        topLeftCorner = (fieldX+fieldObstacleDepth,fieldObstacleDepth)
+        bottomRightCorner = (fieldX+fieldObstacleDepth,fieldY+fieldObstacleDepth)
+        bottomLeftCorner = (fieldObstacleDepth,fieldY+fieldObstacleDepth)
+        corners = (topRightCorner,topLeftCorner,bottomRightCorner,bottomLeftCorner)
+        dirsX = [(-1,0),(1,1),(1,0),(-1,-1)]
+        dirsY = [(-1,-1),(-1,0),(1,1),(1,0)]
+        for i in range(1,5):
+            firstCorner = corners[i-1]
+            secondCorner = corners[i%4]
+            (xShift1,xShift2) = dirsX[i-1]
+            (yShift1,yShift2) = dirsY[i-1]
+            firstCornerShifted = (firstCorner[0]+xShift1*fieldObstacleDepth,firstCorner[1]+yShift1*fieldObstacleDepth)
+            secondCornerShifted = (secondCorner[0]+xShift2*fieldObstacleDepth,secondCorner[1]+yShift2*fieldObstacleDepth)
+            points = (firstCorner,secondCorner,firstCornerShifted,secondCornerShifted)
+            max_point = max(points, key=lambda p: (p[0], p[1]))
+            min_point = min(points, key=lambda p: (p[0], p[1]))
+            obstacles.append((max_point,min_point))
 
 def __getLine(oldX, oldY, newX, newY) -> tuple[float, float]:
+    if(oldX == newX):
+        return float('inf'),0
     m = (newY - oldY) / (newX - oldX)
     b = newY - m * newX
     return m, b
 
 def __getXvalue(y, m, b):
+    if(m == 0):
+        return float('inf')
     return (y - b) / m
 
 def __getYvalue(x, m, b):
@@ -82,18 +107,20 @@ def getNewFrame(fieldX,fieldY):
 obstacles = [((100, 100),(50, 50))]
 fieldX = 200
 fieldY = 200
+fieldObstacleDepth = 15
+__addFieldBoundsAsObstacles(obstacles,fieldX,fieldY,fieldObstacleDepth)
 
-frame = getNewFrame(fieldX,fieldY)
+frame = getNewFrame(fieldX+2*fieldObstacleDepth,fieldY+2*fieldObstacleDepth)
 
 
 
-lastX1 = 0
-lastY1 = 0
-lastX2 = int(fieldX/2)
-lastY2 = int(fieldY/2)
+lastX1 = int(fieldX/1.3)
+lastY1 = int(fieldY/1.3)
+lastX2 = int(fieldX/2.4)
+lastY2 = int(fieldY/2.4)
 
 def updateX1(val):
-    frame = getNewFrame(fieldX,fieldY)
+    frame = getNewFrame(fieldX+2*fieldObstacleDepth,fieldY+2*fieldObstacleDepth)
     global lastX1
     global lastY1
     global lastY2
@@ -104,7 +131,7 @@ def updateX1(val):
     redrawScene(frame,lastX1,lastY1,lastX2,lastY2,obstacles)
     
 def updateY1(val):
-    frame = getNewFrame(fieldX,fieldY)
+    frame = getNewFrame(fieldX+2*fieldObstacleDepth,fieldY+2*fieldObstacleDepth)
     global lastX1
     global lastY1
     global lastY2
@@ -116,7 +143,7 @@ def updateY1(val):
 
 
 def updateX2(val):
-    frame = getNewFrame(fieldX,fieldY)
+    frame = getNewFrame(fieldX+2*fieldObstacleDepth,fieldY+2*fieldObstacleDepth)
     global lastX1
     global lastY1
     global lastY2
@@ -128,7 +155,7 @@ def updateX2(val):
 
 
 def updateY2(val):
-    frame = getNewFrame(fieldX,fieldY)
+    frame = getNewFrame(fieldX+2*fieldObstacleDepth,fieldY+2*fieldObstacleDepth)
     global lastX1
     global lastY1
     global lastY2
@@ -142,17 +169,18 @@ def updateY2(val):
 
 
 cv2.namedWindow("testWin")
-cv2.createTrackbar("X1","testWin",0,fieldX,updateX1)
-cv2.createTrackbar("Y1","testWin",0,fieldY,updateY1)
-cv2.createTrackbar("X2","testWin",0,fieldX,updateX2)
-cv2.createTrackbar("Y2","testWin",0,fieldY,updateY2)
+cv2.createTrackbar("X1","testWin",0,fieldX+2*fieldObstacleDepth,updateX1)
+cv2.createTrackbar("Y1","testWin",0,fieldY+2*fieldObstacleDepth,updateY1)
+cv2.createTrackbar("X2","testWin",0,fieldX+2*fieldObstacleDepth,updateX2)
+cv2.createTrackbar("Y2","testWin",0,fieldY+2*fieldObstacleDepth,updateY2)
 
 
 # Example prediction and update
 measurements = [60, 60]  # Example measurements
 while(True):
-    frame = getNewFrame(fieldX,fieldY)
+    frame = getNewFrame(fieldX+2*fieldObstacleDepth,fieldY+2*fieldObstacleDepth)
     redrawScene(frame,lastX1,lastY1,lastX2,lastY2,obstacles)
     if cv2.waitKey(1) & 0xff == ord("q"):
         break
 
+cv2.destroyAllWindows()
