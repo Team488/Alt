@@ -160,7 +160,7 @@ cython_debug/
 #.idea/
 
 # Common video file extensions
-*.mp4
+# *.mp4
 *.mov
 *.avi
 *.mkv
@@ -173,7 +173,7 @@ cython_debug/
 *.mpeg
 *.ogv
 *.264
+out.mp4
+# *.csv
 
-*.csv
-
-*.pb
+# *.pb

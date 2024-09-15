@@ -8,6 +8,8 @@ class Ukf:
 
     def __init__(self, Obstacles: list[tuple[tuple[int, int], tuple[int, int]]], fieldX, fieldY):
         self.obstacles = Obstacles
+        self.__addFieldBoundsAsObstacles(fieldX,fieldY)
+
         self.fieldX = fieldX
         self.fieldY = fieldY
         
@@ -15,6 +17,7 @@ class Ukf:
         self.dt = .1  # Time step
         
         # Initial state
+        self.Dim = 4
         self.x_initial = np.array([50, 50, 10, 10])  # Example initial state (position_x, position_y, velocity_x, velocity_y)
         
         # Covariance matrices
@@ -23,7 +26,7 @@ class Ukf:
         self.R = np.eye(2) * 0.01  # Measurement noise covariance
         
         # Sigma points
-        self.points = MerweScaledSigmaPoints(4, alpha=0.1, beta=2.0, kappa=0)
+        self.points = MerweScaledSigmaPoints(self.Dim, alpha=0.5, beta=2.0, kappa=3-self.Dim)
         
         # UKF initialization
         self.ukf = UKF(dim_x=4, dim_z=2, fx=self.fx, hx=self.hx, dt=self.dt, points=self.points)
@@ -31,6 +34,30 @@ class Ukf:
         self.ukf.P = self.P_initial
         self.ukf.Q = self.Q
         self.ukf.R = self.R
+
+    def __addFieldBoundsAsObstacles(self,fieldX,fieldY,fieldObstacleDepth = 10):
+        # add obstacles to represent field bounds
+        topRightCorner = (0,0)
+        topLeftCorner = (fieldX,0)
+        bottomRightCorner = (fieldX,fieldY)
+        bottomLeftCorner = (0,fieldY)
+        corners = (topRightCorner,topLeftCorner,bottomRightCorner,bottomLeftCorner)
+        dirsX = [(-1,0),(1,1),(1,0),(-1,-1)]
+        dirsY = [(-1,-1),(-1,0),(1,1),(1,0)]
+        for i in range(1,5):
+            firstCorner = corners[i-1]
+            secondCorner = corners[i%4]
+            (xShift1,xShift2) = dirsX[i-1]
+            (yShift1,yShift2) = dirsY[i-1]
+            firstCornerShifted = (firstCorner[0]+xShift1*fieldObstacleDepth,firstCorner[1]+yShift1*fieldObstacleDepth)
+            secondCornerShifted = (secondCorner[0]+xShift2*fieldObstacleDepth,secondCorner[1]+yShift2*fieldObstacleDepth)
+            points = (firstCorner,secondCorner,firstCornerShifted,secondCornerShifted)
+            max_point = max(points, key=lambda p: (p[0], p[1]))
+            min_point = min(points, key=lambda p: (p[0], p[1]))
+            self.obstacles.append((max_point,min_point))
+
+
+        
 
     # State transition function
     def fx(self, x, dt):
@@ -99,6 +126,8 @@ class Ukf:
         return m, b
     
     def __getXvalue(self, y, m, b):
+        if m == 0:
+            return float('inf')
         return (y - b) / m
 
     def __getYvalue(self, x, m, b):

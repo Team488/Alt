@@ -45,17 +45,14 @@ def mouseDownCallbackRobot(event, x, y, flags, param):
         isMouseDownR = False
 
 
-
-
-
 def startDemo():
     cv2.namedWindow(map.gameObjWindowName)
     cv2.setMouseCallback(map.gameObjWindowName, mouseDownCallbackGameObj)
 
     cv2.namedWindow(map.robotWindowName)
-    cv2.setMouseCallback(map.robotWindowName, mouseDownCallbackRobot)# get mouse event
+    cv2.setMouseCallback(map.robotWindowName, mouseDownCallbackRobot)  # get mouse event
     while True:
-        map.disspateOverTime(1)  # 1s
+        map.disspateOverTime(0.2)  # 1s
         map.displayHeatMaps()
         print("Best game obj:", map.getHighestGameObject())
         print("Best robot:", map.getHighestRobot())
@@ -65,5 +62,3 @@ def startDemo():
             break
         if k == ord("c"):
             map.clear_maps()
-
-
