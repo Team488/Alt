@@ -289,5 +289,3 @@ def __addRandomRobotsMovingAround(
         currentRobotsAndPositions[i] = (robotX, robotY)
 
     map.addDetectedRobotCoords(newDetections, 1)  # 1s
-
-

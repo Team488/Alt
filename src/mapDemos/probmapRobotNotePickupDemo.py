@@ -156,5 +156,3 @@ def test_randomization_ranges(map: probmap, width, height):
 
     except Exception:
         traceback.print_exc()
-
-

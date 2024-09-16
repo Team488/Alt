@@ -13,14 +13,21 @@ video_out_path = "out.mp4"
 cap = cv2.VideoCapture(video_path)
 ret, frame = cap.read()
 
-cap_out = cv2.VideoWriter(video_out_path, cv2.VideoWriter_fourcc(*'MP4V'), cap.get(cv2.CAP_PROP_FPS),
-                          (frame.shape[1], frame.shape[0]))
+cap_out = cv2.VideoWriter(
+    video_out_path,
+    cv2.VideoWriter_fourcc(*"MP4V"),
+    cap.get(cv2.CAP_PROP_FPS),
+    (frame.shape[1], frame.shape[0]),
+)
 
 model = YOLO("../Braindance//bestV8.pt")
 
 tracker = Tracker()
 
-colors = [(random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)) for j in range(10)]
+colors = [
+    (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
+    for j in range(10)
+]
 
 detection_threshold = 0.5
 while ret:
@@ -46,11 +53,17 @@ while ret:
             x1, y1, x2, y2 = bbox
             track_id = track.track_id
 
-            cv2.rectangle(frame, (int(x1), int(y1)), (int(x2), int(y2)), (colors[track_id % len(colors)]), 3)
+            cv2.rectangle(
+                frame,
+                (int(x1), int(y1)),
+                (int(x2), int(y2)),
+                (colors[track_id % len(colors)]),
+                3,
+            )
     cv2.imshow(frame)
     cap_out.write(frame)
-    if(cv2.waitKey(0) & 0xff == ord("q")):
-        break;
+    if cv2.waitKey(0) & 0xFF == ord("q"):
+        break
     ret, frame = cap.read()
 
 cap.release()

@@ -14,39 +14,42 @@ import os
 import cv2
 import random
 import time
-import math 
+import math
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'map-tests')))
+sys.path.append(
+    os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "map-tests"))
+)
 import probmap
 
 robotSizeX = 60
 robotSizeY = 90
 objSize = 35
-fieldX = 1600  
-fieldY = 1000  
-res = 1 
+fieldX = 1600
+fieldY = 1000
+res = 1
 
 wX = int(fieldX / 3)
 wY = int(fieldY / 3)
 
-map = probmap.ProbMap(
-    fieldX, fieldY, res, objSize, objSize, robotSizeX, robotSizeY
-) 
+map = probmap.ProbMap(fieldX, fieldY, res, objSize, objSize, robotSizeX, robotSizeY)
 
 # def onPressSpawnGameObj(event, x, y, flags, param):
 #     if event == cv2.EVENT_LBUTTONDOWN:
 #         probability = random.randint(1, 10) / 10
 #         map.addCustomObjectDetection(x, y, 200, 200, probability, 1)
 
+
 def spawnGameObj():
     randomX = random.randint(0, fieldX)
     randomY = random.randint(0, fieldY)
-    
+
     probability = random.randint(1, 10) / 10
     map.addCustomObjectDetection(randomX, randomY, 200, 200, probability, 1)
 
+
 def getDistanceBetweenTwo(x1, y1, x2, y2):
     return math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
+
 
 def getClosestDetectionAboveThreshold(robotX, robotY):
     detections = map.getAllGameObjectsAboveThreshold(0.4)
@@ -56,7 +59,9 @@ def getClosestDetectionAboveThreshold(robotX, robotY):
         return None
 
     closest_detection = detections[0]
-    closest_distance = getDistanceBetweenTwo(robotX, robotY, closest_detection[0], closest_detection[1])
+    closest_distance = getDistanceBetweenTwo(
+        robotX, robotY, closest_detection[0], closest_detection[1]
+    )
 
     for detection in detections[1:]:
         distance = getDistanceBetweenTwo(robotX, robotY, detection[0], detection[1])
@@ -67,13 +72,15 @@ def getClosestDetectionAboveThreshold(robotX, robotY):
     print("Closest distance: " + str(closest_distance))
     print("Object closest: " + str(closest_detection[:2]))
 
+
 # cv2.namedWindow(map.gameObjWindowName)
 # cv2.setMouseCallback(map.gameObjWindowName, onPressSpawnGameObj)
 
+
 def loop():
     # center of field robot spawn position
-    defaultRobotX = int(fieldX/2)
-    defaultRobotY = int(fieldY/2)
+    defaultRobotX = int(fieldX / 2)
+    defaultRobotY = int(fieldY / 2)
 
     while True:
         map.disspateOverTime(1)
@@ -85,10 +92,11 @@ def loop():
         spawnGameObj()
         getClosestDetectionAboveThreshold(defaultRobotX, defaultRobotY)
 
-        k = cv2.waitKey(100) & 0xFF 
+        k = cv2.waitKey(100) & 0xFF
         if k == ord("q"):
             break
         if k == ord("c"):
             map.clear_maps()
+
 
 loop()

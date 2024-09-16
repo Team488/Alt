@@ -7,26 +7,27 @@ import traceback
 import socket
 import numpy as np
 import struct
+
 # import ntcore as nt
 
 
 # def main():
-    # fieldMap = probmap.ProbMap(1654, 821, 1) #Width x Height at 1 cm resolution
-    # runDemo()
-    # go_inorder_top_bottom_left_right()
+# fieldMap = probmap.ProbMap(1654, 821, 1) #Width x Height at 1 cm resolution
+# runDemo()
+# go_inorder_top_bottom_left_right()
 
-    # Initialize Network Tables
-    # instance = nt.NetworkTableInstance.getDefault()
-    # instance.startClient4("Probability Map")
-    # instance.setServerTeam(488)
-    # table = instance.getTable("AdvantageKit")
-    # writeTable = instance.getTable("ProbabilityMap").getSubTable("NDAR")
-    # poseTable = table.getSubTable("RealOutputs").getSubTable("PoseSubsystem")
+# Initialize Network Tables
+# instance = nt.NetworkTableInstance.getDefault()
+# instance.startClient4("Probability Map")
+# instance.setServerTeam(488)
+# table = instance.getTable("AdvantageKit")
+# writeTable = instance.getTable("ProbabilityMap").getSubTable("NDAR")
+# poseTable = table.getSubTable("RealOutputs").getSubTable("PoseSubsystem")
 
-    # while(1):
-    #     pose_bytes = poseTable.getValue("RobotPose","empty")
-    #     robotX, robotY, robotR = struct.unpack('ddd',pose_bytes)
-    #     print(f"X: {robotX}, Y: {robotY}, R: {robotR}")
+# while(1):
+#     pose_bytes = poseTable.getValue("RobotPose","empty")
+#     robotX, robotY, robotR = struct.unpack('ddd',pose_bytes)
+#     print(f"X: {robotX}, Y: {robotY}, R: {robotR}")
 
 
 # randomizes values for stress testing algorithm
