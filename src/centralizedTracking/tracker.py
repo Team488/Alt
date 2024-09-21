@@ -14,9 +14,11 @@ class Tracker:
         max_cosine_distance = 0.4
         nn_budget = None
 
-        encoder_model_filename = '../mars-small128.pb'
+        encoder_model_filename = "../mars-small128.pb"
 
-        metric = nn_matching.NearestNeighborDistanceMetric("cosine", max_cosine_distance, nn_budget)
+        metric = nn_matching.NearestNeighborDistanceMetric(
+            "cosine", max_cosine_distance, nn_budget
+        )
         self.tracker = DeepSortTracker(metric)
         self.encoder = gdet.create_box_encoder(encoder_model_filename, batch_size=1)
 
@@ -24,7 +26,7 @@ class Tracker:
 
         if len(detections) == 0:
             self.tracker.predict()
-            self.tracker.update([])  
+            self.tracker.update([])
             self.update_tracks()
             return
 

@@ -3,7 +3,7 @@ import cv2
 import math
 from decimal import Decimal, ROUND_HALF_UP, ROUND_HALF_DOWN, ROUND_FLOOR, ROUND_CEILING
 
-largeValue = 10000000000000000000  # for cv2 thresholding 
+largeValue = 10000000000000000000  # for cv2 thresholding
 
 # This whole thing is axis aligned for speed, but that may not work great
 class ProbMap:
@@ -84,7 +84,7 @@ class ProbMap:
     # After testing speed, see if we need some sort of hashmap to detection patches
     # We could add the center of detections to the hashmap, then on every smooth cycle we traverse each patch in the map and see if the probability has dissipated to zero, if so then we remove from map
     def __add_detection(self, probmap, x, y, obj_x, obj_y, prob):
-        
+
         # not perfect workaround, but transpose fix leads to x and y values being flipped, we can get by this by just flipping before putting in to map
         tmp = x
         x = y
@@ -93,19 +93,19 @@ class ProbMap:
         obj_x = obj_y
         obj_y = tmpX
 
-        if(x > self.size_x):
+        if x > self.size_x:
             print("Error X too large! clipping")
             x = self.size_x
 
-        if(x < 0):
+        if x < 0:
             print("Error X too small! clipping")
             x = 0
-        
-        if(y > self.size_y):
+
+        if y > self.size_y:
             print("Error y too large! clipping")
             y = self.size_y
-        
-        if(y < 0):
+
+        if y < 0:
             print("Error y too small! clipping")
             y = 0
 
@@ -205,8 +205,6 @@ class ProbMap:
             blob_top_edge_loc:blob_bottom_edge_loc,
         ] += gaussian_blob
 
-        
-
     def __updateLastParams(self, isGameObj: bool, timeSinceLastUpdate):
         lastMap = None
         if isGameObj:
@@ -255,7 +253,7 @@ class ProbMap:
     def addDetectedGameObjectCoords(self, coords: list[tuple], timeSinceLastUpdate):
         self.__updateLastParams(True, timeSinceLastUpdate)
         for coord in coords:
-            (x, y,prob) = coord
+            (x, y, prob) = coord
             self.__add_detection(
                 self.probmapGameObj, x, y, self.gameObjectX, self.gameObjectX, prob
             )

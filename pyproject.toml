@@ -1,0 +1,9 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "alt"
+version = "0.0.1"
+description = "Project for the matrixx team."
+requires-python = ">= 3.9"
