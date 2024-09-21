@@ -1,6 +1,6 @@
 import numpy as np
 import cv2
-from filterpy.kalman import UnscentedKalmanFilter as UKF
+from filterpy.kalman import UnscentedKalmanFilter
 from filterpy.kalman import MerweScaledSigmaPoints
 
 
@@ -32,13 +32,13 @@ class Ukf:
         self.points = MerweScaledSigmaPoints(self.Dim, alpha=0.5, beta=2.0, kappa=3-self.Dim)
         
         # UKF initialization
-        self.ukf = UKF(
+        self.baseUKF = UnscentedKalmanFilter(
             dim_x=4, dim_z=2, fx=self.fx, hx=self.hx, dt=self.dt, points=self.points
         )
-        self.ukf.x = self.x_initial
-        self.ukf.P = self.P_initial
-        self.ukf.Q = self.Q
-        self.ukf.R = self.R
+        self.baseUKF.x = self.x_initial
+        self.baseUKF.P = self.P_initial
+        self.baseUKF.Q = self.Q
+        self.baseUKF.R = self.R
 
     def __addFieldBoundsAsObstacles(self,fieldX,fieldY,fieldObstacleDepth = 10):
         # add obstacles to represent field bounds
@@ -152,13 +152,13 @@ class Ukf:
 
     # Example prediction and update steps
     def predict_and_update(self, measurements):
-        self.ukf.predict()
-        print(f"Predicted state: {self.ukf.x}")
+        self.baseUKF.predict()
+        print(f"Predicted state: {self.baseUKF.x}")
 
         # Example measurement update (assuming perfect measurement for demonstration)
         measurement = np.array(measurements)
-        self.ukf.update(measurement)
-        print(f"Updated state: {self.ukf.x}")
+        self.baseUKF.update(measurement)
+        print(f"Updated state: {self.baseUKF.x}")
 
 
 # Example usage:

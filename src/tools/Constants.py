@@ -1,6 +1,8 @@
 from enum import Enum
 import math
 
+import numpy as np
+
 
 class CameraExtrinsics(Enum):
     #   {PositionName} = ((offsetX,offsetY,offsetZ),(yawOffset,pitchOffset))
@@ -64,3 +66,8 @@ class ObjectReferences(Enum):
 
     def getMeasurement(self):
         return self.value
+    
+
+class KalmanConstants(Enum):
+    Q = np.eye(4) * 0.01  # Process noise covariance
+    R = np.eye(2) * 0.01  # Measurement noise covariance
