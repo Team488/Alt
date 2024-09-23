@@ -24,7 +24,19 @@ eval "$(pyenv virtualenv-init -)"
 
 pyenv activate xbot-3.9
 
+if ! [[ $(grep -c "export PYTHONPATH=$PYTHONPATH:$(realpath $SCRIPT_DIR)/src" $VIRTUAL_ENV/bin/activate) -ge 1 ]]; then
+    cat <<EOF >> $VIRTUAL_ENV/bin/activate
+export PYTHONPATH=$PYTHONPATH:$(realpath $SCRIPT_DIR)/src
+EOF
+
+pyenv deactivate xbot-3.9
+pyenv activate xbot-3.9
+fi
+
+export PYTHONPATH=$PYTHONPATH:$(realpath $SCRIPT_DIR)/src
+
 pip install -r $SCRIPT_DIR/requirements.txt
 pip install -r $SCRIPT_DIR/dev-requirements.txt
 
 pre-commit install
+pyenv rehash

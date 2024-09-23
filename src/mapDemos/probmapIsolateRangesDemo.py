@@ -133,4 +133,5 @@ def __test_randomization_ranges(map: probmap, width, height):
         traceback.print_exc()
 
 
-startDemo()
+if __name__ == "__main__":
+    startDemo()

@@ -62,3 +62,7 @@ def startDemo():
             break
         if k == ord("c"):
             map.clear_maps()
+
+
+if __name__ == "__main__":
+    startDemo()

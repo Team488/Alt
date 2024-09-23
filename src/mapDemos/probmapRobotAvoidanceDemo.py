@@ -289,3 +289,7 @@ def __addRandomRobotsMovingAround(
         currentRobotsAndPositions[i] = (robotX, robotY)
 
     map.addDetectedRobotCoords(newDetections, 1)  # 1s
+
+
+if __name__ == "__main__":
+    startDemo()

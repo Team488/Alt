@@ -26,6 +26,7 @@ objectsCollected = 0
 lastCollectedX = -1
 lastCollectedY = -1
 
+
 # method also displays stuff so not just getting highest range
 def getRangeHighest(x, y):
     global objectsCollected
@@ -156,3 +157,7 @@ def test_randomization_ranges(map: probmap, width, height):
 
     except Exception:
         traceback.print_exc()
+
+
+if __name__ == "__main__":
+    startDemo()

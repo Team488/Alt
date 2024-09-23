@@ -40,4 +40,5 @@ def startDemo():
                     map.clear_maps()
 
 
-startDemo()
+if __name__ == "__main__":
+    startDemo()

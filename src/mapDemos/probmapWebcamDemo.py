@@ -20,6 +20,7 @@ HFOVDEG = 70
 
 HFOVRAD = math.radians(HFOVDEG)
 
+
 # Convert FOV from radians to degrees
 # Returns whatever unit NOTEKNOWNSIZE is in || currently inches
 def __calculateDistance(knownSize, currentSizePixels, focalLength):
@@ -90,3 +91,7 @@ def startDemo():
 
     cap.release()
     cv2.destroyAllWindows()
+
+
+if __name__ == "__main__":
+    startDemo()
