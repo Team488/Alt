@@ -13,7 +13,7 @@ class MapDetection:
         detectionCoords: tuple[int, int],
         detectionType: DetectionType,
         detectionProbablility: float,
-        detectionLabel: str,
+        detectionLabel: int,
     ):
         self.detectionCoords = detectionCoords
         self.detectionType = detectionType
