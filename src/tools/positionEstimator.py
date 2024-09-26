@@ -193,14 +193,13 @@ class PositionEstimator:
     def __estimateRelativeRobotPosition(
         self, frame, boundingBox, cameraIntrinsics: CameraIntrinsics
     ) -> tuple[float, float, bool]:
-        x, y, w, h = boundingBox
+        x1, y1, x2, y2 = boundingBox
+        w = x2 - x1
+        h = y2 - y1
         midW = int(w / 2)
         midH = int(h / 2)
-        topX = int(x - midW)
-        topY = int(y - midH)
-        botX = int(x + midW)
-        botY = int(y + midH)
-        croppedImg = self.__crop_image(frame, (topX, topY), (botX, botY))
+        centerX = x1 + midW
+        croppedImg = self.__crop_image(frame, (x1, y1), (x2, y2))
         est = self.__estimateRobotHeight(croppedImg)
         if est is not None:
             (estimatedHeight, isBlue) = est
@@ -212,7 +211,7 @@ class PositionEstimator:
             bearing = self.__calcBearing(
                 cameraIntrinsics.getHFov(),
                 cameraIntrinsics.getHres(),
-                int(x - cameraIntrinsics.getHres() / 2),
+                int(centerX - cameraIntrinsics.getHres() / 2),
             )
             estX = math.cos(bearing) * distance
             estY = math.sin(bearing) * distance
@@ -223,41 +222,46 @@ class PositionEstimator:
     def __estimateRelativeGameObjectPosition(
         self, frame, boundingBox, cameraIntrinsics: CameraIntrinsics
     ) -> tuple[float, float]:
-        x, y, w, h = boundingBox
+        x1, y1, x2, y2 = boundingBox
+        w = x2 - x1
+        h = y2 - y1
+        midW = int(w / 2)
+        midH = int(h / 2)
+        centerX = x1 + midW
         distance = self.__calculateDistance(
             ObjectReferences.NOTE.getMeasurement(), w, cameraIntrinsics
         )
         bearing = self.__calcBearing(
             cameraIntrinsics.getHFov(),
             cameraIntrinsics.getHres(),
-            int(x - cameraIntrinsics.getHres() / 2),
+            int(centerX - cameraIntrinsics.getHres() / 2),
         )
         estX = math.cos(bearing) * distance
         estY = math.sin(bearing) * distance
         return (estX, estY)
 
     def estimateDetectionPositions(
-        self, frame, yoloResults, cameraIntrinsics: CameraIntrinsics
+        self, frame, labledResults, cameraIntrinsics: CameraIntrinsics
     ):
-        robotEstimatesOut = []
-        gameObjectEstimatesOut = []
+        estimatesOut = []
 
-        boxes = yoloResults[0].boxes.xywh.cpu()
-        confs = yoloResults[0].boxes.conf.cpu()
-        ids = yoloResults[0].boxes.cls.cpu()
         # id 0 == robot 1 == note
-        for box, conf, id in zip(boxes, confs, ids):
-            if id == self.__RobotId:
-                robotEst = self.__estimateRelativeRobotPosition(
-                    frame, box, cameraIntrinsics
+        for result in labledResults:
+            isRobot = result[3]
+            bbox = result[1]
+            estimate = None
+            if isRobot:
+                estimate = self.__estimateRelativeRobotPosition(
+                    frame, bbox, cameraIntrinsics
                 )
-                if robotEst is not None:
-                    robotEstimatesOut.append((robotEst, conf))
-            else:
-                gameObjEst = self.__estimateRelativeGameObjectPosition(
-                    frame, box, cameraIntrinsics
-                )
-                if gameObjEst is not None:
-                    gameObjectEstimatesOut.append((gameObjEst, conf))
 
-        return (gameObjectEstimatesOut, robotEstimatesOut)
+            else:
+                estimate = self.__estimateRelativeGameObjectPosition(
+                    frame, bbox, cameraIntrinsics
+                )
+            if estimate is not None:
+                estimatesOut.append(
+                    [result[0], estimate, result[2], isRobot]
+                )  # replace local bbox with estimated position
+
+        return estimatesOut

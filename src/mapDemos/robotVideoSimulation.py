@@ -1,10 +1,8 @@
 import numpy as np
-from ultralytics import YOLO
 from mapinternals.probmap import ProbMap
+from mapinternals.frameProcessor import FrameProcessor
 from tools.CsvParser import CsvParser
 from tools.Constants import CameraIntrinsics, CameraExtrinsics
-from tools.positionEstimator import PositionEstimator
-from tools.positionTranslations import CameraToRobotTranslator
 import cv2
 import math
 
@@ -44,9 +42,7 @@ def startDemo():
     cap = cv2.VideoCapture("assets/video12qual25clipped.mp4")
     firstRun = True
     cap_outM = None
-    model = YOLO("..\\..\\Braindance\\bestV8.pt")  # Open the model
-    estimator = PositionEstimator()
-    translator = CameraToRobotTranslator()
+    frameProcessor = FrameProcessor(cameraIntr, cameraExtr)
     fps = cap.get(cv2.CAP_PROP_FPS)
     timePassed = 0
     timePerFrame = 1 / fps
@@ -89,52 +85,18 @@ def startDemo():
             positionY = fieldHeight - positionY
 
             # Run YOLOv8 on the frame
-            results = model.predict(
-                frame, show_boxes=True, conf=0.8, show=False
-            )  # images is a list of PIL images
+            out = frameProcessor.processFrame(frame)
 
-            if results != None and results[0] != None:
-                (RelGameObj, RelRobots) = estimator.estimateDetectionPositions(
-                    frame, results, cameraIntr
-                )
-                if RelGameObj is not None:
-                    for gameObj in RelGameObj:
-                        ((relCamX, relCamY), conf) = gameObj
-                        (
-                            relToRobotX,
-                            relToRobotY,
-                            relToRobotZ,
-                        ) = translator.turnCameraCoordinatesIntoRobotCoordinates(
-                            relCamX, relCamY, cameraExtr
-                        )
-                        simMap.addCustomObjectDetection(
-                            positionX + int(relToRobotX),
-                            positionY - int(relToRobotY),
-                            150,
-                            150,
-                            conf,
-                            timePerFrame,
-                        )
-
-                if RelRobots is not None:
-                    for robot in RelRobots:
-                        ((relCamX, relCamY, isBlue), conf) = robot
-                        (
-                            relToRobotX,
-                            relToRobotY,
-                            relToRobotZ,
-                        ) = translator.turnCameraCoordinatesIntoRobotCoordinates(
-                            relCamX, relCamY, cameraExtr
-                        )
-                        simMap.addCustomRobotDetection(
-                            positionX + int(relToRobotX),
-                            positionY - int(relToRobotY),
-                            250,
-                            250,
-                            conf,
-                            timePerFrame,
-                        )
-                        # simMap.addDetectedRobot(int(relToRobotX),int(relToRobotY),conf,timePerFrame)
+            # Run YOLOv8 on the frame
+            for result in out:
+                id = result[0]
+                x, y, z = result[1]
+                conf = result[2]
+                isRobot = result[3]
+                if isRobot:
+                    simMap.addCustomRobotDetection(x, y, 200, 200, conf, 1)
+                else:
+                    simMap.addCustomObjectDetection(x, y, 200, 200, conf, 1)
 
             (gameObjMap, robotMap) = simMap.getHeatMaps()
             height, width = robotMap.shape

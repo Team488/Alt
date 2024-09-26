@@ -4,3 +4,7 @@
 
     All network requests from here will call into mapinternals main.py
 """
+
+
+def getRobotPosition():
+    return (0, 0, 0)  # todo

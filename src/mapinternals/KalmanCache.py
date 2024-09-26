@@ -1,6 +1,8 @@
 import numpy as np
+from mapinternals.KalmanEntry import KalmanEntry
 from mapinternals.UKF import Ukf
 from tools.Constants import KalmanConstants
+
 """
     Goals for this class
 
@@ -13,39 +15,37 @@ from tools.Constants import KalmanConstants
     The most important is that as the kalman filter is a recursive algorithm it needs previous information it calculated. However since there are many different robots/game objects, each needs their own
     previous information. That is the large reason why this class exists
 """
+
+
 class KalmanCache:
     def __init__(self) -> None:
         self.savedKalmanData = {}
 
-    
-    def saveKalmanData(self,id : int,ukf : Ukf):
-        self.savedKalmanData[id] = {
-            'x': ukf.baseUKF.x.copy(),  # state vector
-            'P': ukf.baseUKF.P.copy(),  # covariance matrix
-            # 'Q': ukf.baseUKF.Q.copy(),  # process noise
-            # 'R': ukf.baseUKF.R.copy(),  # measurement noise
-            # 'K': ukf.baseUKF.K.copy()   # Kalman gain (optional)
+    def getKeySet(self):
+        return set(self.savedKalmanData.keys())
 
-        }
-    
-    def __getSavedKalmanData(self,id : int) -> dict:
-        kalmanData = self.savedKalmanData.get(id,None)
+    def saveKalmanData(self, id: int, ukf: Ukf):
+        self.savedKalmanData[id] = KalmanEntry(ukf.baseUKF.x, ukf.baseUKF.P)
+
+    def getSavedKalmanData(self, id: int) -> KalmanEntry:
+        kalmanData = self.savedKalmanData.get(id, None)
         return kalmanData
-    
+
     """ Tries to get stored kalman data. If id is not found will create new kalman data with the x,y provided and an estimated velocity of zero"""
-    def getAndLoadKalmanData(self,id : int,x : int,y : int,ukf : Ukf):
-        kalmanData = self.__getSavedKalmanData(id)
+
+    def getAndLoadKalmanData(self, id: int, x: int, y: int, ukf: Ukf):
+        kalmanData = self.getSavedKalmanData(id)
         if kalmanData is None:
             print(f"Id:{id} is getting new kalman data")
-            ukf.baseUKF.x = np.array([x, y, 0, 0]) # todo maybe add an estimated velocity here
+            ukf.baseUKF.x = np.array(
+                [x, y, 0, 0]
+            )  # todo maybe add an estimated velocity here
             ukf.baseUKF.P = np.eye(4)
             ukf.baseUKF.Q = KalmanConstants.Q
             ukf.baseUKF.R = KalmanConstants.R
         else:
-            ukf.baseUKF.x = kalmanData.get('x')
-            ukf.baseUKF.P = kalmanData.get('P')
+            ukf.baseUKF.x = kalmanData.x
+            ukf.baseUKF.P = kalmanData.P
             # ukf.baseUKF.Q = kalmanData.get('Q') # dont really need to save these if they are constant
-            # ukf.baseUKF.R = kalmanData.get('R') 
+            # ukf.baseUKF.R = kalmanData.get('R')
             # ukf.baseUKF.K = kalmanData.get('K') # dont need this most likely
-            
-

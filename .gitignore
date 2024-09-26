@@ -179,3 +179,5 @@ out.mp4
 # *.pb
 
 deep_sort/
+
+*.egg-info

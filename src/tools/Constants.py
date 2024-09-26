@@ -66,8 +66,26 @@ class ObjectReferences(Enum):
 
     def getMeasurement(self):
         return self.value
-    
 
-class KalmanConstants(Enum):
+
+class KalmanConstants:
     Q = np.eye(4) * 0.01  # Process noise covariance
     R = np.eye(2) * 0.01  # Measurement noise covariance
+
+
+class CameraIdOffsets(Enum):
+    # jump of 15
+    FRONTLEFT = 0
+    FRONTRIGHT = 30
+    REARLEFT = 60
+    REARRIGHT = 90
+    DEPTHLEFT = 120
+    DEPTHRIGHT = 150
+
+    def getIdOffset(self):
+        return self.value
+
+
+class DeepsortOffsets:
+    GameObject = 0
+    Robot = 10

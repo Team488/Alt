@@ -1,11 +1,11 @@
 from deep_sort.tracker import Tracker as DeepSortTracker
-from tools import generate_detections as gdet
+from deep_sort_tools import generate_detections as gdet
 from deep_sort import nn_matching
 from deep_sort.detection import Detection
 import numpy as np
 
 
-class Tracker:
+class RobotTracker:
     tracker = None
     encoder = None
     tracks = None
@@ -14,7 +14,7 @@ class Tracker:
         max_cosine_distance = 0.4
         nn_budget = None
 
-        encoder_model_filename = "../mars-small128.pb"
+        encoder_model_filename = "assets/mars-small128.pb"
 
         metric = nn_matching.NearestNeighborDistanceMetric(
             "cosine", max_cosine_distance, nn_budget
@@ -53,12 +53,12 @@ class Tracker:
 
             id = track.track_id
 
-            tracks.append(Track(id, bbox))
+            tracks.append(RobotTrack(id, bbox))
 
         self.tracks = tracks
 
 
-class Track:
+class RobotTrack:
     track_id = None
     bbox = None
 
