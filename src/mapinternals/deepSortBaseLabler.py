@@ -1,6 +1,4 @@
 from mapinternals.robotTracker import RobotTracker
-from tools.Constants import DeepsortOffsets
-
 
 class DeepSortBaseLabler:
     def __init__(self) -> None:
@@ -15,8 +13,6 @@ class DeepSortBaseLabler:
         trackedDetections = []
         if not results:
             return trackedDetections
-        robotOffset = DeepsortOffsets.Robot
-        gameObjectOffset = DeepsortOffsets.GameObject
         for result in results:
             savedScores = {}
             detectionsGameObjects = []
@@ -41,14 +37,14 @@ class DeepSortBaseLabler:
                 # bbox = track.bbox
                 # x1, y1, x2, y2 = bbox
                 trackedDetections.append(
-                    (track.track_id + robotOffset, bbox, savedScores.get(bbox, 0), True)
+                    (track.track_id, bbox, savedScores.get(bbox, 0), True)
                 )  # should never hit default case
             for track in self.trackerGameObjects.tracks:
                 # bbox = track.bbox
                 # x1, y1, x2, y2 = bbox
                 trackedDetections.append(
                     (
-                        track.track_id + gameObjectOffset,
+                        track.track_id,
                         bbox,
                         savedScores.get(bbox, 0),
                         False,

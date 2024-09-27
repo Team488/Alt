@@ -1,6 +1,6 @@
 import numpy as np
 from mapinternals.probmap import ProbMap
-from mapinternals.frameProcessor import FrameProcessor
+from mapinternals.localFrameProcessor import LocalFrameProcessor
 from tools.CsvParser import CsvParser
 from tools.Constants import CameraIntrinsics, CameraExtrinsics
 import cv2
@@ -42,7 +42,7 @@ def startDemo():
     cap = cv2.VideoCapture("assets/video12qual25clipped.mp4")
     firstRun = True
     cap_outM = None
-    frameProcessor = FrameProcessor(cameraIntr, cameraExtr)
+    frameProcessor = LocalFrameProcessor(cameraIntr, cameraExtr)
     fps = cap.get(cv2.CAP_PROP_FPS)
     timePassed = 0
     timePerFrame = 1 / fps

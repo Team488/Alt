@@ -27,13 +27,16 @@ class KalmanCache:
     def saveKalmanData(self, id: int, ukf: Ukf):
         self.savedKalmanData[id] = KalmanEntry(ukf.baseUKF.x, ukf.baseUKF.P)
 
+    def removeKalmanEntry(self,id : int):
+        del self.savedKalmanData[id]
+
     def getSavedKalmanData(self, id: int) -> KalmanEntry:
         kalmanData = self.savedKalmanData.get(id, None)
         return kalmanData
 
     """ Tries to get stored kalman data. If id is not found will create new kalman data with the x,y provided and an estimated velocity of zero"""
 
-    def getAndLoadKalmanData(self, id: int, x: int, y: int, ukf: Ukf):
+    def LoadInKalmanData(self, id: int, x: int, y: int, ukf: Ukf):
         kalmanData = self.getSavedKalmanData(id)
         if kalmanData is None:
             print(f"Id:{id} is getting new kalman data")

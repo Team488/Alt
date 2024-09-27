@@ -86,6 +86,23 @@ class CameraIdOffsets(Enum):
         return self.value
 
 
-class DeepsortOffsets:
-    GameObject = 0
-    Robot = 10
+
+class MapConstants(Enum):
+    GameObjectAcceleration = 0 # probably?
+    RobotAcceleration = 1500 # cm/s this is probably inaccurate
+    fieldWidth = 1653  # 54' 3" to cm
+    fieldHeight = 800  # 26' 3" to cm
+    res = 5  # cm
+    robotWidth = 75  # cm
+    robotHeight = 75  # cm assuming square robot with max frame perimiter of 300
+    gameObjectWidth = 35  # cm
+    gameObjectHeight = 35  # cm circular note
+
+    mapObstacles = [] # todo define these
+
+class LabelingConstants(Enum):
+    MAXFRAMESNOTSEEN = 15
+
+
+# todo consolidate camera info into one central enum
+# class CAMERA(Enum):

@@ -2,20 +2,21 @@ import numpy as np
 import cv2
 from filterpy.kalman import UnscentedKalmanFilter
 from filterpy.kalman import MerweScaledSigmaPoints
+from tools.Constants import MapConstants
 
 
 class Ukf:
     """Obstacles are expected to be in x,y format"""
 
     def __init__(
-        self, Obstacles: list[tuple[tuple[int, int], tuple[int, int]]], fieldX, fieldY
+        self, Obstacles: list[tuple[tuple[int, int], tuple[int, int]]] = MapConstants.mapObstacles.value.copy(), fieldX=MapConstants.fieldWidth.value, fieldY=MapConstants.fieldHeight.value
+
     ):
         self.obstacles = Obstacles
         self.__addFieldBoundsAsObstacles(fieldX,fieldY)
 
         self.fieldX = fieldX
         self.fieldY = fieldY
-
         # Parameters
         self.dt = 0.1  # Time step
 
@@ -153,22 +154,23 @@ class Ukf:
     # Example prediction and update steps
     def predict_and_update(self, measurements):
         self.baseUKF.predict()
-        print(f"Predicted state: {self.baseUKF.x}")
+        # print(f"Predicted state: {self.baseUKF.x}")
 
         # Example measurement update (assuming perfect measurement for demonstration)
         measurement = np.array(measurements)
         self.baseUKF.update(measurement)
-        print(f"Updated state: {self.baseUKF.x}")
+        # print(f"Updated state: {self.baseUKF.x}")
+        return self.baseUKF.x
 
 
-# Example usage:
-obstacles = [((100, 100), (50, 50))]
-fieldX = 200
-fieldY = 200
+# # Example usage:
+# obstacles = [((100, 100), (50, 50))]
+# fieldX = 200
+# fieldY = 200
 
 
-ukf = Ukf(obstacles, fieldX, fieldY)
+# ukf = Ukf(obstacles, fieldX, fieldY)
 
-# Example prediction and update
-measurements = [50, 50]  # Example measurements
-ukf.predict_and_update(measurements)
+# # Example prediction and update
+# measurements = [50, 50]  # Example measurements
+# ukf.predict_and_update(measurements)

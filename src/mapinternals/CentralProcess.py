@@ -1,0 +1,85 @@
+from singleton.singleton import Singleton
+from pathplanning import CalculateBestPath, LockOnTarget
+from coreinterface import CoreInput, CoreOutput
+from KalmanLabeler import KalmanLabeler
+from UKF import Ukf
+from tools.Constants import MapConstants,CameraIdOffsets
+from mapinternals.probmap import ProbMap
+from mapinternals.KalmanLabeler import KalmanLabeler
+from mapinternals.KalmanCache import KalmanCache
+
+
+# def addNewDetection(
+#     detectionC: tuple[int, int], detectionType: DetectionType, detectionProb: float
+# ):
+#     # first label detection
+#     mapDetection: MapDetection = KalmanLabeler.createDetection(
+#         detectionC, detectionType, detectionProb
+#     )  # here we would get the label in a fully boxed class MapDetection
+
+#     # next we need to retrieve the stored kalman data for this label
+
+#     kalmanData = KalmanCache.getData(mapDetection.detectionLabel)  # example method
+
+#     # then we pass the new detection through the kalman filter, along with the previous data
+
+#     (newPred, newKalmanData) = UKF.passThroughFiter(
+#         mapDetection, kalmanData
+#     )  # example method
+
+#     # now you can save all this new data however needed
+#     (px, py, vx, vy, etc) = newPred
+
+#     KalmanCache.putNewInfo(newPred, newKalmanData)  # cache all new data
+
+#     # add detection to probmap aswell
+#     if DetectionType.isTypeRobot(detectionType):
+#         mapWrapper.addDetectedRobot(px, py)
+#     else:
+#         mapWrapper.addDetectedGameObject(px, py)
+@Singleton
+class CentralProcess:
+    def __init__(self):
+        self.kalmanCacheRobots: KalmanCache = KalmanCache()
+        self.kalmanCacheGameObjects: KalmanCache = KalmanCache()
+        self.map: ProbMap = ProbMap()
+        self.ukf = Ukf()
+        self.labler = KalmanLabeler(self.kalmanCacheRobots,self.kalmanCacheGameObjects)
+
+    # async map update per camera, probably want to syncronize this
+    def processFrameUpdate(self,singleCameraResults : list[list[int, tuple[int, int, int], float, bool]],cameraIdOffset : CameraIdOffsets,timeStepSeconds):
+        # first get real ids
+        self.labler.updateRealIds(singleCameraResults,cameraIdOffset,timeStepSeconds)
+
+        # go through each detection and do the magic
+        for singleCamResult in singleCameraResults:
+            (id,(x,y,z),prob,isRobot) = singleCamResult
+
+            # first load in to ukf, (if completely new ukf will load in as new state)
+            if isRobot:
+                self.kalmanCacheRobots.LoadInKalmanData(id,x,y,self.ukf)
+            else:
+                self.kalmanCacheGameObjects.LoadInKalmanData(id,x,y,self.ukf)
+
+            newState = self.ukf.predict_and_update([x,y])
+
+            # now we have filtered data, so lets store it. First thing we do is cache the new ukf data
+
+            if isRobot:
+                self.kalmanCacheRobots.saveKalmanData(id,self.ukf)
+            else:
+                self.kalmanCacheGameObjects.saveKalmanData(id,self.ukf)
+
+            # now lets also input our new estimated state into the map
+
+            if isRobot:
+                self.map.addDetectedRobot(newState[0],newState[1],prob,timeStepSeconds)
+            else:
+                self.map.addDetectedGameObject(newState[0],newState[1],prob,timeStepSeconds)
+
+            # and now this part is done
+
+
+
+
+        

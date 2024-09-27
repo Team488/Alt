@@ -2,20 +2,20 @@ import numpy as np
 import cv2
 import math
 from decimal import Decimal, ROUND_HALF_UP, ROUND_HALF_DOWN, ROUND_FLOOR, ROUND_CEILING
-
+from tools.Constants import MapConstants
 largeValue = 10000000000000000000  # for cv2 thresholding
 
 # This whole thing is axis aligned for speed, but that may not work great
 class ProbMap:
     def __init__(
         self,
-        x,
-        y,
-        resolution,
-        gameObjectX,
-        gameObjectY,
-        robotX,
-        robotY,
+        x=MapConstants.fieldWidth.value,
+        y=MapConstants.fieldHeight.value,
+        resolution=MapConstants.res.value,
+        gameObjectX=MapConstants.gameObjectWidth.value,
+        gameObjectY=MapConstants.gameObjectHeight.value,
+        robotX=MapConstants.robotWidth.value,
+        robotY=MapConstants.robotHeight.value,
         sigma=1,
         maxSpeedRobots=100,
         maxSpeedGameObjects=5,
@@ -109,10 +109,10 @@ class ProbMap:
             print("Error y too small! clipping")
             y = 0
 
-        # for now we will just print a simple warning if the center of the blob is inside an obstacle region
-        # proper way is to adjust the gaussian based on the obstacle. Not sure exactly how as of right now
-        if self.isPointInsideObstacles(x, y):
-            print("Center of blob is inside of obstacles!")
+        # # for now we will just print a simple warning if the center of the blob is inside an obstacle region
+        # # proper way is to adjust the gaussian based on the obstacle. Not sure exactly how as of right now
+        # if self.isPointInsideObstacles(x, y):
+        #     print("Center of blob is inside of obstacles!")
 
         # print("confidence", prob)
         # Given the object size, spread the detection out by stddevs of probabilities
@@ -188,6 +188,8 @@ class ProbMap:
             blob_bottom_edge_loc = self.size_y
 
         gaussian_blob = gaussian_blob.astype(np.float64)
+        # is this needed?
+        gaussian_blob *= prob
         # blob_height, blob_width = gaussian_blob.shape[0:2]
         print("\n" + "gaussian size: " + str(blob_height) + ", " + str(blob_width))
 
