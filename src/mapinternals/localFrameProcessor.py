@@ -5,6 +5,7 @@ from tools.Constants import CameraIntrinsics, CameraExtrinsics
 from tools.positionEstimator import PositionEstimator
 from tools.positionTranslations import CameraToRobotTranslator
 from coreinterface.CoreInput import getRobotPosition
+import numpy as np
 import cv2
 
 """ This handles the full pipline from a frame to detections with deepsort id's. You can think of it as the local part of the detection pipeline
@@ -29,17 +30,18 @@ class LocalFrameProcessor:
 
     def processFrame(
         self, frame, drawBoxes=True
-    ) -> list[list[int, tuple[int, int, int], float, bool]]:
-        results = self.model.predict(frame, show_boxes=True, conf=0.8, show=False)
+    ) -> list[list[int, tuple[int, int, int], float, bool, np.ndarray]]:
+        results = self.model.predict(frame, show_boxes=False, conf=0.8, show=False)
         labledResults = self.baseLabler.getLocalLabels(frame, results)
         if drawBoxes:
             for result in labledResults:
                 id = result[0]
                 bbox = result[1]
+                print(bbox)
                 color = self.colors[id % len(self.colors)]
                 cv2.rectangle(frame, bbox[0:2], bbox[2:4], color)
                 cv2.putText(frame, f"Id:{id}", bbox[0:2], 0, 2, color)
-        # id(unique),estimated x/y,conf,isrobot
+        # id(unique),features,estimated x/y,conf,isrobot
         relativeResults = self.estimator.estimateDetectionPositions(
             frame, labledResults, self.cameraIntrinsics
         )
@@ -59,5 +61,5 @@ class LocalFrameProcessor:
                 relToRobotY + robotPosY,
                 relToRobotZ + robotPosZ,
             )
-        # output is id,(absX,absY,absZ),conf,isRobot
+        # output is id,(absX,absY,absZ),conf,isRobot,features
         return relativeResults

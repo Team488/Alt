@@ -11,7 +11,7 @@ colorama==0.4.6
 contourpy==1.2.1
 cryptography==43.0.0
 cycler==0.12.1
-deep_sort @ git+https://github.com/rokadias/deep_sort@fe35e909e655c97a1dab31108bfb6611c8453a2e
+deep_sort @ git+https://github.com/team488/deep_sort@79af029bb17ce867f88c5f96564c3a9824afbdcb
 distlib==0.3.8
 ecdsa==0.19.0
 exceptiongroup==1.2.2

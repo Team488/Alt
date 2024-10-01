@@ -181,3 +181,5 @@ out.mp4
 deep_sort/
 
 *.egg-info
+
+/tmpAssets

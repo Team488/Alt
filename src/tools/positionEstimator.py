@@ -108,6 +108,7 @@ class PositionEstimator:
         x = croppedframe.shape[1]
         # cutting the frame as for all the images i have the bumper is always in the bottom half
         croppedframe = self.__crop_image(croppedframe, (0, int(y / 2)), (x, y))
+        cv2.imshow("croppedframe", croppedframe)
         labFrame = cv2.cvtColor(croppedframe, cv2.COLOR_BGR2LAB)
         processed, isBlue = self.__backprojCheck(
             labFrame, self.__redRobotHist, self.__blueRobotHist
@@ -192,7 +193,7 @@ class PositionEstimator:
 
     def __estimateRelativeRobotPosition(
         self, frame, boundingBox, cameraIntrinsics: CameraIntrinsics
-    ) -> tuple[float, float, bool]:
+    ) -> tuple[float, float]:
         x1, y1, x2, y2 = boundingBox
         w = x2 - x1
         h = y2 - y1
@@ -215,7 +216,7 @@ class PositionEstimator:
             )
             estX = math.cos(bearing) * distance
             estY = math.sin(bearing) * distance
-            return (estX, estY, isBlue)
+            return (estX, estY)
 
         return None
 
@@ -249,6 +250,7 @@ class PositionEstimator:
         for result in labledResults:
             isRobot = result[3]
             bbox = result[1]
+            print(bbox)
             estimate = None
             if isRobot:
                 estimate = self.__estimateRelativeRobotPosition(
@@ -261,7 +263,11 @@ class PositionEstimator:
                 )
             if estimate is not None:
                 estimatesOut.append(
-                    [result[0], estimate, result[2], isRobot]
+                    [result[0], estimate, result[2], isRobot, result[4]]
                 )  # replace local bbox with estimated position
+            # else we dont include this result
+            # todo keep a metric of failed estimations
+            else:
+                print("Failed estimation")
 
         return estimatesOut

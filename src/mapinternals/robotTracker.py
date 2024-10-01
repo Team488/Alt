@@ -53,7 +53,7 @@ class RobotTracker:
 
             id = track.track_id
 
-            tracks.append(RobotTrack(id, bbox))
+            tracks.append(RobotTrack(id, bbox, track.currentDetection))
 
         self.tracks = tracks
 
@@ -61,7 +61,9 @@ class RobotTracker:
 class RobotTrack:
     track_id = None
     bbox = None
+    currentDetection = None
 
-    def __init__(self, id, bbox):
+    def __init__(self, id, bbox, currentDetection):
         self.track_id = id
         self.bbox = bbox
+        self.currentDetection = currentDetection
