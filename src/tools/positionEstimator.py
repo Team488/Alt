@@ -108,7 +108,6 @@ class PositionEstimator:
         x = croppedframe.shape[1]
         # cutting the frame as for all the images i have the bumper is always in the bottom half
         croppedframe = self.__crop_image(croppedframe, (0, int(y / 2)), (x, y))
-        cv2.imshow("croppedframe", croppedframe)
         labFrame = cv2.cvtColor(croppedframe, cv2.COLOR_BGR2LAB)
         processed, isBlue = self.__backprojCheck(
             labFrame, self.__redRobotHist, self.__blueRobotHist
