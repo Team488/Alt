@@ -39,7 +39,7 @@ from mapinternals.KalmanCache import KalmanCache
 #     else:
 #         mapWrapper.addDetectedGameObject(px, py)
 @Singleton
-class CentralProcess:
+class CentralProcessor:
     def __init__(self):
         self.kalmanCacheRobots: KalmanCache = KalmanCache()
         self.kalmanCacheGameObjects: KalmanCache = KalmanCache()

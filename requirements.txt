@@ -68,7 +68,6 @@ pillow==10.4.0
 platformdirs==4.3.6
 pluggy==1.5.0
 pre-commit==3.8.0
-protobuf==4.25.5
 psutil==6.0.0
 py-cpuinfo==9.0.0
 pyasn1==0.6.0
@@ -96,8 +95,6 @@ tensorflow==2.17.0
 tensorflow-io-gcs-filesystem==0.37.1
 termcolor==2.4.0
 tomli==2.0.1
-torch==2.4.1
-torchvision==0.19.1
 tqdm==4.66.5
 triton==3.0.0
 typing_extensions==4.12.2
@@ -109,3 +106,7 @@ virtualenv==20.26.5
 Werkzeug==3.0.4
 wrapt==1.16.0
 zipp==3.20.0
+onnxruntime-directml
+# rknn toolkit 2
+-r ./requirements_cp39-2.2.0.txt
+src/assets/rknnAssets/rknn_toolkit2-2.2.0-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl

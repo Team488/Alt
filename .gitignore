@@ -183,3 +183,5 @@ deep_sort/
 *.egg-info
 
 /tmpAssets
+
+!librknnrt.so

@@ -15,12 +15,19 @@ import cv2
 
 class LocalFrameProcessor:
     def __init__(
-        self, cameraIntrinsics: CameraIntrinsics, cameraExtrinsics: CameraExtrinsics
+        self,
+        cameraIntrinsics: CameraIntrinsics,
+        cameraExtrinsics: CameraExtrinsics,
+        useYoloV8: bool = True,
     ) -> None:
         self.baseLabler: DeepSortBaseLabler = DeepSortBaseLabler()
         self.cameraIntrinsics: CameraIntrinsics = cameraIntrinsics
         self.cameraExtrinsics: CameraExtrinsics = cameraExtrinsics
-        self.model = YOLO("assets/bestV8.pt")  # Open the model
+        if useYoloV8:
+            self.model = YOLO("assets/bestV8.pt")  # Open the model
+        else:
+            # todo
+            pass
         self.estimator = PositionEstimator()
         self.translator = CameraToRobotTranslator()
         self.colors = [
