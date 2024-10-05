@@ -86,10 +86,9 @@ class CameraIdOffsets(Enum):
         return self.value
 
 
-
 class MapConstants(Enum):
-    GameObjectAcceleration = 0 # probably?
-    RobotAcceleration = 1500 # cm/s this is probably inaccurate
+    GameObjectAcceleration = 0  # probably?
+    RobotAcceleration = 1500  # cm/s this is probably inaccurate
     fieldWidth = 1653  # 54' 3" to cm
     fieldHeight = 800  # 26' 3" to cm
     res = 5  # cm
@@ -98,7 +97,8 @@ class MapConstants(Enum):
     gameObjectWidth = 35  # cm
     gameObjectHeight = 35  # cm circular note
 
-    mapObstacles = [] # todo define these
+    mapObstacles = []  # todo define these
+
 
 class LabelingConstants(Enum):
     MAXFRAMESNOTSEEN = 15
@@ -106,3 +106,28 @@ class LabelingConstants(Enum):
 
 # todo consolidate camera info into one central enum
 # class CAMERA(Enum):
+
+
+def getCameraIfOffset(cameraName):
+    for cameraIdOffset in CameraIdOffsets:
+        if cameraIdOffset.name == cameraName:
+            return cameraIdOffset
+
+
+def getCameraExtrinsic(cameraName):
+    for cameraExtrinsic in CameraExtrinsics:
+        if cameraExtrinsic.name == cameraName:
+            return cameraExtrinsic
+
+
+def getCameraName(cameraId):
+    if cameraId == 0:
+        return ...
+
+
+def getCameraValues(cameraName):
+    return (
+        CameraIntrinsics.OV9782COLOR,
+        getCameraExtrinsic(cameraName),
+        getCameraIfOffset(cameraName),
+    )

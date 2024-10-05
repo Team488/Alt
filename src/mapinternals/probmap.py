@@ -3,6 +3,7 @@ import cv2
 import math
 from decimal import Decimal, ROUND_HALF_UP, ROUND_HALF_DOWN, ROUND_FLOOR, ROUND_CEILING
 from tools.Constants import MapConstants
+
 largeValue = 10000000000000000000  # for cv2 thresholding
 
 # This whole thing is axis aligned for speed, but that may not work great
@@ -94,20 +95,24 @@ class ProbMap:
         obj_y = tmpX
 
         if x > self.size_x:
-            print("Error X too large! clipping")
-            x = self.size_x
+            # print("Error X too large! clipping")
+            # x = self.size_x
+            return
 
         if x < 0:
-            print("Error X too small! clipping")
-            x = 0
+            # print("Error X too small! clipping")
+            # x = 0
+            return
 
         if y > self.size_y:
-            print("Error y too large! clipping")
-            y = self.size_y
+            # print("Error y too large! clipping")
+            # y = self.size_y
+            return
 
         if y < 0:
-            print("Error y too small! clipping")
-            y = 0
+            # print("Error y too small! clipping")
+            # y = 0
+            return
 
         # # for now we will just print a simple warning if the center of the blob is inside an obstacle region
         # # proper way is to adjust the gaussian based on the obstacle. Not sure exactly how as of right now
