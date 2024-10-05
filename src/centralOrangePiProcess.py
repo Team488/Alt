@@ -23,7 +23,7 @@ def getCameraName():
 
 def startDemo():
     xclient = XTablesClient()
-    cap = cv2.VideoCapture(0)
+    cap = cv2.VideoCapture("assets/video12qual25clipped.mp4")
     name = getCameraName().name
 
     while cap.isOpened():
@@ -33,5 +33,9 @@ def startDemo():
             dataPacket = DataPacket(timeStamp, name, frame)
             xclient.executePutString(name, dataPacket)
 
+        time.sleep(0.05)  # remove this
     cap.release()
     cv2.destroyAllWindows()
+
+
+startDemo()
