@@ -22,10 +22,10 @@ def getCameraName():
 
 
 def startDemo():
+    name = getCameraName().name
+    print("Starting process, device name:",name)
     xclient = XTablesClient()
     cap = cv2.VideoCapture("assets/video12qual25clipped.mp4")
-    name = getCameraName().name
-
     while cap.isOpened():
         ret, frame = cap.read()
         if ret:
