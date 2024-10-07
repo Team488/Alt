@@ -2,7 +2,7 @@ import os
 import cv2
 import numpy as np
 from rknnlite.api import RKNNLite
-import utils
+from inference import utils
 
 
 class rknnInferencer:
@@ -37,7 +37,7 @@ class rknnInferencer:
         if ret != 0:
             print("Failed to initialize RKNN runtime")
             return None
-
+        return rknn
     # Run inference using the camera feed
     # Returns list[boxes,confidences,classIds]
     def getResults(
