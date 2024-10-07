@@ -98,7 +98,7 @@ def getRawIdOffset(idx):
             )  # since we are iterating reversed, we need to invert
 
 
-def adjustBoxes(outputs, anchors, minConf=0.7):
+def adjustBoxes(outputs, anchors, minConf=0.7, doBoxAdjustment=True, printDebug=False):
     predictions = outputs[0]  # Model's predictions = 1 x 25200 x 7
     adjusted_boxes = []
     for idx in range(predictions.shape[0]):
@@ -109,26 +109,35 @@ def adjustBoxes(outputs, anchors, minConf=0.7):
             continue
 
         stride, anchor_idx, scale_idx, gridX, gridY = processFlattenedIndex(idx)
-        # print(f"Stride {stride} anchor_idx {anchor_idx} scale_idX {scale_idx} gridX {gridX} gridY {gridY}")
+        if printDebug:
+            print(
+                f"Stride {stride} anchor_idx {anchor_idx} scale_idX {scale_idx} gridX {gridX} gridY {gridY}"
+            )
         # Get corresponding anchor for the scale and anchor
         anchor_width, anchor_height = anchors[scale_idx][anchor_idx]
 
-        # # format [x offset off grid, y offset off grid, width deviation, height deviation, objectness score, class_scores...]
-
-        # xoff, yoff, widthDev, heightDev = pred[:4]
-        x, y, width, height = pred[:4]
         class_scores = pred[5:]  # The rest are class probabilities
-        # print(f"Widthdev {widthDev} Heightdev {heightDev} xoff {xoff} yoff {yoff} objectness {objectnessScore}")
 
-        # x = (gridX+xoff)*stride # adjust by stride and grid index
-        # y = (gridY+yoff)*stride # adjust by stride and grid index
-        # width = anchor_width * np.exp(widthDev)
-        # height = anchor_height * np.exp(heightDev)
         classId = int(np.argmax(class_scores))  # Get the most likely class
         confidence = (
             pred[5 + classId] * objectnessScore
         )  # not sure where objectness score comes in. Maybe just for filtering?
-        # print(f"X {x} Y {y} w {width} h{height} classid {classId}")
-
+        x, y, width, height = 0
+        if doBoxAdjustment:
+            # # format [x offset off grid, y offset off grid, width deviation, height deviation, objectness score, class_scores...]
+            xoff, yoff, widthDev, heightDev = pred[:4]
+            if printDebug:
+                print(
+                    f"Widthdev {widthDev} Heightdev {heightDev} xoff {xoff} yoff {yoff} objectness {objectnessScore}"
+                )
+            x = (gridX + xoff) * stride  # adjust by stride and grid index
+            y = (gridY + yoff) * stride  # adjust by stride and grid index
+            width = anchor_width * np.exp(widthDev)
+            height = anchor_height * np.exp(heightDev)
+        else:
+            x, y, width, height = pred[:4]
+        if printDebug:
+            print(f"X {x} Y {y} w {width} h{height} classid {classId}")
         adjusted_boxes.append([x, y, width, height, confidence, classId])
+
     return adjusted_boxes

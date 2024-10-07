@@ -2,6 +2,7 @@ import os
 import cv2
 import numpy as np
 from rknnlite.api import RKNNLite
+import utils
 
 
 class rknnInferencer:
@@ -17,6 +18,7 @@ class rknnInferencer:
 
         # load model
         self.model = self.load_rknn_model(model_path, target)
+        self.anchors = utils.loadAnchors("assets/bestV5Anchors.txt")
 
     # Initialize the RKNN model
     def load_rknn_model(self, model_path, target):
@@ -30,7 +32,7 @@ class rknnInferencer:
             return None
 
         # Initialize runtime environment
-        ret = rknn.init_runtime(target)  # Replace with your platform if different
+        ret = rknn.init_runtime()  # Replace with your platform if different
         if ret != 0:
             print("Failed to initialize RKNN runtime")
             return None
@@ -38,30 +40,27 @@ class rknnInferencer:
         print("RKNN model loaded successfully.")
         return rknn
 
-    # Post-processing for YOLOv5 model (customize as needed)
-    def post_process(self, outputs, img_shape):
-        results = []
-        boxes = []
-        confidences = []
-        class_ids = []
-        # Process outputs from the RKNN model (add decoding logic here)
-        return results
-
     # Run inference using the camera feed
     # Returns list[boxes,confidences,classIds]
     def getResults(
-        self, frame
+        self, frame, conf_threshold=0.7
     ) -> list[tuple[tuple[int, int], tuple[int, int]], float, int]:
         # Preprocess the frame
-        input_img = cv2.resize(frame, (640, 640))
+        input_img = utils.letterbox_image(frame)
         input_img = cv2.cvtColor(input_img, cv2.COLOR_BGR2RGB)
         input_img = input_img / 255.0  # Normalize to [0, 1]
         input_img = np.expand_dims(input_img, axis=0).astype(np.float32)
 
         # Run inference
         outputs = self.model.inference(inputs=[input_img])
+        outputs = outputs[0]
         if outputs is None:
             print("Error: Inference failed.")
             return None
 
-        return self.post_process(outputs, frame.shape)
+        adjusted = utils.adjustBoxes(outputs, self.anchors, conf_threshold)
+        nmsResults = utils.non_max_suppression(adjusted, conf_threshold)
+
+        print(nmsResults)
+
+        return nmsResults

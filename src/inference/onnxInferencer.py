@@ -32,7 +32,9 @@ class onnxInferencer:
 
         predictions = self.session.run([output_name], {input_name: input_frame})[0]
         # todo make this work
-        adjusted = utils.adjustBoxes(predictions, self.anchors, conf_threshold)
+        adjusted = utils.adjustBoxes(
+            predictions, self.anchors, conf_threshold, doBoxAdjustment=False
+        )  # output is odd?
         nmsResults = utils.non_max_suppression(adjusted, conf_threshold)
 
         # do stuff here
