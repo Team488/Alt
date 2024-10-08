@@ -29,11 +29,14 @@ def startDemo():
     while cap.isOpened():
         ret, frame = cap.read()
         if ret:
+            print(f"sending to key{name}")
             timeStamp = time.time()
             dataPacket = DataPacket(timeStamp, name, frame)
-            xclient.executePutString(name, dataPacket)
 
-        time.sleep(0.05)  # remove this
+            xclient.executePutString(name,dataPacket.encode())
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+    xclient.shutdown()
     cap.release()
     cv2.destroyAllWindows()
 

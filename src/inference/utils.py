@@ -102,12 +102,11 @@ def adjustBoxes(outputs, anchors, minConf=0.7, doBoxAdjustment=True, printDebug=
     predictions = outputs[0]  # Model's predictions = 1 x 25200 x 7
     adjusted_boxes = []
     for idx in range(predictions.shape[0]):
-
         pred = predictions[idx]
-        objectnessScore = pred[4]
+        objectnessScore = float(pred[4])
         if objectnessScore < minConf:
             continue
-
+            
         stride, anchor_idx, scale_idx, gridX, gridY = processFlattenedIndex(idx)
         if printDebug:
             print(

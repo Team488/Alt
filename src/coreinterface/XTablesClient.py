@@ -3,8 +3,15 @@ import logging
 import threading
 import time
 import uuid
+import json
 from zeroconf import Zeroconf, ServiceBrowser, ServiceListener
-import coreinterface.Utilities as Utilities
+from coreinterface import Utilities
+from enum import Enum
+
+
+class Status(Enum):
+    FAIL = "FAIL"
+    OK = "OK"
 
 
 class XTablesClient:
@@ -15,41 +22,45 @@ class XTablesClient:
         self.server_port = None
         self.client_socket = None
         self.service_found = threading.Event()
+        logging.basicConfig(level=logging.DEBUG)
         self.logger = logging.getLogger(__name__)
+        
         self.zeroconf = Zeroconf()
         self.listener = XTablesServiceListener(self)
-        self.browser = ServiceBrowser(
-            self.zeroconf, "_xtables._tcp.local.", self.listener
-        )
+        self.browser = ServiceBrowser(self.zeroconf, "_xtables._tcp.local.", self.listener)
         self.clientMessageListener = None
         self.shutdown_event = threading.Event()
         self.lock = threading.Lock()
         self.isConnected = False  # Variable to track connection status
         self.response_map = {}  # Map to track UUID responses
-        self.response_lock = (
-            threading.Lock()
-        )  # Lock for thread-safe access to response_map
+        self.response_lock = threading.Lock()  # Lock for thread-safe access to response_map
         self.discover_service()
 
     def discover_service(self):
-        if self.name is None:
-            self.logger.info(
-                "Listening for first instance of XTABLES service on port 5353..."
-            )
-        else:
-            self.logger.info(
-                f"Listening for '{self.name}' XTABLES services on port 5353..."
-            )
+        while not self.shutdown_event.is_set():
+            try:
+                if self.name is None:
+                    self.logger.info("Listening for first instance of XTABLES service on port 5353...")
+                else:
+                    self.logger.info(f"Listening for '{self.name}' XTABLES services on port 5353...")
 
-        self.service_found.wait()
-        self.logger.info("Service found, proceeding to close mDNS services...")
-        self.zeroconf.close()
-        self.logger.info("mDNS service closed.")
+                # Wait for the service to be found with a timeout
+                service_found = self.service_found.wait(timeout=5)  # Wait for 5 seconds
 
-        if self.server_ip is None or self.server_port is None:
-            raise RuntimeError("The service address or port could not be found.")
-        else:
-            self.initialize_client(self.server_ip, self.server_port)
+                if service_found:
+                    self.logger.info("Service found, proceeding to close mDNS services...")
+                    self.zeroconf.close()
+                    self.logger.info("mDNS service closed.")
+                    self.initialize_client(self.server_ip, self.server_port)
+                    break
+                else:
+                    self.logger.info("Service not found, retrying discovery...")
+                    # Reinitialize the service browser to keep trying
+                    self.zeroconf = Zeroconf()
+                    self.browser = ServiceBrowser(self.zeroconf, "_xtables._tcp.local.", self.listener)
+            except Exception as e:
+                self.logger.error(f"Error during service discovery: {e}. Retrying...")
+                time.sleep(1)
 
     def initialize_client(self, server_ip, server_port):
         self.close_socket()
@@ -59,15 +70,11 @@ class XTablesClient:
             while not self.shutdown_event.is_set():
                 try:
                     self.logger.info(f"Connecting to server {server_ip}:{server_port}")
-                    self.client_socket = socket.socket(
-                        socket.AF_INET, socket.SOCK_STREAM
-                    )
+                    self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                     self.client_socket.connect((server_ip, 1735))
                     self.logger.info(f"Connected to server {server_ip}:{server_port}")
-                    self.out = self.client_socket.makefile("w")
-                    self.isConnected = (
-                        True  # Set to True when connection is established
-                    )
+                    self.out = self.client_socket.makefile('w')
+                    self.isConnected = True  # Set to True when connection is established
 
                     # Stop the old message listener if it exists
                     if self.clientMessageListener:
@@ -101,8 +108,83 @@ class XTablesClient:
             Utilities.validate_key(key, True)
             self.send_data(f'IGNORED:PUT {key} "{value}"')
 
-    def getString(self, key, TIMEOUT=3000):
-        if not isinstance(key, str):
+    def executePutInteger(self, key, value):
+        if isinstance(value, int) and isinstance(key, str):
+            Utilities.validate_key(key, True)
+            self.send_data(f"IGNORED:PUT {key} {value}")
+
+    def deleteTable(self, key=None):
+        try:
+            if key is not None and isinstance(key, str):
+                Utilities.validate_key(key, True)
+                response = self.getData("DELETE", key)
+                return Status[response.upper()] if response else Status.FAIL
+            else:
+                response = self.getData("DELETE")
+                return Status[response.upper()] if response else Status.FAIL
+        except (KeyError, Exception):
+            return Status.FAIL
+
+    def rebootServer(self):
+        try:
+
+            response = self.getData("REBOOT_SERVER")
+            return Status[response.upper()] if response else Status.FAIL
+        except (KeyError, Exception):
+            return Status.FAIL
+
+    def updateKey(self, oldKey, newKey):
+        try:
+            if isinstance(oldKey, str) and isinstance(newKey, str):
+                Utilities.validate_key(oldKey, True)
+                Utilities.validate_key(newKey, True)
+                response = self.getData("UPDATE_KEY", f"{oldKey} {newKey}")
+                return Status[response.upper()] if response else Status.FAIL
+        except (KeyError, Exception):
+            return Status.FAIL
+
+    def executePutFloat(self, key, value):
+        if isinstance(value, float) and isinstance(key, str):
+            Utilities.validate_key(key, True)
+            self.send_data(f"IGNORED:PUT {key} {value}")
+        else:
+            raise TypeError("Key must be a string and value must be a float")
+
+    def executePutArrayOrTuple(self, key, value):
+        if isinstance(key, str) and isinstance(value, (list, tuple)):
+            Utilities.validate_key(key, True)
+            # Only convert to a list if it's a tuple, otherwise keep it as is
+            formatted_values = str(value if isinstance(value, list) else list(value))
+            self.send_data(f"IGNORED:PUT {key} {formatted_values}")
+        else:
+            raise TypeError("Key must be a string and value must be a list or tuple")
+
+    def executePutClass(self, key, obj):
+        """
+        Serializes the given class object into a JSON string and sends it to the server.
+
+        :param key: The key under which the class data will be stored.
+        :param obj: The class object to be serialized and sent.
+        """
+        if isinstance(key, str) and obj is not None:
+            # Convert the class object to a JSON string
+            json_string = json.dumps(obj, default=lambda o: o.__dict__)
+
+            Utilities.validate_key(key, True)
+            self.send_data(f'IGNORED:PUT {key} {json_string}')
+        else:
+            self.logger.error("Invalid key or object provided.")
+
+    def getData(self, command, value=None, TIMEOUT=3000):
+        """
+        Generalized method to send a request to the server and retrieve the response.
+
+        :param command: The type of command (e.g., GET or GET_TABLES).
+        :param value: The optional key for the command.
+        :param TIMEOUT: Timeout in milliseconds to wait for the response (default is 3000).
+        :return: The response value or None if the request times out.
+        """
+        if value is not None and not isinstance(value, str):
             raise ValueError("Key must be a string.")
 
         # Generate a unique UUID for the request
@@ -111,46 +193,214 @@ class XTablesClient:
 
         # Register the request in the response map
         with self.response_lock:
-            self.response_map[request_id] = {"event": response_event, "value": None}
+            self.response_map[request_id] = {
+                'event': response_event,
+                'value': None
+            }
 
         # Send the GET request to the server
-        self.send_data(f"{request_id}:GET {key}")
+        if value is None:
+            self.send_data(f"{request_id}:{command}")
+        else:
+            self.send_data(f"{request_id}:{command} {value}")
 
         # Wait for the response with the specified timeout
         if response_event.wait(TIMEOUT / 1000):  # Convert milliseconds to seconds
             with self.response_lock:
-                value = self.response_map.pop(request_id)["value"]
-            return parse_string(value)
+                value = self.response_map.pop(request_id)['value']
+            return value
         else:
             # Remove the request if it timed out
             with self.response_lock:
                 self.response_map.pop(request_id, None)
-            self.logger.error(f"Timeout waiting for response for key: {key}")
+            self.logger.error(f"Timeout waiting for response for command: {command}, key: {value}")
             return None
 
-    def getKeyset(self, TIMEOUT=3000):
+    def getString(self, key, TIMEOUT=3000):
+        """
+        Retrieves a string value for the given key using the generalized getData method.
 
-        # Generate a unique UUID for the request
-        request_id = str(uuid.uuid4())
-        response_event = threading.Event()
+        :param key: The key to retrieve.
+        :param TIMEOUT: Timeout in milliseconds to wait for the response (default is 3000).
+        :return: The string value if successful, or None if the request times out or fails.
+        """
+        value = self.getData("GET", key, TIMEOUT)
+        if value:
+            # Parse the result to remove the request ID and return the actual string
+            parsed_value = " ".join(value.split(" ")[1:])
+            return parse_string(parsed_value)
+        return None
 
-        # Register the request in the response map
-        with self.response_lock:
-            self.response_map[request_id] = {"event": response_event, "value": None}
+    def getTables(self, key=None, TIMEOUT=3000):
+        """
+        Retrieves the list of tables using the generalized getData method.
 
-        # Send the GET request to the server
-        self.send_data(f"{request_id}:GET_TABLES")
+        :param key: The optional key for the specific table.
+        :param TIMEOUT: Timeout in milliseconds to wait for the response (default is 3000).
+        :return: The list of tables if successful, or an empty list if the request fails or times out.
+        """
+        value = self.getData("GET_TABLES", key, TIMEOUT)
+        if value:
+            try:
+                # Attempt to parse the response value as a JSON array
+                array_value = json.loads(parse_string(value))
+                if isinstance(array_value, list):
+                    return array_value
+                else:
+                    self.logger.error(f"The GET_TABLES request returned an invalid data structure!")
+                    return []
+            except (ValueError, json.JSONDecodeError) as e:
+                self.logger.error(f"Failed to parse the GET_TABLES response: {e}")
+                return []
+        return []
 
-        # Wait for the response with the specified timeout
-        if response_event.wait(TIMEOUT / 1000):  # Convert milliseconds to seconds
-            with self.response_lock:
-                value = self.response_map.pop(request_id)["value"]
-            return value[1:-1].split(",")
+    def getArray(self, key, TIMEOUT=3000):
+        """
+        Retrieves an array (list) value from the server for the given key by fetching it as a string
+        and then converting it to a Python list.
+
+        :param key: The key for which to get the array value.
+        :param TIMEOUT: Timeout in milliseconds to wait for the response (default is 3000).
+        :return: The array as a Python list if successful, or None if the key is not found or the conversion fails.
+        """
+        # Use the existing getString method to fetch the value as a string
+        string_value = self.getString(key, TIMEOUT)
+
+        if string_value is not None:
+            try:
+                # Attempt to convert the string value to a list using json.loads
+                array_value = json.loads(string_value)
+
+                if isinstance(array_value, list):
+                    return array_value
+                else:
+                    self.logger.error(f"Value for key '{key}' is not a valid array: {string_value}")
+                    return None
+            except (ValueError, json.JSONDecodeError) as e:
+                self.logger.error(f"Failed to parse array for key '{key}': {e}")
+                return None
         else:
-            # Remove the request if it timed out
-            with self.response_lock:
-                self.response_map.pop(request_id, None)
-            self.logger.error(f"Timeout waiting for response for getkeyset")
+            return None
+
+    def getFloat(self, key, TIMEOUT=3000):
+        """
+        Retrieves a float value from the server for the given key by fetching it as a string
+        and then converting it to a float.
+
+        :param key: The key for which to get the float value.
+        :param TIMEOUT: Timeout in milliseconds to wait for the response (default is 3000).
+        :return: The float value if successful, or None if the key is not found or the conversion fails.
+        """
+        # Use the existing getString method to fetch the value as a string
+        string_value = self.getString(key, TIMEOUT)
+
+        if string_value is not None:
+            try:
+                # Attempt to convert the string value to a float
+                return float(string_value)
+            except ValueError:
+                self.logger.error(f"Value for key '{key}' is not a valid float: {string_value}")
+                return None
+        else:
+            return None
+
+    def getClass(self, key, class_type, TIMEOUT=3000):
+        """
+        Retrieves a class object from the server for the given key by first fetching it as a JSON string
+        and then converting it to an instance of the specified class type.
+
+        :param key: The key for which to get the class object.
+        :param class_type: The class type to deserialize the JSON string into.
+        :param TIMEOUT: Timeout in milliseconds to wait for the response (default is 3000).
+        :return: An instance of the class if successful, or None if the key is not found or an error occurs.
+        """
+        # Use the existing getString method to fetch the value as a string
+        json_string = self.getString(key, TIMEOUT)
+
+        if json_string is not None:
+            try:
+                # Attempt to parse the JSON string and convert it to an instance of the class
+
+                json_dict = json.loads(json_string.replace('\\"', '"'))  # Parse the JSON string into a dictionary
+                return class_type(**json_dict)  # Create an instance of the class using the dictionary
+            except (ValueError, TypeError) as e:
+                self.logger.error(f"Error parsing value for key '{key}' into class {class_type.__name__}: {e}")
+                return None
+        else:
+            return None
+
+    def getInteger(self, key, TIMEOUT=3000):
+        """
+        Retrieves an integer value from the server for the given key by first fetching it as a string
+        and then converting it to an integer.
+
+        :param key: The key for which to get the integer value.
+        :param TIMEOUT: Timeout in milliseconds to wait for the response (default is 3000).
+        :return: The integer value if successful, or None if the key is not found or the conversion fails.
+        """
+        # Use the existing getString method to fetch the value as a string
+        string_value = self.getString(key, TIMEOUT)
+
+        if string_value is not None:
+            try:
+                # Attempt to convert the string value to an integer
+                return int(string_value)
+            except ValueError:
+                self.logger.error(f"Value for key '{key}' is not a valid integer: {string_value}")
+                return None
+        else:
+            return None
+
+    def getValue(self, key, TIMEOUT=3000):
+        """
+        Retrieves a value from the server for the given key and returns it in its appropriate Python type.
+        The method automatically handles arrays (lists), dictionaries, booleans, integers, floats, and strings.
+
+        :param key: The key for which to get the value.
+        :param TIMEOUT: Timeout in milliseconds to wait for the response (default is 3000).
+        :return: The value in its appropriate Python type if successful, or None if the key is not found or the conversion fails.
+        """
+        # Use the existing getString method to fetch the value as a string
+        string_value = self.getString(key, TIMEOUT)
+
+        if string_value is not None:
+            try:
+                # Try to load the value as a JSON object first (for lists, dicts, etc.)
+                value = json.loads(string_value)
+
+                # Return the value directly if it is a known Python type (list, dict, etc.)
+                if isinstance(value, (list, dict, int, float, bool, tuple)):
+                    return value
+                else:
+                    self.logger.error(f"Value for key '{key}' is of an unsupported type: {type(value).__name__}")
+                    return None
+            except (ValueError, json.JSONDecodeError):
+                # If JSON loading fails, it's likely a simple string
+                return string_value
+        else:
+            return None
+
+    def getBoolean(self, key, TIMEOUT=3000):
+        """
+        Retrieves a boolean value from the server for the given key by first fetching it as a string
+        and then converting it to a boolean.
+
+        :param key: The key for which to get the boolean value.
+        :param TIMEOUT: Timeout in milliseconds to wait for the response (default is 3000).
+        :return: The boolean value if successful, or None if the key is not found or the conversion fails.
+        """
+        string_value = self.getString(key, TIMEOUT)
+
+        if string_value is not None:
+            string_value = string_value.strip().lower()
+            if string_value in ['true', '1']:
+                return True
+            elif string_value in ['false', '0']:
+                return False
+            else:
+                self.logger.error(f"Value for key '{key}' is not a valid boolean: {string_value}")
+                return None
+        else:
             return None
 
     def close_socket(self):
@@ -186,43 +436,39 @@ class XTablesServiceListener(ServiceListener):
     def __init__(self, client):
         self.client = client
         self.logger = logging.getLogger(__name__)
+        self.service_resolved = False  # Flag to avoid multiple resolutions
 
     def add_service(self, zeroconf, service_type, name):
-        self.logger.info(f"Service found: {name}")
-        info = zeroconf.get_service_info(service_type, name)
-        if info:
-            self.resolve_service(info)
+        if not self.service_resolved:
+            self.logger.info(f"Service found: {name}")
+            info = zeroconf.get_service_info(service_type, name)
+            if info:
+                self.resolve_service(info)
 
     def resolve_service(self, info):
-        service_address = socket.inet_ntoa(info.addresses[0])
-        port = info.port
-        port_str = info.properties.get(b"port")
+        if not self.service_resolved:  # Only resolve if not already resolved
+            service_address = socket.inet_ntoa(info.addresses[0])
+            port = info.port
+            port_str = info.properties.get(b'port')
 
-        if port_str:
-            try:
-                port = int(port_str.decode("utf-8"))
-            except ValueError:
-                self.logger.warning(
-                    "Invalid port format from mDNS attribute. Waiting for next resolve..."
-                )
+            if port_str:
+                try:
+                    port = int(port_str.decode('utf-8'))
+                except ValueError:
+                    self.logger.warning("Invalid port format from mDNS attribute. Waiting for next resolve...")
 
-        if self.client.name and self.client.name.lower() == "localhost":
-            try:
-                service_address = socket.gethostbyname(socket.gethostname())
-            except Exception as e:
-                self.logger.fatal(f"Could not find localhost address: {e}")
+            if self.client.name and self.client.name.lower() == "localhost":
+                try:
+                    service_address = socket.gethostbyname(socket.gethostname())
+                except Exception as e:
+                    self.logger.fatal(f"Could not find localhost address: {e}")
 
-        if (
-            port != -1
-            and service_address
-            and (self.client.name in [None, "localhost", info.name, service_address])
-        ):
-            self.logger.info(
-                f"Service resolved: {info.name} at {service_address}:{port}"
-            )
-            self.client.server_ip = service_address
-            self.client.server_port = port
-            self.client.service_found.set()
+            if port != -1 and service_address and (self.client.name in [None, "localhost", info.name, service_address]):
+                self.logger.info(f"Service resolved: {info.name} at {service_address}:{port}")
+                self.client.server_ip = service_address
+                self.client.server_port = port
+                self.client.service_found.set()
+                self.service_resolved = True
 
 
 class ClientMessageListener(threading.Thread):
@@ -230,7 +476,7 @@ class ClientMessageListener(threading.Thread):
         super().__init__()
         self.client = client
         self.client_socket = client.client_socket
-        self.in_ = self.client_socket.makefile("r")
+        self.in_ = self.client_socket.makefile('r')
         self.logger = logging.getLogger(__name__)
         self.stop_event = threading.Event()
 
@@ -242,9 +488,7 @@ class ClientMessageListener(threading.Thread):
 
                     self.process_message(message)
                 else:
-                    self.logger.warning(
-                        "Received an empty message, attempting reconnection..."
-                    )
+                    self.logger.warning("Received an empty message, attempting reconnection...")
                     self.client.isConnected = False
                     self.stop()
                     self.client.handle_reconnect()
@@ -263,14 +507,13 @@ class ClientMessageListener(threading.Thread):
             request_id = parts[0].split(":")[0].strip()
 
             # Extract the value, which is everything after the first index
-            response_value = " ".join(parts[2:]).strip()
-
+            response_value = " ".join(parts[1:]).strip()
             # Check if the request_id matches any pending requests
             with self.client.response_lock:
                 if request_id in self.client.response_map:
                     # Set the extracted value to the response map
-                    self.client.response_map[request_id]["value"] = response_value
-                    self.client.response_map[request_id]["event"].set()
+                    self.client.response_map[request_id]['value'] = response_value
+                    self.client.response_map[request_id]['event'].set()
         except Exception as e:
             self.logger.error(f"Invalid message format: {message}. Error: {e}")
 
@@ -287,10 +530,8 @@ def parse_string(s):
         s = s[1:-1]
     return s
 
-
-if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
-    client = XTablesClient()
-    while True:
-        client.getString("SmartDashboard.test")
-        print(len(client.response_map))
+# if __name__ == "__main__":
+#     logging.basicConfig(level=logging.INFO)
+#     client = XTablesClient()
+#
+#     print(client.updateKey("neawdaww", "neawadaww"))

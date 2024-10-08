@@ -41,7 +41,7 @@ class rknnInferencer:
     # Run inference using the camera feed
     # Returns list[boxes,confidences,classIds]
     def getResults(
-        self, frame, conf_threshold=0.7
+        self, frame, conf_threshold=0.4
     ) -> list[tuple[tuple[int, int], tuple[int, int]], float, int]:
         # Preprocess the frame
         input_img = utils.letterbox_image(frame)
@@ -52,12 +52,13 @@ class rknnInferencer:
         # Run inference
         outputs = self.model.inference(inputs=[input_img])
         outputs = outputs[0]
+        print(outputs.shape)
         if outputs is None:
             print("Error: Inference failed.")
             return None
 
-        adjusted = utils.adjustBoxes(outputs, self.anchors, conf_threshold)
-        nmsResults = utils.non_max_suppression(adjusted, conf_threshold)
+        adjusted = utils.adjustBoxes(outputs, self.anchors, conf_threshold,printDebug = True)
+        nmsResults = utils.non_max_suppression(adjusted,None)
 
         print(nmsResults)
 
