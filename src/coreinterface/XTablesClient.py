@@ -16,21 +16,16 @@ class Status(Enum):
 
 
 class XTablesClient:
-    def __init__(self, name=None):
+    def __init__(self, name=None, server_ip=None, server_port=None):
         self.out = None
         self.subscriptions = {}
-        self.name = name
-        self.server_ip = None
-        self.server_port = None
-        self.client_socket = None
-        self.service_found = threading.Event()
+
+        # set debug
         logging.basicConfig(level=logging.DEBUG)
+
         self.logger = logging.getLogger(__name__)
-        self.zeroconf = Zeroconf()
-        self.listener = XTablesServiceListener(self)
-        self.browser = ServiceBrowser(
-            self.zeroconf, "_xtables._tcp.local.", self.listener
-        )
+        self.name = name
+        self.service_found = threading.Event()
         self.clientMessageListener = None
         self.shutdown_event = threading.Event()
         self.lock = threading.Lock()
@@ -39,23 +34,24 @@ class XTablesClient:
         self.response_lock = (
             threading.Lock()
         )  # Lock for thread-safe access to response_map
-        self.discover_service()
 
-    def __init__(self, server_ip, server_port):
-        self.out = None
-        self.subscriptions = {}
-        self.logger = logging.getLogger(__name__)
-        self.server_ip = server_ip
-        self.server_port = server_port
-        self.client_socket = None
-        self.service_found = threading.Event()
-        self.clientMessageListener = None
-        self.shutdown_event = threading.Event()
-        self.lock = threading.Lock()
-        self.isConnected = False
-        self.response_map = {}
-        self.response_lock = threading.Lock()
-        self.initialize_client(server_ip, server_port)
+        if server_ip is None and server_port is None:
+            # use mdns to discover service
+            self.server_ip = None
+            self.server_port = None
+            self.zeroconf = Zeroconf()
+            self.listener = XTablesServiceListener(self)
+            self.browser = ServiceBrowser(
+                self.zeroconf, "_xtables._tcp.local.", self.listener
+            )
+
+            self.discover_service()
+        else:
+            # given ip and port, so connect manually
+            self.server_ip = server_ip
+            self.server_port = server_port
+            self.client_socket = None
+            self.initialize_client(server_ip, server_port)
 
     def discover_service(self):
         while not self.shutdown_event.is_set():
