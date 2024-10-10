@@ -2,7 +2,8 @@ import os
 import cv2
 import numpy as np
 from rknnlite.api import RKNNLite
-from inference import utils
+from inference import copiedutils
+from inference.coco_utils import COCO_test_helper
 
 
 class rknnInferencer:
@@ -19,7 +20,12 @@ class rknnInferencer:
 
         # load model
         self.model = self.load_rknn_model(model_path, target)
-        self.anchors = utils.loadAnchors("assets/bestV5Anchors.txt")
+        # load anchor
+        with open("assets/bestV5Anchors.txt", "r") as f:
+            values = [float(_v) for _v in f.readlines()]
+            self.anchors = np.array(values).reshape(3, -1, 2).tolist()
+
+        self.co_helper = COCO_test_helper(enable_letter_box=True)
 
     # Initialize the RKNN model
     def load_rknn_model(self, model_path, target):
@@ -45,22 +51,16 @@ class rknnInferencer:
         self, frame, conf_threshold=0.4
     ) -> list[tuple[tuple[int, int], tuple[int, int]], float, int]:
         # Preprocess the frame
-        input_img = utils.letterbox_image(frame)
-        input_img = cv2.cvtColor(input_img, cv2.COLOR_BGR2RGB)
-        input_img = input_img / 255.0  # Normalize to [0, 1]
-        input_img = np.expand_dims(input_img, axis=0).astype(np.float32)
+
+        img = self.co_helper.letter_box(
+            im=frame.copy(),
+            new_shape=(copiedutils.IMG_SIZE[1], copiedutils.IMG_SIZE[0]),
+            pad_color=(0, 0, 0),
+        )
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
         # Run inference
-        outputs = self.model.inference(inputs=[input_img])
-        outputs = outputs[0]
-        print(outputs.shape)
-        if outputs is None:
-            print("Error: Inference failed.")
-            return None
-
-        adjusted = utils.adjustBoxes(
-            outputs, self.anchors, conf_threshold, printDebug=True
-        )
-        nmsResults = utils.non_max_suppression(adjusted, None)
-
-        print(nmsResults)
+        outputs = self.model.inference(inputs=[img])
+        (boxes, classes, scores) = copiedutils.post_process(outputs, self.anchors)
+        realBoxes = self.co_helper.get_real_box(boxes)
+        return (realBoxes, classes, scores)

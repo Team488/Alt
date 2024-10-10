@@ -23,9 +23,8 @@ def getCameraName():
 
 
 def startDemo():
-    # name = getCameraName().name
+    name = getCameraName().name
     inf = rknnInferencer("assets/bestV5.rknn")
-    name = "test"
     print("Starting process, device name:", name)
     xclient = XTablesClient(server_ip="192.168.0.17", server_port=4880)
     cap = cv2.VideoCapture("assets/video12qual25clipped.mp4")
@@ -37,11 +36,10 @@ def startDemo():
 
             results = inf.getResults(frame)
             if results is not None:
-                for box, confidence, class_id in results:
+                (boxes, classes, scores) = results
+                for box, confidence, class_id in zip(boxes, classes, scores):
                     p1 = tuple(map(int, box[:2]))  # Convert to integer tuple
-                    p2 = tuple(
-                        map(int, np.add(box[:2], box[2:4]))
-                    )  # Convert to integer tuple
+                    p2 = tuple(map(int, box[2:4]))  # Convert to integer tuple
                     cv2.rectangle(frame, p1, p2, (0, 255, 0), 2)
 
             dataPacket = FramePacket.createPacket(timeStamp, name, frame)

@@ -107,10 +107,10 @@ def adjustBoxes(outputs, anchors, minConf=0.7, doBoxAdjustment=True, printDebug=
         class_scores = pred[5:]  # The rest are class probabilities
 
         classId = int(np.argmax(class_scores))  # Get the most likely class
-        confidence = pred[
-            5 + classId
-        ]  # not sure where objectness score comes in. Maybe just for filtering?
-        if confidence < minConf:
+        confidence = (
+            pred[5 + classId] * objectnessScore
+        )  # not sure where objectness score comes in. Maybe just for filtering?
+        if objectnessScore < minConf:
             continue
 
         stride, anchor_idx, scale_idx, gridX, gridY = processFlattenedIndex(idx)
@@ -121,7 +121,6 @@ def adjustBoxes(outputs, anchors, minConf=0.7, doBoxAdjustment=True, printDebug=
         # Get corresponding anchor for the scale and anchor
         anchor_width, anchor_height = anchors[scale_idx][anchor_idx]
 
-        x, y, width, height = 0
         if doBoxAdjustment:
             # # format [x offset off grid, y offset off grid, width deviation, height deviation, objectness score, class_scores...]
             xoff, yoff, widthDev, heightDev = pred[:4]
