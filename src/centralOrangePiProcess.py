@@ -6,6 +6,7 @@ import time
 from enum import Enum
 from coreinterface.XTablesClient import XTablesClient
 from coreinterface.FramePacket import FramePacket
+from inference.rknnInferencer import rknnInferencer
 
 
 class CameraName(Enum):
@@ -23,6 +24,7 @@ def getCameraName():
 
 def startDemo():
     # name = getCameraName().name
+    inf = rknnInferencer("assets/bestV5.rknn")
     name = "test"
     print("Starting process, device name:", name)
     xclient = XTablesClient(server_ip="192.168.0.17", server_port=4880)
@@ -32,6 +34,16 @@ def startDemo():
         if ret:
             print(f"sending to key{name}")
             timeStamp = time.time()
+
+            results = inf.getResults(frame)
+            if results is not None:
+                for box, confidence, class_id in results:
+                    p1 = tuple(map(int, box[:2]))  # Convert to integer tuple
+                    p2 = tuple(
+                        map(int, np.add(box[:2], box[2:4]))
+                    )  # Convert to integer tuple
+                    cv2.rectangle(frame, p1, p2, (0, 255, 0), 2)
+
             dataPacket = FramePacket.createPacket(timeStamp, name, frame)
             b64 = FramePacket.toBase64(dataPacket)
             xclient.executePutString(name, b64)

@@ -8,14 +8,14 @@ from inference import utils
 class rknnInferencer:
     def __init__(self, model_path, target="rk3588"):
         # export needed rknpu .so
-        #so_path = os.getcwd() + "/assets/"
+        # so_path = os.getcwd() + "/assets/"
 
-        #os.environ[
+        # os.environ[
         #    "LD_LIBRARY_PATH"
-        #] = f"{so_path}:{os.environ.get('LD_LIBRARY_PATH', '')}"
+        # ] = f"{so_path}:{os.environ.get('LD_LIBRARY_PATH', '')}"
 
         # Check if LD_LIBRARY_PATH is set correctly
-        #print("LD_LIBRARY_PATH:", os.environ["LD_LIBRARY_PATH"])
+        # print("LD_LIBRARY_PATH:", os.environ["LD_LIBRARY_PATH"])
 
         # load model
         self.model = self.load_rknn_model(model_path, target)
@@ -38,6 +38,7 @@ class rknnInferencer:
             print("Failed to initialize RKNN runtime")
             return None
         return rknn
+
     # Run inference using the camera feed
     # Returns list[boxes,confidences,classIds]
     def getResults(
@@ -57,9 +58,9 @@ class rknnInferencer:
             print("Error: Inference failed.")
             return None
 
-        adjusted = utils.adjustBoxes(outputs, self.anchors, conf_threshold,printDebug = True)
-        nmsResults = utils.non_max_suppression(adjusted,None)
+        adjusted = utils.adjustBoxes(
+            outputs, self.anchors, conf_threshold, printDebug=True
+        )
+        nmsResults = utils.non_max_suppression(adjusted, None)
 
         print(nmsResults)
-
-        return nmsResults

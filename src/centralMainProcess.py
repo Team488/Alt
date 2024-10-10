@@ -9,7 +9,7 @@ import time
 def getPackets(xtablesClient: XTablesClient):
     maxTimeout = 10000
     # keys = ("FRONTLEFT", "FRONTRIGHT", "REARLEFT", "REARRIGHT")
-    keys = ["test"]
+    keys = ["FRONTRIGHT"]
     packets = []
     for key in keys:
         print(f"Looking for key {key}")
