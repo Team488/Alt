@@ -3,16 +3,6 @@ import cv2
 import sys
 import argparse
 
-# add path
-realpath = os.path.abspath(__file__)
-_sep = os.path.sep
-realpath = realpath.split(_sep)
-sys.path.append(
-    os.path.join(
-        realpath[0] + _sep, *realpath[1 : realpath.index("rknn_model_zoo") + 1]
-    )
-)
-
 from inference.coco_utils import COCO_test_helper
 import numpy as np
 
