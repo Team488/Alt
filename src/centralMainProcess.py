@@ -9,20 +9,20 @@ import time
 def getPackets(xtablesClient: XTablesClient):
     maxTimeout = 10000
     # keys = ("FRONTLEFT", "FRONTRIGHT", "REARLEFT", "REARRIGHT")
-    keys = ["FRONTRIGHT"]
+    keys = ["test"]
     packets = []
     for key in keys:
         print(f"Looking for key {key}")
-        rawJson = xtablesClient.getString(key, TIMEOUT=maxTimeout)
-        if rawJson is not None and not rawJson.strip() == "null":
-            dataPacket = FramePacket.fromBase64(rawJson)
+        rawB64 = xtablesClient.getString(key, TIMEOUT=maxTimeout)
+        if rawB64 is not None and rawB64 and not rawB64.strip() == "null":
+            dataPacket = FramePacket.fromBase64(rawB64.replace("\\u003d", "="))
             packets.append(dataPacket)
 
     return packets
 
 
 def mainLoop():
-    client = XTablesClient()
+    client = XTablesClient(server_ip="192.168.0.17", server_port=4880)
     # frameProcessors = [LocalFrameProcessor(CameraIntrinsics.OV9782COLOR,CameraExtrinsics.)]
 
     # frameProcessor =

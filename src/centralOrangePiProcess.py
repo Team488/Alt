@@ -22,9 +22,10 @@ def getCameraName():
 
 
 def startDemo():
-    name = getCameraName().name
+    # name = getCameraName().name
+    name = "test"
     print("Starting process, device name:", name)
-    xclient = XTablesClient()
+    xclient = XTablesClient(server_ip="192.168.0.17", server_port=4880)
     cap = cv2.VideoCapture("assets/video12qual25clipped.mp4")
     while cap.isOpened():
         ret, frame = cap.read()
@@ -36,6 +37,8 @@ def startDemo():
             xclient.executePutString(name, b64)
         if cv2.waitKey(1) & 0xFF == ord("q"):
             break
+
+    print("demo finished")
     xclient.shutdown()
     cap.release()
     cv2.destroyAllWindows()
