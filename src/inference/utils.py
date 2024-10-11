@@ -79,10 +79,10 @@ def loadAnchors(anchorLocation):
 # Non-Maximum Suppression (NMS) with class handling
 def non_max_suppression(predictions, conf_threshold=0.6, iou_threshold=0.6):
     # Filter out predictions with low confidence
-    predictions = [x for x in predictions if x[4] >= conf_threshold]
+    predictions = [x for x in predictions if x[2] >= conf_threshold]
 
     # Sort predictions by confidence score
-    predictions.sort(key=lambda x: x[4], reverse=True)
+    predictions.sort(key=lambda x: x[2], reverse=True)
 
     boxes = []
     scores = []
@@ -95,8 +95,8 @@ def non_max_suppression(predictions, conf_threshold=0.6, iou_threshold=0.6):
 
         bbox = (x1, y1, w, h)
         boxes.append(bbox)  # The first 4 elements are the bounding box coordinates
-        scores.append(x[4])  # The 5th element is the confidence score
-        class_ids.append(x[5])  # The 6th element is the class ID
+        scores.append(x[2])  # The 5th element is the confidence score
+        class_ids.append(x[3])  # The 6th element is the class ID
 
     indices = cv2.dnn.NMSBoxesBatched(
         boxes, scores, class_ids, conf_threshold, iou_threshold
