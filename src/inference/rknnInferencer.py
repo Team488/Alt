@@ -61,7 +61,7 @@ class rknnInferencer:
         print(outputs[0].shape)
         # (boxes, classes, scores) = copiedutils.post_process(outputs, self.anchors)
         adjusted = utils.adjustBoxes(
-            outputs[0], img.shape, self.anchors, doBoxAdjustment=False, printDebug=False
+            outputs[0], self.anchors, img.shape, doBoxAdjustment=False, printDebug=False
         )
 
         nms = utils.non_max_suppression(adjusted)
