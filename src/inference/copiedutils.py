@@ -101,13 +101,24 @@ def box_process(position, anchors):
 
     return xyxy
 
-
 def post_process(input_data, anchors):
     boxes, scores, classes_conf = [], [], []
+    
+    input_data = input_data[0]  # assuming you want the first tensor
+    total_grids = 25200  # total size (80^2 + 40^2 + 20^2)
+    num_channels = 7  # corresponds to (x, y, w, h, obj_score, class_scores)
+    
+    # Split the input into three parts
+    split1 = input_data[:, :19200, :].reshape(3, num_channels, 80, 80)  # h=80, w=80
+    split2 = input_data[:, 19200:24000, :].reshape(3, num_channels, 40, 40)  # h=40, w=40
+    split3 = input_data[:, 24000:25200, :].reshape(3, num_channels, 20, 20)  # h=20, w=20
+
+    # Combine the tensors into a list
+    input_data = [split1, split2, split3]
     # 1*255*h*w -> 3*85*h*w
-    input_data = [
-        _in.reshape([len(anchors[0]), -1] + list(_in.shape[-2:])) for _in in input_data
-    ]
+    #input_data = [
+    #    _in.reshape([len(anchors[0]), -1] + list(_in.shape[-2:])) for _in in input_data
+    #]
     for i in range(len(input_data)):
         boxes.append(box_process(input_data[i][:, :4, :, :], anchors[i]))
         scores.append(input_data[i][:, 4:5, :, :])

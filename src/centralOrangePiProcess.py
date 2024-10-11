@@ -28,6 +28,7 @@ def startDemo():
     print("Starting process, device name:", name)
     xclient = XTablesClient(server_ip="192.168.0.17", server_port=4880)
     cap = cv2.VideoCapture("assets/video12qual25clipped.mp4")
+    cap.set(cv2.CAP_PROP_POS_FRAMES,1004)
     while cap.isOpened():
         ret, frame = cap.read()
         if ret:
@@ -36,12 +37,15 @@ def startDemo():
 
             results = inf.getResults(frame)
             if results is not None:
-                (boxes, classes, scores) = results
-                for box, confidence, class_id in zip(boxes, classes, scores):
+                print(len(results))
+                for (box, confidence, class_id) in results:
+                    print("box:",box)
                     p1 = tuple(map(int, box[:2]))  # Convert to integer tuple
                     p2 = tuple(map(int, box[2:4]))  # Convert to integer tuple
                     cv2.rectangle(frame, p1, p2, (0, 255, 0), 2)
-
+            else:
+                print("Empty result")
+            cv2.putText(frame,"HELLO",(10,10),1,1,(0,255,0))
             dataPacket = FramePacket.createPacket(timeStamp, name, frame)
             b64 = FramePacket.toBase64(dataPacket)
             xclient.executePutString(name, b64)

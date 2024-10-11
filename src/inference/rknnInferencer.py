@@ -3,6 +3,7 @@ import cv2
 import numpy as np
 from rknnlite.api import RKNNLite
 from inference import copiedutils
+from inference import utils
 from inference.coco_utils import COCO_test_helper
 
 
@@ -22,7 +23,7 @@ class rknnInferencer:
         self.model = self.load_rknn_model(model_path, target)
         # load anchor
         with open("assets/bestV5Anchors.txt", "r") as f:
-            values = [float(_v) for _v in f.readlines()]
+            values = [float(_v) for _v in f.readline().split(",")]
             self.anchors = np.array(values).reshape(3, -1, 2).tolist()
 
         self.co_helper = COCO_test_helper(enable_letter_box=True)
@@ -58,9 +59,14 @@ class rknnInferencer:
             pad_color=(0, 0, 0),
         )
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-
+        img = np.expand_dims(img, axis=0)  # Now shape is (1, channels, height, width)
         # Run inference
         outputs = self.model.inference(inputs=[img])
-        (boxes, classes, scores) = copiedutils.post_process(outputs, self.anchors)
-        realBoxes = self.co_helper.get_real_box(boxes)
-        return (realBoxes, classes, scores)
+        print(outputs[0].shape)
+        #(boxes, classes, scores) = copiedutils.post_process(outputs, self.anchors)
+        adjusted = utils.adjustBoxes(outputs[0],self.anchors,doBoxAdjustment=False,printDebug=False)
+        
+        nms = utils.non_max_suppression(adjusted)
+        if len(nms) > 0:
+            #realBoxes = self.co_helper.get_real_box(boxes)
+            return nms 

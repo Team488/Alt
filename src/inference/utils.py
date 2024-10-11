@@ -70,18 +70,22 @@ def non_max_suppression(predictions, conf_threshold=0.6, iou_threshold=0.6):
 
     indices = cv2.dnn.NMSBoxesBatched(
         boxes, scores, class_ids, conf_threshold, iou_threshold
+    
     )
+    print(indices)
     # Return selected boxes and class IDs
     return [(boxes[i], scores[i], class_ids[i]) for i in indices]
 
 
 def processFlattenedIndex(idx, imageSize=640):
     rawId, scale_idx = getRawIdOffset(idx)
+    print(rawId)
     stride = strides[scale_idx]
-
-    anchor_idx = rawId % 3
+    
     dimLen = imageSize // stride
-    gridLen = rawId // 3
+    scaleSize = dimLen*dimLen
+    anchor_idx = rawId // scaleSize
+    gridLen = rawId % scaleSize 
     gridX = gridLen % dimLen
     gridY = gridLen // dimLen
 
@@ -97,37 +101,34 @@ def getRawIdOffset(idx):
                 maxSizeLen - i,
             )  # since we are iterating reversed, we need to invert
 
+def sigmoid(x):
+    return 1/(1+np.exp(x))
 
-def adjustBoxes(outputs, anchors, minConf=0.7, doBoxAdjustment=True, printDebug=False):
+def adjustBoxes(outputs, anchors,imgX,imgY,modelX,modelY, minConf=0.7, doBoxAdjustment=True, printDebug=False):
     predictions = outputs[0]  # Model's predictions = 1 x 25200 x 7
     adjusted_boxes = []
     for idx in range(predictions.shape[0]):
         pred = predictions[idx]
         objectnessScore = float(pred[4])
-        class_scores = pred[5:]  # The rest are class probabilities
-
-        classId = int(np.argmax(class_scores))  # Get the most likely class
-        confidence = (
-            pred[5 + classId] * objectnessScore
-        )  # not sure where objectness score comes in. Maybe just for filtering?
         if objectnessScore < minConf:
             continue
 
         stride, anchor_idx, scale_idx, gridX, gridY = processFlattenedIndex(idx)
-        if printDebug:
-            print(
-                f"Stride {stride} anchor_idx {anchor_idx} scale_idX {scale_idx} gridX {gridX} gridY {gridY}"
-            )
         # Get corresponding anchor for the scale and anchor
         anchor_width, anchor_height = anchors[scale_idx][anchor_idx]
 
+        class_scores = pred[5:]  # The rest are class probabilities
+        classId = int(np.argmax(class_scores))  # Get the most likely class
+        confidence = float(pred[5 + classId])  # not sure where objectness score comes in. Maybe just for filtering?
+        if confidence < minConf:
+            continue
         if doBoxAdjustment:
             # # format [x offset off grid, y offset off grid, width deviation, height deviation, objectness score, class_scores...]
             xoff, yoff, widthDev, heightDev = pred[:4]
             if printDebug:
-                print(
-                    f"Widthdev {widthDev} Heightdev {heightDev} xoff {xoff} yoff {yoff} objectness {objectnessScore}"
-                )
+                print(f"Widthdev {widthDev} Heightdev {heightDev} xoff {xoff} yoff {yoff} objectness {objectnessScore}")
+            heightDev=sigmoid(heightDev)
+            widthDev=sigmoid(widthDev)
             x = (gridX + xoff) * stride  # adjust by stride and grid index
             y = (gridY + yoff) * stride  # adjust by stride and grid index
             width = anchor_width * np.exp(widthDev)
@@ -137,5 +138,4 @@ def adjustBoxes(outputs, anchors, minConf=0.7, doBoxAdjustment=True, printDebug=
         if printDebug:
             print(f"X {x} Y {y} w {width} h{height} classid {classId}")
         adjusted_boxes.append([x, y, width, height, confidence, classId])
-
     return adjusted_boxes
