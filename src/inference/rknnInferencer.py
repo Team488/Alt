@@ -53,20 +53,18 @@ class rknnInferencer:
     ) -> list[tuple[tuple[int, int], tuple[int, int]], float, int]:
         # Preprocess the frame
 
-        img = self.co_helper.letter_box(
-            im=frame.copy(),
-            new_shape=(copiedutils.IMG_SIZE[1], copiedutils.IMG_SIZE[0]),
-            pad_color=(0, 0, 0),
-        )
+        img = utils.letterbox_image(frame)
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         img = np.expand_dims(img, axis=0)  # Now shape is (1, channels, height, width)
         # Run inference
         outputs = self.model.inference(inputs=[img])
         print(outputs[0].shape)
-        #(boxes, classes, scores) = copiedutils.post_process(outputs, self.anchors)
-        adjusted = utils.adjustBoxes(outputs[0],self.anchors,doBoxAdjustment=False,printDebug=False)
-        
+        # (boxes, classes, scores) = copiedutils.post_process(outputs, self.anchors)
+        adjusted = utils.adjustBoxes(
+            outputs[0], img.shape, self.anchors, doBoxAdjustment=False, printDebug=False
+        )
+
         nms = utils.non_max_suppression(adjusted)
         if len(nms) > 0:
-            #realBoxes = self.co_helper.get_real_box(boxes)
-            return nms 
+            # realBoxes = self.co_helper.get_real_box(boxes)
+            return nms

@@ -34,6 +34,38 @@ def letterbox_image(image, target_size=(640, 640)):
     return letterbox
 
 
+# xyxy
+def rescaleBox(box, img_shape, target_size=(640, 640)):
+    h, w = img_shape[:2]
+    target_width, target_height = target_size
+
+    # Calculate scaling factor used for letterbox
+    scale = min(target_width / w, target_height / h)
+
+    # Calculate padding (offsets)
+    new_width = int(w * scale)
+    new_height = int(h * scale)
+    x_offset = (target_width - new_width) // 2
+    y_offset = (target_height - new_height) // 2
+
+    # Extract the box coordinates
+    x_min, y_min, x_max, y_max = box
+
+    # Undo the padding by shifting the coordinates
+    x_min = (x_min - x_offset) / scale
+    y_min = (y_min - y_offset) / scale
+    x_max = (x_max - x_offset) / scale
+    y_max = (y_max - y_offset) / scale
+
+    # Clip coordinates to ensure they are within the original image bounds
+    x_min = max(0, min(x_min, w))
+    y_min = max(0, min(y_min, h))
+    x_max = max(0, min(x_max, w))
+    y_max = max(0, min(y_max, h))
+
+    return [x_min, y_min, x_max, y_max]
+
+
 def loadAnchors(anchorLocation):
     with open(anchorLocation, "r") as al:
         for line in al:
@@ -57,20 +89,17 @@ def non_max_suppression(predictions, conf_threshold=0.6, iou_threshold=0.6):
     class_ids = []
     for x in predictions:
         # Convert from [center_x, center_y, width, height] to [x1, y1, x2, y2]
-        x_center, y_center, width, height = x[:4]
-        x1 = int(x_center - width / 2)
-        y1 = int(y_center - height / 2)
-        w = int(width)
-        h = int(height)
+        (x1, y1, x2, y2) = x[1]
+        w = x2 - x1
+        h = y2 - y1
 
-        bbox = (x1, y1, width, height)
+        bbox = (x1, y1, w, h)
         boxes.append(bbox)  # The first 4 elements are the bounding box coordinates
         scores.append(x[4])  # The 5th element is the confidence score
         class_ids.append(x[5])  # The 6th element is the class ID
 
     indices = cv2.dnn.NMSBoxesBatched(
         boxes, scores, class_ids, conf_threshold, iou_threshold
-    
     )
     print(indices)
     # Return selected boxes and class IDs
@@ -81,11 +110,11 @@ def processFlattenedIndex(idx, imageSize=640):
     rawId, scale_idx = getRawIdOffset(idx)
     print(rawId)
     stride = strides[scale_idx]
-    
+
     dimLen = imageSize // stride
-    scaleSize = dimLen*dimLen
+    scaleSize = dimLen * dimLen
     anchor_idx = rawId // scaleSize
-    gridLen = rawId % scaleSize 
+    gridLen = rawId % scaleSize
     gridX = gridLen % dimLen
     gridY = gridLen // dimLen
 
@@ -101,10 +130,14 @@ def getRawIdOffset(idx):
                 maxSizeLen - i,
             )  # since we are iterating reversed, we need to invert
 
-def sigmoid(x):
-    return 1/(1+np.exp(x))
 
-def adjustBoxes(outputs, anchors,imgX,imgY,modelX,modelY, minConf=0.7, doBoxAdjustment=True, printDebug=False):
+def sigmoid(x):
+    return 1 / (1 + np.exp(x))
+
+
+def adjustBoxes(
+    outputs, anchors, imgShape, minConf=0.7, doBoxAdjustment=True, printDebug=False
+):
     predictions = outputs[0]  # Model's predictions = 1 x 25200 x 7
     adjusted_boxes = []
     for idx in range(predictions.shape[0]):
@@ -118,24 +151,33 @@ def adjustBoxes(outputs, anchors,imgX,imgY,modelX,modelY, minConf=0.7, doBoxAdju
         anchor_width, anchor_height = anchors[scale_idx][anchor_idx]
 
         class_scores = pred[5:]  # The rest are class probabilities
-        classId = int(np.argmax(class_scores))  # Get the most likely class
-        confidence = float(pred[5 + classId])  # not sure where objectness score comes in. Maybe just for filtering?
+        classId = np.argmax(class_scores)  # Get the most likely class
+        confidence = float(
+            pred[5 + classId]
+        )  # not sure where objectness score comes in. Maybe just for filtering?
         if confidence < minConf:
             continue
-        if doBoxAdjustment:
-            # # format [x offset off grid, y offset off grid, width deviation, height deviation, objectness score, class_scores...]
-            xoff, yoff, widthDev, heightDev = pred[:4]
-            if printDebug:
-                print(f"Widthdev {widthDev} Heightdev {heightDev} xoff {xoff} yoff {yoff} objectness {objectnessScore}")
-            heightDev=sigmoid(heightDev)
-            widthDev=sigmoid(widthDev)
-            x = (gridX + xoff) * stride  # adjust by stride and grid index
-            y = (gridY + yoff) * stride  # adjust by stride and grid index
-            width = anchor_width * np.exp(widthDev)
-            height = anchor_height * np.exp(heightDev)
-        else:
-            x, y, width, height = pred[:4]
+        # if doBoxAdjustment:
+        #     # # format [x offset off grid, y offset off grid, width deviation, height deviation, objectness score, class_scores...]
+        #     xoff, yoff, widthDev, heightDev = pred[:4]
+        #     if printDebug:
+        #         print(f"Widthdev {widthDev} Heightdev {heightDev} xoff {xoff} yoff {yoff} objectness {objectnessScore}")
+        #     heightDev=sigmoid(heightDev)
+        #     widthDev=sigmoid(widthDev)
+        #     x = (gridX + xoff) * stride  # adjust by stride and grid index
+        #     y = (gridY + yoff) * stride  # adjust by stride and grid index
+        #     width = anchor_width * np.exp(widthDev)
+        #     height = anchor_height * np.exp(heightDev)
+        # else:
+        x, y, width, height = pred[:4]
+        x1 = x - width / 2
+        x2 = x + width / 2
+        y1 = y - height / 2
+        y2 = y + height / 2
+
+        scaledBox = rescaleBox([x1, y1, x2, y2], imgShape)
+
         if printDebug:
             print(f"X {x} Y {y} w {width} h{height} classid {classId}")
-        adjusted_boxes.append([x, y, width, height, confidence, classId])
+        adjusted_boxes.append([scaledBox, confidence, classId])
     return adjusted_boxes
