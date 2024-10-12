@@ -19,7 +19,7 @@ import math
 sys.path.append(
     os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "map-tests"))
 )
-import probmap
+from mapinternals import probmap
 
 robotSizeX = 60
 robotSizeY = 90
@@ -99,4 +99,5 @@ def loop():
             map.clear_maps()
 
 
-loop()
+if __name__ == "__main__":
+    loop()

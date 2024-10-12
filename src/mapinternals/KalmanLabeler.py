@@ -16,9 +16,11 @@ from tools import Calculator
 
 
 class KalmanLabeler:
-    def __init__(self,kalmanCacheRobots : KalmanCache,kalmanCacheGameObjects : KalmanCache):
-        self.kalmanCacheRobots : KalmanCache= kalmanCacheRobots
-        self.kalmanCacheGameObjects : KalmanCache = kalmanCacheGameObjects
+    def __init__(
+        self, kalmanCacheRobots: KalmanCache, kalmanCacheGameObjects: KalmanCache
+    ):
+        self.kalmanCacheRobots: KalmanCache = kalmanCacheRobots
+        self.kalmanCacheGameObjects: KalmanCache = kalmanCacheGameObjects
         pass
 
     """ Replaces relative ids in list provided with their absolute id, handling new detections by trying to find old ids"""
@@ -34,8 +36,12 @@ class KalmanLabeler:
         markedIndexs = []
         for i in range(len(singleCameraResults)):
             singleCameraResult = singleCameraResults[i]
-            singleCameraResult[0] += cameraIdOffset.getIdOffset()  # adjust id by a fixed camera offset, so that id collisions dont happen
-            (realId, (x, y, z), conf, isRobot) = singleCameraResult
+            singleCameraResult[
+                0
+            ] += (
+                cameraIdOffset.getIdOffset()
+            )  # adjust id by a fixed camera offset, so that id collisions dont happen
+            (realId, (x, y, z), conf, isRobot) = singleCameraResult[:4]
             cacheOfChoice: KalmanCache = (
                 self.kalmanCacheRobots if isRobot else self.kalmanCacheGameObjects
             )
@@ -49,9 +55,11 @@ class KalmanLabeler:
 
         # iterate over remaining robot and gameobject keys to see if any of the new detections are within a delta and match
         # todo add robot color as a matching factor
-        
+
         for index in markedIndexs:
-            (realId, (detectionX, detectionY, z), conf, isRobot) = singleCameraResults[index]
+            (realId, (detectionX, detectionY, z), conf, isRobot) = singleCameraResults[
+                index
+            ]
             keySetOfChoice = robotKeys if isRobot else gameObjectKeys
             cacheOfChoice: KalmanCache = (
                 self.kalmanCacheRobots if isRobot else self.kalmanCacheGameObjects
@@ -60,11 +68,16 @@ class KalmanLabeler:
             closestId = None
             closestDistance = 100000
             for key in keySetOfChoice:
-                kalmanEntry : KalmanEntry = cacheOfChoice.getSavedKalmanData(key)
+                kalmanEntry: KalmanEntry = cacheOfChoice.getSavedKalmanData(key)
                 # right now i am trying to find a match by finding the closest entry and seeing if its within a maximum delta
-                [oldX,oldY,vx,vy] = kalmanEntry.X
-                maxRange = Calculator.calculateMaxRange(vx,vy,timeStepSeconds,isRobot)+.05
-                objectRange = Calculator.getDistance(detectionX,detectionY,oldX,oldY,vx,vy,timeStepSeconds)
+                [oldX, oldY, vx, vy] = kalmanEntry.X
+                maxRange = (
+                    Calculator.calculateMaxRange(vx, vy, timeStepSeconds, isRobot)
+                    + 0.05
+                )
+                objectRange = Calculator.getDistance(
+                    detectionX, detectionY, oldX, oldY, vx, vy, timeStepSeconds
+                )
                 if objectRange < maxRange and objectRange < closestDistance:
                     closestId = key
                     closestDistance = objectRange
@@ -75,14 +88,15 @@ class KalmanLabeler:
                 singleCameraResults[index][0] = closestId
                 keySetOfChoice.remove(closestId)
         for remainingKey in robotKeys:
-            out : KalmanEntry = self.kalmanCacheRobots.getSavedKalmanData(remainingKey)
+            out: KalmanEntry = self.kalmanCacheRobots.getSavedKalmanData(remainingKey)
             out.incrementNotSeen()
-            if(out.framesNotSeen > LabelingConstants.MAXFRAMESNOTSEEN.value):
+            if out.framesNotSeen > LabelingConstants.MAXFRAMESNOTSEEN.value:
                 self.kalmanCacheRobots.removeKalmanEntry(remainingKey)
 
         for remainingKey in gameObjectKeys:
-            out : KalmanEntry = self.kalmanCacheGameObjects.getSavedKalmanData(remainingKey)
+            out: KalmanEntry = self.kalmanCacheGameObjects.getSavedKalmanData(
+                remainingKey
+            )
             out.incrementNotSeen()
-            if(out.framesNotSeen > LabelingConstants.MAXFRAMESNOTSEEN.value):
+            if out.framesNotSeen > LabelingConstants.MAXFRAMESNOTSEEN.value:
                 self.kalmanCacheGameObjects.removeKalmanEntry(remainingKey)
-

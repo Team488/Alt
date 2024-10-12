@@ -58,8 +58,45 @@ class DetectionPacket:
         decoded_bytestr = base64.b64decode(base64str)
         with detectionNetPacket_capnp.DataPacket.from_bytes(decoded_bytestr) as packet:
             return packet
-
         return None
+
+    @staticmethod
+    def toDetections(packet):
+        detections = []
+
+        for packet_detection in packet.detections:
+            # Extract the detection id
+            detection_id = packet_detection.id
+
+            # Extract the coordinates (absX, absY, absZ)
+            coordinates = packet_detection.coordinates
+            absX, absY, absZ = (
+                int(coordinates.x),
+                int(coordinates.y),
+                int(coordinates.z),
+            )
+
+            # Extract the confidence
+            confidence = float(packet_detection.confidence)
+
+            # Extract the isRobot flag
+            isRobot = bool(packet_detection.isRobot)
+
+            # Extract the features
+            packet_features = packet_detection.features
+            features = np.array([float(f) for f in packet_features.data])
+
+            # Combine into a tuple (id, (absX, absY, absZ), conf, isRobot, features)
+            detection = [
+                detection_id,
+                (absX, absY, absZ),
+                confidence,
+                isRobot,
+                features,
+            ]
+            detections.append(detection)
+
+        return detections
 
 
 if __name__ == "__main__":
@@ -71,3 +108,4 @@ if __name__ == "__main__":
     print("sucessful b64")
     outPacket = DetectionPacket.fromBase64(b64)
     print(outPacket)
+    print(DetectionPacket.toDetections(outPacket))
