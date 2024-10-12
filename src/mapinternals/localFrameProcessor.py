@@ -64,8 +64,8 @@ class LocalFrameProcessor:
                 relToRobotZ + robotPosZ,
             )
             # note at this point these values are expected to be absolute
-            if not self.isiregularDetection(relToRobotX,relToRobotY,relToRobotZ):
-                absoluteResults.append(result)
+            #if not self.isiregularDetection(relToRobotX,relToRobotY,relToRobotZ):
+            absoluteResults.append(result)
         # output is id,(absX,absY,absZ),conf,isRobot,features
         return absoluteResults
 
