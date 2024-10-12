@@ -34,7 +34,7 @@ def getPackets(xtablesClient: XTablesClient):
 
 
 def mainLoop():
-    client = XTablesClient(server_ip="192.168.0.17", server_port=4880)
+    client = XTablesClient()
     central = CentralProcessor.instance()
 
     # frameProcessors = [LocalFrameProcessor(CameraIntrinsics.OV9782COLOR,CameraExtrinsics.)]

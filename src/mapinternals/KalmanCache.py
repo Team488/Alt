@@ -47,7 +47,7 @@ class KalmanCache:
             ukf.baseUKF.Q = KalmanConstants.Q
             ukf.baseUKF.R = KalmanConstants.R
         else:
-            ukf.baseUKF.x = kalmanData.x
+            ukf.baseUKF.x = kalmanData.X
             ukf.baseUKF.P = kalmanData.P
             # ukf.baseUKF.Q = kalmanData.get('Q') # dont really need to save these if they are constant
             # ukf.baseUKF.R = kalmanData.get('R')

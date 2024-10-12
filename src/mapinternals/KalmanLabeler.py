@@ -40,7 +40,9 @@ class KalmanLabeler:
                 0
             ] += (
                 cameraIdOffset.getIdOffset()
-            )  # adjust id by a fixed camera offset, so that id collisions dont happen
+            )
+            print(singleCameraResult)
+            # adjust id by a fixed camera offset, so that id collisions dont happen
             (realId, (x, y, z), conf, isRobot) = singleCameraResult[:4]
             cacheOfChoice: KalmanCache = (
                 self.kalmanCacheRobots if isRobot else self.kalmanCacheGameObjects
@@ -57,9 +59,7 @@ class KalmanLabeler:
         # todo add robot color as a matching factor
 
         for index in markedIndexs:
-            (realId, (detectionX, detectionY, z), conf, isRobot) = singleCameraResults[
-                index
-            ]
+            (realId, (detectionX, detectionY, z), conf, isRobot) = singleCameraResults[index][:4]
             keySetOfChoice = robotKeys if isRobot else gameObjectKeys
             cacheOfChoice: KalmanCache = (
                 self.kalmanCacheRobots if isRobot else self.kalmanCacheGameObjects

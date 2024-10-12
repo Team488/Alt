@@ -59,8 +59,7 @@ class CentralProcessor:
         for singleCamResult, idOffset in cameraResults:
             if singleCamResult:
                 self.labler.updateRealIds(singleCamResult, idOffset, timeStepSeconds)
-
-                (id, (x, y, z), prob, isRobot, features) = singleCamResult
+                (id, (x, y, z), prob, isRobot, features) = singleCamResult[0]
 
                 # first load in to ukf, (if completely new ukf will load in as new state)
                 if isRobot:
@@ -69,7 +68,6 @@ class CentralProcessor:
                     self.kalmanCacheGameObjects.LoadInKalmanData(id, x, y, self.ukf)
 
                 newState = self.ukf.predict_and_update([x, y])
-
                 # now we have filtered data, so lets store it. First thing we do is cache the new ukf data
 
                 if isRobot:
@@ -78,14 +76,14 @@ class CentralProcessor:
                     self.kalmanCacheGameObjects.saveKalmanData(id, self.ukf)
 
                 # now lets also input our new estimated state into the map
-
+                print(newState)
                 if isRobot:
                     self.map.addDetectedRobot(
-                        newState[0], newState[1], prob, timeStepSeconds
+                       int(newState[0]),int(newState[1]), prob, timeStepSeconds
                     )
                 else:
-                    self.map.addDetectedGameObject(
-                        newState[0], newState[1], prob, timeStepSeconds
+                    self.map.addCustomObjectDetection(
+                        int(newState[0]) + 500, int(newState[1]) + 250, 100, 100, prob, timeStepSeconds
                     )
 
                 # and now this part is done
