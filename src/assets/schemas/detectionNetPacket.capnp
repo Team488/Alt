@@ -1,4 +1,4 @@
-@0x9d88d53810bc5894;
+@0xa58f964fa384ee24;
 
 struct DataPacket {
     message @0 :Text;                     # String message
