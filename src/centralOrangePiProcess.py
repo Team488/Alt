@@ -21,7 +21,7 @@ def getCameraName():
     print(f"name:{name}")
     return CameraName(name)
 
-
+classes = ["Robot","Note"]
 def startDemo():
     name = getCameraName().name
     inf = rknnInferencer("assets/bestV5.rknn")
@@ -41,6 +41,7 @@ def startDemo():
                 for (box, confidence, class_id) in results:
                     p1 = tuple(map(int, box[:2]))  # Convert to integer tuple
                     p2 = tuple(map(int, box[2:4]))  # Convert to integer tuple
+                    cv2.putText(frame,classes[class_id],p1,1,5,(0,255,0))
                     cv2.rectangle(frame, p1, p2, (0, 255, 0), 2)
             else:
                 print("Empty result")
