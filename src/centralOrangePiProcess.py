@@ -47,15 +47,14 @@ def startDemo():
 
             results = inf.getResults(frame)
             processedResults = processor.processFrame(frame, results, True)
-            if processedResults:
-                detectionPacket = DetectionPacket.createPacket(
-                    processedResults, name, timeStamp
-                )
-                detectionB64 = DetectionPacket.toBase64(detectionPacket)
-                xclient.executePutString(name, detectionB64)
-            # dataPacket = FramePacket.createPacket(timeStamp, name, frame)
-            # b64 = FramePacket.toBase64(dataPacket)
-            # xclient.executePutString(name, b64)
+            detectionPacket = DetectionPacket.createPacket(
+                processedResults, name, timeStamp
+            )
+            detectionB64 = DetectionPacket.toBase64(detectionPacket)
+            xclient.executePutString(name, detectionB64)
+            dataPacket = FramePacket.createPacket(timeStamp, name, frame)
+            b64 = FramePacket.toBase64(dataPacket)
+            xclient.executePutString(name + "frame", b64)
         if cv2.waitKey(1) & 0xFF == ord("q"):
             break
 

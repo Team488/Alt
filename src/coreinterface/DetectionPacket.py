@@ -27,9 +27,9 @@ class DetectionPacket:
             packet_detection.id = detection[0]
             xyz = packet_detection.init("coordinates")
             coords = detection[1]
-            xyz.x = coords[0]
-            xyz.y = coords[1]
-            xyz.z = coords[2]
+            xyz.x = int(coords[0])
+            xyz.y = int(coords[1])
+            xyz.z = int(coords[2])
             packet_detection.confidence = float(detection[2])
             packet_detection.isRobot = detection[3]
             features = detection[4]

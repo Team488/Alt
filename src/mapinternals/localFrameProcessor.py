@@ -1,7 +1,6 @@
 import random
-from ultralytics import YOLO
 from mapinternals.deepSortBaseLabler import DeepSortBaseLabler
-from tools.Constants import CameraIntrinsics, CameraExtrinsics
+from tools.Constants import CameraIntrinsics, CameraExtrinsics, MapConstants
 from tools.positionEstimator import PositionEstimator
 from tools.positionTranslations import CameraToRobotTranslator
 from coreinterface.CoreInput import getRobotPosition
@@ -32,7 +31,7 @@ class LocalFrameProcessor:
     def processFrame(
         self, frame, rknnResults, drawBoxes=True
     ) -> list[list[int, tuple[int, int, int], float, bool, np.ndarray]]:
-        if len(rknnResults) < 1:
+        if not rknnResults:
             return []
         labledResults = self.baseLabler.getLocalLabels(frame, rknnResults)
         if drawBoxes:
@@ -48,6 +47,7 @@ class LocalFrameProcessor:
             frame, labledResults, self.cameraIntrinsics
         )
         robotPosX, robotPosY, robotPosZ = getRobotPosition()
+        absoluteResults = []
         for result in relativeResults:
             ((relCamX, relCamY)) = result[1]
             (
@@ -63,5 +63,12 @@ class LocalFrameProcessor:
                 relToRobotY + robotPosY,
                 relToRobotZ + robotPosZ,
             )
+            # note at this point these values are expected to be absolute
+            if not self.isiregularDetection(relToRobotX,relToRobotY,relToRobotZ):
+                absoluteResults.append(result)
         # output is id,(absX,absY,absZ),conf,isRobot,features
-        return relativeResults
+        return absoluteResults
+
+
+    def isiregularDetection(self,x,y,z,maxDelta = 25):
+        return x < -maxDelta or x > MapConstants.fieldWidth.value+maxDelta or y < -maxDelta or y > MapConstants.fieldHeight.value+maxDelta or z < -maxDelta or z > maxDelta 

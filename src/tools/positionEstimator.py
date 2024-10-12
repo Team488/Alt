@@ -10,7 +10,7 @@ class PositionEstimator:
         self.__minPerc = 0.05  # minimum percentage of bounding box with bumper color
         self.__blueRobotHist = np.load("assets/blueRobotHist.npy")
         self.__redRobotHist = np.load("assets/redRobotHist.npy")
-        self.__MAXRATIO = 3.7  # max ratio between number width/height or vice versa
+        self.__MAXRATIO = 4.5  # max ratio between number width/height or vice versa
 
     def __crop_image(self, image, top_left, bottom_right):
         x1, y1 = top_left

@@ -136,7 +136,7 @@ def adjustBoxes(
     for idx in range(predictions.shape[0]):
         pred = predictions[idx]
         objectnessScore = float(pred[4])
-        if objectnessScore < 0.4444:
+        if objectnessScore < 0.4:
             continue
 
         stride, anchor_idx, scale_idx, gridX, gridY = processFlattenedIndex(idx)
