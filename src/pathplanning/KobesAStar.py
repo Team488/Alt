@@ -4,7 +4,7 @@ from queue import PriorityQueue
 import numpy as np
 
 # Define constants
-INCHES_PER_SQUARE = 1  # Accuracy - Inches per square
+INCHES_PER_SQUARE = 5  # Accuracy - Inches per square
 TOTAL_MAP_SIZE_X_INCHES = 651  # 2024 FRC Game Field Size X
 TOTAL_MAP_SIZE_Y_INCHES = 323  # 2024 FRC Game Field Size Y
 ROBOT_LOCATION = (3, 1)  # Robot location

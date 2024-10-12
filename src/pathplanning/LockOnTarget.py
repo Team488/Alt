@@ -25,8 +25,8 @@ robotSizeY = 3
 objSize = 35
 # fieldX = 130
 # fieldY = 65
-fieldX = 651
-fieldY = 323
+fieldX = 130
+fieldY = 65
 res = 1
 
 wX = int(fieldX / 3) 
