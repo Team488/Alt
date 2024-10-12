@@ -11,10 +11,14 @@ class DetectionPacket:
     @staticmethod
     # id,(absX,absY,absZ),conf,isRobot,features
     def createPacket(
-        detections: list[list[int, tuple[int, int, int], float, bool, np.ndarray]]
+        detections: list[list[int, tuple[int, int, int], float, bool, np.ndarray]],
+        message,
+        timeStamp,
     ) -> detectionNetPacket_capnp.DataPacket:
         numDetections = len(detections)
         packet = detectionNetPacket_capnp.DataPacket.new_message()
+        packet.message = message
+        packet.timestamp = timeStamp
         packet_detections = packet.init("detections", numDetections)
 
         for i in range(numDetections):
@@ -60,7 +64,7 @@ class DetectionPacket:
 
 if __name__ == "__main__":
     packet = DetectionPacket.createPacket(
-        [[10, (1, 2, 3), 0.6, True, np.array([1, 2, 3, 4])]]
+        [[10, (1, 2, 3), 0.6, True, np.array([1, 2, 3, 4])]], "HELLO", 12345
     )
     print(packet)
     b64 = DetectionPacket.toBase64(packet)

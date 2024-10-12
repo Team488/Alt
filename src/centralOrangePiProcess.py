@@ -6,7 +6,10 @@ import time
 from enum import Enum
 from coreinterface.XTablesClient import XTablesClient
 from coreinterface.FramePacket import FramePacket
+from coreinterface.DetectionPacket import DetectionPacket
 from inference.rknnInferencer import rknnInferencer
+from tools.Constants import getCameraValues
+from mapinternals.localFrameProcessor import LocalFrameProcessor
 
 
 class CameraName(Enum):
@@ -21,14 +24,21 @@ def getCameraName():
     print(f"name:{name}")
     return CameraName(name)
 
-classes = ["Robot","Note"]
+
+classes = ["Robot", "Note"]
+
+
 def startDemo():
     name = getCameraName().name
+    cameraIntrinsics, cameraExtrinsics, _ = getCameraValues(name)
     inf = rknnInferencer("assets/bestV5.rknn")
+    processor = LocalFrameProcessor(
+        cameraIntrinsics=cameraIntrinsics, cameraExtrinsics=cameraExtrinsics
+    )
     print("Starting process, device name:", name)
     xclient = XTablesClient(server_ip="192.168.0.17", server_port=4880)
     cap = cv2.VideoCapture("assets/video12qual25clipped.mp4")
-    cap.set(cv2.CAP_PROP_POS_FRAMES,1004)
+    cap.set(cv2.CAP_PROP_POS_FRAMES, 1004)
     while cap.isOpened():
         ret, frame = cap.read()
         if ret:
@@ -36,19 +46,16 @@ def startDemo():
             timeStamp = time.time()
 
             results = inf.getResults(frame)
-            if results is not None:
-                print(len(results))
-                for (box, confidence, class_id) in results:
-                    p1 = tuple(map(int, box[:2]))  # Convert to integer tuple
-                    p2 = tuple(map(int, box[2:4]))  # Convert to integer tuple
-                    cv2.putText(frame,classes[class_id],p1,1,5,(0,255,0))
-                    cv2.rectangle(frame, p1, p2, (0, 255, 0), 2)
-            else:
-                print("Empty result")
-            cv2.putText(frame,"HELLO",(10,10),1,1,(0,255,0))
-            dataPacket = FramePacket.createPacket(timeStamp, name, frame)
-            b64 = FramePacket.toBase64(dataPacket)
-            xclient.executePutString(name, b64)
+            processedResults = processor.processFrame(frame, results, True)
+            if processedResults:
+                detectionPacket = DetectionPacket.createPacket(
+                    processedResults, name, timeStamp
+                )
+                detectionB64 = DetectionPacket.toBase64(detectionPacket)
+                xclient.executePutString(name, detectionB64)
+            # dataPacket = FramePacket.createPacket(timeStamp, name, frame)
+            # b64 = FramePacket.toBase64(dataPacket)
+            # xclient.executePutString(name, b64)
         if cv2.waitKey(1) & 0xFF == ord("q"):
             break
 

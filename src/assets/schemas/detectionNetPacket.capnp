@@ -1,7 +1,9 @@
 @0x9d88d53810bc5894;
 
 struct DataPacket {
-    detections @0 :List(Detection);                  # List of detections
+    message @0 :Text;                     # String message
+    timestamp @1 :Float64;                 # Timestamp for the frame
+    detections @2 :List(Detection);                  # List of detections
 }
 
 struct Detection {

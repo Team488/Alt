@@ -18,16 +18,10 @@ class LocalFrameProcessor:
         self,
         cameraIntrinsics: CameraIntrinsics,
         cameraExtrinsics: CameraExtrinsics,
-        useYoloV8: bool = True,
     ) -> None:
         self.baseLabler: DeepSortBaseLabler = DeepSortBaseLabler()
         self.cameraIntrinsics: CameraIntrinsics = cameraIntrinsics
         self.cameraExtrinsics: CameraExtrinsics = cameraExtrinsics
-        if useYoloV8:
-            self.model = YOLO("assets/bestV8.pt")  # Open the model
-        else:
-            # todo
-            pass
         self.estimator = PositionEstimator()
         self.translator = CameraToRobotTranslator()
         self.colors = [
@@ -36,10 +30,11 @@ class LocalFrameProcessor:
         ]
 
     def processFrame(
-        self, frame, drawBoxes=True
+        self, frame, rknnResults, drawBoxes=True
     ) -> list[list[int, tuple[int, int, int], float, bool, np.ndarray]]:
-        results = self.model.predict(frame, show_boxes=False, conf=0.8, show=False)
-        labledResults = self.baseLabler.getLocalLabels(frame, results)
+        if len(rknnResults) < 1:
+            return []
+        labledResults = self.baseLabler.getLocalLabels(frame, rknnResults)
         if drawBoxes:
             for result in labledResults:
                 id = result[0]
