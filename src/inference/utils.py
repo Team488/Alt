@@ -92,8 +92,8 @@ def non_max_suppression(predictions, conf_threshold=0.6, iou_threshold=0.6):
         scores.append(x[1])  # The 5th element is the confidence score
         class_ids.append(x[2])  # The 6th element is the class ID
 
-    indices = cv2.dnn.NMSBoxes(
-        boxes, scores, conf_threshold, iou_threshold
+    indices = cv2.dnn.NMSBoxesBatched(
+        boxes, scores,class_ids, conf_threshold, iou_threshold
     )
     print(indices)
     # Return selected boxes and class IDs
