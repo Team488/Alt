@@ -39,7 +39,6 @@ def startDemo():
             if results is not None:
                 print(len(results))
                 for (box, confidence, class_id) in results:
-                    print("box:",box)
                     p1 = tuple(map(int, box[:2]))  # Convert to integer tuple
                     p2 = tuple(map(int, box[2:4]))  # Convert to integer tuple
                     cv2.rectangle(frame, p1, p2, (0, 255, 0), 2)

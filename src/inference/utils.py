@@ -75,31 +75,25 @@ def loadAnchors(anchorLocation):
     print("Anchor loading failed!")
     return None
 
-
-# Non-Maximum Suppression (NMS) with class handling
 def non_max_suppression(predictions, conf_threshold=0.6, iou_threshold=0.6):
     # Filter out predictions with low confidence
-    predictions = [x for x in predictions if x[2] >= conf_threshold]
+    predictions = [x for x in predictions if x[1] >= conf_threshold]
 
     # Sort predictions by confidence score
-    predictions.sort(key=lambda x: x[2], reverse=True)
+    predictions.sort(key=lambda x: x[1], reverse=True)
 
     boxes = []
     scores = []
     class_ids = []
     for x in predictions:
         # Convert from [center_x, center_y, width, height] to [x1, y1, x2, y2]
-        (x1, y1, x2, y2) = x[1]
-        w = x2 - x1
-        h = y2 - y1
 
-        bbox = (x1, y1, w, h)
-        boxes.append(bbox)  # The first 4 elements are the bounding box coordinates
-        scores.append(x[2])  # The 5th element is the confidence score
-        class_ids.append(x[3])  # The 6th element is the class ID
+        boxes.append(x[0])  # The first 4 elements are the bounding box coordinates
+        scores.append(x[1])  # The 5th element is the confidence score
+        class_ids.append(x[2])  # The 6th element is the class ID
 
-    indices = cv2.dnn.NMSBoxesBatched(
-        boxes, scores, class_ids, conf_threshold, iou_threshold
+    indices = cv2.dnn.NMSBoxes(
+        boxes, scores, conf_threshold, iou_threshold
     )
     print(indices)
     # Return selected boxes and class IDs
@@ -108,7 +102,6 @@ def non_max_suppression(predictions, conf_threshold=0.6, iou_threshold=0.6):
 
 def processFlattenedIndex(idx, imageSize=640):
     rawId, scale_idx = getRawIdOffset(idx)
-    print(rawId)
     stride = strides[scale_idx]
 
     dimLen = imageSize // stride
@@ -143,7 +136,7 @@ def adjustBoxes(
     for idx in range(predictions.shape[0]):
         pred = predictions[idx]
         objectnessScore = float(pred[4])
-        if objectnessScore < minConf:
+        if objectnessScore < 0.4444:
             continue
 
         stride, anchor_idx, scale_idx, gridX, gridY = processFlattenedIndex(idx)
@@ -176,7 +169,6 @@ def adjustBoxes(
         y2 = y + height / 2
 
         scaledBox = rescaleBox([x1, y1, x2, y2], imgShape)
-
         if printDebug:
             print(f"X {x} Y {y} w {width} h{height} classid {classId}")
         adjusted_boxes.append([scaledBox, confidence, classId])
