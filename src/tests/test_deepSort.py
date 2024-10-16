@@ -15,7 +15,7 @@ def show_featureType():
         count += 1  # why no ++count or count++ :(
         print(count)
         if ret:
-            out = frameProcessor.processFrame(frame)
+            out = frameProcessor.processFrame(frame, 0, 0)
             if out:
                 features = out[0][-1]
                 print(features)
