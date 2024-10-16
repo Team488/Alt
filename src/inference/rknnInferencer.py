@@ -1,4 +1,5 @@
 import os
+import time
 import cv2
 import numpy as np
 from rknnlite.api import RKNNLite
@@ -61,10 +62,40 @@ class rknnInferencer:
         print(outputs[0].shape)
         # (boxes, classes, scores) = copiedutils.post_process(outputs, self.anchors)
         adjusted = utils.adjustBoxes(
-            outputs[0], self.anchors, frame.shape, doBoxAdjustment=False, printDebug=False
+            outputs[0],
+            self.anchors,
+            frame.shape,
+            doBoxAdjustment=False,
+            printDebug=False,
         )
 
         nms = utils.non_max_suppression(adjusted)
         if len(nms) > 0:
             # realBoxes = self.co_helper.get_real_box(boxes)
             return nms
+
+
+if __name__ == "__main__":
+    classes = ["Robot", "Note"]
+    inf = rknnInferencer("assets/bestV5.rknn")
+    cap = cv2.VideoCapture("assets/video12qual25clipped.mp4")
+    cap.set(cv2.CAP_PROP_POS_FRAMES, 1004)
+    while cap.isOpened():
+        ret, frame = cap.read()
+        if ret:
+            startTime = time.time()
+            results = inf.getResults(frame)
+            timePassed = time.time() - startTime
+            fps = 1 / timePassed  # seconds
+            cv2.putText(frame, f"Fps {fps}", (10, 50), 1, 2, (0, 255, 0), 1)
+            for result in results:
+                (box, score, class_id) = result
+                cv2.rectangle(
+                    frame, map(int, box[:2]), map(int, box[2:]), (0, 255, 0), 1
+                )
+                cv2.putText(frame, f"Class {classes[class_id]} Conf {score}")
+
+            cv2.imshow("rknn", frame)
+
+        if cv2.waitKey(1) & 0xFF == ord("q"):
+            break
