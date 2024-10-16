@@ -1,11 +1,10 @@
 import numpy as np
-from ultralytics import YOLO
 from mapinternals.probmap import ProbMap
 from mapinternals.localFrameProcessor import LocalFrameProcessor
+from mapinternals.CentralProcessor import CentralProcessor
 from tools.CsvParser import CsvParser
-from tools.Constants import CameraIntrinsics, CameraExtrinsics
-from tools.positionEstimator import PositionEstimator
-from tools.positionTranslations import CameraToRobotTranslator
+from tools.Constants import CameraIntrinsics, CameraExtrinsics, CameraIdOffsets
+from inference.onnxInferencer import onnxInferencer
 import cv2
 import math
 
@@ -40,12 +39,14 @@ csvTimeOffset = 99.8  # time offset to align video start with log movements (sec
 
 
 def startDemo():
+    inf = onnxInferencer()
     cameraExtr = CameraExtrinsics.DEPTHLEFT
     cameraIntr = CameraIntrinsics.OAKDLITE
     cap = cv2.VideoCapture("assets/video12qual25clipped.mp4")
     firstRun = True
     cap_outM = None
     frameProcessor = LocalFrameProcessor(cameraIntr, cameraExtr)
+    centralProcessor = CentralProcessor.instance()
     fps = cap.get(cv2.CAP_PROP_FPS)
     timePassed = 0
     timePerFrame = 1 / fps
@@ -86,21 +87,19 @@ def startDemo():
 
             # flip position y as frc y dir is flipped
             positionY = fieldHeight - positionY
-            out = frameProcessor.processFrame(frame)
-            """ Here you would send up output and """
 
-            # Run YOLOv8 on the frame
-            for result in out:
-                id = result[0]
-                x, y, z = result[1]
-                conf = result[2]
-                isRobot = result[3]
-                if isRobot:
-                    simMap.addCustomRobotDetection(x, y, 200, 200, conf, 1)
-                else:
-                    simMap.addCustomObjectDetection(x, y, 200, 200, conf, 1)
+            # Run yolov5 on the frame
 
-            (gameObjMap, robotMap) = simMap.getHeatMaps()
+            results = inf.inferenceFrame(frame)
+            # local process
+            out = frameProcessor.processFrame(frame, results, positionX, positionY, 0)
+            # imagine a network connection here
+            # now central process
+            centralProcessor.processFrameUpdate(
+                [(out, CameraIdOffsets.FRONTLEFT)], timePerFrame
+            )
+
+            (gameObjMap, robotMap) = centralProcessor.map.getHeatMaps()
             height, width = robotMap.shape
             zeros = np.zeros((height, width), dtype=np.uint8)
             mapView = cv2.merge((zeros, gameObjMap, robotMap))
@@ -203,3 +202,8 @@ def __embed_frame(exterior_frame, interior_frame, scale_factor=1 / 3):
     ] = resized_interior_frame
 
     return exterior_frame
+
+
+if __name__ == "__main__":
+    print("Must be run from src directory")
+    startDemo()

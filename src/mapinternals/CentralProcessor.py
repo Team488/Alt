@@ -48,7 +48,12 @@ class CentralProcessor:
     def processFrameUpdate(
         self,
         cameraResults: list[
-            list[list[int, tuple[int, int, int], float, bool, np.ndarray]]
+            tuple[
+                list[
+                    list[int, tuple[int, int, int], float, bool, np.ndarray],
+                    CameraIdOffsets,
+                ]
+            ]
         ],
         timeStepSeconds,
     ):
@@ -78,11 +83,17 @@ class CentralProcessor:
                 print(newState)
                 if isRobot:
                     self.map.addDetectedRobot(
-                       int(newState[0]),int(newState[1]), prob, timeStepSeconds
+                        int(newState[0]), int(newState[1]), prob, timeStepSeconds
                     )
                 else:
                     self.map.addCustomObjectDetection(
-                        int(newState[0]) + 500, int(newState[1]) + 250, 100, 100, prob, timeStepSeconds
+                        int(newState[0]),
+                        int(newState[1]) + 250,
+                        100,
+                        100,
+                        prob,
+                        timeStepSeconds,
                     )
 
                 # and now this part is done
+        self.map.disspateOverTime(timeStepSeconds)

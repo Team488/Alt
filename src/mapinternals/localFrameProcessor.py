@@ -29,7 +29,7 @@ class LocalFrameProcessor:
         ]
 
     def processFrame(
-        self, frame, rknnResults, drawBoxes=True
+        self, frame, rknnResults, robotPosX=0, robotPosY=0, robotPosZ=0, drawBoxes=True
     ) -> list[list[int, tuple[int, int, int], float, bool, np.ndarray]]:
         if not rknnResults:
             return []
@@ -46,7 +46,7 @@ class LocalFrameProcessor:
         relativeResults = self.estimator.estimateDetectionPositions(
             frame, labledResults, self.cameraIntrinsics
         )
-        robotPosX, robotPosY, robotPosZ = getRobotPosition()
+
         absoluteResults = []
         for result in relativeResults:
             ((relCamX, relCamY)) = result[1]
@@ -64,11 +64,17 @@ class LocalFrameProcessor:
                 relToRobotZ + robotPosZ,
             )
             # note at this point these values are expected to be absolute
-            #if not self.isiregularDetection(relToRobotX,relToRobotY,relToRobotZ):
+            # if not self.isiregularDetection(relToRobotX,relToRobotY,relToRobotZ):
             absoluteResults.append(result)
         # output is id,(absX,absY,absZ),conf,isRobot,features
         return absoluteResults
 
-
-    def isiregularDetection(self,x,y,z,maxDelta = 25):
-        return x < -maxDelta or x > MapConstants.fieldWidth.value+maxDelta or y < -maxDelta or y > MapConstants.fieldHeight.value+maxDelta or z < -maxDelta or z > maxDelta 
+    def isiregularDetection(self, x, y, z, maxDelta=25):
+        return (
+            x < -maxDelta
+            or x > MapConstants.fieldWidth.value + maxDelta
+            or y < -maxDelta
+            or y > MapConstants.fieldHeight.value + maxDelta
+            or z < -maxDelta
+            or z > maxDelta
+        )

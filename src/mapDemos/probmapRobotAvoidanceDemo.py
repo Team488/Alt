@@ -1,6 +1,6 @@
 import traceback
 
-import probmap
+from mapinternals.probmap import ProbMap
 import random
 import cv2
 import math
@@ -19,7 +19,7 @@ wY = int(fieldY / 3)
 maxDist1Sec = 10  # cm
 
 # values other than field x,y not used in this demo
-fieldMap = probmap.ProbMap(
+fieldMap = ProbMap(
     fieldX,
     fieldY,
     res,
@@ -274,7 +274,7 @@ def __getUpOrDown(robotX, robotY, maxDistancePerMove) -> tuple[int, int]:
 
 # simulate robots moving around
 def __addRandomRobotsMovingAround(
-    map: probmap.ProbMap, width, height, currentRobotsAndPositions: list
+    map: ProbMap, width, height, currentRobotsAndPositions: list
 ):
     newDetections = []
     for i in range(len(currentRobotsAndPositions)):

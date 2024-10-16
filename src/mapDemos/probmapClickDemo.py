@@ -52,7 +52,7 @@ def startDemo():
     cv2.namedWindow(map.robotWindowName)
     cv2.setMouseCallback(map.robotWindowName, mouseDownCallbackRobot)  # get mouse event
     while True:
-        map.disspateOverTime(0.2)  # 1s
+        map.disspateOverTime(5)  # 1s
         map.displayHeatMaps()
         print("Best game obj:", map.getHighestGameObject())
         print("Best robot:", map.getHighestRobot())

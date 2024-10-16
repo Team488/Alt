@@ -1,5 +1,5 @@
 import traceback
-import probmap
+from mapinternals.probmap import ProbMap
 import random
 import cv2
 
@@ -15,7 +15,7 @@ wX = int(fieldX / 3)
 wY = int(fieldY / 3)
 
 # values other than field x,y not used in this demo
-fieldMap = probmap.ProbMap(
+fieldMap = ProbMap(
     fieldX, fieldY, res, objSize, objSize, robotSizeX, robotSizeY
 )  # Width x Height at 1 cm resolution
 
@@ -116,7 +116,7 @@ def startDemo():
         # fieldMap.clear_map()
 
 
-def __test_randomization_ranges(map: probmap, width, height):
+def __test_randomization_ranges(map: ProbMap, width, height):
     # for i in range(1):
     x = random.randrange(0, width)
     y = random.randrange(0, height)

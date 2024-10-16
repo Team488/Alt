@@ -6,11 +6,12 @@ from tools.Constants import CameraIntrinsics, ObjectReferences
 
 class PositionEstimator:
     def __init__(self) -> None:
-        self.__RobotId = 0  # yolo returned ids
         self.__minPerc = 0.05  # minimum percentage of bounding box with bumper color
         self.__blueRobotHist = np.load("assets/blueRobotHist.npy")
         self.__redRobotHist = np.load("assets/redRobotHist.npy")
         self.__MAXRATIO = 4.5  # max ratio between number width/height or vice versa
+
+    """ Extract a rectangular slice of the image, given a bounding box. This is axis aligned"""
 
     def __crop_image(self, image, top_left, bottom_right):
         x1, y1 = top_left
@@ -20,27 +21,29 @@ class PositionEstimator:
 
         return cropped_image
 
-    def __crop_contours(self, image, combinedContour):
+    """ Keep only inside a specified contour and make the rest black"""
+
+    def __crop_contours(self, image, contour):
         # Unpack the rectangle properties
         mask = np.zeros_like(image)
 
         # Draw the convex hull on the mask
-        cv2.drawContours(
-            mask, [combinedContour], -1, (255, 255, 255), thickness=cv2.FILLED
-        )
+        cv2.drawContours(mask, [contour], -1, (255, 255, 255), thickness=cv2.FILLED)
         result = np.zeros_like(image)
 
         # Copy the region of interest using the mask
         result[mask == 255] = image[mask == 255]
         return result
 
-    def __backProjWhite(self, labImage):
+    """ White color backprojection"""
+
+    def __backProjWhite(self, labImage, threshold=175):
         # return cv2.calcBackProject([bumperOnlyLab],[1,2],whiteNumHist,[0,256,0,256],1)
         L, a, b = cv2.split(labImage)
 
         # Threshold the L channel to get a binary image
         # Here we assume white has high L values, you might need to adjust the threshold value
-        _, white_mask = cv2.threshold(L, 175, 255, cv2.THRESH_BINARY)
+        _, white_mask = cv2.threshold(L, threshold, 255, cv2.THRESH_BINARY)
 
         # kernel = np.ones((5, 5), np.uint8)
         # white_mask = cv2.morphologyEx(white_mask, cv2.MORPH_OPEN, kernel)
@@ -68,6 +71,8 @@ class PositionEstimator:
         white_percentage = num_white_pixels / total_pixels
         return white_percentage
 
+    """ Checks a frame for two backprojections. Either a blue or red bumper. If there is enough of either color, then its a sucess and we return the backprojected value. Else a fail"""
+
     def __backprojCheck(self, frame, redHist, blueHist):
         redBackproj = self.__backprojAndThreshFrame(frame, redHist, False)
         blueBackproj = self.__backprojAndThreshFrame(frame, blueHist, True)
@@ -91,6 +96,13 @@ class PositionEstimator:
                 print("blue fail")
                 return (None, None)
 
+    """ Calculates distance from object assuming we know real size and pixel size. Dimensions out are whatever known size dimensions are
+        Its as follows
+        knownSize(whatever length dim) * focallength(mm)/(pixelsize(mm/px)*currentsizePixels(px))
+
+        Output dim is whatever length dim
+    """
+
     def __calculateDistance(
         self, knownSize, currentSizePixels, cameraIntrinsics: CameraIntrinsics
     ):
@@ -98,12 +110,33 @@ class PositionEstimator:
             cameraIntrinsics.getPixelSize() * currentSizePixels
         )
 
-    # calculates angle change per pixel, and multiplies by number of pixels off you are
+    """ calculates angle change per pixel, and multiplies by number of pixels off you are. Dimensions are whatever fov per pixel dimensions are
+
+    """
+
     def __calcBearing(self, fov, res, pixelDiff):
         fovperPixel = fov / res
         return -pixelDiff * fovperPixel
 
-    def __estimateRobotHeight(self, croppedframe) -> tuple[float, bool]:
+    """
+        This is a multistep process to estimate the height of a robot bumper. TLDR use number on the side of bumper to estimate height
+
+        A couple of assumptions at play here, but they seem to always be the case
+        Assuming that the number on the side of the bumper is the same height as the bumper
+        Assuming that there is a number on every side of the bumper
+        Assuming that the detection bounding box ecompasses the whole robot, and thus the bumper will be in the lower half of the clipped bounding box provided
+
+        Steps
+        #1 Isolate bottom half of cropped out robot detection.
+        #2 try to backproject a red or blue histogram to isolate the bumper. NOTE: it is critical that histograms be updated in every different lighting condiditon (Todo make a better histogram tool)
+        #3 if you pass and there is significant red or blue in the frame to indicate a bumper, now we "cut out" the bumper which is found using contours and convex hull.
+        #4 we threshold for a white value because the numbers are white. (Possible todo: Use histograms instead)
+        #5 we try to isolate numbers from the thresholded white value. We check to see if any "numbers" found are actually number shaped with some simple ratio checks
+        #6 if we have found a proper number, we get its height and take that as the bumper height
+
+    """
+
+    def __estimateRobotBumperHeight(self, croppedframe) -> tuple[float, bool]:
         y = croppedframe.shape[0]
         x = croppedframe.shape[1]
         # cutting the frame as for all the images i have the bumper is always in the bottom half
@@ -190,6 +223,10 @@ class PositionEstimator:
                             print("Ratio to large to be acceptable", numToBumpRatio)
         return None
 
+    """ Method takes in a frame, where you have already run your model. It crops out bounding boxes for each robot detection and runs a height estimation.
+        If it does not fail, it then takes that information, along with a calculated bearing to estimate a relative position
+       """
+
     def __estimateRelativeRobotPosition(
         self, frame, boundingBox, cameraIntrinsics: CameraIntrinsics
     ) -> tuple[float, float]:
@@ -200,11 +237,11 @@ class PositionEstimator:
         midH = int(h / 2)
         centerX = x1 + midW
         croppedImg = self.__crop_image(frame, (x1, y1), (x2, y2))
-        est = self.__estimateRobotHeight(croppedImg)
+        est = self.__estimateRobotBumperHeight(croppedImg)
         if est is not None:
             (estimatedHeight, isBlue) = est
             distance = self.__calculateDistance(
-                ObjectReferences.BUMPERHEIGHT.getMeasurement(),
+                ObjectReferences.BUMPERHEIGHT.getMeasurementCm(),
                 estimatedHeight,
                 cameraIntrinsics,
             )
@@ -219,6 +256,12 @@ class PositionEstimator:
 
         return None
 
+    """ This current method estimates the position of a note, by using the same method as a robot. However it is slightly simplified, as we can take avantage of the circular nature of a note
+        By taking the width of a note (or the max of w and h to cover the case when its vertical), we can find a pretty much exact value for the size of the note in pixels. Given we know the
+        exact size of a note, we can then use this to estimate distance.
+
+    """
+
     def __estimateRelativeGameObjectPosition(
         self, frame, boundingBox, cameraIntrinsics: CameraIntrinsics
     ) -> tuple[float, float]:
@@ -229,7 +272,7 @@ class PositionEstimator:
         midH = int(h / 2)
         centerX = x1 + midW
         distance = self.__calculateDistance(
-            ObjectReferences.NOTE.getMeasurement(), w, cameraIntrinsics
+            ObjectReferences.NOTE.getMeasurementCm(), w, cameraIntrinsics
         )
         bearing = self.__calcBearing(
             cameraIntrinsics.getHFov(),

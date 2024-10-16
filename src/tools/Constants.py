@@ -61,10 +61,10 @@ class CameraIntrinsics(Enum):
 
 
 class ObjectReferences(Enum):
-    NOTE = 14  # inches
-    BUMPERHEIGHT = 5  # inches
+    NOTE = 35.56  # cm
+    BUMPERHEIGHT = 12.7  # cm
 
-    def getMeasurement(self):
+    def getMeasurementCm(self):
         return self.value
 
 

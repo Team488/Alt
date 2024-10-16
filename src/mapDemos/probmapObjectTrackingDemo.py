@@ -1,5 +1,5 @@
 import cv2
-import probmap
+from mapinternals.probmap import ProbMap
 
 robotSizeX = 71
 robotSizeY = 96
@@ -10,7 +10,7 @@ res = 1  # cm
 
 
 # values other than field x,y not used in this demo
-fieldMap = probmap.ProbMap(
+fieldMap = ProbMap(
     fieldX,
     fieldY,
     res,

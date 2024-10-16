@@ -94,4 +94,5 @@ def startDemo():
 
 
 if __name__ == "__main__":
+    print("Must be run from src directory")
     startDemo()
