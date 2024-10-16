@@ -3,6 +3,7 @@ from mapinternals.probmap import ProbMap
 from mapinternals.localFrameProcessor import LocalFrameProcessor
 from tools.CsvParser import CsvParser
 from tools.Constants import CameraIntrinsics, CameraExtrinsics
+from inference.onnxInferencer import onnxInferencer
 import cv2
 import math
 
@@ -37,6 +38,7 @@ csvTimeOffset = 99.8  # time offset to align video start with log movements (sec
 
 
 def startDemo():
+    inf = onnxInferencer()
     cameraExtr = CameraExtrinsics.DEPTHLEFT
     cameraIntr = CameraIntrinsics.OAKDLITE
     cap = cv2.VideoCapture("assets/video12qual25clipped.mp4")
@@ -84,19 +86,19 @@ def startDemo():
             # flip position y as frc y dir is flipped
             positionY = fieldHeight - positionY
 
-            # Run YOLOv8 on the frame
-            out = frameProcessor.processFrame(frame)
+            results = inf.inferenceFrame(frame)
+            # Run yolov5 on the frame
+            out = frameProcessor.processFrame(frame, results, positionX, positionY, 0)
 
-            # Run YOLOv8 on the frame
             for result in out:
                 id = result[0]
                 x, y, z = result[1]
                 conf = result[2]
                 isRobot = result[3]
                 if isRobot:
-                    simMap.addCustomRobotDetection(x, y, 200, 200, conf, 1)
+                    simMap.addCustomRobotDetection(int(x), int(y), 200, 200, conf, 1)
                 else:
-                    simMap.addCustomObjectDetection(x, y, 200, 200, conf, 1)
+                    simMap.addCustomObjectDetection(int(x), int(y), 200, 200, conf, 1)
 
             (gameObjMap, robotMap) = simMap.getHeatMaps()
             height, width = robotMap.shape
@@ -201,3 +203,8 @@ def __embed_frame(exterior_frame, interior_frame, scale_factor=1 / 3):
     ] = resized_interior_frame
 
     return exterior_frame
+
+
+if __name__ == "__main__":
+    print("Must be run from src directory")
+    startDemo()
