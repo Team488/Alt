@@ -1,6 +1,5 @@
 import numpy as np
 from singleton.singleton import Singleton
-from pathplanning import CalculateBestPath, LockOnTarget
 from mapinternals.UKF import Ukf
 from tools.Constants import MapConstants, CameraIdOffsets
 from mapinternals.probmap import ProbMap

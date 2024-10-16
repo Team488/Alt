@@ -6,20 +6,21 @@ from tools.Constants import MapConstants
 
 largeValue = 10000000000000000000  # for cv2 thresholding
 
+
 # This whole thing is axis aligned for speed, but that may not work great
 class ProbMap:
     def __init__(
-        self,
-        x=MapConstants.fieldWidth.value,
-        y=MapConstants.fieldHeight.value,
-        resolution=MapConstants.res.value,
-        gameObjectX=MapConstants.gameObjectWidth.value,
-        gameObjectY=MapConstants.gameObjectHeight.value,
-        robotX=MapConstants.robotWidth.value,
-        robotY=MapConstants.robotHeight.value,
-        sigma=1,
-        maxSpeedRobots=100,
-        maxSpeedGameObjects=5,
+            self,
+            x=MapConstants.fieldWidth.value,
+            y=MapConstants.fieldHeight.value,
+            resolution=MapConstants.res.value,
+            gameObjectX=MapConstants.gameObjectWidth.value,
+            gameObjectY=MapConstants.gameObjectHeight.value,
+            robotX=MapConstants.robotWidth.value,
+            robotY=MapConstants.robotHeight.value,
+            sigma=1,
+            maxSpeedRobots=100,
+            maxSpeedGameObjects=5,
     ):  # gameobjects most likely not very fast
         # flip values
         self.size_x = y
@@ -65,7 +66,7 @@ class ProbMap:
 
     # coordinates in a top left corner, bottom right corner format
     def setObstacleRegions(
-        self, rectangleCoords: list[tuple[tuple[int, int], tuple[int, int]]]
+            self, rectangleCoords: list[tuple[tuple[int, int], tuple[int, int]]]
     ):
         self.obstacleRegionsReg = rectangleCoords
         self.obstacleRegionsRC = [
@@ -130,7 +131,7 @@ class ProbMap:
         # gauss_x, gauss_y = np.meshgrid(np.linspace(-2.5, 2.5, obj_x), np.linspace(-2.5, 2.5, obj_y))
 
         # print("gauss_x", gauss_x, "gauss_y", gauss_y)
-        gaussian_blob = np.exp(-0.5 * (gauss_x**2 + gauss_y**2) / sigma**2)
+        gaussian_blob = np.exp(-0.5 * (gauss_x ** 2 + gauss_y ** 2) / sigma ** 2)
 
         # print('\n' + 'gaussian_bQlob before: ')
         # print(gaussian_blob.dtype)
@@ -196,7 +197,7 @@ class ProbMap:
         # is this needed?
         gaussian_blob *= prob
         # blob_height, blob_width = gaussian_blob.shape[0:2]
-        print("\n" + "gaussian size: " + str(blob_height) + ", " + str(blob_width))
+        # print("\n" + "gaussian size: " + str(blob_height) + ", " + str(blob_width))
 
         # print("gaussian x edges", blob_left_edge_loc, blob_right_edge_loc, "diff:", (blob_right_edge_loc - blob_left_edge_loc))
         # print("gaussian y edges", blob_top_edge_loc, blob_bottom_edge_loc, "diff:", (blob_bottom_edge_loc - blob_top_edge_loc))
@@ -208,8 +209,8 @@ class ProbMap:
 
         # slicing
         probmap[
-            blob_left_edge_loc:blob_right_edge_loc,
-            blob_top_edge_loc:blob_bottom_edge_loc,
+        blob_left_edge_loc:blob_right_edge_loc,
+        blob_top_edge_loc:blob_bottom_edge_loc,
         ] += gaussian_blob
 
     def __updateLastParams(self, isGameObj: bool, timeSinceLastUpdate):
@@ -294,8 +295,7 @@ class ProbMap:
     """ Displaying heat maps"""
 
     def __displayHeatMap(self, probmap, name: str):
-        cv2.imshow(name, self.__getHeatMap(probmap))
-        cv2.waitKey(10)
+        cv2.imshow(name, self.getHeatMap(probmap))
 
     """ Exposed display heatmap method"""
 
@@ -303,9 +303,15 @@ class ProbMap:
         self.__displayHeatMap(self.probmapGameObj, self.gameObjWindowName)
         self.__displayHeatMap(self.probmapRobots, self.robotWindowName)
 
+    def displayGameObjMap(self):
+        self.__displayHeatMap(self.probmapGameObj, self.gameObjWindowName)
+
+    def displayRobotObjMap(self):
+        self.__displayHeatMap(self.probmapRobots, self.robotWindowName)
+
     """ Getting heatmaps """
 
-    def __getHeatMap(self, probmap):
+    def getHeatMap(self, probmap):
         heatmap = np.copy(probmap)
         heatmap = heatmap * 255.0
         heatmap = np.clip(heatmap, a_min=0.0, a_max=255.0)
@@ -326,8 +332,8 @@ class ProbMap:
     # returns gameobject map then robot map
     def getHeatMaps(self) -> tuple:
         return (
-            self.__getHeatMap(self.probmapGameObj),
-            self.__getHeatMap(self.probmapRobots),
+            self.getHeatMap(self.probmapGameObj),
+            self.getHeatMap(self.probmapRobots),
         )
 
     """ Getting highest probability objects """
@@ -342,7 +348,7 @@ class ProbMap:
         return (coordinates[1], coordinates[0], probmap[coordinates[0]][coordinates[1]])
 
     def __getHighestRange(
-        self, probmap, x, y, rangeX, rangeY
+            self, probmap, x, y, rangeX, rangeY
     ) -> tuple[int, int, np.float64]:
         chunk = self.__getChunkOfMap(probmap, x, y, rangeX, rangeY)
         # for now just traversing the array manually but the hashmap idea sounds very powerfull
@@ -381,7 +387,7 @@ class ProbMap:
         )
 
     def __getHighestRangeT(
-        self, probmap, x, y, rangeX, rangeY, Threshold
+            self, probmap, x, y, rangeX, rangeY, Threshold
     ) -> tuple[int, int, np.float64]:
         chunk = self.__getChunkOfMap(probmap, x, y, rangeX, rangeY)
         if chunk is None:
@@ -451,7 +457,7 @@ class ProbMap:
     """ Get List of all coordinates where the probability is above threshold"""
 
     def __getCoordinatesAboveThreshold(
-        self, probmap, threshold
+            self, probmap, threshold
     ) -> list[tuple[int, int, int, np.float64]]:
         # using contours + minareacircle to find the centers of blobs, not 100% perfect if the blob is elliptic but should work fine
         _, binary = cv2.threshold(probmap, threshold, 255, cv2.THRESH_BINARY)
@@ -470,7 +476,7 @@ class ProbMap:
         return coords
 
     def __getCoordinatesAboveThresholdRangeLimited(
-        self, probmap, x, y, rangeX, rangeY, threshold
+            self, probmap, x, y, rangeX, rangeY, threshold
     ) -> list[tuple[int, int, int, np.float64]]:
         chunk = self.__getChunkOfMap(probmap, x, y, rangeX, rangeY)
         if chunk is None:
@@ -522,10 +528,10 @@ class ProbMap:
     """ In progress probmap prediction methods | These methods currently find the closest detections between old and new probmaps and calculate velocity based on distance and timestep"""
 
     def __getNearestPredToCoords(
-        self, coords, x, y, timepassed, maxSpeed
+            self, coords, x, y, timepassed, maxSpeed
     ) -> tuple[int, int, np.float64, float, float]:
         maxDistance = (
-            timepassed * maxSpeed
+                timepassed * maxSpeed
         )  # s*cm/s for the max possible distance traveled in one map update
         minDist = 100000
         minCoord = None  # x,y,prob,vx,vy
@@ -538,7 +544,7 @@ class ProbMap:
         return minCoord
 
     def __getPredictions(
-        self, lastMap, currentMap, timeBetweenMaps, timePrediction, maxSpeedOfType
+            self, lastMap, currentMap, timeBetweenMaps, timePrediction, maxSpeedOfType
     ) -> list[tuple[int, int, int, int, float, float, np.float64]]:
         predictions = []  # curX,curY,prednewX,prednewY,vX,vY,prob
         # self.__displayHeatMap(lastMap,"lastmap")
@@ -633,7 +639,7 @@ class ProbMap:
             predictions = self.getGameObjectMapPredictions(timePrediction)
             self.__addPredictionsOnMap(objPredMap, predictions, True)
             # turn to heatmap
-            objPredMap = self.__getHeatMap(objPredMap)
+            objPredMap = self.getHeatMap(objPredMap)
             # now draw all those pretty arrows
             self.__drawPredictionsOnMap(objPredMap, predictions, True)
         else:
@@ -647,7 +653,7 @@ class ProbMap:
             print(predictions)
             self.__drawPredictionsOnMap(robPredMap, predictions, False)
             # turn to heatmap
-            robPredMap = self.__getHeatMap(robPredMap)
+            robPredMap = self.getHeatMap(robPredMap)
             # now draw all those pretty arrows
             self.__drawPredictionsOnMap(robPredMap, predictions, False)
         else:
@@ -696,8 +702,8 @@ class ProbMap:
             # print("bottom edge out of bounds")
             chunk_bottom_edge_loc = self.size_y
         probmap[
-            chunk_left_edge_loc:chunk_right_edge_loc,
-            chunk_top_edge_loc:chunk_bottom_edge_loc,
+        chunk_left_edge_loc:chunk_right_edge_loc,
+        chunk_top_edge_loc:chunk_bottom_edge_loc,
         ] = chunk
 
     def __getChunkOfMap(self, probmap, x, y, chunkX, chunkY):
@@ -740,9 +746,9 @@ class ProbMap:
             # print("bottom edge out of bounds")
             chunk_bottom_edge_loc = self.size_y
         return probmap[
-            chunk_left_edge_loc:chunk_right_edge_loc,
-            chunk_top_edge_loc:chunk_bottom_edge_loc,
-        ]
+               chunk_left_edge_loc:chunk_right_edge_loc,
+               chunk_top_edge_loc:chunk_bottom_edge_loc,
+               ]
 
     """ Clearing the probability maps"""
 
@@ -771,7 +777,7 @@ class ProbMap:
 
         # maybe exponential decay will represent time dependent changes better
         decayFac = 0.36
-        return probmap * decayFac**timeParam
+        return probmap * decayFac ** timeParam
 
     """ Exposed dissipate over time method, timepassed parameter in seconds"""
 
