@@ -3,7 +3,7 @@ from mapinternals.probmap import ProbMap
 import math
 from ultralytics import YOLO  # Load the YOLOv8 model
 
-model = YOLO("..\\python\\best.pt")  # Open the model
+model = YOLO("assets/bestV8.pt")  # Open the model
 mapW = 1000
 mapH = 800
 mapRes = 1

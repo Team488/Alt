@@ -185,3 +185,5 @@ deep_sort/
 /tmpAssets
 
 !librknnrt.so
+
+.idea

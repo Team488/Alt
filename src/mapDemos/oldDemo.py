@@ -54,7 +54,8 @@ def runDemo():
         )
         coords = fieldMap.getAllGameObjectsAboveThreshold(0.4)  # threshold is .4
         (objMap, robtMap) = fieldMap.getHeatMaps()
-        # cv2.rectangle(objMap,(0,0),(fieldX,fieldY),(255,255,255),2)
+        fieldMap.disspateOverTime(0.2)
+        #  cv2.rectangle(objMap,(0,0),(fieldX,fieldY),(255,255,255),2)
         # print(coords)
         if coords:
             for coord in coords:
@@ -75,7 +76,7 @@ def runDemo():
         cv2.imshow(fieldMap.gameObjWindowName, objMap)
         # fieldMap.disspateOverTime(1)  # 1s
         # fieldMap.clear_map()
-        k = cv2.waitKey(1) & 0xFF
+        k = cv2.waitKey(100) & 0xFF
         if k == ord("q"):
             break
         if k == ord("c"):
@@ -133,4 +134,4 @@ def __go_inorder_top_bottom_left_right():
 
 
 if __name__ == "__main__":
-    main()
+    runDemo()
