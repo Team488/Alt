@@ -1,4 +1,5 @@
 import random
+import time
 from mapinternals.deepSortBaseLabler import DeepSortBaseLabler
 from tools.Constants import CameraIntrinsics, CameraExtrinsics, MapConstants
 from tools.positionEstimator import PositionEstimator
@@ -17,7 +18,14 @@ class LocalFrameProcessor:
         self,
         cameraIntrinsics: CameraIntrinsics,
         cameraExtrinsics: CameraExtrinsics,
+        useRknn = False
     ) -> None:
+        if useRknn:
+            from inference.rknnInferencer import rknnInferencer
+            self.inf = rknnInferencer()
+        else:
+            from inference.onnxInferencer import onnxInferencer
+            self.inf = onnxInferencer()
         self.baseLabler: DeepSortBaseLabler = DeepSortBaseLabler()
         self.cameraIntrinsics: CameraIntrinsics = cameraIntrinsics
         self.cameraExtrinsics: CameraExtrinsics = cameraExtrinsics
@@ -29,9 +37,15 @@ class LocalFrameProcessor:
         ]
 
     def processFrame(
-        self, frame, rknnResults, robotPosX=0, robotPosY=0, robotPosZ=0, drawBoxes=True
+        self, frame, robotPosX=0, robotPosY=0, robotPosZ=0, drawBoxes=True
     ) -> list[list[int, tuple[int, int, int], float, bool, np.ndarray]]:
+        startTime = time.time()
+        rknnResults = self.inf.inferenceFrame(frame)
+        
         if not rknnResults:
+            endTime = time.time()
+            fps = 1/(endTime-startTime)
+            cv2.putText(frame,f"FPS:{fps}",(10,80),0,1,(0,255,0),2)
             return []
 
         # id(unique),bbox,conf,isrobot,features,
@@ -42,17 +56,7 @@ class LocalFrameProcessor:
             frame, labledResults.copy(), self.cameraIntrinsics
         )
 
-        if drawBoxes:
-            # draw a box with
-            for labledResult, relativeResult in zip(labledResults, relativeResults):
-                id = labledResult[0]
-                bbox = labledResult[1]
-                conf = labledResult[2]
-                estXY = relativeResult[1]
-                color = self.colors[id % len(self.colors)]
-                cv2.rectangle(frame, bbox[0:2], bbox[2:4], color)
-                cv2.putText(frame, f"Id:{id} Conf{conf}", bbox[0:2], 0, 2, color)
-                cv2.putText(frame, f"Relative estimate:{estXY}", bbox[2:], 0, 2, color)
+      
 
         absoluteResults = []
         for result in relativeResults:
@@ -74,6 +78,24 @@ class LocalFrameProcessor:
             # if not self.isiregularDetection(relToRobotX,relToRobotY,relToRobotZ):
             absoluteResults.append(result)
         # output is id,(absX,absY,absZ),conf,isRobot,features
+
+        endTime = time.time()
+
+        fps = 1/(endTime-startTime)
+        cv2.putText(frame,f"FPS:{fps}",(10,80),0,1,(0,255,0),2)
+
+        if drawBoxes:
+            # draw a box with id,conf and relative estimate
+            for labledResult, relativeResult in zip(labledResults, relativeResults):
+                id = labledResult[0]
+                bbox = labledResult[1]
+                conf = labledResult[2]
+                estXY = relativeResult[1]
+                color = self.colors[id % len(self.colors)]
+                cv2.rectangle(frame, bbox[0:2], bbox[2:4], color)
+                cv2.putText(frame, f"Id:{id} Conf{conf}", bbox[0:2], 0, 2, color)
+                cv2.putText(frame, f"Relative estimate:{estXY}", bbox[2:], 0, 2, color)
+
         return absoluteResults
 
     def isiregularDetection(self, x, y, z, maxDelta=25):

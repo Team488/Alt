@@ -43,7 +43,6 @@ def startDemo():
         99.8  # time offset to align video start with log movements (seconds)
     )
 
-    inf = onnxInferencer()
     cameraExtr = CameraExtrinsics.DEPTHLEFT
     cameraIntr = CameraIntrinsics.OAKDLITE
     cap = cv2.VideoCapture("assets/video12qual25clipped.mp4")
@@ -91,9 +90,8 @@ def startDemo():
             # flip position y as frc y dir is flipped
             positionY = fieldHeight - positionY
 
-            results = inf.inferenceFrame(frame)
             # Run yolov5 on the frame
-            out = frameProcessor.processFrame(frame, results, positionX, positionY, 0)
+            out = frameProcessor.processFrame(frame, positionX, positionY, 0)
 
             for result in out:
                 id = result[0]

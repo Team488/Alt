@@ -335,6 +335,12 @@ class ProbMap:
             self.getHeatMap(self.probmapGameObj),
             self.getHeatMap(self.probmapRobots),
         )
+    
+    def getRobotHeatMap(self):
+        return self.getHeatMap(self.probmapRobots)
+
+    def getGameObjectHeatMap(self):
+        return self.getHeatMap(self.probmapGameObj)
 
     """ Getting highest probability objects """
 

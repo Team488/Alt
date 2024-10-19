@@ -1,11 +1,10 @@
 """ Process to run on orin """
 import cv2
-from tools.Constants import CameraExtrinsics, CameraIntrinsics, CameraIdOffsets
+from tools.Constants import CameraIdOffsets
 from coreinterface.XTablesClient import XTablesClient
 from coreinterface.DetectionPacket import DetectionPacket
 from coreinterface.FramePacket import FramePacket
 from mapinternals.CentralProcessor import CentralProcessor
-import time
 
 
 def getPackets(xtablesClient: XTablesClient):
@@ -37,9 +36,7 @@ def mainLoop():
     client = XTablesClient()
     central = CentralProcessor.instance()
 
-    # frameProcessors = [LocalFrameProcessor(CameraIntrinsics.OV9782COLOR,CameraExtrinsics.)]
 
-    # frameProcessor =
     while True:
         (detPackets, framePackets) = getPackets(client)
         if detPackets:

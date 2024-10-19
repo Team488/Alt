@@ -238,29 +238,6 @@ def startDemo():
             # fieldMap.clear_map()
 
 
-def __myRandom(random, a, b):
-    return a + random * (b - a)
-
-
-def __getRandomMove(
-    robotX, robotY, fieldX, fieldY, maxDistancePerMove
-) -> tuple[int, int]:
-    randDist = random.randint(int(maxDistancePerMove / 2), maxDistancePerMove)
-    randAng = __myRandom(random.random(), 0, 2 * math.pi)
-    randDx = math.cos(randAng) * randDist
-    randDy = math.sin(randAng) * randDist
-    # handle clipping
-    safetyoffset = 2
-    if robotX + randDx > fieldX:
-        randDx = fieldX - robotX - safetyoffset
-    if robotX + randDx < 0:
-        randDx = robotX + safetyoffset
-    if robotY + randDy > fieldY:
-        randDy = fieldY - robotY - safetyoffset
-    if robotY + randDy < 0:
-        randDy = robotY + safetyoffset
-
-    return (int(randDx), int(randDy))
 
 
 def __getUpOrDown(robotX, robotY, maxDistancePerMove) -> tuple[int, int]:

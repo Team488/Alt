@@ -31,9 +31,8 @@ classes = ["Robot", "Note"]
 def startDemo():
     name = getCameraName().name
     cameraIntrinsics, cameraExtrinsics, _ = getCameraValues(name)
-    inf = rknnInferencer("assets/bestV5.rknn")
     processor = LocalFrameProcessor(
-        cameraIntrinsics=cameraIntrinsics, cameraExtrinsics=cameraExtrinsics
+        cameraIntrinsics=cameraIntrinsics, cameraExtrinsics=cameraExtrinsics,useRknn=True
     )
     print("Starting process, device name:", name)
     xclient = XTablesClient(server_ip="192.168.0.17", server_port=4880)
@@ -45,8 +44,7 @@ def startDemo():
             print(f"sending to key{name}")
             timeStamp = time.time()
 
-            results = inf.getResults(frame)
-            processedResults = processor.processFrame(frame, results, True)
+            processedResults = processor.processFrame(frame, True)
             detectionPacket = DetectionPacket.createPacket(
                 processedResults, name, timeStamp
             )

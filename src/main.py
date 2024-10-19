@@ -1,3 +1,3 @@
-from mapDemos import robotVideoSimulationWithUKF
+from mapDemos import pathPlanningDemo
 
-robotVideoSimulationWithUKF.startDemo()
+pathPlanningDemo.startDemo()

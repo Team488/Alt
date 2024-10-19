@@ -1,9 +1,11 @@
 import time
 
+import numpy as np
+import mapDemos.utils as demoUtils 
 from mapinternals.probmap import ProbMap
 import cv2
-import utils
-from PathFind import PathFinder
+import pathplanning.utils as pathPlanningUtils
+from pathplanning.PathFind import PathFinder
 
 res = 1
 mapSizeX = 2000
@@ -54,24 +56,26 @@ def startDemo():
     cv2.namedWindow(map.gameObjWindowName)
     cv2.setMouseCallback(map.gameObjWindowName, mouseDownCallbackGameObj)
 
-    cv2.namedWindow(map.robotWindowName)
-    cv2.setMouseCallback(map.robotWindowName, mouseDownCallbackRobot)
     pathfinder = PathFinder(mapSizeX, mapSizeY)
+    dx = [1,0,-1]
+    dy = [1,0,-1]
+    our_location = (500, 200) # start in center
+
     while True:
+        randomVector = demoUtils.getRandomMove(our_location[0],our_location[1],map.size_x,map.size_y,50)
+        our_location = tuple(np.add(our_location,randomVector))
         map.disspateOverTime(0.2)  # 1s
 
-        our_location = (500, 200)
 
-        map.displayRobotObjMap()
-        robots = map.getAllRobotsAboveThreshold(0.9)
-
-        best_target = utils.getBestTarget(
+        robots = map.getAllRobotsAboveThreshold(0.8)
+        gampieces = map.getAllGameObjectsAboveThreshold(0.8)
+         
+        best_target = pathPlanningUtils.getBestTarget(
             robots,
-            map.getAllGameObjectsAboveThreshold(0.9),
+            gampieces,
             our_location
         )
-        a = map.probmapGameObj
-        display_frame = map.getHeatMap(a)
+        display_frame = map.getGameObjectHeatMap()
 
         cv2.circle(display_frame, our_location, 10, (255, 255, 0), -1)
         print(len(robots))

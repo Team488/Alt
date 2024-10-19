@@ -11,7 +11,8 @@ class onnxInferencer:
         anchorLocation="assets/bestV5Anchors.txt",
         strides=np.array([8, 16, 32]),
     ):
-        providers = ort.get_available_providers()[0]
+        providers = ort.get_available_providers()
+        print(f"Using provider {providers[0]}")
         self.session = ort.InferenceSession(model_path, providers=providers)
 
         self.strides = strides

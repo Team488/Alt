@@ -10,8 +10,8 @@ import math
 
 
 def startDemo():
-    cv2.namedWindow("view", cv2.WINDOW_NORMAL)
-    cv2.setWindowProperty("view", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
+    # cv2.namedWindow("view", cv2.WINDOW_NORMAL)
+    # cv2.setWindowProperty("view", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
 
     fieldWidth = 1653  # 54' 3" to cm
     fieldHeight = 800  # 26' 3" to cm
@@ -44,7 +44,6 @@ def startDemo():
         99.8  # time offset to align video start with log movements (seconds)
     )
 
-    inf = onnxInferencer()
     cameraExtr = CameraExtrinsics.DEPTHLEFT
     cameraIntr = CameraIntrinsics.OAKDLITE
     cap = cv2.VideoCapture("assets/video12qual25clipped.mp4")
@@ -95,9 +94,8 @@ def startDemo():
 
             # Run yolov5 on the frame
 
-            results = inf.inferenceFrame(frame)
             # local process
-            out = frameProcessor.processFrame(frame, results, positionX, positionY, 0)
+            out = frameProcessor.processFrame(frame, positionX, positionY, 0)
             # imagine a network connection here
             # now central process
             centralProcessor.processFrameUpdate(

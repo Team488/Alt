@@ -9,7 +9,7 @@ from inference.coco_utils import COCO_test_helper
 
 
 class rknnInferencer:
-    def __init__(self, model_path, target="rk3588"):
+    def __init__(self, model_path="assets/bestV5.rknn", target="rk3588"):
         # export needed rknpu .so
         # so_path = os.getcwd() + "/assets/"
 
@@ -49,7 +49,7 @@ class rknnInferencer:
 
     # Run inference using the camera feed
     # Returns list[boxes,confidences,classIds]
-    def getResults(
+    def inferenceFrame(
         self, frame, conf_threshold=0.4
     ) -> list[tuple[tuple[int, int], tuple[int, int]], float, int]:
         # Preprocess the frame
