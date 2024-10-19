@@ -187,3 +187,5 @@ deep_sort/
 !librknnrt.so
 
 .idea
+
+pycapnp/

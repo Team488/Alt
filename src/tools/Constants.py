@@ -61,11 +61,14 @@ class CameraIntrinsics(Enum):
 
 
 class ObjectReferences(Enum):
-    NOTE = 35.56  # cm
-    BUMPERHEIGHT = 12.7  # cm
+    NOTE = (35.56, 14)  # cm , in
+    BUMPERHEIGHT = (12.7, 5)  # cm, in
 
     def getMeasurementCm(self):
-        return self.value
+        return self.value[0]
+
+    def getMeasurementIn(self):
+        return self.value[1]
 
 
 class KalmanConstants:

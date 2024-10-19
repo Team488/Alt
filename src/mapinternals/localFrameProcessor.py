@@ -33,19 +33,26 @@ class LocalFrameProcessor:
     ) -> list[list[int, tuple[int, int, int], float, bool, np.ndarray]]:
         if not rknnResults:
             return []
+
+        # id(unique),bbox,conf,isrobot,features,
         labledResults = self.baseLabler.getLocalLabels(frame, rknnResults)
+
+        # id(unique),estimated x/y,conf,isrobot,features,
+        relativeResults = self.estimator.estimateDetectionPositions(
+            frame, labledResults.copy(), self.cameraIntrinsics
+        )
+
         if drawBoxes:
-            for result in labledResults:
-                id = result[0]
-                bbox = result[1]
-                print(bbox)
+            # draw a box with
+            for labledResult, relativeResult in zip(labledResults, relativeResults):
+                id = labledResult[0]
+                bbox = labledResult[1]
+                conf = labledResult[2]
+                estXY = relativeResult[1]
                 color = self.colors[id % len(self.colors)]
                 cv2.rectangle(frame, bbox[0:2], bbox[2:4], color)
-                cv2.putText(frame, f"Id:{id}", bbox[0:2], 0, 2, color)
-        # id(unique),features,estimated x/y,conf,isrobot
-        relativeResults = self.estimator.estimateDetectionPositions(
-            frame, labledResults, self.cameraIntrinsics
-        )
+                cv2.putText(frame, f"Id:{id} Conf{conf}", bbox[0:2], 0, 2, color)
+                cv2.putText(frame, f"Relative estimate:{estXY}", bbox[2:], 0, 2, color)
 
         absoluteResults = []
         for result in relativeResults:
@@ -60,7 +67,7 @@ class LocalFrameProcessor:
             # update results with absolute position
             result[1] = (
                 relToRobotX + robotPosX,
-                relToRobotY + robotPosY,
+                -relToRobotY + robotPosY,  # flip y
                 relToRobotZ + robotPosZ,
             )
             # note at this point these values are expected to be absolute

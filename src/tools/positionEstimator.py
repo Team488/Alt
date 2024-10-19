@@ -174,11 +174,11 @@ class PositionEstimator:
                 # pulling out the numbers
                 kernel = np.ones((5, 5), np.uint8)
                 backProjNumbers = self.__backProjWhite(bumperOnlyLab)
-                # opened = cv2.morphologyEx(backProjNumbers,cv2.MORPH_OPEN,kernel,iterations=1)
-                # closed = cv2.morphologyEx(opened,cv2.MORPH_CLOSE,kernel,iterations=1)
-                _, threshNumbers = cv2.threshold(
-                    backProjNumbers, 35, 255, cv2.THRESH_BINARY
+                opened = cv2.morphologyEx(
+                    backProjNumbers, cv2.MORPH_OPEN, kernel, iterations=1
                 )
+                closed = cv2.morphologyEx(opened, cv2.MORPH_CLOSE, kernel, iterations=1)
+                _, threshNumbers = cv2.threshold(closed, 50, 255, cv2.THRESH_BINARY)
                 contoursNumbers, _ = cv2.findContours(
                     threshNumbers, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE
                 )
@@ -241,7 +241,7 @@ class PositionEstimator:
         if est is not None:
             (estimatedHeight, isBlue) = est
             distance = self.__calculateDistance(
-                ObjectReferences.BUMPERHEIGHT.getMeasurementCm(),
+                ObjectReferences.BUMPERHEIGHT.getMeasurementIn(),
                 estimatedHeight,
                 cameraIntrinsics,
             )
@@ -272,7 +272,7 @@ class PositionEstimator:
         midH = int(h / 2)
         centerX = x1 + midW
         distance = self.__calculateDistance(
-            ObjectReferences.NOTE.getMeasurementCm(), w, cameraIntrinsics
+            ObjectReferences.NOTE.getMeasurementIn(), w, cameraIntrinsics
         )
         bearing = self.__calcBearing(
             cameraIntrinsics.getHFov(),

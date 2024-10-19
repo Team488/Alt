@@ -7,7 +7,7 @@ class DeepSortBaseLabler:
         self.trackerGameObjects = RobotTracker()
         self.trackerRobots = RobotTracker()
 
-    """ Returns list of tracked ids, with id, bbox, conf, isRobot,features?"""
+    """ Returns list of tracked ids, with id, bbox, conf, isRobot,features"""
 
     def getLocalLabels(
         self, frame, results

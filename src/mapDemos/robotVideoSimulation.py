@@ -7,37 +7,42 @@ from inference.onnxInferencer import onnxInferencer
 import cv2
 import math
 
-fieldWidth = 1653  # 54' 3" to cm
-fieldHeight = 800  # 26' 3" to cm
-res = 5  # cm
-robotWidth = 75  # cm
-robotHeight = 75  # cm assuming square robot with max frame perimiter of 300
-gameObjectWidth = 35  # cm
-gameObjectHeight = 35  # cm circular note
-simMap = ProbMap(
-    fieldWidth,
-    fieldHeight,
-    res,
-    gameObjectX=gameObjectWidth,
-    gameObjectY=gameObjectHeight,
-    robotX=robotWidth,
-    robotY=robotHeight,
-)
-
-parser = CsvParser(
-    "assets/qual25.csv",
-    0.1,
-    (
-        "/RealOutputs/PoseSubsystem/RobotPose/rotation/value",
-        "/RealOutputs/PoseSubsystem/RobotPose/translation/x",
-        "/RealOutputs/PoseSubsystem/RobotPose/translation/y",
-    ),
-)
-parser.removeZeroEntriesAtStart()
-csvTimeOffset = 99.8  # time offset to align video start with log movements (seconds)
-
 
 def startDemo():
+    cv2.namedWindow("view", cv2.WINDOW_NORMAL)
+    cv2.setWindowProperty("view", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
+
+    fieldWidth = 1653  # 54' 3" to cm
+    fieldHeight = 800  # 26' 3" to cm
+    res = 5  # cm
+    robotWidth = 75  # cm
+    robotHeight = 75  # cm assuming square robot with max frame perimiter of 300
+    gameObjectWidth = 35  # cm
+    gameObjectHeight = 35  # cm circular note
+    simMap = ProbMap(
+        fieldWidth,
+        fieldHeight,
+        res,
+        gameObjectX=gameObjectWidth,
+        gameObjectY=gameObjectHeight,
+        robotX=robotWidth,
+        robotY=robotHeight,
+    )
+
+    parser = CsvParser(
+        "assets/qual25.csv",
+        0.1,
+        (
+            "/RealOutputs/PoseSubsystem/RobotPose/rotation/value",
+            "/RealOutputs/PoseSubsystem/RobotPose/translation/x",
+            "/RealOutputs/PoseSubsystem/RobotPose/translation/y",
+        ),
+    )
+    parser.removeZeroEntriesAtStart()
+    csvTimeOffset = (
+        99.8  # time offset to align video start with log movements (seconds)
+    )
+
     inf = onnxInferencer()
     cameraExtr = CameraExtrinsics.DEPTHLEFT
     cameraIntr = CameraIntrinsics.OAKDLITE
@@ -155,10 +160,10 @@ def __drawRobot(
     BLy = int(posY - math.sin(RobotAngRight) * height)
     BRx = int(posX - math.cos(RobotAngLeft) * width)
     BRy = int(posY - math.sin(RobotAngLeft) * height)
-    cv2.line(frame, (FLx, FLy), (FRx, FRy), (0, 0, 255), 1)
-    cv2.line(frame, (BLx, BLy), (BRx, BRy), (255, 0, 0), 1)
-    cv2.line(frame, (BLx, BLy), (FLx, FLy), (255, 255, 255), 1)
-    cv2.line(frame, (BRx, BRy), (FRx, FRy), (255, 255, 255), 1)
+    cv2.line(frame, (FLx, FLy), (FRx, FRy), (0, 0, 255), 2)
+    cv2.line(frame, (BLx, BLy), (BRx, BRy), (255, 0, 0), 2)
+    cv2.line(frame, (BLx, BLy), (FLx, FLy), (255, 255, 255), 2)
+    cv2.line(frame, (BRx, BRy), (FRx, FRy), (255, 255, 255), 2)
 
     camX = posX + cameraExtrinsic.getOffsetX()
     camY = posY + cameraExtrinsic.getOffsetY()
