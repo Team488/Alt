@@ -91,6 +91,7 @@ class CameraIdOffsets(Enum):
 
 class MapConstants(Enum):
     GameObjectAcceleration = 0  # probably?
+    RobotMaxVelocity = 300  # cm/s
     RobotAcceleration = 1500  # cm/s this is probably inaccurate
     fieldWidth = 1653  # 54' 3" to cm
     fieldHeight = 800  # 26' 3" to cm

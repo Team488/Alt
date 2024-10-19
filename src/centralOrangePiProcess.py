@@ -32,11 +32,13 @@ def startDemo():
     name = getCameraName().name
     cameraIntrinsics, cameraExtrinsics, _ = getCameraValues(name)
     processor = LocalFrameProcessor(
-        cameraIntrinsics=cameraIntrinsics, cameraExtrinsics=cameraExtrinsics,useRknn=True
+        cameraIntrinsics=cameraIntrinsics,
+        cameraExtrinsics=cameraExtrinsics,
+        useRknn=True,
     )
     print("Starting process, device name:", name)
-    xclient = XTablesClient(server_ip="192.168.0.17", server_port=4880)
-    cap = cv2.VideoCapture("assets/video12qual25clipped.mp4")
+    xclient = XTablesClient()
+    cap = cv2.VideoCapture(0)
     cap.set(cv2.CAP_PROP_POS_FRAMES, 1004)
     while cap.isOpened():
         ret, frame = cap.read()
@@ -44,7 +46,9 @@ def startDemo():
             print(f"sending to key{name}")
             timeStamp = time.time()
 
-            processedResults = processor.processFrame(frame, True)
+            processedResults = processor.processFrame(
+                frame, True
+            )  # processing as relative
             detectionPacket = DetectionPacket.createPacket(
                 processedResults, name, timeStamp
             )

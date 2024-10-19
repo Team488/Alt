@@ -1,7 +1,7 @@
 import time
 
 import numpy as np
-import mapDemos.utils as demoUtils 
+import mapDemos.utils as demoUtils
 from mapinternals.probmap import ProbMap
 import cv2
 import pathplanning.utils as pathPlanningUtils
@@ -56,43 +56,56 @@ def startDemo():
     cv2.namedWindow(map.gameObjWindowName)
     cv2.setMouseCallback(map.gameObjWindowName, mouseDownCallbackGameObj)
 
+    cv2.namedWindow(map.robotWindowName)
+    cv2.setMouseCallback(map.robotWindowName, mouseDownCallbackRobot)
+
     pathfinder = PathFinder(mapSizeX, mapSizeY)
-    dx = [1,0,-1]
-    dy = [1,0,-1]
-    our_location = (500, 200) # start in center
+    dx = [1, 0, -1]
+    dy = [1, 0, -1]
+    our_location = (500, 200)  # start in center
 
     while True:
-        randomVector = demoUtils.getRandomMove(our_location[0],our_location[1],map.size_x,map.size_y,50)
-        our_location = tuple(np.add(our_location,randomVector))
-        map.disspateOverTime(0.2)  # 1s
+        randomVector = demoUtils.getRandomMove(
+            our_location[0], our_location[1], map.size_x, map.size_y, 50
+        )
+        our_location = tuple(np.add(our_location, randomVector))
+        map.disspateOverTime(0.05)  # 1s
 
-
+        map.displayRobotObjMap()
         robots = map.getAllRobotsAboveThreshold(0.8)
         gampieces = map.getAllGameObjectsAboveThreshold(0.8)
-         
-        best_target = pathPlanningUtils.getBestTarget(
-            robots,
-            gampieces,
-            our_location
-        )
+
+        best_target = pathPlanningUtils.getBestTarget(robots, gampieces, our_location)
         display_frame = map.getGameObjectHeatMap()
 
         cv2.circle(display_frame, our_location, 10, (255, 255, 0), -1)
         print(len(robots))
         for robot in robots:
-            cv2.circle(display_frame, (int(robot[0]), int(robot[1])), robot[2], (255, 255, 0), -1)
+            cv2.circle(
+                display_frame,
+                (int(robot[0]), int(robot[1])),
+                robot[2],
+                (255, 255, 0),
+                -1,
+            )
         #
         if pathfinder.path is not None:
             for p in pathfinder.path:
                 cv2.circle(display_frame, (int(p[0]), int(p[1])), 2, (255, 255, 0), -1)
 
         if best_target is not None:
-            cv2.circle(display_frame, (best_target[0], best_target[1]), 10, (0, 255, 0), -1)
+            cv2.circle(
+                display_frame, (best_target[0], best_target[1]), 10, (0, 255, 0), -1
+            )
 
         if best_target is not None:
             best_target_location = (int(best_target[0]), int(best_target[1]))
-            pathfinder.update_path_with_values(start=our_location, goal=best_target_location, obstacles=robots,
-                                               max_path_length=5000)
+            pathfinder.update_path_with_values(
+                start=our_location,
+                goal=best_target_location,
+                obstacles=robots,
+                max_path_length=5000,
+            )
         else:
             pathfinder.reset()
         k = cv2.waitKey(1) & 0xFF

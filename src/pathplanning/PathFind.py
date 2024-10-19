@@ -1,6 +1,8 @@
 import heapq
 import math
 
+import numpy as np
+
 
 class PathFinder:
     def __init__(self, map_size_x, map_size_y):
@@ -12,7 +14,36 @@ class PathFinder:
         self.map_size_y = map_size_y
         self.map_size_x = map_size_x
 
-    def update_values(self, start=None, goal=None, obstacles=None, max_path_length=None):
+    def willObjectCollideWithRobot(
+        P_A0, V_A, S_A, P_B0, V_B, S_B, t_max, d_min, inches_per_point
+    ):
+        for t in np.linspace(0, t_max, num=1000):
+            P_A_t = (P_A0[0] + V_A[0] * S_A * t, P_A0[1] + V_A[1] * S_A * t)
+            P_B_t = (P_B0[0] + V_B[0] * S_B * t, P_B0[1] + V_B[1] * S_B * t)
+            distance = (
+                np.linalg.norm(np.array(P_A_t) - np.array(P_B_t)) * inches_per_point
+            )
+            if distance < d_min:
+                collision_position = (
+                    (P_A_t[0] + P_B_t[0]) / 2,
+                    (P_A_t[1] + P_B_t[1]) / 2,
+                )
+                return True, t, collision_position, distance
+        return False, None, None, None
+
+    def mark_collision_zone_on_grid(grid, P_B_predicted, d_min, inches_per_point):
+        radius = int(d_min / inches_per_point)
+        x_center, y_center = int(P_B_predicted[0]), int(P_B_predicted[1])
+
+        for x in range(x_center - radius, x_center + radius + 1):
+            for y in range(y_center - radius, y_center + radius + 1):
+                if (x - x_center) ** 2 + (y - y_center) ** 2 <= radius**2:
+                    if 0 <= x < len(grid) and 0 <= y < len(grid[0]):
+                        grid[x][y] = 1  # Mark the cell as an obstacle
+
+    def update_values(
+        self, start=None, goal=None, obstacles=None, max_path_length=None
+    ):
         if start:
             self.start = start
         if goal:
@@ -22,8 +53,15 @@ class PathFinder:
         if max_path_length:
             self.max_path_length = max_path_length
 
-    def update_path_with_values(self, start=None, goal=None, obstacles=None, max_path_length=None):
-        if self.start != start or self.goal != goal or self.obstacles != obstacles or self.max_path_length != max_path_length:
+    def update_path_with_values(
+        self, start=None, goal=None, obstacles=None, max_path_length=None
+    ):
+        if (
+            self.start != start
+            or self.goal != goal
+            or self.obstacles != obstacles
+            or self.max_path_length != max_path_length
+        ):
             self.update_values(start, goal, obstacles, max_path_length)
             self.update()
 
@@ -49,7 +87,7 @@ class PathFinder:
                 for dy in range(-radius, radius + 1):
                     point = (obs_x + dx, obs_y + dy)
                     # Check if the point is inside the obstacle's radius
-                    if math.sqrt(dx ** 2 + dy ** 2) <= radius:
+                    if math.sqrt(dx**2 + dy**2) <= radius:
                         blocked_points.add(point)
         return blocked_points
 
@@ -76,24 +114,41 @@ class PathFinder:
             step_count += 1
 
             # Explore neighbors
-            neighbors = [(0, 1), (1, 0), (0, -1), (-1, 0), (1, 1), (1, -1), (-1, 1), (-1, -1)]
+            neighbors = [
+                (0, 1),
+                (1, 0),
+                (0, -1),
+                (-1, 0),
+                (1, 1),
+                (1, -1),
+                (-1, 1),
+                (-1, -1),
+            ]
 
             for dx, dy in neighbors:
                 neighbor = (current[0] + dx, current[1] + dy)
 
                 # Check if the neighbor is a blocked point (within any obstacle's radius)
-                if 0 <= neighbor[0] < map_size_x and 0 <= neighbor[1] < map_size_y and neighbor not in obstacles:
+                if (
+                    0 <= neighbor[0] < map_size_x
+                    and 0 <= neighbor[1] < map_size_y
+                    and neighbor not in obstacles
+                ):
                     tentative_g_score = g_score[current] + 1
                     if neighbor not in g_score or tentative_g_score < g_score[neighbor]:
                         came_from[neighbor] = current
                         g_score[neighbor] = tentative_g_score
-                        f_score[neighbor] = tentative_g_score + self.heuristic(neighbor, goal)
+                        f_score[neighbor] = tentative_g_score + self.heuristic(
+                            neighbor, goal
+                        )
                         heapq.heappush(open_set, (f_score[neighbor], neighbor))
 
         return []
 
     def update(self):
         if self.start and self.goal:
-            self.path = self.a_star_search(self.start, self.goal, self.obstacles, self.map_size_x, self.map_size_y)
+            self.path = self.a_star_search(
+                self.start, self.goal, self.obstacles, self.map_size_x, self.map_size_y
+            )
             if not self.path:
                 print("No path found or path exceeded maximum length.")
