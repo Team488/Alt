@@ -82,7 +82,10 @@ class CentralProcessor:
                 # now lets also input our new estimated state into the map
                 if isRobot:
                     self.map.addDetectedRobot(
-                        int(newState[0]), int(newState[1]), prob, timeStepSeconds
+                        int(map.size_x / 2) + int(newState[0]),
+                        int(map.size_y / 2) + int(newState[1]),
+                        prob,
+                        timeStepSeconds,
                     )
                 else:
                     self.map.addCustomObjectDetection(
