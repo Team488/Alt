@@ -1,8 +1,8 @@
 from rknn.api import RKNN
 
 # Set paths for your ONNX model and output RKNN file
-onnx_model_path = "src/assets/bestV5.onnx"  # Replace with your YOLOv5 ONNX model path
-rknn_model_path = "bestV5.rknn"  # Replace with your desired output path for RKNN
+onnx_model_path = "mars-small128.onnx"  # Replace with your YOLOv5 ONNX model path
+rknn_model_path = "mars-small128.rknn"  # Replace with your desired output path for RKNN
 
 # Create RKNN object
 rknn = RKNN()
@@ -10,16 +10,14 @@ rknn = RKNN()
 # Step 1: Configure the RKNN model
 print("--> Configuring model")
 rknn.config(
-    mean_values=[[0, 0, 0]],  # Adjust mean values for your model (optional)
-    std_values=[
-        [255, 255, 255]
-    ],  # Normalize if your model was trained with images between 0-255
     target_platform="rk3588",  # Set the target platform (rk356x, rk3588, etc.)
 )
 
 # Step 2: Load the ONNX model
 print("--> Loading ONNX model")
-ret = rknn.load_onnx(model=onnx_model_path)
+ret = rknn.load_onnx(
+    model=onnx_model_path, inputs=["images:0"], input_size_list=[[32, 128, 64, 3]]
+)
 if ret != 0:
     print("Failed to load ONNX model")
     exit(ret)

@@ -40,7 +40,7 @@ class CentralProcessor:
     def __init__(self):
         self.kalmanCacheRobots: KalmanCache = KalmanCache()
         self.kalmanCacheGameObjects: KalmanCache = KalmanCache()
-        self.map: ProbMap = ProbMap()
+        self.map = ProbMap()
         self.ukf = Ukf()
         self.labler = KalmanLabeler(self.kalmanCacheRobots, self.kalmanCacheGameObjects)
 
@@ -78,19 +78,26 @@ class CentralProcessor:
                     self.kalmanCacheRobots.saveKalmanData(id, self.ukf)
                 else:
                     self.kalmanCacheGameObjects.saveKalmanData(id, self.ukf)
-
+                print(tuple(newState))
                 # now lets also input our new estimated state into the map
                 if isRobot:
                     self.map.addDetectedRobot(
-                        int(map.size_x / 2) + int(newState[0]),
-                        int(map.size_y / 2) + int(newState[1]),
+                        int(self.map.width / 2) + int(newState[0]),
+                        int(self.map.height / 2) + int(newState[1]),
                         prob,
                         timeStepSeconds,
                     )
                 else:
+                    print(
+                        int(self.map.width / 2) + int(newState[0]),
+                        int(self.map.height / 2) + int(newState[1]),
+                    )
+                    print(
+                        f"Map width{self.map.__internalWidth} Map height {self.map.__internalHeight}"
+                    )
                     self.map.addCustomObjectDetection(
-                        int(newState[0]),
-                        int(newState[1]),
+                        int(self.map.width / 2) + int(newState[0]),
+                        int(self.map.height / 2) + int(newState[1]),
                         100,
                         100,
                         prob,

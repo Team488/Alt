@@ -41,7 +41,7 @@ def runDemo():
     # fieldY = 1676 # roughly 55 ft
     fieldX = 1680
     fieldY = 1000
-    res = 1  # cm
+    res = 2  # cm
 
     # axis aligned so robot detections will be need to be adjusted for accuracy
     fieldMap = probmap.ProbMap(
@@ -62,7 +62,13 @@ def runDemo():
                 (px, py, r, prob) = coord
                 if prob > 0:
                     # cv2.putText(objMap,f"prob{prob}",(x,y),1,1,(255,255,255))
-                    cv2.circle(objMap, (px, py), r + 10, (255, 0, 0), 2)
+                    cv2.circle(
+                        objMap,
+                        (px // fieldMap.resolution, py // fieldMap.resolution),
+                        r + 10,
+                        (255, 0, 0),
+                        2,
+                    )
         else:
             cv2.putText(
                 objMap,

@@ -23,10 +23,10 @@ def startDemo():
         fieldWidth,
         fieldHeight,
         res,
-        gameObjectX=gameObjectWidth,
-        gameObjectY=gameObjectHeight,
-        robotX=robotWidth,
-        robotY=robotHeight,
+        gameObjectWidth=gameObjectWidth,
+        gameObjectHeight=gameObjectHeight,
+        robotWidth=robotWidth,
+        robotHeight=robotHeight,
     )
 
     parser = CsvParser(

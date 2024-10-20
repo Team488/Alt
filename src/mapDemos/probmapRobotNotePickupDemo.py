@@ -1,6 +1,6 @@
 import traceback
 
-import probmap
+from mapinternals.probmap import ProbMap
 import random
 import cv2
 import math
@@ -11,13 +11,13 @@ robotSizeY = 96
 objSize = 35
 fieldX = 1600  # roughly 90 ft
 fieldY = 1000  # roughly 55 ft
-res = 1  # cm
+res = 2  # cm
 
 wX = int(fieldX / 3)
 wY = int(fieldY / 3)
 
 # values other than field x,y not used in this demo
-fieldMap = probmap.ProbMap(
+fieldMap = ProbMap(
     fieldX, fieldY, res, objSize, objSize, robotSizeX, robotSizeY
 )  # Width x Height at 1 cm resolution
 
@@ -36,11 +36,22 @@ def getRangeHighest(x, y):
     (px, py, prob) = fieldMap.getHighestGameObjectWithinRangeT(
         x, y, wX, wY, 0.30
     )  # .30 threshold
+    px //= fieldMap.resolution
+    py //= fieldMap.resolution
+    x //= fieldMap.resolution
+    y //= fieldMap.resolution
+
     (objMap, robtMap) = fieldMap.getHeatMaps()
     cv2.rectangle(
         objMap,
-        (int(x - wX / 2), int(y - wY / 2)),
-        (int(x + wX / 2), int(y + wY / 2)),
+        (
+            int(x - wX / 2) // fieldMap.resolution,
+            int(y - wY / 2) // fieldMap.resolution,
+        ),
+        (
+            int(x + wX / 2) // fieldMap.resolution,
+            int(y + wY / 2) // fieldMap.resolution,
+        ),
         (255),
         2,
     )
@@ -127,12 +138,10 @@ def startDemo():
             robotX += moveX
             robotY += moveY
 
-            test_randomization_ranges(
-                fieldMap, int(fieldMap.get_shape()[0]), int(fieldMap.get_shape()[1])
-            )
+            test_randomization_ranges(fieldMap, fieldMap.width, fieldMap.height)
 
             # slowly dissipate
-            fieldMap.disspateOverTime(1)  # 1s
+            fieldMap.disspateOverTime(0.1)  # 1s
 
             k = cv2.waitKey(100) & 0xFF
             if k == ord("q"):
@@ -142,7 +151,7 @@ def startDemo():
             # fieldMap.clear_map()
 
 
-def test_randomization_ranges(map: probmap, width, height):
+def test_randomization_ranges(map: ProbMap, width, height):
     # for i in range(1):
     x = random.randrange(0, width)
     y = random.randrange(0, height)
