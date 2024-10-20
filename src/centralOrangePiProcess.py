@@ -46,6 +46,7 @@ def startDemo():
     # cap.set(cv2.CAP_PROP_POS_FRAMES, 1004)
     while cap.isOpened():
         ret, frame = cap.read()
+        print(frame.shape)
         if ret:
             print(f"sending to key{name}")
             timeStamp = time.time()
