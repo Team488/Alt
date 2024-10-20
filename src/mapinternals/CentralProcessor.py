@@ -80,7 +80,6 @@ class CentralProcessor:
                     self.kalmanCacheGameObjects.saveKalmanData(id, self.ukf)
 
                 # now lets also input our new estimated state into the map
-                print(newState)
                 if isRobot:
                     self.map.addDetectedRobot(
                         int(newState[0]), int(newState[1]), prob, timeStepSeconds
@@ -88,7 +87,7 @@ class CentralProcessor:
                 else:
                     self.map.addCustomObjectDetection(
                         int(newState[0]),
-                        int(newState[1]) + 250,
+                        int(newState[1]),
                         100,
                         100,
                         prob,

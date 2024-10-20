@@ -33,9 +33,8 @@ def getPackets(xtablesClient: XTablesClient):
 
 
 def mainLoop():
-    client = XTablesClient()
+    client = XTablesClient("192.168.0.17", 4880)
     central = CentralProcessor.instance()
-
 
     while True:
         (detPackets, framePackets) = getPackets(client)
@@ -44,8 +43,9 @@ def mainLoop():
         for detPacket, framePacket in zip(detPackets, framePackets):
             print(detPacket)
             cv2.imshow(framePacket.message, FramePacket.getFrame(framePacket))
-        cv2.imshow("Robot Map", central.map.getHeatMaps()[0])
-        cv2.imshow("Game object Map", central.map.getHeatMaps()[1])
+        maps = central.map.getHeatMaps()
+        cv2.imshow("Robot Map", maps[1])
+        cv2.imshow("Game object Map", maps[0])
         if cv2.waitKey(1) & 0xFF == ord("q"):
             break
 

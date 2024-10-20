@@ -8,7 +8,7 @@ from coreinterface.XTablesClient import XTablesClient
 from coreinterface.FramePacket import FramePacket
 from coreinterface.DetectionPacket import DetectionPacket
 from inference.rknnInferencer import rknnInferencer
-from tools.Constants import getCameraValues
+from tools.Constants import getCameraValues, CameraIntrinsics, CameraExtrinsics
 from mapinternals.localFrameProcessor import LocalFrameProcessor
 
 
@@ -30,14 +30,20 @@ classes = ["Robot", "Note"]
 
 def startDemo():
     name = getCameraName().name
-    cameraIntrinsics, cameraExtrinsics, _ = getCameraValues(name)
+    # cameraIntrinsics, cameraExtrinsics, _ = getCameraValues(name)
+    cameraIntrinsics, cameraExtrinsics = (
+        CameraIntrinsics.RANDOMWEBCAM,
+        CameraExtrinsics.NONE,
+    )
     processor = LocalFrameProcessor(
-        cameraIntrinsics=cameraIntrinsics, cameraExtrinsics=cameraExtrinsics,useRknn=True
+        cameraIntrinsics=cameraIntrinsics,
+        cameraExtrinsics=cameraExtrinsics,
+        useRknn=True,
     )
     print("Starting process, device name:", name)
     xclient = XTablesClient(server_ip="192.168.0.17", server_port=4880)
     cap = cv2.VideoCapture(0)
-    #cap.set(cv2.CAP_PROP_POS_FRAMES, 1004)
+    # cap.set(cv2.CAP_PROP_POS_FRAMES, 1004)
     while cap.isOpened():
         ret, frame = cap.read()
         if ret:
