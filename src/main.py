@@ -1,3 +1,3 @@
-from mapDemos import pathPlanningDemo
+from mapDemos import robotVideoSimulation
 
-pathPlanningDemo.startDemo()
+robotVideoSimulation.startDemo()
