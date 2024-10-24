@@ -1,0 +1,9 @@
+[Unit]
+Description=Main-Pipeline-Process
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/xbot/Alt/src
+ExecStart=/opt/xbot/Alt/runMainProcess.sh
+Restart=always

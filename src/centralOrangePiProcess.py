@@ -1,5 +1,6 @@
 """ Local process to run on each orange pi """
 import numpy as np
+import argparse
 import cv2
 import socket
 import time
@@ -7,7 +8,6 @@ from enum import Enum
 from coreinterface.XTablesClient import XTablesClient
 from coreinterface.FramePacket import FramePacket
 from coreinterface.DetectionPacket import DetectionPacket
-from inference.rknnInferencer import rknnInferencer
 from tools.Constants import getCameraValues, CameraIntrinsics, CameraExtrinsics
 from mapinternals.localFrameProcessor import LocalFrameProcessor
 
@@ -28,17 +28,10 @@ def getCameraName():
 classes = ["Robot", "Note"]
 
 
-def startDemo():
+def startDemo(args):
     name = getCameraName().name
-    # cameraIntrinsics, cameraExtrinsics, _ = getCameraValues(name)
-    cameraIntrinsics, cameraExtrinsics = (
-        CameraIntrinsics.RANDOMWEBCAM,
-        CameraExtrinsics.NONE,
-    )
+    cameraIntrinsics, cameraExtrinsics, _ = getCameraValues(name)
     processor = LocalFrameProcessor(
-        cameraIntrinsics=cameraIntrinsics,
-        cameraExtrinsics=cameraExtrinsics,
-        useRknn=True,
         cameraIntrinsics=cameraIntrinsics,
         cameraExtrinsics=cameraExtrinsics,
         useRknn=True,
@@ -46,7 +39,6 @@ def startDemo():
     print("Starting process, device name:", name)
     xclient = XTablesClient()
     cap = cv2.VideoCapture(0)
-    cap.set(cv2.CAP_PROP_POS_FRAMES, 1004)
     while cap.isOpened():
         ret, frame = cap.read()
         print(frame.shape)
@@ -62,9 +54,10 @@ def startDemo():
             )
             detectionB64 = DetectionPacket.toBase64(detectionPacket)
             xclient.executePutString(name, detectionB64)
-            dataPacket = FramePacket.createPacket(timeStamp, name, frame)
-            b64 = FramePacket.toBase64(dataPacket)
-            xclient.executePutString(name + "frame", b64)
+            if args.sendframe:
+                dataPacket = FramePacket.createPacket(timeStamp, name, frame)
+                b64 = FramePacket.toBase64(dataPacket)
+                xclient.executePutString(name + "frame", b64)
         if cv2.waitKey(1) & 0xFF == ord("q"):
             break
 
@@ -74,4 +67,10 @@ def startDemo():
     cv2.destroyAllWindows()
 
 
-startDemo()
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    # Add an argument
+    parser.add_argument("--sendframe", type=bool, required=True)
+    # Parse the argument
+    args = parser.parse_args()
+    startDemo(args=args)

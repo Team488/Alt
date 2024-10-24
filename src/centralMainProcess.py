@@ -1,5 +1,6 @@
 """ Process to run on orin """
 import cv2
+import argparse
 import numpy as np
 from tools.Constants import CameraIdOffsets
 from coreinterface.XTablesClient import XTablesClient
@@ -10,12 +11,10 @@ from pathplanning.PathGenerator import PathGenerator
 from tools.Constants import MapConstants
 
 
-def getPackets(xtablesClient: XTablesClient):
+def getDetPackets(xtablesClient: XTablesClient):
     maxTimeout = 1000
-    # keys = ("FRONTLEFT", "FRONTRIGHT", "REARLEFT", "REARRIGHT")
-    keys = ["FRONTRIGHT"]
+    keys = ("FRONTLEFT", "FRONTRIGHT", "REARLEFT", "REARRIGHT")
     detectionpackets = []
-    framepackets = []
     for key in keys:
         print(f"Looking for key {key}")
         # detections
@@ -26,13 +25,23 @@ def getPackets(xtablesClient: XTablesClient):
             detectionpackets.append(
                 (DetectionPacket.toDetections(dataPacket), idOffset)
             )
+
+    return detectionpackets
+
+
+def getFramePackets(xtablesClient: XTablesClient):
+    maxTimeout = 1000
+    keys = ("FRONTLEFT", "FRONTRIGHT", "REARLEFT", "REARRIGHT")
+    framepackets = []
+    for key in keys:
+        print(f"Looking for key {key}")
         # frame
         rawB64 = xtablesClient.getString(key + "frame", TIMEOUT=maxTimeout)
         if rawB64 is not None and rawB64 and not rawB64.strip() == "null":
             dataPacket = FramePacket.fromBase64(rawB64.replace("\\u003d", "="))
             framepackets.append(dataPacket)
 
-    return (detectionpackets, framepackets)
+    return framepackets
 
 
 def mainLoop():
@@ -43,32 +52,35 @@ def mainLoop():
     pathName = "target_waypoints"
     currentPosition = MapBottomCorner / 2
     while True:
-        (detPackets, framePackets) = getPackets(client)
+        detPackets = getDetPackets(client, args.fetchframe)
         if detPackets:
             DetXY = detPackets[0][0][1][:2]  # x,y,z
             currentPosition = tuple(np.subtract(MapBottomCorner, DetXY))
             central.processFrameUpdate(detPackets, 0.06)
-        for detPacket, framePacket in zip(detPackets, framePackets):
-            print(detPacket)
-            cv2.imshow(framePacket.message, FramePacket.getFrame(framePacket))
 
-        path = pathGenerator.generate(currentPosition)
+        if args.show:
+            if args.fetchframe:
+                # nothing else to do here...
+                framePackets = getFramePackets(client)
+                for framePacket in framePackets:
+                    cv2.imshow(framePacket.message, FramePacket.getFrame(framePacket))
 
-        if path == None:
-            client.executePutString(pathName, [])
-        else:
-            out = []
-            out = [{"x": waypoint[0], "y": waypoint[1]} for waypoint in path]
-            client.executePutString(pathName, out)
-
-        cv2.imshow("Robot Map", central.map.getHeatMaps()[0])
-        cv2.imshow("Game object Map", central.map.getHeatMaps()[1])
-        if cv2.waitKey(1) & 0xFF == ord("q"):
-            break
+            maps = central.map.getHeatMaps()
+            cv2.imshow("Robot Map", maps[1])
+            cv2.imshow("Game object Map", maps[0])
+            if cv2.waitKey(1) & 0xFF == ord("q"):
+                break
 
     client.shutdown()
     cv2.destroyAllWindows()
 
 
 # print(time.time())
-mainLoop()
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    # Add an argument
+    parser.add_argument("--show", type=bool, required=False, default=False)
+    parser.add_argument("--fetchframe", type=bool, required=False, default=False)
+    # Parse the argument
+    args = parser.parse_args()
+    mainLoop(args=args)

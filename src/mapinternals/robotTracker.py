@@ -34,11 +34,11 @@ class RobotTracker:
         bboxes[:, 2:] = bboxes[:, 2:] - bboxes[:, 0:2]
         scores = [d[-1] for d in detections]
 
-        features = self.encoder(frame, bboxes)
+        # features = self.encoder(frame, bboxes) todo get this on a .rknn way too slow currently
 
         dets = []
         for bbox_id, bbox in enumerate(bboxes):
-            dets.append(Detection(bbox, scores[bbox_id], features[bbox_id]))
+            dets.append(Detection(bbox, scores[bbox_id], np.ones(128)))
 
         self.tracker.predict()
         self.tracker.update(dets)
