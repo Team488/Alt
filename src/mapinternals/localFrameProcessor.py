@@ -91,10 +91,11 @@ class LocalFrameProcessor:
                 bbox = labledResult[1]
                 conf = labledResult[2]
                 estXY = relativeResult[1]
+                isRobot = labledResult[3]
                 color = self.colors[id % len(self.colors)]
                 cv2.rectangle(frame, bbox[0:2], bbox[2:4], color)
-                cv2.putText(frame, f"Id:{id} Conf{conf}", bbox[0:2], 0, 2, color)
-                cv2.putText(frame, f"Relative estimate:{estXY}", bbox[2:], 0, 2, color)
+                cv2.putText(frame, f"Id:{id} Conf{conf} IsRobot{isRobot}", bbox[0:2], 0, 1, color)
+                cv2.putText(frame, f"Relative estimate:{tuple(estXY)}", np.add(bbox[0:2],[0,30]), 0, 1, color)
 
         return absoluteResults
 

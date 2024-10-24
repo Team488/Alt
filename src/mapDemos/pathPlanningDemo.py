@@ -66,12 +66,15 @@ def startDemo():
 
     while True:
         randomVector = demoUtils.getRandomMove(
-            our_location[0], our_location[1], map.size_x, map.size_y, 50
+            our_location[0],
+            our_location[1],
+            map.__internalWidth,
+            map.__internalHeight,
+            50,
         )
         our_location = tuple(np.add(our_location, randomVector))
-        map.disspateOverTime(0.05)  # 1s
+        map.disspateOverTime(0.2)  # 1s
 
-        map.displayRobotObjMap()
         robots = map.getAllRobotsAboveThreshold(0.8)
         gampieces = map.getAllGameObjectsAboveThreshold(0.8)
 

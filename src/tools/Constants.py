@@ -12,6 +12,7 @@ class CameraExtrinsics(Enum):
     REARRIGHT = ((-13.116, -12.853, 10.52), (145, -3.77))
     DEPTHLEFT = ((13.018, 2.548, 19.743), (24, -17))
     DEPTHRIGHT = ((13.018, -2.548, 19.743), (-24, -17))
+    NONE = ((0, 0, 0), (0, 0))
 
     def getOffsetX(self):
         return self.value[0][0]
@@ -40,6 +41,14 @@ class CameraIntrinsics(Enum):
     OV9782COLOR = ((640, 480), (1.22173, -1), (2.88, 0.003))
     OV9281BaW = ((640, 480), (1.22173, -1), (-1, 0.003))
     OAKDLITE = ((1920, 1080), (1.418953, -1), (3.37, 0.00112))
+    RANDOMWEBCAM = (
+        (640, 480),
+        (
+            0.55268,
+            -1,
+        ),
+        (2, 0.0015),
+    )
 
     def getHres(self):
         return self.value[0][0]

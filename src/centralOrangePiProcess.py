@@ -8,7 +8,7 @@ from coreinterface.XTablesClient import XTablesClient
 from coreinterface.FramePacket import FramePacket
 from coreinterface.DetectionPacket import DetectionPacket
 from inference.rknnInferencer import rknnInferencer
-from tools.Constants import getCameraValues
+from tools.Constants import getCameraValues, CameraIntrinsics, CameraExtrinsics
 from mapinternals.localFrameProcessor import LocalFrameProcessor
 
 
@@ -30,8 +30,15 @@ classes = ["Robot", "Note"]
 
 def startDemo():
     name = getCameraName().name
-    cameraIntrinsics, cameraExtrinsics, _ = getCameraValues(name)
+    # cameraIntrinsics, cameraExtrinsics, _ = getCameraValues(name)
+    cameraIntrinsics, cameraExtrinsics = (
+        CameraIntrinsics.RANDOMWEBCAM,
+        CameraExtrinsics.NONE,
+    )
     processor = LocalFrameProcessor(
+        cameraIntrinsics=cameraIntrinsics,
+        cameraExtrinsics=cameraExtrinsics,
+        useRknn=True,
         cameraIntrinsics=cameraIntrinsics,
         cameraExtrinsics=cameraExtrinsics,
         useRknn=True,
@@ -42,6 +49,7 @@ def startDemo():
     cap.set(cv2.CAP_PROP_POS_FRAMES, 1004)
     while cap.isOpened():
         ret, frame = cap.read()
+        print(frame.shape)
         if ret:
             print(f"sending to key{name}")
             timeStamp = time.time()

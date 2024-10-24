@@ -54,7 +54,7 @@ class rknnInferencer:
     ) -> list[tuple[tuple[int, int], tuple[int, int]], float, int]:
         # Preprocess the frame
 
-        img = utils.letterbox_image(frame)
+        img = utils.letterbox_image(frame.copy())
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         img = np.expand_dims(img, axis=0)  # Now shape is (1, channels, height, width)
         # Run inference

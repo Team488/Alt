@@ -271,8 +271,9 @@ class PositionEstimator:
         midW = int(w / 2)
         midH = int(h / 2)
         centerX = x1 + midW
+        objectSize = max(w,h)
         distance = self.__calculateDistance(
-            ObjectReferences.NOTE.getMeasurementIn(), w, cameraIntrinsics
+            ObjectReferences.NOTE.getMeasurementIn(), objectSize, cameraIntrinsics
         )
         bearing = self.__calcBearing(
             cameraIntrinsics.getHFov(),
