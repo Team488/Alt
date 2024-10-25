@@ -60,6 +60,15 @@ def mainLoop(args):
             currentPosition = tuple(np.subtract(MapBottomCorner, DetXY))
             central.processFrameUpdate(detPackets, 0.06)
 
+        path = pathGenerator.generate(currentPosition)
+
+        if path == None:
+            client.executePutString(pathName, [])
+        else:
+            out = []
+            out = [{"x": waypoint[0], "y": waypoint[1]} for waypoint in path]
+            client.executePutString(pathName, out)
+
         if args.show:
             if args.fetchframe:
                 # nothing else to do here...
