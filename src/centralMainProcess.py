@@ -13,8 +13,7 @@ from tools.Constants import MapConstants
 
 def getDetPackets(xtablesClient: XTablesClient.XTablesClient):
     maxTimeout = 1000
-    # keys = ("FRONTLEFT", "FRONTRIGHT", "REARLEFT", "REARRIGHT")
-    keys = ["FRONTLEFT"]
+    keys = ("FRONTLEFT", "FRONTRIGHT", "REARLEFT", "REARRIGHT")
     detectionpackets = []
     for key in keys:
         print(f"Looking for key {key}")

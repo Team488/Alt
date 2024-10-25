@@ -29,19 +29,14 @@ classes = ["Robot", "Note"]
 
 
 def startDemo(args):
-    # name = getCameraName().name
-    # cameraIntrinsics, cameraExtrinsics, _ = getCameraValues(name)
-    # processor = LocalFrameProcessor(
-    #     cameraIntrinsics=cameraIntrinsics,
-    #     cameraExtrinsics=cameraExtrinsics,
-    #     useRknn=True,
-    # )
-    name = "FRONTLEFT"
+    name = getCameraName().name
+    cameraIntrinsics, cameraExtrinsics, _ = getCameraValues(name)
     processor = LocalFrameProcessor(
         cameraIntrinsics=CameraIntrinsics.OV9782COLOR,
         cameraExtrinsics=CameraExtrinsics.NONE,
         useRknn=False,
     )
+
     print("Starting process, device name:", name)
     xclient = XTablesClient.XTablesClient(server_port=1735, useZeroMQ=True)
     cap = cv2.VideoCapture("assets/video12qual25clipped.mp4")
