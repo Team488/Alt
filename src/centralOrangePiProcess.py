@@ -5,7 +5,7 @@ import cv2
 import socket
 import time
 from enum import Enum
-from coreinterface.XTablesClient import XTablesClient
+import XTablesClient
 from coreinterface.FramePacket import FramePacket
 from coreinterface.DetectionPacket import DetectionPacket
 from tools.Constants import getCameraValues, CameraIntrinsics, CameraExtrinsics
@@ -38,40 +38,41 @@ def startDemo(args):
     # )
     name = "FRONTLEFT"
     processor = LocalFrameProcessor(
-        cameraIntrinsics=CameraIntrinsics.RANDOMWEBCAM,
+        cameraIntrinsics=CameraIntrinsics.OV9782COLOR,
         cameraExtrinsics=CameraExtrinsics.NONE,
         useRknn=False,
     )
     print("Starting process, device name:", name)
-    xclient = XTablesClient()
+    xclient = XTablesClient.XTablesClient(server_port=1735, useZeroMQ=True)
     cap = cv2.VideoCapture("assets/video12qual25clipped.mp4")
-    while cap.isOpened():
-        ret, frame = cap.read()
-        detectionB64 = ""
-        if ret:
-            print(f"sending to key{name}")
-            timeStamp = time.time()
+    try:
+        while cap.isOpened():
+            ret, frame = cap.read()
+            detectionB64 = ""
+            if ret:
+                print(f"sending to key{name}")
+                timeStamp = time.time()
 
-            processedResults = processor.processFrame(
-                frame, True
-            )  # processing as relative
-            detectionPacket = DetectionPacket.createPacket(
-                processedResults, name, timeStamp
-            )
-            detectionB64 = DetectionPacket.toBase64(detectionPacket)
-        # sending network packets
-        if args.sendframe:
-            dataPacket = FramePacket.createPacket(timeStamp, name, frame)
-            b64 = FramePacket.toBase64(dataPacket)
-            xclient.executePutString(name + "frame", b64)
-        xclient.executePutString(name, detectionB64)
-        if cv2.waitKey(1) & 0xFF == ord("q"):
-            break
-
-    print("demo finished")
-    xclient.shutdown()
-    cap.release()
-    cv2.destroyAllWindows()
+                processedResults = processor.processFrame(
+                    frame, True
+                )  # processing as relative
+                detectionPacket = DetectionPacket.createPacket(
+                    processedResults, name, timeStamp
+                )
+                detectionB64 = DetectionPacket.toBase64(detectionPacket)
+            # sending network packets
+            if args.sendframe:
+                dataPacket = FramePacket.createPacket(timeStamp, name, frame)
+                b64 = FramePacket.toBase64(dataPacket)
+                xclient.push_frame(name + "frame", b64)
+            xclient.executePutString(name, detectionB64)
+            if cv2.waitKey(1) & 0xFF == ord("q"):
+                break
+    finally:
+        print("demo finished")
+        xclient.shutdown()
+        cap.release()
+        cv2.destroyAllWindows()
 
 
 if __name__ == "__main__":
