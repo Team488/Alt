@@ -36,9 +36,9 @@ def getFramePackets(xtablesClient: XTablesClient.XTablesClient):
     # for key in keys:
     #     print(f"Looking for key {key}")
     # frame
-    rawB64 = xtablesClient.recv_next()
+    rawB64 = xtablesClient.recv_next()[1]
     if rawB64 is not None and rawB64 and not rawB64.strip() == "null":
-        dataPacket = FramePacket.fromBase64(rawB64.replace("\\u003d", "="))
+        dataPacket = FramePacket.fromBase64(rawB64)
         framepackets.append(dataPacket)
 
     return framepackets
@@ -52,6 +52,7 @@ def mainLoop(args):
     pathName = "target_waypoints"
     currentPosition = tuple(np.divide(MapBottomCorner, 2))
     try:
+        client.subscribe("FRONTRIGHTframe")
         while True:
             detPackets = getDetPackets(client)
             if detPackets[0][0]:
@@ -65,18 +66,20 @@ def mainLoop(args):
             if path == None:
                 client.executePutString(pathName, [])
             else:
-                out = []
                 out = [{"x": waypoint[0], "y": waypoint[1]} for waypoint in path]
                 client.executePutString(pathName, out)
 
             if args.show:
                 if args.fetchframe:
-                    # nothing else to do here...
-                    framePackets = getFramePackets(client)
-                    for framePacket in framePackets:
-                        cv2.imshow(
-                            framePacket.message, FramePacket.getFrame(framePacket)
-                        )
+                    try:
+                        framePackets = getFramePackets(client)
+                        for framePacket in framePackets:
+                            cv2.imshow(
+                                framePacket.message, FramePacket.getFrame(framePacket)
+                            )
+                    except Exception as e:
+                        print(f"Error getting frame packets: {e}")
+                        break
 
                 maps = central.map.getHeatMaps()
                 cv2.imshow("Robot Map", maps[1])
@@ -84,8 +87,10 @@ def mainLoop(args):
                 if cv2.waitKey(1) & 0xFF == ord("q"):
                     break
     finally:
-        client.shutdown()
+        print("Ending main process")
         cv2.destroyAllWindows()
+        return
+
 
 
 # print(time.time())

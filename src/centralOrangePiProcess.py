@@ -32,14 +32,14 @@ def startDemo(args):
     name = getCameraName().name
     cameraIntrinsics, cameraExtrinsics, _ = getCameraValues(name)
     processor = LocalFrameProcessor(
-        cameraIntrinsics=CameraIntrinsics.OV9782COLOR,
-        cameraExtrinsics=CameraExtrinsics.NONE,
-        useRknn=False,
+        cameraIntrinsics=cameraIntrinsics,
+        cameraExtrinsics=cameraExtrinsics,
+        useRknn=True,
     )
 
     print("Starting process, device name:", name)
     xclient = XTablesClient.XTablesClient(server_port=1735, useZeroMQ=True)
-    cap = cv2.VideoCapture("assets/video12qual25clipped.mp4")
+    cap = cv2.VideoCapture(0)
     try:
         while cap.isOpened():
             ret, frame = cap.read()
@@ -65,7 +65,6 @@ def startDemo(args):
                 break
     finally:
         print("demo finished")
-        xclient.shutdown()
         cap.release()
         cv2.destroyAllWindows()
 
