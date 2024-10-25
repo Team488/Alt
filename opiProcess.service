@@ -4,6 +4,6 @@ After=network.target
 
 [Service]
 Type=simple
-WorkingDirectory=/opt/xbot/Alt/src
-ExecStart=/opt/xbot/Alt/runOpiProcess.sh
+WorkingDirectory=/var/tmp/xbot/Alt/src
+ExecStart=/var/tmp/xbot/Alt/runOpiProcess.sh
 Restart=always
