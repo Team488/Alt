@@ -29,19 +29,25 @@ classes = ["Robot", "Note"]
 
 
 def startDemo(args):
-    name = getCameraName().name
-    cameraIntrinsics, cameraExtrinsics, _ = getCameraValues(name)
+    # name = getCameraName().name
+    # cameraIntrinsics, cameraExtrinsics, _ = getCameraValues(name)
+    # processor = LocalFrameProcessor(
+    #     cameraIntrinsics=cameraIntrinsics,
+    #     cameraExtrinsics=cameraExtrinsics,
+    #     useRknn=True,
+    # )
+    name = "FRONTLEFT"
     processor = LocalFrameProcessor(
-        cameraIntrinsics=cameraIntrinsics,
-        cameraExtrinsics=cameraExtrinsics,
-        useRknn=True,
+        cameraIntrinsics=CameraIntrinsics.RANDOMWEBCAM,
+        cameraExtrinsics=CameraExtrinsics.NONE,
+        useRknn=False,
     )
     print("Starting process, device name:", name)
     xclient = XTablesClient()
-    cap = cv2.VideoCapture(0)
+    cap = cv2.VideoCapture("assets/video12qual25clipped.mp4")
     while cap.isOpened():
         ret, frame = cap.read()
-        print(frame.shape)
+        detectionB64 = ""
         if ret:
             print(f"sending to key{name}")
             timeStamp = time.time()
@@ -53,11 +59,12 @@ def startDemo(args):
                 processedResults, name, timeStamp
             )
             detectionB64 = DetectionPacket.toBase64(detectionPacket)
-            xclient.executePutString(name, detectionB64)
-            if args.sendframe:
-                dataPacket = FramePacket.createPacket(timeStamp, name, frame)
-                b64 = FramePacket.toBase64(dataPacket)
-                xclient.executePutString(name + "frame", b64)
+        # sending network packets
+        if args.sendframe:
+            dataPacket = FramePacket.createPacket(timeStamp, name, frame)
+            b64 = FramePacket.toBase64(dataPacket)
+            xclient.executePutString(name + "frame", b64)
+        xclient.executePutString(name, detectionB64)
         if cv2.waitKey(1) & 0xFF == ord("q"):
             break
 

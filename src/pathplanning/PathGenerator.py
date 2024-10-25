@@ -9,7 +9,9 @@ import pathplanning.utils as pathPlanningUtils
 
 class PathGenerator:
     def __init__(self, centralProcess: CentralProcessor):
-        self.pathFinder = PathFinder()
+        self.pathFinder = PathFinder(
+            centralProcess.map.width, centralProcess.map.height
+        )
         self.centralProcess = centralProcess
         pass
 

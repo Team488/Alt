@@ -13,7 +13,8 @@ from tools.Constants import MapConstants
 
 def getDetPackets(xtablesClient: XTablesClient):
     maxTimeout = 1000
-    keys = ("FRONTLEFT", "FRONTRIGHT", "REARLEFT", "REARRIGHT")
+    # keys = ("FRONTLEFT", "FRONTRIGHT", "REARLEFT", "REARRIGHT")
+    keys = ["FRONTLEFT"]
     detectionpackets = []
     for key in keys:
         print(f"Looking for key {key}")
@@ -44,17 +45,18 @@ def getFramePackets(xtablesClient: XTablesClient):
     return framepackets
 
 
-def mainLoop():
-    MapBottomCorner = (MapConstants.fieldWidth, MapConstants.fieldHeight)
+def mainLoop(args):
+    MapBottomCorner = (MapConstants.fieldWidth.value, MapConstants.fieldHeight.value)
     client = XTablesClient()
     central = CentralProcessor.instance()
     pathGenerator = PathGenerator(central)
     pathName = "target_waypoints"
-    currentPosition = MapBottomCorner / 2
+    currentPosition = tuple(np.divide(MapBottomCorner, 2))
     while True:
-        detPackets = getDetPackets(client, args.fetchframe)
-        if detPackets:
-            DetXY = detPackets[0][0][1][:2]  # x,y,z
+        detPackets = getDetPackets(client)
+        if detPackets[0][0]:
+            print(detPackets)
+            DetXY = detPackets[0][0][0][1][:2]  # x,y,z
             currentPosition = tuple(np.subtract(MapBottomCorner, DetXY))
             central.processFrameUpdate(detPackets, 0.06)
 
