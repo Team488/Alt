@@ -72,7 +72,7 @@ def startDemo(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     # Add an argument
-    parser.add_argument("--sendframe", type=bool, required=True)
+    parser.add_argument("--sendframe", type=bool, required=False, default=False)
     # Parse the argument
     args = parser.parse_args()
     startDemo(args=args)

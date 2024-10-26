@@ -46,9 +46,7 @@ def getFramePackets(xtablesClient: XTablesClient.XTablesClient):
 
 def mainLoop(args):
     MapBottomCorner = (MapConstants.fieldWidth.value, MapConstants.fieldHeight.value)
-    client = XTablesClient.XTablesClient(
-        server_port=1735,useZeroMQ=True
-    )
+    client = XTablesClient.XTablesClient(server_port=1735, useZeroMQ=True)
     central = CentralProcessor.instance()
     pathGenerator = PathGenerator(central)
     pathName = "target_waypoints"
@@ -57,7 +55,7 @@ def mainLoop(args):
         # client.subscribe("FRONTLEFTframe")
         while True:
             detPackets = getDetPackets(client)
-            if detPackets[0][0]:
+            if detPackets and detPackets[0][0]:
                 print(detPackets)
                 DetXY = detPackets[0][0][0][1][:2]  # x,y,z
                 currentPosition = tuple(np.subtract(MapBottomCorner, DetXY))

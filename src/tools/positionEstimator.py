@@ -242,7 +242,7 @@ class PositionEstimator:
         if est is not None:
             (estimatedHeight, isBlue) = est
             distance = self.__calculateDistance(
-                ObjectReferences.BUMPERHEIGHT.getMeasurementIn(),
+                ObjectReferences.BUMPERHEIGHT.getMeasurementCm(),
                 estimatedHeight,
                 cameraIntrinsics,
             )
