@@ -11,14 +11,14 @@ from inference.coco_utils import COCO_test_helper
 class rknnInferencer:
     def __init__(self, model_path="assets/bestV5.rknn", target="rk3588"):
         # export needed rknpu .so
-        # so_path = os.getcwd() + "/assets/"
+        so_path = os.getcwd() + "/assets/"
 
-        # os.environ[
-        #    "LD_LIBRARY_PATH"
-        # ] = f"{so_path}:{os.environ.get('LD_LIBRARY_PATH', '')}"
+        os.environ[
+            "LD_LIBRARY_PATH"
+        ] = f"{so_path}:{os.environ.get('LD_LIBRARY_PATH', '')}"
 
         # Check if LD_LIBRARY_PATH is set correctly
-        # print("LD_LIBRARY_PATH:", os.environ["LD_LIBRARY_PATH"])
+        print("LD_LIBRARY_PATH:", os.environ["LD_LIBRARY_PATH"])
 
         # load model
         self.model = self.load_rknn_model(model_path, target)
