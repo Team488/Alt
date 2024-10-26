@@ -106,6 +106,7 @@ class PositionEstimator:
     def __calculateDistance(
         self, knownSize, currentSizePixels, cameraIntrinsics: CameraIntrinsics
     ):
+        # todo find calibrated values for other cams
         return (knownSize * cameraIntrinsics.getFocalLength()) / (
             cameraIntrinsics.getPixelSize() * currentSizePixels
         )
@@ -273,7 +274,7 @@ class PositionEstimator:
         centerX = x1 + midW
         objectSize = max(w, h)
         distance = self.__calculateDistance(
-            ObjectReferences.NOTE.getMeasurementIn(), objectSize, cameraIntrinsics
+            ObjectReferences.NOTE.getMeasurementCm(), objectSize, cameraIntrinsics
         )
         bearing = self.__calcBearing(
             cameraIntrinsics.getHFov(),

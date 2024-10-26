@@ -29,7 +29,7 @@ def startDemo():
         robotHeight=robotHeight,
     )
 
-    cameraExtr = CameraExtrinsics.DEPTHLEFT
+    cameraExtr = CameraExtrinsics.NONE
     cameraIntr = CameraIntrinsics.OV9782COLOR
     cap = cv2.VideoCapture(0)
 
@@ -49,6 +49,7 @@ def startDemo():
                 x, y, z = result[1]
                 conf = result[2]
                 isRobot = result[3]
+                cv2.putText(frame,f"X{x-simMap.width/2} Y{y-simMap.height/2}",(20,50),0,.5,(0,255,0),1)
                 if isRobot:
                     simMap.addCustomRobotDetection(int(x), int(y), 200, 200, conf, 1)
                 else:
