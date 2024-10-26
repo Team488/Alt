@@ -1,5 +1,4 @@
-#!/bin/bash+
-export PATH=$PATH:/home/pi/.pyenv/bin
+#!/bin/bash
 if [[ -x $(command -v pyenv) ]]; then
     eval "$(pyenv init --path)"
     eval "$(pyenv init -)"
