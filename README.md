@@ -34,7 +34,7 @@ Copy below to install and run the dependencies needed to install pyenv.
 ```bash
 sudo apt-get install -y make build-essential libssl-dev zlib1g-dev libbz2-dev \
 libreadline-dev libsqlite3-dev wget curl llvm libncurses5-dev libncursesw5-dev \
-xz-utils tk-dev libffi-dev liblzma-dev
+xz-utils tk-dev libffi-dev liblzma-dev libhdf5-dev
 ```
 
 Then run the following:
