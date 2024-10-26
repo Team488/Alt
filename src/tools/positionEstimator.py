@@ -250,9 +250,9 @@ class PositionEstimator:
                 cameraIntrinsics.getHres(),
                 int(centerX - cameraIntrinsics.getHres() / 2),
             )
-            estX = math.cos(bearing) * distance
-            estY = math.sin(bearing) * distance
-            return (estX, estY)
+            estCoords = self.componentizeHDistAndBearing(distance, bearing)
+
+            return estCoords
 
         return None
 
@@ -271,7 +271,7 @@ class PositionEstimator:
         midW = int(w / 2)
         midH = int(h / 2)
         centerX = x1 + midW
-        objectSize = max(w,h)
+        objectSize = max(w, h)
         distance = self.__calculateDistance(
             ObjectReferences.NOTE.getMeasurementIn(), objectSize, cameraIntrinsics
         )
@@ -280,9 +280,8 @@ class PositionEstimator:
             cameraIntrinsics.getHres(),
             int(centerX - cameraIntrinsics.getHres() / 2),
         )
-        estX = math.cos(bearing) * distance
-        estY = math.sin(bearing) * distance
-        return (estX, estY)
+        estCoords = self.componentizeHDistAndBearing(distance, bearing)
+        return estCoords
 
     def estimateDetectionPositions(
         self, frame, labledResults, cameraIntrinsics: CameraIntrinsics
@@ -314,3 +313,12 @@ class PositionEstimator:
                 print("Failed estimation")
 
         return estimatesOut
+
+    """ This follows the idea that the distance we calculate is independent to bearing. This means that the distance value we get is the X dist. Thus  y will be calculated using bearing
+        Takes hDist, bearing (radians) and returns x,y
+    """
+
+    def componentizeHDistAndBearing(self, hDist, bearing):
+        x = hDist
+        y = math.tan(bearing) * hDist
+        return x, y

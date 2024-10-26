@@ -47,22 +47,22 @@ def startDemo():
     cameraIntr = CameraIntrinsics.OAKDLITE
     cap = cv2.VideoCapture("assets/video12qual25clipped.mp4")
     firstRun = True
-    cap_outM = None
+    # cap_outM = None
     frameProcessor = LocalFrameProcessor(cameraIntr, cameraExtr)
     fps = cap.get(cv2.CAP_PROP_FPS)
     timePassed = 0
     timePerFrame = 1 / fps
-
+    cap.set(cv2.CAP_PROP_POS_FRAMES, 1000)
     while cap.isOpened():
         ret, frame = cap.read()
-        if firstRun:
-            firstRun = False
-            cap_outM = cv2.VideoWriter(
-                "out.mp4",
-                cv2.VideoWriter_fourcc(*"mp4v"),
-                fps,
-                (frame.shape[1], frame.shape[0]),
-            )
+        # if firstRun:
+        #     firstRun = False
+        #     cap_outM = cv2.VideoWriter(
+        #         "out.mp4",
+        #         cv2.VideoWriter_fourcc(*"mp4v"),
+        #         fps,
+        #         (frame.shape[1], frame.shape[0]),
+        #     )
         if ret:
             # read and draw robot location
             values = parser.getNearestValues(timePassed + csvTimeOffset)
@@ -118,10 +118,10 @@ def startDemo():
                 cameraExtr,
             )
             frame = __embed_frame(frame, mapView, scale_factor=1 / 2.7)
-            cap_outM.write(frame)
+            # cap_outM.write(frame)
             cv2.imshow("view", frame)
             if cv2.waitKey(1) & 0xFF == ord("q"):
-                cap_outM.release()
+                # cap_outM.release()
                 cap.release()
                 return
             simMap.disspateOverTime(timePerFrame)
@@ -130,7 +130,7 @@ def startDemo():
         else:
             break
 
-    cap_outM.release()
+    # cap_outM.release()
     cap.release()
     cv2.destroyAllWindows()
 
