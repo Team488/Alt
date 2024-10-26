@@ -12,7 +12,7 @@ from tools.Constants import MapConstants
 
 
 def getDetPackets(xtablesClient: XTablesClient.XTablesClient):
-    maxTimeout = 1000
+    maxTimeout = 200
     keys = ("FRONTLEFT", "FRONTRIGHT", "REARLEFT", "REARRIGHT")
     detectionpackets = []
     for key in keys:
@@ -47,14 +47,14 @@ def getFramePackets(xtablesClient: XTablesClient.XTablesClient):
 def mainLoop(args):
     MapBottomCorner = (MapConstants.fieldWidth.value, MapConstants.fieldHeight.value)
     client = XTablesClient.XTablesClient(
-        server_port=1735, server_ip="192.168.0.17", useZeroMQ=True
+        server_port=1735,useZeroMQ=True
     )
     central = CentralProcessor.instance()
     pathGenerator = PathGenerator(central)
     pathName = "target_waypoints"
     currentPosition = tuple(np.divide(MapBottomCorner, 2))
     try:
-        client.subscribe("FRONTLEFTframe")
+        # client.subscribe("FRONTLEFTframe")
         while True:
             detPackets = getDetPackets(client)
             if detPackets[0][0]:

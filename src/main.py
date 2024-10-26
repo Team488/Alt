@@ -1,3 +1,3 @@
-from mapDemos import robotVideoSimulation
+from mapDemos import probmapWebcamDemo
 
-robotVideoSimulation.startDemo()
+probmapWebcamDemo.startDemo()

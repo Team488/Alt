@@ -37,18 +37,11 @@ class CameraExtrinsics(Enum):
 
 
 class CameraIntrinsics(Enum):
-    #   {CameraName} = ((HRes,Vres),(Hfov(rad),Vfov(rad)),(Focal Length(mm),PixelSize(mm)))
-    OV9782COLOR = ((640, 480), (1.22173, -1), (2.88, 0.003))
-    OV9281BaW = ((640, 480), (1.22173, -1), (-1, 0.003))
-    OAKDLITE = ((1920, 1080), (1.418953, -1), (3.37, 0.00112))
-    RANDOMWEBCAM = (
-        (640, 480),
-        (
-            0.55268,
-            -1,
-        ),
-        (2, 0.0015),
-    )
+    #                       res             fov                     physical constants    
+    #   {CameraName} = ((HRes,Vres),(Hfov(rad),Vfov(rad)),(Focal Length(mm),PixelSize(mm),sensor size(mm)), (CalibratedFx,CalibratedFy),(CalibratedCx,CalibratedCy))
+    OV9782COLOR = ((640, 480), (1.22173, -1), (1.745, 0.003,6.3), (541.637,542.563),(346.66661258567217, 232.5032948773164))
+    OV9281BaW = ((640, 480), (1.22173, -1), (-1, 0.003,6.3))
+    OAKDLITE = ((1920, 1080), (1.418953, -1), (3.37, 0.00112,8.193))
 
     def getHres(self):
         return self.value[0][0]
@@ -67,6 +60,21 @@ class CameraIntrinsics(Enum):
 
     def getPixelSize(self):
         return self.value[2][1]
+    
+    def getSensorSize(self):
+        return self.value[2][2]
+
+    def getFx(self):
+        return self.value[3][0]
+    
+    def getFy(self):
+        return self.value[3][1]
+    
+    def getCx(self):
+        return self.value[4][0]
+    
+    def getCy(self):
+        return self.value[4][1]
 
 
 class ObjectReferences(Enum):
