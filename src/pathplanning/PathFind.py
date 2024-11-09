@@ -151,4 +151,10 @@ class PathFinder:
                 self.start, self.goal, self.obstacles, self.map_size_x, self.map_size_y
             )
             if not self.path:
+                
+                print("Start:", self.start)
+                print("Goal:", self.goal)
+                # print("Obstacles:", self.obstacles)
+                print("Max Path Length:", self.max_path_length)
+                print("Map Size:", (self.map_size_x, self.map_size_y))
                 print("No path found or path exceeded maximum length.")

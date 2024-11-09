@@ -1,5 +1,5 @@
 import numpy as np
-from singleton.singleton import Singleton
+from singleton_decorator import singleton
 from mapinternals.UKF import Ukf
 from tools.Constants import MapConstants, CameraIdOffsets
 from mapinternals.probmap import ProbMap
@@ -35,7 +35,7 @@ from mapinternals.KalmanCache import KalmanCache
 #         mapWrapper.addDetectedRobot(px, py)
 #     else:
 #         mapWrapper.addDetectedGameObject(px, py)
-@Singleton
+@singleton
 class CentralProcessor:
     def __init__(self):
         self.kalmanCacheRobots: KalmanCache = KalmanCache()

@@ -339,7 +339,7 @@ class ProbMap:
     """ Exposed display heatmap method"""
 
     def displayHeatMaps(self):
-        self.__displayHeatMap(self.probmapGameObj, self.gameObjWindowName)
+        # self.__displayHeatMap(self.probmapGameObj, self.gameObjWindowName)
         self.__displayHeatMap(self.probmapRobots, self.robotWindowName)
 
     def displayGameObjMap(self):
