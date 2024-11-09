@@ -7,7 +7,7 @@ import numpy as np
 
 from PathGenerator import PathGenerator
 from PathFind import PathFinder
-from mapinternals.CentralProcessor import CentralProcessor
+
 
 
 robotSizeX = 3
@@ -39,7 +39,7 @@ map = probmap(
 (objMap, roboMap) = map.getHeatMaps()
 
 path_finder_instance = PathFinder(fieldX, fieldY)
-# path_generator_instance = PathGenerator(CentralProcessor)
+
 
 # def spawnObstacles(event, x, y, flags, param):
 #     # x = random.randint(0, fieldX)
@@ -67,11 +67,9 @@ def spawnObstacles(event, x, y, flags, param):
         y1 = int(y - wY / 12) // map.resolution
         x2 = int(x + wX / 12) // map.resolution
         y2 = int(y + wY / 12) // map.resolution
-        
-        # Store the obstacle (x1, y1, x2, y2) as a tuple
+
         obstacles_list.append((x1, y1))
         
-        # Draw the obstacle on the map
         cv2.rectangle(roboMap, (x1, y1), (x2, y2), (255), 2)
 
 
