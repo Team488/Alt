@@ -30,12 +30,13 @@ classes = ["Robot", "Note"]
 
 
 def startDemo(args):
-    name = getCameraName().name
+    # name = getCameraName().name
+    name = "FRONTRIGHT"
     cameraIntrinsics, cameraExtrinsics, _ = getCameraValues(name)
     processor = LocalFrameProcessor(
         cameraIntrinsics=cameraIntrinsics,
         cameraExtrinsics=cameraExtrinsics,
-        useRknn=True,
+        useRknn=False,
     )
 
     # frame undistortion maps
@@ -44,8 +45,8 @@ def startDemo(args):
     )
 
     print("Starting process, device name:", name)
-    xclient = XTablesClient.XTablesClient(server_port=1735, useZeroMQ=True)
-    cap = cv2.VideoCapture(0)
+    # xclient = XTablesClient.XTablesClient(server_port=1735, useZeroMQ=True)
+    cap = cv2.VideoCapture("assets/video12qual25clipped.mp4")
     try:
         while cap.isOpened():
             ret, frame = cap.read()
@@ -66,8 +67,9 @@ def startDemo(args):
             if args.sendframe:
                 dataPacket = FramePacket.createPacket(timeStamp, name, undistortedFrame)
                 b64 = FramePacket.toBase64(dataPacket)
-                xclient.push_frame(name + "frame", b64)
-            xclient.executePutString(name, detectionB64)
+                # xclient.push_frame(name + "frame", b64)
+            # xclient.executePutString(name, detectionB64)
+            cv2.imshow("frame", undistortedFrame)
             if cv2.waitKey(1) & 0xFF == ord("q"):
                 break
     finally:

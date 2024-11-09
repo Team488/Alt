@@ -95,8 +95,9 @@ def loadSavedCalibration():
 def createMapXYSForUndistortion(w, h):
     savedCalib = loadSavedCalibration()
 
-    cameraMatrix = savedCalib["CameraMatrix"]
-    distCoeffs = savedCalib["DistortionCoeff"]
+    cameraMatrix = np.array(savedCalib["CameraMatrix"])
+    distCoeffs = np.array(savedCalib["DistortionCoeff"])
+    print(cameraMatrix)
     # Compute the optimal new camera matrix
     newCameraMatrix, roi = cv2.getOptimalNewCameraMatrix(
         cameraMatrix, distCoeffs, (w, h), 1, (w, h)
@@ -111,4 +112,4 @@ def createMapXYSForUndistortion(w, h):
 
 
 def undistortFrame(frame, mapx, mapy):
-    cv2.remap(frame, mapx, mapy, cv2.INTER_LINEAR)
+    return cv2.remap(frame, mapx, mapy, cv2.INTER_LINEAR)
