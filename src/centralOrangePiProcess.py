@@ -10,6 +10,7 @@ from coreinterface.FramePacket import FramePacket
 from coreinterface.DetectionPacket import DetectionPacket
 from tools.Constants import getCameraValues, CameraIntrinsics, CameraExtrinsics
 from mapinternals.localFrameProcessor import LocalFrameProcessor
+from tools import calibration
 
 
 class CameraName(Enum):
@@ -37,6 +38,11 @@ def startDemo(args):
         useRknn=True,
     )
 
+    # frame undistortion maps
+    mapx, mapy = calibration.createMapXYSForUndistortion(
+        cameraIntrinsics.getHres(), cameraIntrinsics.getVres()
+    )
+
     print("Starting process, device name:", name)
     xclient = XTablesClient.XTablesClient(server_port=1735, useZeroMQ=True)
     cap = cv2.VideoCapture(0)
@@ -48,8 +54,9 @@ def startDemo(args):
                 print(f"sending to key{name}")
                 timeStamp = time.time()
 
+                undistortedFrame = calibration.undistortFrame(frame, mapx, mapy)
                 processedResults = processor.processFrame(
-                    frame, True
+                    undistortedFrame, True
                 )  # processing as relative
                 detectionPacket = DetectionPacket.createPacket(
                     processedResults, name, timeStamp
@@ -57,7 +64,7 @@ def startDemo(args):
                 detectionB64 = DetectionPacket.toBase64(detectionPacket)
             # sending network packets
             if args.sendframe:
-                dataPacket = FramePacket.createPacket(timeStamp, name, frame)
+                dataPacket = FramePacket.createPacket(timeStamp, name, undistortedFrame)
                 b64 = FramePacket.toBase64(dataPacket)
                 xclient.push_frame(name + "frame", b64)
             xclient.executePutString(name, detectionB64)
