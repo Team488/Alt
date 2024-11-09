@@ -56,8 +56,8 @@ def startDemo():
     cv2.namedWindow(map.gameObjWindowName)
     cv2.setMouseCallback(map.gameObjWindowName, mouseDownCallbackGameObj)
 
-    cv2.namedWindow(map.robotWindowName)
-    cv2.setMouseCallback(map.robotWindowName, mouseDownCallbackRobot)
+    # cv2.namedWindow(map.robotWindowName)
+    # cv2.setMouseCallback(map.robotWindowName, mouseDownCallbackRobot)
 
     pathfinder = PathFinder(mapSizeX, mapSizeY)
     dx = [1, 0, -1]
@@ -68,8 +68,8 @@ def startDemo():
         randomVector = demoUtils.getRandomMove(
             our_location[0],
             our_location[1],
-            map.__internalWidth,
-            map.__internalHeight,
+            map.width,
+            map.height,
             50,
         )
         our_location = tuple(np.add(our_location, randomVector))
