@@ -35,7 +35,7 @@ def startDemo(args):
     processor = LocalFrameProcessor(
         cameraIntrinsics=cameraIntrinsics,
         cameraExtrinsics=cameraExtrinsics,
-        useRknn=False,
+        useRknn=True,
     )
 
     # frame undistortion maps
