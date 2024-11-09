@@ -56,6 +56,7 @@ class CentralProcessor:
             ]
         ],
         timeStepSeconds,
+        positionOffset=(0, 0, 0),
     ):
         # first get real ids
 
@@ -63,8 +64,9 @@ class CentralProcessor:
         for singleCamResult, idOffset in cameraResults:
             if singleCamResult:
                 self.labler.updateRealIds(singleCamResult, idOffset, timeStepSeconds)
-                (id, (x, y, z), prob, isRobot, features) = singleCamResult[0]
-
+                (id, coord, prob, isRobot, features) = singleCamResult[0]
+                coord = tuple(np.add(coord, positionOffset))
+                (x, y, z) = coord
                 # first load in to ukf, (if completely new ukf will load in as new state)
                 if isRobot:
                     self.kalmanCacheRobots.LoadInKalmanData(id, x, y, self.ukf)
