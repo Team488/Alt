@@ -13,10 +13,16 @@ from pathplanning.PathGenerator import PathGenerator
 from tools.Constants import MapConstants
 
 central = CentralProcessor.instance()
+client = XTablesClient.XTablesClient(server_port=1735, useZeroMQ=True)
+
+pathGenerator = PathGenerator(central)
+pathName = "target_waypoints"
 
 
 def handle_update(key, val):
-
+    global pathGenerator
+    global pathName
+    global client
     if not key or not val:
         return
     if val == "empty":
@@ -26,24 +32,27 @@ def handle_update(key, val):
     idOffset = CameraIdOffsets[dataPacket.message]
     packet = (DetectionPacket.toDetections(dataPacket), idOffset)
     if packet and packet[0] and packet[0][0]:
-        central.processFrameUpdate(
-            [packet],
-            0.06,
-            positionOffset=(central.map.width // 2, central.map.height // 2, 0),
-        )
-    maps = central.map.getHeatMaps()
+        central.processFrameUpdate([packet], 0.06, positionOffset=(300, 300, 0))
+    # maps = central.map.getHeatMaps()
 
-    cv2.imshow("Robot Map", maps[1])
-    cv2.imshow("Game object Map", maps[0])
-    cv2.waitKey(1)
+    path = pathGenerator.generate((0, 0))
+    print(f"path: {path}")
+    print(f"pathName: {pathName}")
+    if path is None:
+        client.executePutString(pathName, [{"x": 1, "y": 1}])
+    else:
+        out = [
+            {"x": (waypoint[0] - 300) / 100, "y": (waypoint[1] - 300) / 100}
+            for waypoint in path
+        ]
+        client.executePutString(pathName, out)
+    # cv2.imshow("Robot Map", maps[1])
+    # cv2.imshow("Game object Map", maps[0])
+    # cv2.waitKey(1)
 
 
 def mainLoop(args):
-    MapBottomCorner = (MapConstants.fieldWidth.value, MapConstants.fieldHeight.value)
-    client = XTablesClient.XTablesClient(server_port=1735, useZeroMQ=True)
-    pathGenerator = PathGenerator(central)
-    pathName = "target_waypoints"
-    currentPosition = tuple(np.divide(MapBottomCorner, 2))
+    global client
 
     try:
         client.subscribeForUpdates("REARRIGHT", consumer=handle_update)

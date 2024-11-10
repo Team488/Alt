@@ -1,3 +1,3 @@
-from mapDemos import probmapWebcamDemo
+from mapDemos import pathPlanningDemo
 
-probmapWebcamDemo.startDemo()
+pathPlanningDemo.startDemo()

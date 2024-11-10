@@ -2,7 +2,7 @@ import time
 import sys
 import os
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 import numpy as np
 import mapDemos.utils as demoUtils
 from mapinternals.probmap import ProbMap
@@ -66,16 +66,10 @@ def startDemo():
     dx = [1, 0, -1]
     dy = [1, 0, -1]
     our_location = (500, 200)  # start in center
-
+    movementGoal = None
     while True:
-        randomVector = demoUtils.getRandomMove(
-            our_location[0],
-            our_location[1],
-            map.width,
-            map.height,
-            50,
-        )
-        our_location = tuple(np.add(our_location, randomVector))
+        if movementGoal is not None:
+            our_location = tuple(np.add(our_location, movementGoal))
         map.disspateOverTime(0.2)  # 1s
 
         robots = map.getAllRobotsAboveThreshold(0.8)
@@ -96,6 +90,13 @@ def startDemo():
             )
         #
         if pathfinder.path is not None:
+            if pathfinder.path:
+                goal = pathfinder.path[0]
+                if our_location != goal:
+                    movementGoal = goal
+                    print("AAAAAAAAAAA")
+                else:
+                    movementGoal = None
             for p in pathfinder.path:
                 cv2.circle(display_frame, (int(p[0]), int(p[1])), 2, (255, 255, 0), -1)
 
