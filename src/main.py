@@ -1,3 +1,3 @@
-from mapDemos import pathPlanningDemo
+from mapDemos import dynamicPathPlanningDemo
 
-pathPlanningDemo.startDemo()
+dynamicPathPlanningDemo.startDemo()

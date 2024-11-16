@@ -17,6 +17,7 @@ client = XTablesClient.XTablesClient(server_port=1735, useZeroMQ=True)
 
 pathGenerator = PathGenerator(central)
 pathName = "target_waypoints"
+positionOffsetForCentralizing = 300
 
 
 def handle_update(key, val):
@@ -32,17 +33,31 @@ def handle_update(key, val):
     idOffset = CameraIdOffsets[dataPacket.message]
     packet = (DetectionPacket.toDetections(dataPacket), idOffset)
     if packet and packet[0] and packet[0][0]:
-        central.processFrameUpdate([packet], 0.06, positionOffset=(300, 300, 0))
+        central.processFrameUpdate(
+            [packet],
+            0.06,
+            positionOffset=(
+                positionOffsetForCentralizing,
+                positionOffsetForCentralizing,
+                0,
+            ),
+        )
     # maps = central.map.getHeatMaps()
-
-    path = pathGenerator.generate((0, 0))
+    target = central.map.getHighestGameObject()
+    path = pathGenerator.generate(
+        (positionOffsetForCentralizing, positionOffsetForCentralizing), target, 0
+    )
     print(f"path: {path}")
     print(f"pathName: {pathName}")
     if path is None:
         client.executePutString(pathName, [{"x": 1, "y": 1}])
     else:
         out = [
-            {"x": (waypoint[0] - 300) / 100, "y": (waypoint[1] - 300) / 100}
+            # remove the centralizing position offset and also turn cm to m
+            {
+                "x": (waypoint[0] - positionOffsetForCentralizing) / 100,
+                "y": (waypoint[1] - positionOffsetForCentralizing) / 100,
+            }
             for waypoint in path
         ]
         client.executePutString(pathName, out)

@@ -99,7 +99,16 @@ class PathFinder:
         f_score = {start: self.heuristic(start, goal)}
         step_count = 0
 
+        # Calculate target direction unit vector
+        target_dir = (goal[0] - start[0], goal[1] - start[1])
+        target_magnitude = math.sqrt(target_dir[0] ** 2 + target_dir[1] ** 2)
+        target_dir = (
+            target_dir[0] / target_magnitude,
+            target_dir[1] / target_magnitude,
+        )
+
         while open_set:
+            print(step_count)
             current = heapq.heappop(open_set)[1]
 
             # Check if we've reached the goal or exceeded the max path length
@@ -127,14 +136,34 @@ class PathFinder:
 
             for dx, dy in neighbors:
                 neighbor = (current[0] + dx, current[1] + dy)
+                move_cost = (
+                    1.414 if dx != 0 and dy != 0 else 1
+                )  # Base cost for diagonal and straight moves
 
-                # Check if the neighbor is a blocked point (within any obstacle's radius)
+                # Check if the neighbor is valid
                 if (
                     0 <= neighbor[0] < map_size_x
                     and 0 <= neighbor[1] < map_size_y
                     and neighbor not in obstacles
                 ):
-                    tentative_g_score = g_score[current] + 1
+                    # Calculate move direction vector
+                    move_dir = (dx, dy)
+                    move_magnitude = math.sqrt(move_dir[0] ** 2 + move_dir[1] ** 2)
+                    move_dir = (
+                        move_dir[0] / move_magnitude,
+                        move_dir[1] / move_magnitude,
+                    )
+
+                    # Use dot product to scale move cost
+                    alignment = (move_dir[0] * target_dir[0]) + (
+                        move_dir[1] * target_dir[1]
+                    )
+                    alignment_factor = 1.0 + (
+                        1.0 - alignment
+                    )  # Higher alignment => lower cost
+                    scaled_cost = move_cost * alignment_factor
+
+                    tentative_g_score = g_score[current] + scaled_cost
                     if neighbor not in g_score or tentative_g_score < g_score[neighbor]:
                         came_from[neighbor] = current
                         g_score[neighbor] = tentative_g_score
@@ -151,7 +180,7 @@ class PathFinder:
                 self.start, self.goal, self.obstacles, self.map_size_x, self.map_size_y
             )
             if not self.path:
-                
+
                 print("Start:", self.start)
                 print("Goal:", self.goal)
                 # print("Obstacles:", self.obstacles)

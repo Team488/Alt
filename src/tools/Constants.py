@@ -37,11 +37,17 @@ class CameraExtrinsics(Enum):
 
 
 class CameraIntrinsics(Enum):
-    #                       res             fov                     physical constants    
+    #                       res             fov                     physical constants
     #   {CameraName} = ((HRes,Vres),(Hfov(rad),Vfov(rad)),(Focal Length(mm),PixelSize(mm),sensor size(mm)), (CalibratedFx,CalibratedFy),(CalibratedCx,CalibratedCy))
-    OV9782COLOR = ((640, 480), (1.22173, -1), (1.745, 0.003,6.3), (541.637,542.563),(346.66661258567217, 232.5032948773164))
-    OV9281BaW = ((640, 480), (1.22173, -1), (-1, 0.003,6.3))
-    OAKDLITE = ((1920, 1080), (1.418953, -1), (3.37, 0.00112,8.193))
+    OV9782COLOR = (
+        (640, 480),
+        (1.22173, -1),
+        (1.745, 0.003, 6.3),
+        (541.637, 542.563),
+        (346.66661258567217, 232.5032948773164),
+    )
+    OV9281BaW = ((640, 480), (1.22173, -1), (-1, 0.003, 6.3))
+    OAKDLITE = ((1920, 1080), (1.418953, -1), (3.37, 0.00112, 8.193))
 
     def getHres(self):
         return self.value[0][0]
@@ -60,19 +66,19 @@ class CameraIntrinsics(Enum):
 
     def getPixelSize(self):
         return self.value[2][1]
-    
+
     def getSensorSize(self):
         return self.value[2][2]
 
     def getFx(self):
         return self.value[3][0]
-    
+
     def getFy(self):
         return self.value[3][1]
-    
+
     def getCx(self):
         return self.value[4][0]
-    
+
     def getCy(self):
         return self.value[4][1]
 
@@ -109,10 +115,10 @@ class CameraIdOffsets(Enum):
 class MapConstants(Enum):
     GameObjectAcceleration = 0  # probably?
     RobotMaxVelocity = 300  # cm/s
-    RobotAcceleration = 1500  # cm/s this is probably inaccurate
+    RobotAcceleration = 1500  # cm/s^2 this is probably inaccurate?
     fieldWidth = 1653  # 54' 3" to cm
     fieldHeight = 800  # 26' 3" to cm
-    res = 5  # cm
+    res = 3  # cm
     robotWidth = 75  # cm
     robotHeight = 75  # cm assuming square robot with max frame perimiter of 300
     gameObjectWidth = 35  # cm

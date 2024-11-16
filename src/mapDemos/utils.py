@@ -1,5 +1,6 @@
 import math
 import random
+from mapinternals.probmap import ProbMap
 
 
 def __myRandom(random, a, b):
@@ -40,11 +41,29 @@ def getRandomMove(
 
 
 def getRealisticMoveVector(
-    robotX, robotY, nextWaypointX, nextWayPointY, maxDistancePerMove
+    robotLocation, nextWaypoint, maxDistancePerMove
 ) -> tuple[int, int]:
+    robotX, robotY = robotLocation
+    nextWaypointX, nextWayPointY = nextWaypoint
     mvX, mvY = (nextWaypointX - robotX, nextWayPointY - robotY)
     dist = math.sqrt(mvX**2 + mvY**2)
     if dist <= maxDistancePerMove:
         return (mvX, mvY)
     else:
         return (mvX * maxDistancePerMove / dist, mvY * maxDistancePerMove / dist)
+
+
+def rescaleCoordsDown(x, y, probmap: ProbMap):
+    return x // probmap.resolution, y // probmap.resolution
+
+
+def rescaleCoordsTogetherDown(coords, probmap: ProbMap):
+    return coords[0] // probmap.resolution, coords[1] // probmap.resolution
+
+
+def rescaleCoordsUp(x, y, probmap: ProbMap):
+    return x * probmap.resolution, y * probmap.resolution
+
+
+def rescaleCoordsTogetherUp(coords, probmap: ProbMap):
+    return coords[0] * probmap.resolution, coords[1] * probmap.resolution
