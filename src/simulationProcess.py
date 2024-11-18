@@ -1,25 +1,35 @@
 """ Process to run on orin """
+import time
 import cv2
 import argparse
 import logging
 import numpy as np
 from tools.Constants import CameraIdOffsets
-import XTablesClient
+from XTABLES import XTablesClient
 from coreinterface.DetectionPacket import DetectionPacket
 from coreinterface.FramePacket import FramePacket
 from mapinternals.CentralProcessor import CentralProcessor
 from pathplanning.PathGenerator import PathGenerator
-from tools.Constants import MapConstants
+from tools.Constants import MapConstants,CameraExtrinsics,CameraIntrinsics
 
 central = CentralProcessor.instance()
-client = XTablesClient.XTablesClient(server_port=1735, useZeroMQ=True)
+client = XTablesClient()
 
 pathGenerator = PathGenerator(central)
 pathName = "target_waypoints"
-positionOffsetForCentralizing = 300
+cams = (
+    "FrontCam",
+    "FrontLeftCam",
+    "FrontRightCam",
+    "BackLeftCam",
+    "BackRightCam"
+)
+
 
 
 def handle_update(key, val):
+    print(val)
+    return
     global pathGenerator
     global pathName
     global client
@@ -32,31 +42,17 @@ def handle_update(key, val):
     idOffset = CameraIdOffsets[dataPacket.message]
     packet = (DetectionPacket.toDetections(dataPacket), idOffset)
     if packet and packet[0] and packet[0][0]:
-        central.processFrameUpdate(
-            [packet],
-            0.06,
-            positionOffset=(
-                positionOffsetForCentralizing,
-                positionOffsetForCentralizing,
-                0,
-            ),
-        )
+        central.processFrameUpdate([packet], 0.06, positionOffset=(300, 300, 0))
     # maps = central.map.getHeatMaps()
-    target = central.map.getHighestGameObject()
-    path = pathGenerator.generate(
-        (positionOffsetForCentralizing, positionOffsetForCentralizing), target, 0
-    )
+
+    path = pathGenerator.generate((0, 0))
     print(f"path: {path}")
     print(f"pathName: {pathName}")
     if path is None:
         client.executePutString(pathName, [{"x": 1, "y": 1}])
     else:
         out = [
-            # remove the centralizing position offset and also turn cm to m
-            {
-                "x": (waypoint[0] - positionOffsetForCentralizing) / 100,
-                "y": (waypoint[1] - positionOffsetForCentralizing) / 100,
-            }
+            {"x": (waypoint[0] - 300) / 100, "y": (waypoint[1] - 300) / 100}
             for waypoint in path
         ]
         client.executePutString(pathName, out)
@@ -65,15 +61,16 @@ def handle_update(key, val):
     # cv2.waitKey(1)
 
 
-def mainLoop(args):
+def mainLoop():
     global client
 
     try:
-        client.subscribeForUpdates("REARRIGHT", consumer=handle_update)
-        client.subscribeForUpdates("REARLEFT", consumer=handle_update)
-        client.subscribeForUpdates("FRONTLEFT", consumer=handle_update)
-        client.subscribeForUpdates("FRONTRIGHT", consumer=handle_update)
+        for cam in cams:
+            client.subscribe_to_key(cam, consumer=handle_update)
 
+        while True:
+            time.sleep(1)
+            
     except Exception as e:
         print(e)
     finally:
@@ -85,10 +82,6 @@ def mainLoop(args):
 # print(time.time())
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
-    parser = argparse.ArgumentParser()
     # Add an argument
-    parser.add_argument("--show", type=bool, required=False, default=False)
-    parser.add_argument("--fetchframe", type=bool, required=False, default=False)
     # Parse the argument
-    args = parser.parse_args()
-    mainLoop(args=args)
+    mainLoop()
