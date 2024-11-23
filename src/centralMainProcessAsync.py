@@ -4,7 +4,7 @@ import argparse
 import logging
 import numpy as np
 from tools.Constants import CameraIdOffsets
-import XTablesClient
+from XTABLES import XTablesClient
 from coreinterface.DetectionPacket import DetectionPacket
 from coreinterface.FramePacket import FramePacket
 from mapinternals.CentralProcessor import CentralProcessor
@@ -12,7 +12,7 @@ from pathplanning.PathGenerator import PathGenerator
 from tools.Constants import MapConstants
 
 central = CentralProcessor.instance()
-client = XTablesClient.XTablesClient(server_port=1735, useZeroMQ=True)
+client = XTablesClient(server_port=1735, useZeroMQ=True)
 
 pathGenerator = PathGenerator(central)
 pathName = "target_waypoints"
