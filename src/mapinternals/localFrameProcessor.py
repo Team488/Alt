@@ -4,7 +4,6 @@ from mapinternals.deepSortBaseLabler import DeepSortBaseLabler
 from tools.Constants import CameraIntrinsics, CameraExtrinsics, MapConstants
 from tools.positionEstimator import PositionEstimator
 from tools.positionTranslations import CameraToRobotTranslator
-from coreinterface.CoreInput import getRobotPosition
 import numpy as np
 import cv2
 
