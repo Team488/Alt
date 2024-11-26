@@ -251,7 +251,7 @@ class PositionEstimator:
                 cameraIntrinsics.getHres(),
                 int(centerX - cameraIntrinsics.getHres() / 2),
             )
-            estCoords = self.componentizeHDistAndBearing(distance, bearing)
+            estCoords = self.componentizeHDistAndBearingSpecial(distance, bearing)
 
             return estCoords
 
@@ -271,17 +271,17 @@ class PositionEstimator:
         h = y2 - y1
         midW = int(w / 2)
         midH = int(h / 2)
-        centerX = x1 + midW
+        centerX = x1+midW
         objectSize = max(w, h)
         distance = self.__calculateDistance(
-            ObjectReferences.NOTE.getMeasurementCm(), objectSize, cameraIntrinsics
+            ObjectReferences.NOTE.getMeasurementIn(), objectSize, cameraIntrinsics
         )
         bearing = self.__calcBearing(
             cameraIntrinsics.getHFov(),
             cameraIntrinsics.getHres(),
-            int(centerX - cameraIntrinsics.getHres() / 2),
+            int(centerX - cameraIntrinsics.getCx()),
         )
-        estCoords = self.componentizeHDistAndBearing(distance, bearing)
+        estCoords = self.componentizeHDistAndBearingSpecial(distance, bearing)
         return estCoords
 
     def estimateDetectionPositions(
@@ -319,7 +319,7 @@ class PositionEstimator:
         Takes hDist, bearing (radians) and returns x,y
     """
 
-    def componentizeHDistAndBearing(self, hDist, bearing):
+    def componentizeHDistAndBearingSpecial(self, hDist, bearing):
         x = hDist
         y = math.tan(bearing) * hDist
         return x, y

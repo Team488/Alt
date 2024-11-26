@@ -15,9 +15,6 @@ class onnxInferencer:
         print(f"Using provider {providers[0]}")
         session_options = ort.SessionOptions()
 
-        # Set the number of intra-op and inter-op threads to 1
-        session_options.intra_op_num_threads = 2
-        session_options.inter_op_num_threads = 2
         self.session = ort.InferenceSession(model_path, providers=providers,sess_options=session_options)
 
         self.strides = strides

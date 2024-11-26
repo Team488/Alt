@@ -3,7 +3,7 @@ import time
 from mapinternals.deepSortBaseLabler import DeepSortBaseLabler
 from tools.Constants import CameraIntrinsics, CameraExtrinsics, MapConstants
 from tools.positionEstimator import PositionEstimator
-from tools.positionTranslations import CameraToRobotTranslator
+from tools.positionTranslations import CameraToRobotTranslator,transformWithYaw
 import numpy as np
 import cv2
 
@@ -34,17 +34,20 @@ class LocalFrameProcessor:
             (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
             for j in range(15)
         ]
-
+    
+    # output is list of id,(absX,absY,absZ),conf,isRobot,features
     def processFrame(
-        self, frame, robotPosX=0, robotPosY=0, robotPosZ=0, drawBoxes=True
+        self, frame, robotPosXIn=0, robotPosYIn=0, robotPosZIn=0,robotYawRad = 0, drawBoxes=True,customCameraExtrinsics=None,customCameraIntrinsics = None
     ) -> list[list[int, tuple[int, int, int], float, bool, np.ndarray]]:
+        camIntrinsics = customCameraIntrinsics if customCameraIntrinsics is not None else self.cameraIntrinsics
+        camExtrinsics = customCameraExtrinsics if customCameraExtrinsics is not None else self.cameraExtrinsics
         startTime = time.time()
         rknnResults = self.inf.inferenceFrame(frame)
         
         if not rknnResults:
             endTime = time.time()
             fps = 1/(endTime-startTime)
-            cv2.putText(frame,f"FPS:{fps}",(10,80),0,1,(0,255,0),2)
+            # cv2.putText(frame,f"FPS:{fps}",(10,80),0,1,(0,255,0),2)
             return []
 
         # id(unique),bbox,conf,isrobot,features,
@@ -52,7 +55,7 @@ class LocalFrameProcessor:
 
         # id(unique),estimated x/y,conf,isrobot,features,
         relativeResults = self.estimator.estimateDetectionPositions(
-            frame, labledResults.copy(), self.cameraIntrinsics
+            frame, labledResults.copy(), camIntrinsics
         )
 
       
@@ -65,14 +68,12 @@ class LocalFrameProcessor:
                 relToRobotY,
                 relToRobotZ,
             ) = self.translator.turnCameraCoordinatesIntoRobotCoordinates(
-                relCamX, relCamY, self.cameraExtrinsics
+                relCamX, relCamY, camExtrinsics
             )
+            result[1] = transformWithYaw(np.array([relToRobotX,relToRobotY,relToRobotZ]),robotYawRad)
             # update results with absolute position
-            result[1] = (
-                relToRobotX + robotPosX,
-                -relToRobotY + robotPosY,  # flip y
-                relToRobotZ + robotPosZ,
-            )
+            result[1] = np.add(result[1],np.array([robotPosXIn,robotPosYIn,robotPosZIn])) 
+
             # note at this point these values are expected to be absolute
             # if not self.isiregularDetection(relToRobotX,relToRobotY,relToRobotZ):
             absoluteResults.append(result)
@@ -81,7 +82,7 @@ class LocalFrameProcessor:
         endTime = time.time()
 
         fps = 1/(endTime-startTime)
-        cv2.putText(frame,f"FPS:{fps}",(10,80),0,1,(0,255,0),2)
+        # cv2.putText(frame,f"FPS:{fps}",(10,80),0,1,(0,255,0),2)
 
         if drawBoxes:
             # draw a box with id,conf and relative estimate
@@ -89,12 +90,12 @@ class LocalFrameProcessor:
                 id = labledResult[0]
                 bbox = labledResult[1]
                 conf = labledResult[2]
-                estXY = relativeResult[1]
+                estXYZ = relativeResult[1]
                 isRobot = labledResult[3]
                 color = self.colors[id % len(self.colors)]
                 cv2.rectangle(frame, bbox[0:2], bbox[2:4], color)
-                cv2.putText(frame, f"Id:{id} Conf{conf} IsRobot{isRobot}", bbox[0:2], 0, 1, color)
-                cv2.putText(frame, f"Relative estimate:{tuple(estXY)}", np.add(bbox[0:2],[0,30]), 0, 1, color)
+                cv2.putText(frame, f"Id:{id} Conf{conf} IsRobot{isRobot}", (10,30), 0, 1, color)
+                cv2.putText(frame, f"Relative estimate:{tuple(map(lambda x: round(x, 2),estXYZ))}", (10,100), 0, 1, color)
 
         return absoluteResults
 
