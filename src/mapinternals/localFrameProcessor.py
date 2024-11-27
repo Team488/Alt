@@ -94,8 +94,8 @@ class LocalFrameProcessor:
                 isRobot = labledResult[3]
                 color = self.colors[id % len(self.colors)]
                 cv2.rectangle(frame, bbox[0:2], bbox[2:4], color)
-                cv2.putText(frame, f"Id:{id} Conf{conf} IsRobot{isRobot}", (10,30), 0, 1, color)
-                cv2.putText(frame, f"Relative estimate:{tuple(map(lambda x: round(x, 2),estXYZ))}", (10,100), 0, 1, color)
+                cv2.putText(frame, f"Id:{id} Conf{conf} IsRobot{isRobot}", (10,30), 0, 1, color,2)
+                cv2.putText(frame, f"Relative estimate:{tuple(map(lambda x: round(x, 2),estXYZ))}", (10,100), 0, 1, color,2)
 
         return absoluteResults
 

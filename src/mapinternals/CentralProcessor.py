@@ -59,6 +59,7 @@ class CentralProcessor:
                     self.kalmanCacheGameObjects.LoadInKalmanData(id, x, y, self.ukf)
 
                 newState = self.ukf.predict_and_update([x, y])
+                # newState = [x,y,0,0]
                 # now we have filtered data, so lets store it. First thing we do is cache the new ukf data
 
                 if isRobot:

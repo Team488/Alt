@@ -129,7 +129,7 @@ def sigmoid(x):
     return 1 / (1 + np.exp(x))
 
 
-def adjustBoxes(
+def adjustBoxesRknn(
     outputs, anchors, imgShape, minConf=0.7, doBoxAdjustment=True, printDebug=False
 ):
     predictions = outputs[0]  # Model's predictions = 1 x 25200 x 7

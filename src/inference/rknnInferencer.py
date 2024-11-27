@@ -61,7 +61,7 @@ class rknnInferencer:
         outputs = self.model.inference(inputs=[img])
         print(outputs[0].shape)
         # (boxes, classes, scores) = copiedutils.post_process(outputs, self.anchors)
-        adjusted = utils.adjustBoxes(
+        adjusted = utils.adjustBoxesRknn(
             outputs[0],
             self.anchors,
             frame.shape,
