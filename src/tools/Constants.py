@@ -107,7 +107,7 @@ class KalmanConstants:
 
 
 class CameraIdOffsets(Enum):
-    # jump of 15
+    # jump of 30
     FRONTLEFT = 0
     FRONTRIGHT = 30
     REARLEFT = 60
@@ -122,9 +122,9 @@ class CameraIdOffsets(Enum):
 class MapConstants(Enum):
     GameObjectAcceleration = 0  # probably?
     RobotMaxVelocity = 300  # cm/s
-    RobotAcceleration = 1500  # cm/s^2 this is probably inaccurate?
-    fieldWidth = 1653  # 54' 3" to cm
-    fieldHeight = 800  # 26' 3" to cm
+    RobotAcceleration = 150  # cm/s^2 this is probably inaccurate?
+    fieldWidth = 1653  # 54' 3" in cm
+    fieldHeight = 800  # 26' 3" in cm
     res = 3  # cm
     robotWidth = 75  # cm
     robotHeight = 75  # cm assuming square robot with max frame perimiter of 300
@@ -132,6 +132,12 @@ class MapConstants(Enum):
     gameObjectHeight = 35  # cm circular note
 
     mapObstacles = []  # todo define these
+    chainsAtMinPoint = 71.755 # cm
+
+    def getCM(self):
+        return self.value
+    def getIn(self):
+        return self.value / 2.54
 
 
 class LabelingConstants(Enum):

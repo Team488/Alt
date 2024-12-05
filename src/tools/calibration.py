@@ -5,7 +5,16 @@ import cv2
 
 
 def startCalibration():
-
+    windowName = "Calibration View"
+    cv2.namedWindow(windowName)
+    trackbarName = "Time Per Cap: "
+    def n(i):
+        pass
+    cv2.createTrackbar(trackbarName,windowName,3,5,n)
+    
+    waitTime = 3000 # default 3s per capture
+    frameRate = 1 #1ms wait
+    timePassed = 0 # ms
     # termination criteria
     criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
     chessBoardDim = (7, 10)
@@ -25,24 +34,30 @@ def startCalibration():
         r, frame = cap.read()
         if r:
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            timePassed += frameRate
+            
+            cv2.putText(frame,f"{timePassed/1000:.2f}",(10,30),0,1,(255,255,255),2)
 
-            # Find the chess board corners
-            ret, corners = cv2.findChessboardCorners(gray, chessBoardDim, None)
+            if(timePassed > waitTime):
+                timePassed = 0
 
-            # If found, add object points, image points (after refining them)
-            if ret == True:
-                objpoints.append(objp)
+                # Find the chess board corners
+                ret, corners = cv2.findChessboardCorners(gray, chessBoardDim, None)
 
-                corners2 = cv2.cornerSubPix(gray, corners, (11, 11), (-1, -1), criteria)
-                imgpoints.append(corners2)
+                # If found, add object points, image points (after refining them)
+                if ret == True:
+                    objpoints.append(objp)
 
-                # Draw and display the corners
-                cv2.drawChessboardCorners(frame, chessBoardDim, corners2, ret)
-            else:
-                print("No corners found")
+                    corners2 = cv2.cornerSubPix(gray, corners, (11, 11), (-1, -1), criteria)
+                    imgpoints.append(corners2)
+
+                    # Draw and display the corners
+                    cv2.drawChessboardCorners(frame, chessBoardDim, corners2, ret)
+                else:
+                    print("No corners found")
 
             cv2.imshow("img", frame)
-            if cv2.waitKey(3000) & 0xFF == ord("q"):
+            if cv2.waitKey(frameRate) & 0xFF == ord("q"):
                 break
 
     print(f"Using: {len(imgpoints)} points")

@@ -1,3 +1,4 @@
-from mapDemos import dynamicPathPlanningDemo
-
-dynamicPathPlanningDemo.startDemo()
+from mapDemos import particleFilterDemo
+particleFilterDemo.startDemo()
+# from pathplanning import obstacleMapGenerator
+# obstacleMapGenerator.startGeneration()

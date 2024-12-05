@@ -7,20 +7,38 @@ isLButtonDown = False
 
 def startGeneration():
     mapPath = "assets/obstacleMap.npy"
+    fieldPath = "assets/fieldTopDown.png"
+    fieldMap = None
+    try:
+        fieldMap = cv2.imread(fieldPath)
+        fieldMap = cv2.resize(fieldMap,(MapConstants.fieldWidth.value, MapConstants.fieldHeight.value))
+    except Exception:
+        print("failed to load any saved field map")
+        fieldMap = (
+            np.ones(
+                (MapConstants.fieldHeight.value, MapConstants.fieldWidth.value),
+                dtype=np.uint8
+            )
+            * 255
+        )
+    
+
     windowName = "Map Generator"
     heightTrackbarName = "Max Height in CM"
     brushTrackbarName = "Brush Size"
     map = (
         np.ones(
             (MapConstants.fieldHeight.value, MapConstants.fieldWidth.value),
-            dtype=np.uint8,
+            dtype=np.uint8
         )
         * 255
     )
+
     try:
         map = np.load(mapPath)
     except Exception:
         print("failed to load any saved map")
+
 
     cv2.namedWindow(windowName)
 
@@ -48,9 +66,11 @@ def startGeneration():
     cv2.setMouseCallback(windowName, displayCallback)
 
     while True:
-        mapCopy = cv2.merge((map.copy(), map.copy(), map.copy()))
+        mapCopy = cv2.merge((~map.copy(), ~map.copy(), ~map.copy()))
+        print(f"Map Shape: {mapCopy.shape} FieldMap Shape: {fieldMap.shape}")
+        mapCopy = cv2.bitwise_or(mapCopy,fieldMap)
         cv2.putText(
-            mapCopy, "S-> Save | R-> Reset | Q-> Quit", (5, 15), 1, 2, (0, 255, 0), 1
+            mapCopy, "S-> Save | R-> Reset | Q-> Quit", (5, 25), 1, 2, (0, 255, 0), 1
         )
         cv2.imshow(windowName, mapCopy)
         key = cv2.waitKey(1) & 0xFF
@@ -60,7 +80,7 @@ def startGeneration():
             map = (
                 np.ones(
                     (MapConstants.fieldHeight.value, MapConstants.fieldWidth.value),
-                    dtype=np.uint8,
+                    dtype=np.uint8
                 )
                 * 255
             )
