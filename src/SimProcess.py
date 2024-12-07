@@ -49,7 +49,8 @@ table = NetworkTables.getTable("AdvantageKit/RealOutputs/Odometry")
 # Window setup for displaying the camera feed
 title = "MJPEG Stream - Front Right Camera"
 cv2.namedWindow(title)
-cv2.createTrackbar("Scale factor", title, 1, 4, lambda x: None)
+cv2.createTrackbar("Camera to inference", title, 1, 4, lambda x: None)
+cv2.createTrackbar("Scale Factor", title, 1, 20, lambda x: None)
 
 try:
     while True:
@@ -58,40 +59,37 @@ try:
         if raw_data:
             x, y, rotation = getPose2dFromBytes(raw_data)
             logging.info(f"Pose: x={x}, y={y}, rotation={rotation}")
-            frames = []
-            for cap in caps:
-                start_time = time.time()
-                # Skip older frames in the buffer
-                while cap.grab():
-                    if time.time() - start_time > 0.050:  # Timeout after 100ms
-                        logging.warning("Skipping buffer due to timeout.")
-                        break
-                # Read a frame from the Front-Right camera stream
-                ret, frame = cap.read()
-                if not ret:
-                    logging.warning("Failed to retrieve a frame from stream.")
-                    exit(1)
-                frames.append(frame)
+            index = cv2.getTrackbarPos("Camera to inference", title)%4
+            cap = caps[index]
+            start_time = time.time()
+            # Skip older frames in the buffer
+            while cap.grab():
+                if time.time() - start_time > 0.010:  # Timeout after 100ms
+                    logging.warning("Skipping buffer due to timeout.")
+                    break
+            # Read a frame from the Front-Right camera stream
+            ret, frame = cap.read()
+            if not ret:
+                logging.warning("Failed to retrieve a frame from stream.")
+                exit(1)
             
             results = []
-            for index,cap in enumerate(caps):
-                # Process the frame
-                if(index == cv2.getTrackbarPos("Scale factor", title)):
-                    res = frameProcessor.processFrame(
-                    frames[index],
-                    robotPosXIn=x * 39.37,  # Convert meters to inches
-                    robotPosYIn=y * 39.37,
-                    robotYawRad=rotation,
-                    drawBoxes=True,
-                    customCameraExtrinsics=extrinsics[index]
-                    )
-                
-                    results.append((res,offsets[index]))
-                
-                cv2.imshow(offsets[index].name, frames[index])
+            # Process the frame
+            res = frameProcessor.processFrame(
+            frame,
+            robotPosXIn=x * 39.37,  # Convert meters to inches
+            robotPosYIn=y * 39.37,
+            robotYawRad=rotation,
+            drawBoxes=True,
+            customCameraExtrinsics=extrinsics[index]
+            )
+        
+            results.append((res,offsets[index]))
+            
+            cv2.imshow(offsets[index].name, frame)
             
             central.processFrameUpdate(results,0.15)
-            x,y,p = central.map.getHighestGameObject()
+            x,y,p = central.map.getHighestRobot()
             # Update NetworkTables if processing results are available
             scaleFactor = 39.37# + cv2.getTrackbarPos("Scale factor", title)
             table.getEntry("NoteEstimate3").setDoubleArray([

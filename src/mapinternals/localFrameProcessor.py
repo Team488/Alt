@@ -50,8 +50,20 @@ class LocalFrameProcessor:
             # cv2.putText(frame,f"FPS:{fps}",(10,80),0,1,(0,255,0),2)
             return []
 
+        
         # id(unique),bbox,conf,isrobot,features,
         labledResults = self.baseLabler.getLocalLabels(frame, rknnResults)
+
+        if drawBoxes:
+            # draw a box with id,conf and relative estimate
+            for labledResult in labledResults:
+                id = labledResult[0]
+                bbox = labledResult[1]
+                conf = labledResult[2]
+                isRobot = labledResult[3]
+                color = self.colors[id % len(self.colors)]
+                cv2.rectangle(frame, bbox[0:2], bbox[2:4], color)
+                cv2.putText(frame, f"Id:{id} Conf{conf} IsRobot{isRobot}", (10,30), 0, 1, color,2)
 
         # id(unique),estimated x/y,conf,isrobot,features,
         relativeResults = self.estimator.estimateDetectionPositions(

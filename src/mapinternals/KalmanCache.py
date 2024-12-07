@@ -43,12 +43,7 @@ class KalmanCache:
             ukf.baseUKF.x = np.array(
                 [x, y, 0, 0]
             )  # todo maybe add an estimated velocity here
-            ukf.baseUKF.P = np.eye(4)
-            ukf.baseUKF.Q = KalmanConstants.Q
-            ukf.baseUKF.R = KalmanConstants.R
+            ukf.baseUKF.P = np.eye(4)*0.01
         else:
             ukf.baseUKF.x = kalmanData.X
             ukf.baseUKF.P = kalmanData.P
-            # ukf.baseUKF.Q = kalmanData.get('Q') # dont really need to save these if they are constant
-            # ukf.baseUKF.R = kalmanData.get('R')
-            # ukf.baseUKF.K = kalmanData.get('K') # dont need this most likely
