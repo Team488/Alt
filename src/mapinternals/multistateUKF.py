@@ -33,7 +33,7 @@ class MultistateUkf:
 
         # Sigma points
         self.points = MerweScaledSigmaPoints(
-            self.DIM*self.NUMPOINTS, alpha=0.5, beta=2.0, kappa=3 - self.DIM*self.NUMPOINTS
+            self.DIM*self.NUMPOINTS+1, alpha=0.5, beta=2.0, kappa=3 - self.DIM*self.NUMPOINTS
         )
 
         # UKF initialization
@@ -129,7 +129,6 @@ class MultistateUkf:
                 new_y = np.clip(new_y, 0, self.fieldY)  # Clamp to field boundary
 
             # fixxx thissss
-            
             # # Check if the particle collides with any obstacles (assuming obstacle map is in the form of a 2D array)
             # # Assuming obstacle height of 35 cm or whatever value you use
             # if int(new_x) < self.fieldX and int(new_y) < self.fieldY:
