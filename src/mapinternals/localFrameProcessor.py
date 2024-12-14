@@ -28,7 +28,7 @@ class LocalFrameProcessor:
         self.baseLabler: DeepSortBaseLabler = DeepSortBaseLabler()
         self.cameraIntrinsics: CameraIntrinsics = cameraIntrinsics
         self.cameraExtrinsics: CameraExtrinsics = cameraExtrinsics
-        self.estimator = PositionEstimator()
+        self.estimator = PositionEstimator(tryocr=True)
         self.translator = CameraToRobotTranslator()
         self.colors = [
             (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
@@ -37,13 +37,15 @@ class LocalFrameProcessor:
     
     # output is list of id,(absX,absY,absZ),conf,isRobot,features
     def processFrame(
-        self, frame, robotPosXIn=0, robotPosYIn=0, robotPosZIn=0,robotYawRad = 0, drawBoxes=True,customCameraExtrinsics=None,customCameraIntrinsics = None
+        self, frame, robotPosXIn=0, robotPosYIn=0, robotPosZIn=0,robotYawRad = 0, drawBoxes=True,customCameraExtrinsics=None,customCameraIntrinsics = None,maxDetections = None
     ) -> list[list[int, tuple[int, int, int], float, bool, np.ndarray]]:
         camIntrinsics = customCameraIntrinsics if customCameraIntrinsics is not None else self.cameraIntrinsics
         camExtrinsics = customCameraExtrinsics if customCameraExtrinsics is not None else self.cameraExtrinsics
         startTime = time.time()
         rknnResults = self.inf.inferenceFrame(frame)
-        
+        if(maxDetections != None):
+            rknnResults = rknnResults[:maxDetections]
+
         if not rknnResults:
             endTime = time.time()
             fps = 1/(endTime-startTime)

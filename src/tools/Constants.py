@@ -38,7 +38,7 @@ class CameraExtrinsics(Enum):
 
 class CameraIntrinsics(Enum):
     #                       res             fov                     physical constants
-    #   {CameraName} = ((HRes,Vres),(Hfov(rad),Vfov(rad)),(Focal Length(mm),PixelSize(mm),sensor size(mm)), (CalibratedFx,CalibratedFy),(CalibratedCx,CalibratedCy))
+    #   {CameraName} = ((HRes(pixels),Vres(pixels)),(Hfov(rad),Vfov(rad)),(Focal Length(mm),PixelSize(mm),sensor size(mm)), (CalibratedFx(pixels),CalibratedFy(pixels)),(CalibratedCx(pixels),CalibratedCy(pixels)))
     OV9782COLOR = (
         (640, 480),
         (1.22173, -1),
@@ -50,10 +50,10 @@ class CameraIntrinsics(Enum):
     OAKDLITE = ((1920, 1080), (1.418953, -1), (3.37, 0.00112, 8.193))
     SIMULATIONCOLOR = (
         (640, 480),
-        (1.22173, -1),
+        (1.22173, 0.9671),
         (1.745, 0.003, 6.3),
-        (541.637, 542.563),
-        (346.66661258567217, 232.5032948773164),
+        (609.34, 457),        
+        (320, 240),
     )
 
     def getHres(self):

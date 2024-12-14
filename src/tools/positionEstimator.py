@@ -5,7 +5,12 @@ from tools.Constants import CameraIntrinsics, ObjectReferences
 
 
 class PositionEstimator:
-    def __init__(self) -> None:
+    def __init__(self,tryocr = False) -> None:
+        self.tryocr = tryocr
+        if tryocr:
+            import pytesseract
+            pytesseract.pytesseract.tesseract_cmd = r'c:/Program Files/Tesseract-OCR/tesseract.exe' 
+            self.pytesseract = pytesseract
         self.__minPerc = 0.005  # minimum percentage of bounding box with bumper color
         self.__blueRobotHist = np.load("assets/simulationBlueRobotHist.npy")
         self.__redRobotHist = np.load("assets/redRobotHist.npy")
@@ -99,17 +104,17 @@ class PositionEstimator:
 
     """ Calculates distance from object assuming we know real size and pixel size. Dimensions out are whatever known size dimensions are
         Its as follows
-        knownSize(whatever length dim) * focallength(mm)/(pixelsize(mm/px)*currentsizePixels(px))
+        knownSize(whatever length dim) * focallength(px)/currentsizePixels(px))
 
         Output dim is whatever length dim
     """
 
     def __calculateDistance(
-        self, knownSize, currentSizePixels, cameraIntrinsics: CameraIntrinsics
+        self, knownSize, currentSizePixels, focalLengthPixels
     ):
         # todo find calibrated values for other cams
-        return (knownSize * cameraIntrinsics.getFocalLength()) / (
-            cameraIntrinsics.getPixelSize() * currentSizePixels
+        return (knownSize * focalLengthPixels) / (
+            currentSizePixels
         )
 
     """ calculates angle change per pixel, and multiplies by number of pixels off you are. Dimensions are whatever fov per pixel dimensions are
@@ -178,13 +183,22 @@ class PositionEstimator:
                 kernel = np.ones((2, 2), np.uint8)
                 backProjNumbers = self.__backProjWhite(bumperOnlyLab)
                 opened = cv2.morphologyEx(
-                    backProjNumbers, cv2.MORPH_OPEN, kernel, iterations=1
+                    backProjNumbers, cv2.MORPH_OPEN, kernel, iterations=2
                 )
+                # partial close #1
                 closed = cv2.morphologyEx(opened, cv2.MORPH_CLOSE, kernel, iterations=1)
                 _, threshNumbers = cv2.threshold(closed, 50, 255, cv2.THRESH_BINARY)
                 contoursNumbers, _ = cv2.findContours(
                     threshNumbers, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE
                 )
+                if(self.tryocr):
+                    nums = self.pytesseract.image_to_string(closed)                    
+                    cv2.putText(backProjNumbers,nums,(10,25),0,1,(255,255,255),2)
+                # partial close #2
+                closed = cv2.morphologyEx(opened, cv2.MORPH_CLOSE, kernel, iterations=2)
+
+
+
                 cv2.imshow("Number image",backProjNumbers)
                 cv2.imshow("Opened Number image",opened)
                 cv2.imshow("Closed Number image",closed)
@@ -207,7 +221,7 @@ class PositionEstimator:
                         )
                         print("Ratio", ratio)
                         # Calculate the max of width and height
-                        length = bumperWidth + bumperHeight
+                        length = bumperHeight
 
                         if ratio < self.__MAXRATIO and length > largest_size:
                             largest_size = length
@@ -219,17 +233,18 @@ class PositionEstimator:
                         cv2.imshow("Best contour",frame)
                         min_area_rect = cv2.minAreaRect(largestAcceptable_contour)
                         # Get width and height
-                        (numberWidth, numberHeight) = min_area_rect[1]
-
+                        (numberWidth,numberHeight) = min_area_rect[1]
+                        print(f"{numberWidth=}  {numberHeight=} ")
+                        targetheight = min(numberHeight,numberWidth)
                         # cv2.drawContours(bumperOnly,[largestAcceptable_contour],0,[0,0,255],2)
                         convex_hull_nums = cv2.convexHull(largestAcceptable_contour)
                         minAreaNums = cv2.minAreaRect(convex_hull_nums)
                         width, height = minAreaNums[1]
-                        numToBumpRatio = max(height, numberHeight) / min(
-                            height, numberHeight
+                        numToBumpRatio = max(height, targetheight) / min(
+                            height, targetheight
                         )
                         if numToBumpRatio < 3:
-                            return (numberHeight, isBlue)
+                            return (targetheight, isBlue)
                         else:
                             print("Ratio to large to be acceptable", numToBumpRatio)
                 else:
@@ -258,14 +273,15 @@ class PositionEstimator:
             distance = self.__calculateDistance(
                 ObjectReferences.BUMPERHEIGHT.getMeasurementCm(),
                 estimatedHeight,
-                cameraIntrinsics,
+                cameraIntrinsics.getFy(),
             )
+            print(cameraIntrinsics.getFy())
             bearing = self.__calcBearing(
                 cameraIntrinsics.getHFov(),
                 cameraIntrinsics.getHres(),
                 int(centerX - cameraIntrinsics.getHres() / 2),
             )
-            estCoords = self.componentizeHDistAndBearingSpecial(distance/ cv2.getTrackbarPos("Scale Factor","MJPEG Stream - Front Right Camera"), bearing)
+            estCoords = self.componentizeHDistAndBearingSpecial(distance*100/cv2.getTrackbarPos("Scale Factor","MJPEG Stream - Front Right Camera"), bearing)
 
             return estCoords
 
@@ -288,7 +304,7 @@ class PositionEstimator:
         centerX = x1+midW
         objectSize = max(w, h)
         distance = self.__calculateDistance(
-            ObjectReferences.NOTE.getMeasurementIn(), objectSize, cameraIntrinsics
+            ObjectReferences.NOTE.getMeasurementCm(), objectSize, cameraIntrinsics.getFx()
         )
         bearing = self.__calcBearing(
             cameraIntrinsics.getHFov(),

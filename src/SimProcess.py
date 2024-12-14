@@ -50,7 +50,8 @@ table = NetworkTables.getTable("AdvantageKit/RealOutputs/Odometry")
 title = "MJPEG Stream - Front Right Camera"
 cv2.namedWindow(title)
 cv2.createTrackbar("Camera to inference", title, 1, 4, lambda x: None)
-cv2.createTrackbar("Scale Factor", title, 1, 20, lambda x: None)
+cv2.createTrackbar("Scale Factor", title, 1, 1000, lambda x: None)
+cv2.setTrackbarPos("Scale Factor", title, 100)
 
 try:
     while True:
@@ -64,7 +65,7 @@ try:
             start_time = time.time()
             # Skip older frames in the buffer
             while cap.grab():
-                if time.time() - start_time > 0.010:  # Timeout after 100ms
+                if time.time() - start_time > 0.100:  # Timeout after 100ms
                     logging.warning("Skipping buffer due to timeout.")
                     break
             # Read a frame from the Front-Right camera stream
@@ -76,12 +77,13 @@ try:
             results = []
             # Process the frame
             res = frameProcessor.processFrame(
-            frame,
-            robotPosXIn=x * 39.37,  # Convert meters to inches
-            robotPosYIn=y * 39.37,
-            robotYawRad=rotation,
-            drawBoxes=True,
-            customCameraExtrinsics=extrinsics[index]
+                frame,
+                robotPosXIn=x * 100,  # Convert meters to cm
+                robotPosYIn=y * 100,
+                robotYawRad=rotation,
+                drawBoxes=True,
+                customCameraExtrinsics=extrinsics[index],
+                maxDetections=1
             )
         
             results.append((res,offsets[index]))
@@ -91,7 +93,7 @@ try:
             central.processFrameUpdate(results,0.15)
             x,y,p = central.map.getHighestRobot()
             # Update NetworkTables if processing results are available
-            scaleFactor = 39.37# + cv2.getTrackbarPos("Scale factor", title)
+            scaleFactor = 100# + cv2.getTrackbarPos("Scale factor", title)
             table.getEntry("NoteEstimate3").setDoubleArray([
                 x / scaleFactor,
                 y / scaleFactor,
@@ -101,7 +103,7 @@ try:
             logging.debug("Updated NoteEstimate3 entry in NetworkTables.")
 
             # Display the current frame
-            cv2.imshow("aa", central.map.getGameObjectHeatMap())
+            cv2.imshow("aa", central.map.getRobotHeatMap())
 
             # Break the loop if 'q' is pressed
             if cv2.waitKey(1) & 0xFF == ord('q'):

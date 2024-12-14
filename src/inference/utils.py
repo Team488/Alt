@@ -76,7 +76,7 @@ def loadAnchors(anchorLocation):
     return None
 
 
-def non_max_suppression(predictions, conf_threshold=0.6, iou_threshold=0.6):
+def non_max_suppression(predictions, conf_threshold=0.6, iou_threshold=0.4):
     # Filter out predictions with low confidence
     predictions = [x for x in predictions if x[1] >= conf_threshold]
 
@@ -128,6 +128,10 @@ def getRawIdOffset(idx):
 def sigmoid(x):
     return 1 / (1 + np.exp(x))
 
+def softmaxx(values):
+    exps = np.exp(values)
+    exps /= sum(exps)
+    return exps
 
 def adjustBoxesRknn(
     outputs, anchors, imgShape, minConf=0.7, doBoxAdjustment=True, printDebug=False
@@ -187,7 +191,9 @@ def adjustBoxesONNX(
         # time.sleep(1)
         objectnessScore = float(pred[4])
 
+        
         class_scores = pred[5:]  # The rest are class probabilities
+        class_scores = softmaxx(class_scores)
         classId = np.argmax(class_scores)  # Get the most likely class
         confidence = float(
             pred[5 + classId]

@@ -3,6 +3,8 @@ def startDemo():
     import numpy as np
     from mapinternals.multistateUKF import MultistateUkf
     from tools.Constants import MapConstants
+    from ctypes import windll  # For Windows systems
+
 
     ukfM = MultistateUkf(10)
 
@@ -11,6 +13,9 @@ def startDemo():
     cv2.namedWindow(window_name)
     frame_width, frame_height = MapConstants.fieldWidth.getCM(), MapConstants.fieldHeight.getCM()
     
+    hwnd = windll.user32.FindWindowW(None, window_name)
+    windll.user32.ShowCursor(False)
+
     trackbar_name = "Robot Height"
     robotHeight = 25
     def robotHeightCallback(newHeight):
@@ -54,12 +59,15 @@ def startDemo():
         state_estimate = ukfM.getMeanEstimate()
 
         # Draw particles
-        for i in range(ukfM.NUMPOINTS):
-            idx = i*ukfM.DIM
-            x, y = tuple(map(int,ukfM.baseUKF.x[idx:idx+2]))
-            print(f"{x=} {y=}")
-            cv2.circle(frame, (x, y), 10, (0, 255, 0), -1)  # Green particles
-            
+        sigmas_f = ukfM.baseUKF.sigmas_f
+        mean_weights = ukfM.baseUKF.Wm
+        print(len(mean_weights))
+        for sigma,weight in zip(sigmas_f,mean_weights):
+            for i in range(ukfM.NUMSIMULATEDSTATES):
+                idx = i*ukfM.SINGLESTATELEN
+                x,y,vx,vy = sigma[idx:idx+ukfM.SINGLESTATELEN]
+                print(f"{x=} {y=}")
+                cv2.circle(frame,(int(x),int(y)),int(abs(weight)*3)+2,(60,255,102),-1)            
 
         # Draw estimated state
         cv2.circle(frame, (int(state_estimate[0]), int(state_estimate[1])), 5, (0, 0, 255), -1)  # Red estimate
@@ -76,5 +84,5 @@ def startDemo():
         key = cv2.waitKey(10) & 0xFF
         if key == ord('q'):
             break
-
+    windll.user32.ShowCursor(True)
     cv2.destroyAllWindows()
