@@ -8,13 +8,15 @@ def startCalibration():
     windowName = "Calibration View"
     cv2.namedWindow(windowName)
     trackbarName = "Time Per Cap: "
+
     def n(i):
         pass
-    cv2.createTrackbar(trackbarName,windowName,3,5,n)
-    
-    waitTime = 3000 # default 3s per capture
-    frameRate = 1 #1ms wait
-    timePassed = 0 # ms
+
+    cv2.createTrackbar(trackbarName, windowName, 3, 5, n)
+
+    waitTime = 3000  # default 3s per capture
+    frameRate = 1  # 1ms wait
+    timePassed = 0  # ms
     # termination criteria
     criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
     chessBoardDim = (7, 10)
@@ -35,10 +37,12 @@ def startCalibration():
         if r:
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
             timePassed += frameRate
-            
-            cv2.putText(frame,f"{timePassed/1000:.2f}",(10,30),0,1,(255,255,255),2)
 
-            if(timePassed > waitTime):
+            cv2.putText(
+                frame, f"{timePassed/1000:.2f}", (10, 30), 0, 1, (255, 255, 255), 2
+            )
+
+            if timePassed > waitTime:
                 timePassed = 0
 
                 # Find the chess board corners
@@ -48,7 +52,9 @@ def startCalibration():
                 if ret == True:
                     objpoints.append(objp)
 
-                    corners2 = cv2.cornerSubPix(gray, corners, (11, 11), (-1, -1), criteria)
+                    corners2 = cv2.cornerSubPix(
+                        gray, corners, (11, 11), (-1, -1), criteria
+                    )
                     imgpoints.append(corners2)
 
                     # Draw and display the corners
@@ -107,7 +113,7 @@ def loadSavedCalibration():
         }
 
 
-def createMapXYSForUndistortion(w, h):
+def createMapXYForUndistortion(w, h):
     savedCalib = loadSavedCalibration()
 
     cameraMatrix = np.array(savedCalib["CameraMatrix"])

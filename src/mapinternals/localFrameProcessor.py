@@ -3,7 +3,7 @@ import time
 from mapinternals.deepSortBaseLabler import DeepSortBaseLabler
 from tools.Constants import CameraIntrinsics, CameraExtrinsics, MapConstants
 from tools.positionEstimator import PositionEstimator
-from tools.positionTranslations import CameraToRobotTranslator,transformWithYaw
+from tools.positionTranslations import CameraToRobotTranslator, transformWithYaw
 import numpy as np
 import cv2
 
@@ -17,13 +17,15 @@ class LocalFrameProcessor:
         self,
         cameraIntrinsics: CameraIntrinsics,
         cameraExtrinsics: CameraExtrinsics,
-        useRknn = False
+        useRknn=False,
     ) -> None:
         if useRknn:
             from inference.rknnInferencer import rknnInferencer
+
             self.inf = rknnInferencer()
         else:
             from inference.onnxInferencer import onnxInferencer
+
             self.inf = onnxInferencer()
         self.baseLabler: DeepSortBaseLabler = DeepSortBaseLabler()
         self.cameraIntrinsics: CameraIntrinsics = cameraIntrinsics
@@ -34,27 +36,45 @@ class LocalFrameProcessor:
             (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
             for j in range(15)
         ]
-    
+
     # output is list of id,(absX,absY,absZ),conf,isRobot,features
     def processFrame(
-        self, frame, robotPosXIn=0, robotPosYIn=0, robotPosZIn=0,robotYawRad = 0, drawBoxes=True,customCameraExtrinsics=None,customCameraIntrinsics = None,maxDetections = None
+        self,
+        frame,
+        robotPosXCm=0,
+        robotPosYCm=0,
+        robotPosZCm=0,
+        robotYawRad=0,
+        drawBoxes=True,
+        customCameraExtrinsics=None,
+        customCameraIntrinsics=None,
+        maxDetections=None,
     ) -> list[list[int, tuple[int, int, int], float, bool, np.ndarray]]:
-        camIntrinsics = customCameraIntrinsics if customCameraIntrinsics is not None else self.cameraIntrinsics
-        camExtrinsics = customCameraExtrinsics if customCameraExtrinsics is not None else self.cameraExtrinsics
+        camIntrinsics = (
+            customCameraIntrinsics
+            if customCameraIntrinsics is not None
+            else self.cameraIntrinsics
+        )
+        camExtrinsics = (
+            customCameraExtrinsics
+            if customCameraExtrinsics is not None
+            else self.cameraExtrinsics
+        )
         startTime = time.time()
-        rknnResults = self.inf.inferenceFrame(frame)
-        if(maxDetections != None):
-            rknnResults = rknnResults[:maxDetections]
+        yoloResults = self.inf.inferenceFrame(frame)
 
-        if not rknnResults:
-            endTime = time.time()
-            fps = 1/(endTime-startTime)
-            # cv2.putText(frame,f"FPS:{fps}",(10,80),0,1,(0,255,0),2)
+        if maxDetections != None:
+            yoloResults = yoloResults[:maxDetections]
+
+        if not yoloResults:
+            if drawBoxes:
+                endTime = time.time()
+                fps = 1 / (endTime - startTime)
+                cv2.putText(frame, f"FPS:{fps}", (10, 80), 0, 1, (0, 255, 0), 2)
             return []
 
-        
         # id(unique),bbox,conf,isrobot,features,
-        labledResults = self.baseLabler.getLocalLabels(frame, rknnResults)
+        labledResults = self.baseLabler.getLocalLabels(frame, yoloResults)
 
         if drawBoxes:
             # draw a box with id,conf and relative estimate
@@ -65,14 +85,20 @@ class LocalFrameProcessor:
                 isRobot = labledResult[3]
                 color = self.colors[id % len(self.colors)]
                 cv2.rectangle(frame, bbox[0:2], bbox[2:4], color)
-                cv2.putText(frame, f"Id:{id} Conf{conf} IsRobot{isRobot}", (10,30), 0, 1, color,2)
+                cv2.putText(
+                    frame,
+                    f"Id:{id} Conf{conf} IsRobot{isRobot}",
+                    (10, 30),
+                    0,
+                    1,
+                    color,
+                    2,
+                )
 
         # id(unique),estimated x/y,conf,isrobot,features,
         relativeResults = self.estimator.estimateDetectionPositions(
             frame, labledResults.copy(), camIntrinsics
         )
-
-      
 
         absoluteResults = []
         for result in relativeResults:
@@ -84,18 +110,24 @@ class LocalFrameProcessor:
             ) = self.translator.turnCameraCoordinatesIntoRobotCoordinates(
                 relCamX, relCamY, camExtrinsics
             )
-            result[1] = transformWithYaw(np.array([relToRobotX,relToRobotY,relToRobotZ]),robotYawRad)
+            # factor in robot orientation
+            result[1] = transformWithYaw(
+                np.array([relToRobotX, relToRobotY, relToRobotZ]), robotYawRad
+            )
             # update results with absolute position
-            result[1] = np.add(result[1],np.array([robotPosXIn,robotPosYIn,robotPosZIn])) 
+            result[1] = np.add(
+                result[1], np.array([robotPosXCm, robotPosYCm, robotPosZCm])
+            )
 
             # note at this point these values are expected to be absolute
+
             # if not self.isiregularDetection(relToRobotX,relToRobotY,relToRobotZ):
             absoluteResults.append(result)
         # output is id,(absX,absY,absZ),conf,isRobot,features
 
         endTime = time.time()
 
-        fps = 1/(endTime-startTime)
+        fps = 1 / (endTime - startTime)
         # cv2.putText(frame,f"FPS:{fps}",(10,80),0,1,(0,255,0),2)
 
         if drawBoxes:
@@ -108,8 +140,24 @@ class LocalFrameProcessor:
                 isRobot = labledResult[3]
                 color = self.colors[id % len(self.colors)]
                 cv2.rectangle(frame, bbox[0:2], bbox[2:4], color)
-                cv2.putText(frame, f"Id:{id} Conf{conf} IsRobot{isRobot}", (10,30), 0, 1, color,2)
-                cv2.putText(frame, f"Relative estimate:{tuple(map(lambda x: round(x, 2),estXYZ))}", (10,100), 0, 1, color,2)
+                cv2.putText(
+                    frame,
+                    f"Id:{id} Conf{conf} IsRobot{isRobot}",
+                    (10, 30),
+                    0,
+                    1,
+                    color,
+                    2,
+                )
+                cv2.putText(
+                    frame,
+                    f"Relative estimate:{tuple(map(lambda x: round(x, 2),estXYZ))}",
+                    (10, 100),
+                    0,
+                    1,
+                    color,
+                    2,
+                )
 
         return absoluteResults
 
