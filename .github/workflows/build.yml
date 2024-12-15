@@ -53,8 +53,8 @@ jobs:
           PLATFORM_NAME: "${{ steps.platform_name.outputs.PLATFORM_NAME }}"
         with:
           platforms: ${{ matrix.platform }}
-          tags: alt:${{ PLATFORM_NAME }}
-          outputs: type=docker,dest=/tmp/alt_${{ PLATFORM_NAME }}.tar
+          tags: alt:${PLATFORM_NAME}
+          outputs: type=docker,dest=/tmp/alt_${PLATFORM_NAME}.tar
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
