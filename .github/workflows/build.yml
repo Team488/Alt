@@ -1,0 +1,56 @@
+# Workflow that runs our basic build and tests.
+#
+# Most jobs depend on the python_build_and_push job, which builds the Python Docker images, then
+# pushes them to ECR (or updates the ECR images with the latest git commit SHA). Subsequent jobs
+# then pull these cached images from ECR.
+#
+# The ECR steps use credentials for the github-cicd user in AWS.
+# See https://github.com/aws-actions/configure-aws-credentials
+# and https://github.com/aws-actions/amazon-ecr-login
+name: Build and Test
+on:
+  push:
+    # Run on pushes to main or any branch with /force-build/ in the name.
+    branches:
+      - main
+      - "**/force-build/**"
+  # Run on pull requests.
+  pull_request:
+env:
+  PYTHON_VERSION: 3.9.21
+jobs:
+  # The Python image build and push. This builds our API, admin, and Airflow
+  # images.
+  python_build:
+    name: Python Docker Build and ECR Push
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - linux/amd64
+          - linux/arm64
+    timeout-minutes: 30
+    steps:
+      # Set up a python environment so that pip works.
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and export
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          platforms: ${{ matrix.platform }}
+          tags: alt:${{ matrix.platform }}
+          outputs: type=docker,dest=/tm/alt:${{ matrix.platform }}.tar
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: alt:${{ matrix.platform }}.tar
+          path: /tmp/alt:${{ matrix.platform }}.tar
+          if-no-files-found: error
+          retention-days: 30
