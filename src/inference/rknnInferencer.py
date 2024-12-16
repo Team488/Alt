@@ -50,7 +50,7 @@ class rknnInferencer:
     # Run inference using the camera feed
     # Returns list[boxes,confidences,classIds]
     def inferenceFrame(
-        self, frame, conf_threshold=0.4
+        self, frame, conf_threshold=0.7
     ) -> list[tuple[tuple[int, int], tuple[int, int]], float, int]:
         # Preprocess the frame
 
@@ -60,19 +60,10 @@ class rknnInferencer:
         # Run inference
         outputs = self.model.inference(inputs=[img])
         print(outputs[0].shape)
-        # (boxes, classes, scores) = copiedutils.post_process(outputs, self.anchors)
-        adjusted = utils.adjustBoxesRknn(
-            outputs[0],
-            self.anchors,
-            frame.shape,
-            doBoxAdjustment=False,
-            printDebug=False,
-        )
+        adjusted = utils.adjustBoxesRknn(outputs[0], frame.shape, conf_threshold)
 
         nms = utils.non_max_suppression(adjusted)
-        if len(nms) > 0:
-            # realBoxes = self.co_helper.get_real_box(boxes)
-            return nms
+        return nms
 
 
 if __name__ == "__main__":

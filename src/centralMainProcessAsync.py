@@ -13,9 +13,9 @@ from mapinternals.CentralProcessor import CentralProcessor
 from pathplanning.PathGenerator import PathGenerator
 from tools import NtUtils
 
-processname = "Central_Orange_Pi_Process"
-logging.basicConfig(filename=f"logs/{processname}log", level=logging.DEBUG)
-logger = logging.getLogger(processname)
+processName = "Central_Orange_Pi_Process"
+logging.basicConfig(filename=f"logs/{processName}log", level=logging.DEBUG)
+logger = logging.getLogger(processName)
 
 central = CentralProcessor.instance()
 client = XTablesClient(server_port=1735, useZeroMQ=True)

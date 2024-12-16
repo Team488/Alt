@@ -128,45 +128,27 @@ def getRawIdOffset(idx):
 def sigmoid(x):
     return 1 / (1 + np.exp(x))
 
+
 def softmaxx(values):
     exps = np.exp(values)
     exps /= sum(exps)
     return exps
 
-def adjustBoxesRknn(
-    outputs, anchors, imgShape, minConf=0.7, doBoxAdjustment=True, printDebug=False
-):
+
+def adjustBoxesRknn(outputs, imgShape, minConf=0.7, printDebug=False):
     predictions = outputs[0]  # Model's predictions = 1 x 25200 x 7
     adjusted_boxes = []
     for idx in range(predictions.shape[0]):
         pred = predictions[idx]
         objectnessScore = float(pred[4])
-        if objectnessScore < 0.4:
-            continue
-
-        # stride, anchor_idx, scale_idx, gridX, gridY = processFlattenedIndex(idx)
-        # # Get corresponding anchor for the scale and anchor
-        # anchor_width, anchor_height = anchors[scale_idx][anchor_idx]
 
         class_scores = pred[5:]  # The rest are class probabilities
+        class_scores = softmaxx(class_scores)
         classId = np.argmax(class_scores)  # Get the most likely class
-        confidence = float(
-            pred[5 + classId]
-        )  # not sure where objectness score comes in. Maybe just for filtering?
-        if confidence < minConf:
+        confidence = float(pred[5 + classId])
+        score = objectnessScore * confidence
+        if score < minConf:
             continue
-        # if doBoxAdjustment:
-        #     # # format [x offset off grid, y offset off grid, width deviation, height deviation, objectness score, class_scores...]
-        #     xoff, yoff, widthDev, heightDev = pred[:4]
-        #     if printDebug:
-        #         print(f"Widthdev {widthDev} Heightdev {heightDev} xoff {xoff} yoff {yoff} objectness {objectnessScore}")
-        #     heightDev=sigmoid(heightDev)
-        #     widthDev=sigmoid(widthDev)
-        #     x = (gridX + xoff) * stride  # adjust by stride and grid index
-        #     y = (gridY + yoff) * stride  # adjust by stride and grid index
-        #     width = anchor_width * np.exp(widthDev)
-        #     height = anchor_height * np.exp(heightDev)
-        # else:
         x, y, width, height = pred[:4]
         x1 = x - width / 2
         x2 = x + width / 2
@@ -176,47 +158,27 @@ def adjustBoxesRknn(
         scaledBox = rescaleBox([x1, y1, x2, y2], imgShape)
         if printDebug:
             print(f"X {x} Y {y} w {width} h{height} classid {classId}")
-        adjusted_boxes.append([scaledBox, confidence, classId])
+        adjusted_boxes.append([scaledBox, score, classId])
     return adjusted_boxes
 
 
-def adjustBoxesONNX(
-    outputs, anchors, imgShape, minConf=0.7, doBoxAdjustment=True, printDebug=False
-):
+def adjustBoxesONNX(outputs, imgShape, minConf=0.7, printDebug=False):
     predictions = outputs[0]  # Model's predictions = 1 x 25200 x 7
     adjusted_boxes = []
     for idx in range(predictions.shape[0]):
         pred = predictions[idx]
         # print(tuple(pred))
-        # time.sleep(1)
         objectnessScore = float(pred[4])
 
-        
         class_scores = pred[5:]  # The rest are class probabilities
-        class_scores = softmaxx(class_scores)
+        # class_scores = softmaxx(class_scores)
         classId = np.argmax(class_scores)  # Get the most likely class
-        confidence = float(
-            pred[5 + classId]
-        )  # not sure where objectness score comes in. Maybe just for filtering?
+        confidence = float(pred[5 + classId])
 
         score = objectnessScore * confidence
         if score < minConf:
             continue
-        # stride, anchor_idx, scale_idx, gridX, gridY = processFlattenedIndex(idx)
-        # # Get corresponding anchor for the scale and anchor
-        # anchor_width, anchor_height = anchors[scale_idx][anchor_idx]
-        # if doBoxAdjustment:
-        #     # # format [x offset off grid, y offset off grid, width deviation, height deviation, objectness score, class_scores...]
-        #     xoff, yoff, widthDev, heightDev = pred[:4]
-        #     if printDebug:
-        #         print(f"Widthdev {widthDev} Heightdev {heightDev} xoff {xoff} yoff {yoff} objectness {objectnessScore}")
-        #     heightDev=sigmoid(heightDev)
-        #     widthDev=sigmoid(widthDev)
-        #     x = (gridX + xoff) * stride  # adjust by stride and grid index
-        #     y = (gridY + yoff) * stride  # adjust by stride and grid index
-        #     width = anchor_width * np.exp(widthDev)
-        #     height = anchor_height * np.exp(heightDev)
-        # else:
+
         x, y, width, height = pred[:4]
         x1 = x - width / 2
         x2 = x + width / 2

@@ -1,3 +1,4 @@
+import logging
 import math
 import cv2
 import numpy as np
@@ -5,11 +6,14 @@ from tools.Constants import CameraIntrinsics, ObjectReferences
 
 
 class PositionEstimator:
-    def __init__(self,tryocr = False) -> None:
+    def __init__(self, tryocr=False) -> None:
         self.tryocr = tryocr
         if tryocr:
             import pytesseract
-            pytesseract.pytesseract.tesseract_cmd = r'c:/Program Files/Tesseract-OCR/tesseract.exe' 
+
+            pytesseract.pytesseract.tesseract_cmd = (
+                r"c:/Program Files/Tesseract-OCR/tesseract.exe"
+            )
             self.pytesseract = pytesseract
         self.__minPerc = 0.005  # minimum percentage of bounding box with bumper color
         self.__blueRobotHist = np.load("assets/simulationBlueRobotHist.npy")
@@ -81,7 +85,7 @@ class PositionEstimator:
     def __backprojCheck(self, frame, redHist, blueHist):
         redBackproj = self.__backprojAndThreshFrame(frame, redHist, False)
         blueBackproj = self.__backprojAndThreshFrame(frame, blueHist, True)
-        cv2.imshow("Blue backproj",blueBackproj)
+        # cv2.imshow("Blue backproj",blueBackproj)
         redPerc = self.__getMajorityWhite(redBackproj)
         bluePerc = self.__getMajorityWhite(blueBackproj)
 
@@ -91,7 +95,7 @@ class PositionEstimator:
                 return (redBackproj, False)
             else:
                 # failed minimum percentage
-                print("Red fail",redPerc)
+                print("Red fail", redPerc)
                 return (None, None)
         else:
             # blue greater
@@ -99,7 +103,7 @@ class PositionEstimator:
                 print("blue sucess")
                 return (blueBackproj, True)
             else:
-                print("blue fail",bluePerc)
+                print("blue fail", bluePerc)
                 return (None, None)
 
     """ Calculates distance from object assuming we know real size and pixel size. Dimensions out are whatever known size dimensions are
@@ -109,13 +113,9 @@ class PositionEstimator:
         Output dim is whatever length dim
     """
 
-    def __calculateDistance(
-        self, knownSize, currentSizePixels, focalLengthPixels
-    ):
+    def __calculateDistance(self, knownSize, currentSizePixels, focalLengthPixels):
         # todo find calibrated values for other cams
-        return (knownSize * focalLengthPixels) / (
-            currentSizePixels
-        )
+        return (knownSize * focalLengthPixels) / (currentSizePixels)
 
     """ calculates angle change per pixel, and multiplies by number of pixels off you are. Dimensions are whatever fov per pixel dimensions are
 
@@ -148,7 +148,7 @@ class PositionEstimator:
         x = croppedframe.shape[1]
         # cutting the frame as for all the images i have the bumper is always in the bottom half
         croppedframe = self.__crop_image(croppedframe, (0, int(y / 2)), (x, y))
-        cv2.imshow("Cropped frame",croppedframe)
+        # cv2.imshow("Cropped frame",croppedframe)
         labFrame = cv2.cvtColor(croppedframe, cv2.COLOR_BGR2LAB)
         processed, isBlue = self.__backprojCheck(
             labFrame, self.__redRobotHist, self.__blueRobotHist
@@ -191,18 +191,17 @@ class PositionEstimator:
                 contoursNumbers, _ = cv2.findContours(
                     threshNumbers, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE
                 )
-                if(self.tryocr):
-                    nums = self.pytesseract.image_to_string(closed)                    
-                    cv2.putText(backProjNumbers,nums,(10,25),0,1,(255,255,255),2)
+                nums = ""
+                if self.tryocr:
+                    nums = self.pytesseract.image_to_string(closed)
+                    # cv2.putText(backProjNumbers,nums,(10,25),0,1,(255,255,255),2)
                 # partial close #2
                 closed = cv2.morphologyEx(opened, cv2.MORPH_CLOSE, kernel, iterations=2)
 
-
-
-                cv2.imshow("Number image",backProjNumbers)
-                cv2.imshow("Opened Number image",opened)
-                cv2.imshow("Closed Number image",closed)
-                cv2.imshow("Bumper image",bumperOnly)
+                # cv2.imshow("Number image",backProjNumbers)
+                # cv2.imshow("Opened Number image",opened)
+                # cv2.imshow("Closed Number image",closed)
+                # cv2.imshow("Bumper image",bumperOnly)
                 # try to isolate bumper digits for their height
                 if contoursNumbers:
                     # largestAcceptable_contour = np.concatenate(contoursNumbers)
@@ -228,14 +227,16 @@ class PositionEstimator:
                             largestAcceptable_contour = contour
 
                     if largestAcceptable_contour is not None:
-                        frame = np.zeros((300,300,3),dtype=np.uint8)
-                        cv2.drawContours(frame,[largestAcceptable_contour],-1,(0,255,0),2)
-                        cv2.imshow("Best contour",frame)
+                        frame = np.zeros((300, 300, 3), dtype=np.uint8)
+                        cv2.drawContours(
+                            frame, [largestAcceptable_contour], -1, (0, 255, 0), 2
+                        )
+                        # cv2.imshow("Best contour",frame)
                         min_area_rect = cv2.minAreaRect(largestAcceptable_contour)
                         # Get width and height
-                        (numberWidth,numberHeight) = min_area_rect[1]
-                        print(f"{numberWidth=}  {numberHeight=} ")
-                        targetheight = min(numberHeight,numberWidth)
+                        (numberWidth, numberHeight) = min_area_rect[1]
+                        # print(f"{numberWidth=}  {numberHeight=} ")
+                        targetheight = min(numberHeight, numberWidth)
                         # cv2.drawContours(bumperOnly,[largestAcceptable_contour],0,[0,0,255],2)
                         convex_hull_nums = cv2.convexHull(largestAcceptable_contour)
                         minAreaNums = cv2.minAreaRect(convex_hull_nums)
@@ -243,14 +244,17 @@ class PositionEstimator:
                         numToBumpRatio = max(height, targetheight) / min(
                             height, targetheight
                         )
-                        if numToBumpRatio < 3:
-                            return (targetheight, isBlue)
+                        MAXNUMTOBUMP = 3
+                        if numToBumpRatio < MAXNUMTOBUMP:
+                            return (targetheight, isBlue, nums)
                         else:
-                            print("Ratio to large to be acceptable", numToBumpRatio)
+                            logging.warning(
+                                f"Ratio to large to be acceptable MAX:{MAXNUMTOBUMP} Actual:{numToBumpRatio}"
+                            )
                 else:
-                    print("Failed to extract number from countour!")
+                    logging.warning("Failed to extract number from countour!")
             else:
-                print("Failed to extract a bumper, not enough contour area!")
+                logging.warning("Failed to extract a bumper, not enough contour area!")
         return None
 
     """ Method takes in a frame, where you have already run your model. It crops out bounding boxes for each robot detection and runs a height estimation.
@@ -269,19 +273,18 @@ class PositionEstimator:
         croppedImg = self.__crop_image(frame, (x1, y1), (x2, y2))
         est = self.__estimateRobotBumperHeight(croppedImg)
         if est is not None:
-            (estimatedHeight, isBlue) = est
+            (estimatedHeight, isBlue, nums) = est
             distance = self.__calculateDistance(
                 ObjectReferences.BUMPERHEIGHT.getMeasurementCm(),
                 estimatedHeight,
                 cameraIntrinsics.getFy(),
             )
-            print(cameraIntrinsics.getFy())
             bearing = self.__calcBearing(
                 cameraIntrinsics.getHFov(),
                 cameraIntrinsics.getHres(),
                 int(centerX - cameraIntrinsics.getHres() / 2),
             )
-            estCoords = self.componentizeHDistAndBearingSpecial(distance*100/cv2.getTrackbarPos("Scale Factor","MJPEG Stream - Front Right Camera"), bearing)
+            estCoords = self.componentizeHDistAndBearing(distance, bearing)
 
             return estCoords
 
@@ -300,18 +303,20 @@ class PositionEstimator:
         w = x2 - x1
         h = y2 - y1
         midW = int(w / 2)
-        midH = int(h / 2)
-        centerX = x1+midW
+        # midH = int(h / 2)
+        centerX = x1 + midW
         objectSize = max(w, h)
         distance = self.__calculateDistance(
-            ObjectReferences.NOTE.getMeasurementCm(), objectSize, cameraIntrinsics.getFx()
+            ObjectReferences.NOTE.getMeasurementCm(),
+            objectSize,
+            cameraIntrinsics.getFx(),
         )
         bearing = self.__calcBearing(
             cameraIntrinsics.getHFov(),
             cameraIntrinsics.getHres(),
             int(centerX - cameraIntrinsics.getCx()),
         )
-        estCoords = self.componentizeHDistAndBearingSpecial(distance, bearing)
+        estCoords = self.componentizeHDistAndBearing(distance, bearing)
         return estCoords
 
     def estimateDetectionPositions(
@@ -323,7 +328,6 @@ class PositionEstimator:
         for result in labledResults:
             isRobot = result[3]
             bbox = result[1]
-            print(bbox)
             estimate = None
             if isRobot:
                 estimate = self.__estimateRelativeRobotPosition(
@@ -349,7 +353,7 @@ class PositionEstimator:
         Takes hDist, bearing (radians) and returns x,y
     """
 
-    def componentizeHDistAndBearingSpecial(self, hDist, bearing):
+    def componentizeHDistAndBearing(self, hDist, bearing):
         x = hDist
         y = math.tan(bearing) * hDist
         return x, y

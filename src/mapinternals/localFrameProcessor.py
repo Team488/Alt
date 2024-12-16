@@ -66,7 +66,7 @@ class LocalFrameProcessor:
         if maxDetections != None:
             yoloResults = yoloResults[:maxDetections]
 
-        if not yoloResults:
+        if len(yoloResults) == 0:
             if drawBoxes:
                 endTime = time.time()
                 fps = 1 / (endTime - startTime)

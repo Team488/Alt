@@ -13,7 +13,7 @@ class DeepSortBaseLabler:
         self, frame, results
     ) -> list[tuple[int, tuple[int, int, int, int], float, bool, np.ndarray]]:
         trackedDetections = []
-        if not results:
+        if len(results) == 0:
             return trackedDetections
         detectionsGameObjects = []
         detectionsRobots = []

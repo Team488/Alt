@@ -15,7 +15,9 @@ class onnxInferencer:
         print(f"Using provider {providers[0]}")
         session_options = ort.SessionOptions()
 
-        self.session = ort.InferenceSession(model_path, providers=providers,sess_options=session_options)
+        self.session = ort.InferenceSession(
+            model_path, providers=providers, sess_options=session_options
+        )
 
         self.strides = strides
         self.anchors = utils.loadAnchors(anchorLocation)
@@ -33,19 +35,12 @@ class onnxInferencer:
         output_name = self.session.get_outputs()[0].name
 
         predictions = self.session.run([output_name], {input_name: input_frame})[0]
-        # todo make this work
-        adjusted = utils.adjustBoxesONNX(
-            predictions,
-            self.anchors,
-            frame.shape,
-            conf_threshold,
-            doBoxAdjustment=False,
-        )  # output is odd?
+        adjusted = utils.adjustBoxesONNX(predictions, frame.shape, conf_threshold)
         nmsResults = utils.non_max_suppression(adjusted, conf_threshold)
 
         # do stuff here
-        labels = ["robot", "note"]
         if drawBox:
+            labels = ["robot", "note"]
             for (bbox, conf, class_id) in nmsResults:
                 print("out!")
                 p1 = tuple(map(int, bbox[:2]))  # Convert to integer tuple
