@@ -1,4 +1,5 @@
 """ Process to run on orin """
+
 import cv2
 import argparse
 import numpy as np
@@ -46,7 +47,7 @@ def getFramePackets(xtablesClient: XTablesClient.XTablesClient):
 
 def mainLoop(args):
     MapBottomCorner = (MapConstants.fieldWidth.value, MapConstants.fieldHeight.value)
-    client = XTablesClient.XTablesClient(server_port=1735, useZeroMQ=True)
+    client = XTablesClient.XTablesClient(server_port=1735)
     central = CentralProcessor.instance()
     pathGenerator = PathGenerator(central)
     pathName = "target_waypoints"

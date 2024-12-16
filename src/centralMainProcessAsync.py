@@ -1,9 +1,9 @@
 """ Process to run on orin """
-import logging
-import time
+
 import cv2
 import argparse
 import logging
+import time
 import numpy as np
 from tools.Constants import CameraIdOffsets
 from XTABLES import XTablesClient
@@ -18,7 +18,7 @@ logging.basicConfig(filename=f"logs/{processName}log", level=logging.DEBUG)
 logger = logging.getLogger(processName)
 
 central = CentralProcessor.instance()
-client = XTablesClient(server_port=1735, useZeroMQ=True)
+client = XTablesClient(server_port=1735)
 
 pathGenerator = PathGenerator(central)
 pathName = "target_waypoints"

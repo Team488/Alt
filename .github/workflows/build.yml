@@ -30,7 +30,7 @@ jobs:
         platform:
           - linux/amd64
           - linux/arm64
-    timeout-minutes: 30
+    timeout-minutes: 60
     steps:
       # Set up a python environment so that pip works.
       - name: Set up QEMU

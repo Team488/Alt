@@ -1,5 +1,8 @@
 """ Local process to run on each orange pi """
+
 import logging
+import numpy as np
+import argparse
 import cv2
 import socket
 import time
@@ -49,10 +52,9 @@ def startProcess():
         cameraIntrinsics.getHres(), cameraIntrinsics.getVres()
     )
 
-    logger.info("Starting process, device name:", name)
-    xclient = XTablesClient(server_port=1735)
-    cameraidx = CameraUtils.getCorrectCameraFeed()
-    cap = cv2.VideoCapture(cameraidx)
+    print("Starting process, device name:", name)
+    xclient = XTablesClient.XTablesClient(server_port=1735)
+    cap = cv2.VideoCapture(0)
     try:
         while cap.isOpened():
             stime = time.time()
