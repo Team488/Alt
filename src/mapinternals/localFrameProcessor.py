@@ -18,6 +18,8 @@ class LocalFrameProcessor:
         cameraIntrinsics: CameraIntrinsics,
         cameraExtrinsics: CameraExtrinsics,
         useRknn=False,
+        setParallel = False,
+        tryOCR = False
     ) -> None:
         if useRknn:
             from inference.rknnInferencer import rknnInferencer
@@ -26,11 +28,11 @@ class LocalFrameProcessor:
         else:
             from inference.onnxInferencer import onnxInferencer
 
-            self.inf = onnxInferencer()
+            self.inf = onnxInferencer(setParallel=setParallel)
         self.baseLabler: DeepSortBaseLabler = DeepSortBaseLabler()
         self.cameraIntrinsics: CameraIntrinsics = cameraIntrinsics
         self.cameraExtrinsics: CameraExtrinsics = cameraExtrinsics
-        self.estimator = PositionEstimator(tryocr=True)
+        self.estimator = PositionEstimator(tryocr=tryOCR)
         self.translator = CameraToRobotTranslator()
         self.colors = [
             (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
