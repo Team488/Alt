@@ -147,7 +147,7 @@ def mainLoop(args):
     except Exception as e:
         print(e)
     finally:
-        logger.("Ending main process")
+        logger.info("Ending main process")
         cv2.destroyAllWindows()
         return
 
