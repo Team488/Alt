@@ -7,7 +7,6 @@ from inference import copiedutils
 from inference import utils
 from inference.coco_utils import COCO_test_helper
 
-
 class rknnInferencer:
     def __init__(self, model_path="assets/bestV5.rknn", target="rk3588"):
         # export needed rknpu .so

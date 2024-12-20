@@ -3,7 +3,7 @@ import cv2
 import argparse
 import numpy as np
 from tools.Constants import CameraIdOffsets
-import XTablesClient
+from XTABLES import XTablesClient
 from coreinterface.DetectionPacket import DetectionPacket
 from coreinterface.FramePacket import FramePacket
 from mapinternals.CentralProcessor import CentralProcessor
@@ -11,7 +11,7 @@ from pathplanning.PathGenerator import PathGenerator
 from tools.Constants import MapConstants
 
 
-def getDetPackets(xtablesClient: XTablesClient.XTablesClient):
+def getDetPackets(xtablesClient: XTablesClient):
     maxTimeout = 200
     keys = ("FRONTLEFT", "FRONTRIGHT", "REARLEFT", "REARRIGHT")
     detectionpackets = []
@@ -30,7 +30,7 @@ def getDetPackets(xtablesClient: XTablesClient.XTablesClient):
     return detectionpackets
 
 
-def getFramePackets(xtablesClient: XTablesClient.XTablesClient):
+def getFramePackets(xtablesClient: XTablesClient):
     # maxTimeout = 1000
     # keys = ("FRONTLEFT", "FRONTRIGHT", "REARLEFT", "REARRIGHT")
     framepackets = []
@@ -46,7 +46,7 @@ def getFramePackets(xtablesClient: XTablesClient.XTablesClient):
 
 def mainLoop(args):
     MapBottomCorner = (MapConstants.fieldWidth.value, MapConstants.fieldHeight.value)
-    client = XTablesClient.XTablesClient(server_port=1735, useZeroMQ=True)
+    client = XTablesClient(server_port=1735, useZeroMQ=True)
     central = CentralProcessor.instance()
     pathGenerator = PathGenerator(central)
     pathName = "target_waypoints"

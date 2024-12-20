@@ -171,7 +171,7 @@ def adjustBoxesONNX(outputs, imgShape, minConf=0.7, printDebug=False):
         objectnessScore = float(pred[4])
 
         class_scores = pred[5:]  # The rest are class probabilities
-        # class_scores = softmaxx(class_scores)
+        class_scores = softmaxx(class_scores)
         classId = np.argmax(class_scores)  # Get the most likely class
         confidence = float(pred[5 + classId])
 

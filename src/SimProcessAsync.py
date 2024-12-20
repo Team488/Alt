@@ -1,7 +1,10 @@
+import struct
 import time
+import json
 import cv2
 import logging
 from concurrent.futures import ThreadPoolExecutor
+import msgpack
 from networktables import NetworkTables
 from tools.NtUtils import getPose2dFromBytes
 from mapinternals.localFrameProcessor import LocalFrameProcessor
@@ -67,7 +70,7 @@ offsets = [
 frameProcessors = [LocalFrameProcessor(
                     cameraIntrinsics=CameraIntrinsics.SIMULATIONCOLOR,
                     cameraExtrinsics=extrinsics[i],
-                    useRknn=False,setParallel=False
+                    useRknn=False,setParallel=True,tryOCR=True
                     ) for i in range(len(offsets))]
 
 central = CentralProcessor.instance()
@@ -77,12 +80,57 @@ NetworkTables.initialize(server="127.0.0.1")
 postable = NetworkTables.getTable("AdvantageKit/RealOutputs/Vision/AprilTags/Results")
 table = NetworkTables.getTable("AdvantageKit/RealOutputs/Odometry")
 
+# def pack_pose3d(translation, quaternion, index):     
+#     msgpack.packb({
+#     "translation": {"x": translation[0], "y": translation[1], "z": translation[2]},
+#     "rotation/q": {"w": quaternion[0], "x": quaternion[1], "y": quaternion[2], "z": quaternion[3]}
+#     })
+
+#     return keys
+
+# def send_pose3d_array(poses,name):
+#     """
+#     Send an array of Pose3d to NetworkTables in the AdvantageScope format.
+#     :param poses: List of tuples [(translation1, quaternion1), (translation2, quaternion2), ...]
+#     """
+
+#     # Create a structure for each Pose3d and push it to NetworkTables
+#     for index, (translation, quaternion) in enumerate(poses):
+#         pose_data = pack_pose3d(translation, quaternion, index)
+
+#         # Push each individual value to NetworkTables with unique keys for each Pose3d
+#         for key, value in pose_data.items():
+#             table.putNumber(f"{name}/{index}/{key}", value)
+
+#     table.putNumber(f"{name}/length", len(poses))
+
+# # Example data
+# poses = [
+#     ((1.0, 2.0, 3.0), (1.0, 0.0, 0.0, 0.0)),  # Pose1: translation, quaternion
+#     ((4.0, 5.0, 6.0), (0.707, 0.707, 0.0, 0.0)),  # Pose2: translation, quaternion
+# ]
+
+# # Send the Pose3d array
+# # Push the byte array to NetworkTables
+
+# while True:
+#     send_pose3d_array(poses,":((")
+#     time.sleep(0.1)
+
+
+
+
+
+# exit(0)
+
+
 # Window setup for displaying the camera feed
 title = "Simulation Window"
 cv2.namedWindow(title)
-cv2.createTrackbar("Camera to inference", title, 1, 4, lambda x: None)
-cv2.createTrackbar("Scale Factor", title, 1, 1000, lambda x: None)
+cv2.createTrackbar("Scale Factor", title, 0, 200, lambda x: None)
 cv2.setTrackbarPos("Scale Factor", title, 100)
+cv2.createTrackbar("Epsillon", title, 0, 100, lambda x: None)
+cv2.setTrackbarPos("Epsillon", title, 10)
 
 updateMap = {
     "FRONTLEFT": ([], offsets[0], 0),
@@ -92,13 +140,14 @@ updateMap = {
 }
 ASYNCLOOPTIMEMS = 100 #ms (onnx inference with 4 different "processors" on one device is slooow)
 def async_frameprocess(imitatedProcIdx):
+    global running
     cap = caps[imitatedProcIdx]
     imitatedProcName = names[imitatedProcIdx]
     idoffset = offsets[imitatedProcIdx]
     frameProcessor = frameProcessors[imitatedProcIdx]
     
     try:
-        while True:
+        while running:
             start_time = time.time()
             # Skip older frames in the buffer
             while cap.grab():
@@ -127,6 +176,7 @@ def async_frameprocess(imitatedProcIdx):
                 robotPosYCm=pos[1] * 100,
                 robotYawRad=pos[2],
                 drawBoxes=True,
+                maxDetections=1
             )
 
             global updateMap
@@ -136,75 +186,83 @@ def async_frameprocess(imitatedProcIdx):
             updateMap[imitatedProcName] = packet
             etime = time.time()
             dMS = (etime-start_time)*1000
-            sleeptime = 0
+            sleeptime = 0.001
             if dMS < ASYNCLOOPTIMEMS:
                 sleeptime = (ASYNCLOOPTIMEMS-dMS)
                 logger.debug(f"Sleeping for {sleeptime}s")
                 # time.sleep(sleeptime)
             else:
                 logger.warning(f"Async Loop Overrun! Time elapsed: {dMS}ms | Max loop time: {ASYNCLOOPTIMEMS}ms")
-            cv2.waitKey(1+sleeptime)
+            cv2.waitKey(1)
+            time.sleep(waittime/1000)
             cv2.imshow(imitatedProcName,frame)
+        logger.debug("Exiting async loop")
     except Exception as e:
         logger.fatal(f"Error! {e}")
+    finally:
+        cap.release()
 
-MAINLOOPTIMEMS = 100#ms
+running = True
+MAINLOOPTIMEMS = 100 #ms
 localUpdateMap = {
     "FRONTLEFT": 0,
     "FRONTRIGHT": 0,
     "REARRIGHT": 0,
     "REARLEFT": 0,
 }
-with ThreadPoolExecutor(max_workers=4) as exe:
-    exe.submit(async_frameprocess,0)
-    exe.submit(async_frameprocess,1)
-    exe.submit(async_frameprocess,2)
-    exe.submit(async_frameprocess,3)
-    try:
-        while True:
-            stime = time.time()
-            results = []
-            for processName in names:
-                localidx = localUpdateMap[processName]
-                packet = updateMap[processName]
-                print(f"{packet=}")
-                result,packetidx = packet[:2],packet[2]
-                if localidx == packetidx:
-                    # same data
-                    continue
-                localUpdateMap[processName] = packetidx
-                results.append(result)
+# Executor outside the with block
+globalexe = ThreadPoolExecutor(max_workers=4)
+futures = [globalexe.submit(async_frameprocess, i) for i in range(1)]
 
-            central.processFrameUpdate(results,MAINLOOPTIMEMS/1000)
-            x, y, p = central.map.getHighestRobot()
-            # Update NetworkTables if processing results are available
-            scaleFactor = 100  # + cv2.getTrackbarPos("Scale factor", title)
-            table.getEntry("Target Estimate").setDoubleArray(
-                [x / scaleFactor, y / scaleFactor, 0, 0]
-            )
-            logger.debug("Updated Target Estimate entry in NetworkTables.")
+try:
+    while running:
+        stime = time.time()
+        results = []
+        for processName in names:
+            localidx = localUpdateMap[processName]
+            packet = updateMap[processName]
+            # print(f"{packet=}")
+            result, packetidx = packet[:2], packet[2]
+            if localidx == packetidx:
+                continue
+            localUpdateMap[processName] = packetidx
+            results.append(result)
 
-            # Display the current frame
-            etime = time.time()
-            dMS = (etime-stime)*1000
-            waittime = 0
-            if dMS < MAINLOOPTIMEMS:
-                waittime = int(MAINLOOPTIMEMS-dMS)
-            else:
-                logger.warning(f"Overran Loop! Time elapsed: {dMS}ms | Max loop time: {MAINLOOPTIMEMS}ms")
-            cv2.imshow("aa", central.map.getRobotHeatMap())
+        central.processFrameUpdate(results, MAINLOOPTIMEMS / 3000)
+        x, y, p = central.map.getHighestRobot()
+        scaleFactor = 100  # cm to m
+        table.getEntry("Target Estimate").setDoubleArray(
+            [x / scaleFactor, y / scaleFactor, 0, 0]
+        )
+        logger.debug("Updated Target Estimate entry in NetworkTables.")
 
-            # Break the loop if 'q' is pressed
-            if cv2.waitKey(1+waittime) & 0xFF == ord("q"):
-                break
-    except Exception as e:
-        logger.fatal(f"Main thread error!: {e}")
-    finally:
-        # Release all resources
-        capFR.release()
-        capFL.release()
-        capRR.release()
-        capRL.release()
-        cv2.destroyAllWindows()
-        exe.shutdown(wait=False)
-        logging.info("Released all resources and closed windows.")
+        etime = time.time()
+        dMS = (etime - stime) * 1000
+        waittime = 0.001
+        if dMS < MAINLOOPTIMEMS:
+            waittime = int(MAINLOOPTIMEMS - dMS)
+        else:
+            logger.warning(f"Overran Loop! Time elapsed: {dMS}ms | Max loop time: {MAINLOOPTIMEMS}ms")
+        cv2.imshow(title, central.map.getRobotHeatMap())
+
+        # Handle keyboard interrupt with cv2.waitKey()
+        if cv2.waitKey(1) & 0xFF == ord("q"):
+            running = False
+
+        time.sleep(waittime / 1000)
+
+except KeyboardInterrupt:
+    print("Keyboard Interrupt detected, shutting down...")
+    running = False
+
+finally:
+    # Gracefully shut down threads
+    globalexe.shutdown(wait=True)
+
+    # Clean up resources
+    cv2.destroyAllWindows()
+    if capFL.isOpened(): capFL.release()
+    if capFR.isOpened(): capFR.release()
+    if capRL.isOpened(): capRL.release()
+    if capRR.isOpened(): capRR.release()
+    logging.info("Released all resources and closed windows.")

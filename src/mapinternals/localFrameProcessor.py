@@ -27,8 +27,7 @@ class LocalFrameProcessor:
             self.inf = rknnInferencer()
         else:
             from inference.onnxInferencer import onnxInferencer
-
-            self.inf = onnxInferencer(setParallel=setParallel)
+            self.inf = onnxInferencer.instance()
         self.baseLabler: DeepSortBaseLabler = DeepSortBaseLabler()
         self.cameraIntrinsics: CameraIntrinsics = cameraIntrinsics
         self.cameraExtrinsics: CameraExtrinsics = cameraExtrinsics
