@@ -27,7 +27,7 @@ class LocalFrameProcessor:
             self.inf = rknnInferencer()
         else:
             from inference.onnxInferencer import onnxInferencer
-            self.inf = onnxInferencer.instance()
+            self.inf = onnxInferencer()
         self.baseLabler: DeepSortBaseLabler = DeepSortBaseLabler()
         self.cameraIntrinsics: CameraIntrinsics = cameraIntrinsics
         self.cameraExtrinsics: CameraExtrinsics = cameraExtrinsics
@@ -35,7 +35,7 @@ class LocalFrameProcessor:
         self.translator = CameraToRobotTranslator()
         self.colors = [
             (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
-            for j in range(15)
+            for _ in range(15)
         ]
 
     # output is list of id,(absX,absY,absZ),conf,isRobot,features

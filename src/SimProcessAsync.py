@@ -228,7 +228,7 @@ try:
             localUpdateMap[processName] = packetidx
             results.append(result)
 
-        central.processFrameUpdate(results, MAINLOOPTIMEMS / 3000)
+        central.processFrameUpdate(results, MAINLOOPTIMEMS/1000)
         x, y, p = central.map.getHighestRobot()
         scaleFactor = 100  # cm to m
         table.getEntry("Target Estimate").setDoubleArray(

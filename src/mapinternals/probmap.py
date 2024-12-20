@@ -24,7 +24,7 @@ class ProbMap:
         gameObjectHeight=MapConstants.gameObjectHeight.value,
         robotWidth=MapConstants.robotWidth.value,
         robotHeight=MapConstants.robotHeight.value,
-        sigma=0.9,
+        sigma=.9,
         maxSpeedRobots=100,
         maxSpeedGameObjects=5,  # gameobjects most likely not very fast
     ):

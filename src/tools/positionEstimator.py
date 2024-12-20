@@ -190,24 +190,27 @@ class PositionEstimator:
                 kernelthreebythree = np.ones((3, 3), np.uint8)
                 backProjNumbers = self.__backProjWhite(bumperOnlyLab)
                 # partial cleanup #1 (this is so we keep try to do ocr before removing any sign of numbers with out next close op)
-                initalOpen = cv2.morphologyEx(backProjNumbers, cv2.MORPH_OPEN, kerneltwobytwo, iterations=2)
+                initalOpen = cv2.morphologyEx(backProjNumbers, cv2.MORPH_OPEN, kerneltwobytwo, iterations=1)
+                cv2.imshow("initialOpen",initalOpen)
                 nums = ""
                 if self.tryocr:
                     nums = self.pytesseract.image_to_string(backProjNumbers)
                     # cv2.putText(backProjNumbers,nums,(10,25),0,1,(255,255,255),2)
                 # now merge any numbers into one
-                close = cv2.morphologyEx(initalOpen, cv2.MORPH_CLOSE, kerneltwobytwo, iterations=6)
+                close = cv2.morphologyEx(initalOpen, cv2.MORPH_CLOSE, kerneltwobytwo, iterations=1)
+                cv2.imshow("initialClose",close)
                 # one last opening to remove any noise on the edges of the numbers we extract
                 final_open = cv2.morphologyEx(close,cv2.MORPH_OPEN,kerneltwobytwo,iterations=1)
+                cv2.imshow("finalOpen",final_open)
                 # some cleanup dilation (small amount)
-                final_number_image = cv2.morphologyEx(final_open,cv2.MORPH_DILATE,kernelthreebythree,iterations=3)
+                final_number_image = cv2.morphologyEx(final_open,cv2.MORPH_DILATE,kerneltwobytwo,iterations=3)
                 
                 _, threshNumbers = cv2.threshold(final_number_image, 50, 255, cv2.THRESH_BINARY)
                 contoursNumbers, _ = cv2.findContours(
                     threshNumbers, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE
                 )
                 cv2.imshow("Unprocessed Number image",backProjNumbers)
-                cv2.imshow("Opened Number image",final_number_image)
+                cv2.imshow("Final morphed Number image",final_number_image)
                 cv2.imshow("Bumper image",bumperOnly)
                 # try to isolate bumper digits for their height
                 if contoursNumbers:
@@ -260,7 +263,7 @@ class PositionEstimator:
                         # print(f"{numberWidth=}  {numberHeight=} ")
                         targetheight = min(numberHeight, numberWidth)
                         heightframe = np.zeros((200,400),dtype=np.uint8)
-                        cv2.putText(heightframe,f"H:{targetheight:.5f} Num:{self.numMapper.getRobotNumberEstimate(isBlue,nums)}",(10,30),0,1,(255),2)
+                        # cv2.putText(heightframe,f"H:{targetheight:.5f} Num:{self.numMapper.getRobotNumberEstimate(isBlue,nums)}",(10,30),0,1,(255),2)
                         cv2.imshow("Height estimate",heightframe)
                         print(f"HEIGHT----------------------------{targetheight}----------------------------")
                         cv2.imshow("Number Contour image",contourimage)

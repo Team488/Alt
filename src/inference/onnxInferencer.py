@@ -2,29 +2,24 @@ import cv2
 import numpy as np
 import onnxruntime as ort
 from inference import utils
-from singleton.singleton import Singleton
 
-@Singleton
 class onnxInferencer:
     def __init__(
         self,
         model_path="assets/bestV5.onnx",
-        anchorLocation="assets/bestV5Anchors.txt",
-        strides=np.array([8, 16, 32]),setParallel = False
+        setParallel = False
     ):
         providers = ort.get_available_providers()
         print(f"Using provider {providers[0]}")
         session_options = ort.SessionOptions()
-        # if setParallel:
-        #     print("Reducing threads to handle parallel execution")
-        #     session_options.intra_op_num_threads = 1  # Threads per provider
-        #     session_options.execution_mode = ort.ExecutionMode.ORT_PARALLEL
+        if setParallel:
+            print("Reducing threads to handle parallel execution")
+            session_options.intra_op_num_threads = 1  # Threads per provider
+            session_options.execution_mode = ort.ExecutionMode.ORT_PARALLEL
         self.session = ort.InferenceSession(
             model_path, providers=providers, sess_options=session_options
         )
 
-        self.strides = strides
-        self.anchors = utils.loadAnchors(anchorLocation)
 
     def inferenceFrame(self, frame, conf_threshold=0.4, drawBox=False):
         # Preprocess the frame if needed (resize, normalize, etc.)
