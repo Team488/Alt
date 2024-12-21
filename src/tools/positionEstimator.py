@@ -162,13 +162,13 @@ class PositionEstimator:
             labFrame, self.__redRobotHist, self.__blueRobotHist
         )
         if isBlue != None:
-            cv2.imshow("processed",processed)
+            # cv2.imshow("processed",processed)
             # a bumper with enough percentage was detected
             bumperKernel = np.ones((2, 2), np.uint8)
             bumper_closed = cv2.morphologyEx(processed, cv2.MORPH_CLOSE, bumperKernel, iterations=2)
-            cv2.imshow("close bumper",bumper_closed)
+            # cv2.imshow("close bumper",bumper_closed)
             bumper_opened = cv2.morphologyEx(bumper_closed,cv2.MORPH_OPEN,bumperKernel,iterations=2)
-            cv2.imshow("open bumper",bumper_opened)
+            # cv2.imshow("open bumper",bumper_opened)
 
             # morphology_final = cv2.morphologyEx(thresh, cv2.MORPH_RECT, kernel, None, (-1, -1), 4)
             contours, _ = cv2.findContours(
@@ -176,7 +176,7 @@ class PositionEstimator:
             )
             contour_image = np.zeros_like(bumper_opened)
             cv2.drawContours(contour_image,contours,-1,(255),1)
-            cv2.imshow("Countour image",contour_image)
+            # cv2.imshow("Countour image",contour_image)
             if contours:
                 # extracting the bumper
                 combined_contour = np.concatenate(contours)
@@ -191,17 +191,17 @@ class PositionEstimator:
                 backProjNumbers = self.__backProjWhite(bumperOnlyLab)
                 # partial cleanup #1 (this is so we keep try to do ocr before removing any sign of numbers with out next close op)
                 initalOpen = cv2.morphologyEx(backProjNumbers, cv2.MORPH_OPEN, kerneltwobytwo, iterations=1)
-                cv2.imshow("initialOpen",initalOpen)
+                # cv2.imshow("initialOpen",initalOpen)
                 nums = ""
                 if self.tryocr:
                     nums = self.pytesseract.image_to_string(backProjNumbers)
                     # cv2.putText(backProjNumbers,nums,(10,25),0,1,(255,255,255),2)
                 # now merge any numbers into one
                 close = cv2.morphologyEx(initalOpen, cv2.MORPH_CLOSE, kerneltwobytwo, iterations=1)
-                cv2.imshow("initialClose",close)
+                # cv2.imshow("initialClose",close)
                 # one last opening to remove any noise on the edges of the numbers we extract
                 final_open = cv2.morphologyEx(close,cv2.MORPH_OPEN,kerneltwobytwo,iterations=1)
-                cv2.imshow("finalOpen",final_open)
+                # cv2.imshow("finalOpen",final_open)
                 # some cleanup dilation (small amount)
                 final_number_image = cv2.morphologyEx(final_open,cv2.MORPH_DILATE,kerneltwobytwo,iterations=3)
                 
@@ -209,9 +209,9 @@ class PositionEstimator:
                 contoursNumbers, _ = cv2.findContours(
                     threshNumbers, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE
                 )
-                cv2.imshow("Unprocessed Number image",backProjNumbers)
-                cv2.imshow("Final morphed Number image",final_number_image)
-                cv2.imshow("Bumper image",bumperOnly)
+                # cv2.imshow("Unprocessed Number image",backProjNumbers)
+                # cv2.imshow("Final morphed Number image",final_number_image)
+                # cv2.imshow("Bumper image",bumperOnly)
                 # try to isolate bumper digits for their height
                 if contoursNumbers:
                     # largestAcceptable_contour = np.concatenate(contoursNumbers)
@@ -228,7 +228,7 @@ class PositionEstimator:
                         ratio = max(numberWidth, numberHeight) / min(
                             numberWidth, numberHeight
                         )
-                        print("Ratio", ratio)
+                        # print("Ratio", ratio)
                         # Calculate the max of width and height
                         size_Score = numberWidth*numberHeight
 
@@ -237,14 +237,14 @@ class PositionEstimator:
                             largestAcceptable_contour = contour
 
                     if largestAcceptable_contour is not None:
-                        epsilon = cv2.getTrackbarPos("Epsillon","Simulation Window")/1000 * cv2.arcLength(largestAcceptable_contour, True)  # Adjust epsilon for accuracy
-                        approx = cv2.approxPolyDP(largestAcceptable_contour, epsilon, True)
-                        approximage = np.zeros_like(close)
+                        # epsilon = cv2.getTrackbarPos("Epsillon","Simulation Window")/1000 * cv2.arcLength(largestAcceptable_contour, True)  # Adjust epsilon for accuracy
+                        # approx = cv2.approxPolyDP(largestAcceptable_contour, epsilon, True)
+                        # approximage = np.zeros_like(close)
 
-                        # Check if the approximated contour is a rectangle
-                            # Draw the rectangle on the original image (for visualization)
-                        cv2.drawContours(approximage, [approx], -1, (255, 255, 255), 2)
-                        cv2.imshow("poly dp number approx", approximage)
+                        # # Check if the approximated contour is a rectangle
+                        #     # Draw the rectangle on the original image (for visualization)
+                        # cv2.drawContours(approximage, [approx], -1, (255, 255, 255), 2)
+                        # cv2.imshow("poly dp number approx", approximage)
                         
                         
                         contourimage = np.zeros_like(close)
@@ -262,11 +262,11 @@ class PositionEstimator:
                         (numberWidth, numberHeight) = min_area_rect[1]
                         # print(f"{numberWidth=}  {numberHeight=} ")
                         targetheight = min(numberHeight, numberWidth)
-                        heightframe = np.zeros((200,400),dtype=np.uint8)
+                        # heightframe = np.zeros((200,400),dtype=np.uint8)
                         # cv2.putText(heightframe,f"H:{targetheight:.5f} Num:{self.numMapper.getRobotNumberEstimate(isBlue,nums)}",(10,30),0,1,(255),2)
-                        cv2.imshow("Height estimate",heightframe)
-                        print(f"HEIGHT----------------------------{targetheight}----------------------------")
-                        cv2.imshow("Number Contour image",contourimage)
+                        # cv2.imshow("Height estimate",heightframe)
+                        # print(f"HEIGHT----------------------------{targetheight}----------------------------")
+                        # cv2.imshow("Number Contour image",contourimage)
                         # cv2.drawContours(bumperOnly,[largestAcceptable_contour],0,[0,0,255],2)
                         return (targetheight, isBlue, nums)
                         

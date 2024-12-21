@@ -212,7 +212,7 @@ localUpdateMap = {
 }
 # Executor outside the with block
 globalexe = ThreadPoolExecutor(max_workers=4)
-futures = [globalexe.submit(async_frameprocess, i) for i in range(1)]
+futures = [globalexe.submit(async_frameprocess, i) for i in range(2)]
 
 try:
     while running:
@@ -231,8 +231,11 @@ try:
         central.processFrameUpdate(results, MAINLOOPTIMEMS/1000)
         x, y, p = central.map.getHighestRobot()
         scaleFactor = 100  # cm to m
-        table.getEntry("Target Estimate").setDoubleArray(
+        table.getEntry("est/Target_Estimate2").setDoubleArray(
             [x / scaleFactor, y / scaleFactor, 0, 0]
+        )
+        table.getEntry("est/Target_Estimate1").setDoubleArray(
+            [x / scaleFactor+2, y / scaleFactor+2, 0, 0]
         )
         logger.debug("Updated Target Estimate entry in NetworkTables.")
 
@@ -243,7 +246,8 @@ try:
             waittime = int(MAINLOOPTIMEMS - dMS)
         else:
             logger.warning(f"Overran Loop! Time elapsed: {dMS}ms | Max loop time: {MAINLOOPTIMEMS}ms")
-        cv2.imshow(title, central.map.getRobotHeatMap())
+        cv2.imshow(f"{title}_robots", central.map.getRobotHeatMap())
+        cv2.imshow(f"{title}_notes", central.map.getGameObjectHeatMap())
 
         # Handle keyboard interrupt with cv2.waitKey()
         if cv2.waitKey(1) & 0xFF == ord("q"):
