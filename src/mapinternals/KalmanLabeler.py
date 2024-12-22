@@ -36,17 +36,11 @@ class KalmanLabeler:
         markedIndexs = []
         for i in range(len(singleCameraResults)):
             singleCameraResult = singleCameraResults[i]
-            singleCameraResult[
-                0
-            ] += (
-                cameraIdOffset.getIdOffset()
-            )
+            singleCameraResult[0] += cameraIdOffset.getIdOffset()
             print(singleCameraResult)
             # adjust id by a fixed camera offset, so that id collisions dont happen
             (realId, (x, y, z), conf, isRobot) = singleCameraResult[:4]
-            cacheOfChoice: KalmanCache = (
-                self.kalmanCacheRobots if isRobot else self.kalmanCacheGameObjects
-            )
+            cacheOfChoice: KalmanCache = self.kalmanCacheRobots if isRobot else self.kalmanCacheGameObjects
             keySetOfChoice = robotKeys if isRobot else gameObjectKeys
             data = cacheOfChoice.getSavedKalmanData(realId)
             if data is None:
@@ -67,6 +61,7 @@ class KalmanLabeler:
 
             closestId = None
             closestDistance = 100000
+            # todo optimize use rectangle segments
             for key in keySetOfChoice:
                 kalmanEntry: KalmanEntry = cacheOfChoice.getSavedKalmanData(key)
                 # right now i am trying to find a match by finding the closest entry and seeing if its within a maximum delta
@@ -87,6 +82,7 @@ class KalmanLabeler:
                 # remove id from possible options and update result entry
                 singleCameraResults[index][0] = closestId
                 keySetOfChoice.remove(closestId)
+        
         for remainingKey in robotKeys:
             out: KalmanEntry = self.kalmanCacheRobots.getSavedKalmanData(remainingKey)
             out.incrementNotSeen()

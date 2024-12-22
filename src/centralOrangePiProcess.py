@@ -15,8 +15,16 @@ from mapinternals.localFrameProcessor import LocalFrameProcessor
 from tools import calibration, NtUtils, CameraUtils
 
 processName = "Central_Orange_Pi_Process"
-logging.basicConfig(filename=f"logs/{processName}.log", level=logging.DEBUG)
 logger = logging.getLogger(processName)
+fh = logging.FileHandler(filename=f"logs/{processName}.log", mode="w")
+fh.setLevel(logging.INFO)
+ch = logging.StreamHandler()
+ch.setLevel(logging.DEBUG)
+# create formatter and add it to the handlers
+formatter = logging.Formatter("-->%(asctime)s - %(name)s:%(levelname)s - %(message)s")
+fh.setFormatter(formatter)
+logger.addHandler(fh)
+logger.addHandler(ch)
 
 
 class CameraName(Enum):

@@ -14,8 +14,16 @@ from pathplanning.PathGenerator import PathGenerator
 from tools import NtUtils
 
 processName = "Central_Orange_Pi_Process"
-logging.basicConfig(filename=f"logs/{processName}log", level=logging.DEBUG)
 logger = logging.getLogger(processName)
+fh = logging.FileHandler(filename=f"logs/{processName}.log", mode="w")
+fh.setLevel(logging.INFO)
+ch = logging.StreamHandler()
+ch.setLevel(logging.DEBUG)
+# create formatter and add it to the handlers
+formatter = logging.Formatter("-->%(asctime)s - %(name)s:%(levelname)s - %(message)s")
+fh.setFormatter(formatter)
+logger.addHandler(fh)
+logger.addHandler(ch)
 
 central = CentralProcessor.instance()
 client = XTablesClient(server_port=1735)
@@ -139,7 +147,7 @@ def mainLoop(args):
     except Exception as e:
         print(e)
     finally:
-        print("Ending main process")
+        logger.info("Ending main process")
         cv2.destroyAllWindows()
         return
 
