@@ -2,7 +2,7 @@ import traceback
 import os
 import sys
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from mapinternals.probmap import ProbMap
 import random
 import cv2
@@ -163,9 +163,7 @@ def test_randomization_ranges(map: ProbMap, width, height):
         random.randrange(65, 95, 1) / 100
     )  # generates a confidence threshold between 0.65 - 0.95
     try:
-        map.addCustomObjectDetection(
-            x, y, 100, 100, confidence, 1
-        )  # 1s since last update
+        map.addCustomObjectDetection(x, y, 100, 100, confidence)  # 1s since last update
 
     except Exception:
         traceback.print_exc()

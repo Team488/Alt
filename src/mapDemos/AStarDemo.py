@@ -50,14 +50,14 @@ def mouseDownCallback(event, x, y, flags, param):
         isMouseDownL = True
         #  print("clicked at ", x," ", y)
         central.map.addCustomRobotDetection(
-            rX, rY, 200, 200, 0.75, 1
+            rX, rY, 200, 200, 0.75
         )  # adding as a 75% probability
         needUpdate = True
     elif event == cv2.EVENT_MOUSEMOVE:
         if isMouseDownL:
             #   print("dragged at ", x," ", y)
             central.map.addCustomRobotDetection(
-                rX, rY, 200, 200, 0.75, 1
+                rX, rY, 200, 200, 0.75
             )  # adding as a 75% probability
             needUpdate = True
 
