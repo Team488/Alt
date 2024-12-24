@@ -22,7 +22,7 @@ jobs:
   # The Python image build and push. This builds our API, admin, and Airflow
   # images.
   python_build:
-    name: Python Docker Build and ECR Push
+    name: Python Docker Build With OpenCV
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -38,6 +38,11 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+
+      - name: Clean up
+        run: |
+          docker buildx prune --all
+          docker buildx du --verbose
 
       - name: Set platform name
         id: platform_name
