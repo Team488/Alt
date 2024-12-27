@@ -46,7 +46,7 @@ def getFramePackets(xtablesClient: XTablesClient):
 
 def mainLoop(args):
     MapBottomCorner = (MapConstants.fieldWidth.value, MapConstants.fieldHeight.value)
-    client = XTablesClient(server_port=1735, useZeroMQ=True)
+    client = XTablesClient(server_port=1735)
     central = CentralProcessor.instance()
     pathGenerator = PathGenerator(central)
     pathName = "target_waypoints"
