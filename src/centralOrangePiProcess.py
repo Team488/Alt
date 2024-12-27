@@ -59,8 +59,7 @@ def startProcess():
 
     logger.info("Starting process, device name:", name)
     xclient = XTablesClient(server_port=1735)
-    cameraidx = CameraUtils.getCorrectCameraFeed()
-    cap = cv2.VideoCapture(cameraidx)
+    cap = cv2.VideoCapture(0) # guaranteed as we are passing /dev/color_camera symlink to docker image as /dev/video0
     try:
         while cap.isOpened():
             stime = time.time()

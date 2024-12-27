@@ -1,7 +1,2 @@
-import time
-from mapDemos import particleFilterDemo
-# particleFilterDemo.startDemo()
-# from pathplanning import obstacleMapGenerator
-# obstacleMapGenerator.startGeneration()
-from mapDemos import mulitStateUKFDemo
-mulitStateUKFDemo.startDemo()
+from coreinterface import DetectionPacket
+DetectionPacket.test_packet()
