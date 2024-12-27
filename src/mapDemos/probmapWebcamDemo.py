@@ -49,11 +49,19 @@ def startDemo():
                 x, y, z = result[1]
                 conf = result[2]
                 isRobot = result[3]
-                cv2.putText(frame,f"X{x-simMap.width/2} Y{y-simMap.height/2}",(20,50),0,.5,(0,255,0),1)
+                cv2.putText(
+                    frame,
+                    f"X{x-simMap.width/2} Y{y-simMap.height/2}",
+                    (20, 50),
+                    0,
+                    0.5,
+                    (0, 255, 0),
+                    1,
+                )
                 if isRobot:
-                    simMap.addCustomRobotDetection(int(x), int(y), 200, 200, conf, 1)
+                    simMap.addCustomRobotDetection(int(x), int(y), 200, 200, conf)
                 else:
-                    simMap.addCustomObjectDetection(int(x), int(y), 200, 200, conf, 1)
+                    simMap.addCustomObjectDetection(int(x), int(y), 200, 200, conf)
 
             (gameObjMap, robotMap) = simMap.getHeatMaps()
             height, width = robotMap.shape
