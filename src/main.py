@@ -1,2 +1,2 @@
-from coreinterface import DetectionPacket
-DetectionPacket.test_packet()
+from mapDemos import probmapIsolateRangesDemo
+probmapIsolateRangesDemo.startDemo()

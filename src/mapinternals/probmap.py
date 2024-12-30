@@ -53,14 +53,11 @@ class ProbMap:
         self.probmapGameObj = np.zeros(
             (self.internalWidth, self.internalHeight), dtype=np.float64
         )
-        # memory view for efficient slicing
-        self.probmapGameObjMV = memoryview(self.probmapGameObj)
 
         # robots
         self.probmapRobots = np.zeros(
             (self.internalWidth, self.internalHeight), dtype=np.float64
         )
-        self.probmapRobotsMV = memoryview(self.probmapRobots)
 
         """ Lists storing regions with obstacles, right now rectangular."""
         """ Important note, as internally alot of numpy functions use a row-column(y,x) format, and other things such as cv2 mainly use a column-row(x,y),
@@ -573,7 +570,7 @@ class ProbMap:
         Returns:
             Tuple of (x, y, probability) for the highest probability location in range
         """
-        return self.__getHighestRange(self.probmapGameObjMV, posX, posY, rangeX, rangeY)
+        return self.__getHighestRange(self.probmapGameObj, posX, posY, rangeX, rangeY)
 
     def getHighestRobotWithinRange(
         self, posX: int, posY: int, rangeX: int, rangeY: int
@@ -589,7 +586,7 @@ class ProbMap:
         Returns:
             Tuple of (x, y, probability) for the highest probability location in range
         """
-        return self.__getHighestRange(self.probmapRobotsMV, posX, posY, rangeX, rangeY)
+        return self.__getHighestRange(self.probmapRobots, posX, posY, rangeX, rangeY)
 
     """ Thresholded versions of the get highest"""
 
@@ -609,7 +606,7 @@ class ProbMap:
             Tuple of (x, y, probability) for the highest probability location in range above threshold
         """
         return self.__getHighestRangeT(
-            self.probmapGameObjMV, posX, posY, rangeX, rangeY, threshold
+            self.probmapGameObj, posX, posY, rangeX, rangeY, threshold
         )
 
     def getHighestRobotWithinRangeT(
@@ -628,7 +625,7 @@ class ProbMap:
             Tuple of (x, y, probability) for the highest probability location in range above threshold
         """
         return self.__getHighestRangeT(
-            self.probmapRobotsMV, posX, posY, rangeX, rangeY, threshold
+            self.probmapRobots, posX, posY, rangeX, rangeY, threshold
         )
 
     """ Get List of all coordinates where the probability is above threshold"""
@@ -742,7 +739,7 @@ class ProbMap:
             List of tuples (x, y, radius, probability) for all detections in range above threshold
         """
         return self.__getCoordinatesAboveThresholdRangeLimited(
-            self.probmapGameObjMV, posX, posY, rangeX, rangeY, threshold
+            self.probmapGameObj, posX, posY, rangeX, rangeY, threshold
         )
 
     def getAllRobotsWithinRangeT(
@@ -761,7 +758,7 @@ class ProbMap:
             List of tuples (x, y, radius, probability) for all detections in range above threshold
         """
         return self.__getCoordinatesAboveThresholdRangeLimited(
-            self.probmapRobotsMV, posX, posY, rangeX, rangeY, threshold
+            self.probmapRobots, posX, posY, rangeX, rangeY, threshold
         )
 
     def __setChunkOfMap(self, probmap, x, y, chunkX, chunkY, chunk):
