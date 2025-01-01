@@ -34,7 +34,7 @@ class onnxInferencer:
         output_name = self.session.get_outputs()[0].name
 
         predictions = self.session.run([output_name], {input_name: input_frame})[0]
-        adjusted = utils.adjustBoxesONNX(predictions, frame.shape, conf_threshold)
+        adjusted = utils.adjustBoxes(predictions, frame.shape, conf_threshold)
         nmsResults = utils.non_max_suppression(adjusted, conf_threshold)
 
         # do stuff here

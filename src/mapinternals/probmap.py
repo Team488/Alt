@@ -880,19 +880,9 @@ class ProbMap:
     """ Used in dissipating over time, need to find best smoothing function"""
 
     def __smooth(self, probmap, timeParam):
-
-        # trying gaussian blur
-        # kernel_size = (35, 35)  # (width, height)
-        # probmap = cv2.GaussianBlur(probmap,kernel_size,self.sigma)
-        # return probmap
-
-        # maybe exponential decay will represent time dependent changes better
-        # decayFac = 0.36
-        # return probmap * decayFac ** timeParam
-
         kernel = self.sigma**timeParam * np.array(
             [0.06136, 0.24477, 0.38774, 0.24477, 0.06136]
-        )  # Here you would insert your actual kernel of any size
+        )  
         probmap = np.apply_along_axis(
             lambda x: np.convolve(x, kernel, mode="same"), 0, probmap
         )

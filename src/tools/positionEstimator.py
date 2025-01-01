@@ -324,7 +324,7 @@ class PositionEstimator:
                 ObjectReferences.BUMPERHEIGHT.getMeasurementCm(),
                 estimatedHeight,
                 cameraIntrinsics.getFy(),
-            ) * (cv2.getTrackbarPos("Scale Factor", "Simulation Window") / 100)
+            )
             print(f"{distance=} {est=}")
             bearing = self.__calcBearing(
                 cameraIntrinsics.getHFov(),
