@@ -129,6 +129,7 @@ class LocalFrameProcessor:
         endTime = time.time()
 
         fps = 1 / (endTime - startTime)
+        print(f"FPS:{fps}")
         # cv2.putText(frame,f"FPS:{fps}",(10,80),0,1,(0,255,0),2)
 
         if drawBoxes:

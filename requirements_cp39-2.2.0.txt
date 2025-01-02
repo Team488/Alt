@@ -1,3 +1,4 @@
+# rknn toolkit requirements
 # if install failed, please change the pip source to 'https://pypi.tuna.tsinghua.edu.cn/simple/'
 
 # base deps

@@ -98,8 +98,7 @@ class DetectionPacket:
 
         return detections
 
-
-if __name__ == "__main__":
+def test_packet():
     packet = DetectionPacket.createPacket(
         [[10, (1, 2, 3), 0.6, True, np.array([1, 2, 3, 4])]], "HELLO", 12345
     )
@@ -109,3 +108,6 @@ if __name__ == "__main__":
     outPacket = DetectionPacket.fromBase64(b64)
     print(outPacket)
     print(DetectionPacket.toDetections(outPacket))
+
+if __name__ == "__main__":
+    DetectionPacket.test_packet()
