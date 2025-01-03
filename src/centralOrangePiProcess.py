@@ -4,7 +4,7 @@ import cv2
 import socket
 import time
 from enum import Enum
-from XTABLES.XTablesClient import XTablesClient
+from JXTABLES.XTablesClient import XTablesClient
 from coreinterface.FramePacket import FramePacket
 from coreinterface.DetectionPacket import DetectionPacket
 from tools.Constants import getCameraValues, CameraIntrinsics, CameraExtrinsics

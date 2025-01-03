@@ -13,11 +13,9 @@ class onnxInferencer:
         print(f"Using provider {providers[0]}")
         session_options = ort.SessionOptions()
         if setParallel:
-            print("Reducing threads to handle parallel execution")
-            # session_options.intra_op_num_threads = 1  # Threads per provider
             session_options.execution_mode = ort.ExecutionMode.ORT_PARALLEL
         self.session = ort.InferenceSession(
-            model_path, providers=providers, sess_options=session_options
+            model_path, sess_options=session_options
         )
 
 

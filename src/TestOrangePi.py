@@ -1,16 +1,15 @@
-""" Local process to run on each orange pi """
 import logging
 import cv2
 import socket
 import time
 from enum import Enum
+from JXTABLES.XTablesClient import XTablesClient
 from coreinterface.FramePacket import FramePacket
-from coreinterface.DetectionPacket import DetectionPacket
 from tools.Constants import getCameraValues, CameraIntrinsics, CameraExtrinsics
 from mapinternals.localFrameProcessor import LocalFrameProcessor
 from tools import calibration, NtUtils, CameraUtils
 
-processName = "Central_Orange_Pi_Process"
+processName = "Orange_Pi_Test_Process"
 logger = logging.getLogger(processName)
 fh = logging.FileHandler(filename=f"logs/{processName}.log",mode="w")
 fh.setLevel(logging.INFO)
@@ -21,6 +20,8 @@ formatter = logging.Formatter('-->%(asctime)s - %(name)s:%(levelname)s - %(messa
 fh.setFormatter(formatter)
 logger.addHandler(fh)
 logger.addHandler(ch)
+
+cv2.ocl.setUseOpenCL(False)
 
 
 class CameraName(Enum):
@@ -36,41 +37,31 @@ def getCameraName():
     return CameraName(name)
 
 
-classes = ["Robot", "Note"]
 
 MAXITERTIMEMS = 1000/15  # ms (15fps)
 
 
 def startProcess():
     name = getCameraName().name
-    cameraIntrinsics, cameraExtrinsics, _ = getCameraValues(name)
-    logger.info("Creating Frame Processor...")
-    processor = LocalFrameProcessor(
-        cameraIntrinsics=cameraIntrinsics,
-        cameraExtrinsics=cameraExtrinsics,
-        useRknn=True,
-    )
 
-    # frame undistortion maps
-    mapx, mapy = calibration.createMapXYForUndistortion(
-        cameraIntrinsics.getHres(), cameraIntrinsics.getVres()
-    )
 
     logger.info("Starting process, device name:", name)
-    cap = cv2.VideoCapture("assets/video12qual25clipped.mp4") # guaranteed as we are passing /dev/color_camera symlink to docker image as /dev/video0
+    xclient = XTablesClient(ip="192.168.0.17")
+    cap = cv2.VideoCapture(0)
+    cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG'))
+    print("FourCC:", cap.get(cv2.CAP_PROP_FOURCC))
+
     try:
         while cap.isOpened():
             stime = time.time()
             ret, frame = cap.read()
             if ret:
-
-                undistortedFrame = calibration.undistortFrame(frame, mapx, mapy)
-                processedResults = processor.processFrame(
-                    undistortedFrame
-                )  
-                # print(processedResults)
-            print("No results!")
-            # sending network packets
+                print(f"sending to key{name}")
+                timeStamp = time.time()
+                frame = FramePacket.createPacket(
+                    timeStamp, name, frame
+                )
+                xclient.putUnknownBytes(name,frame.to_bytes())
             etime = time.time()
             dMS = (etime - stime) * 1000
             if dMS > MAXITERTIMEMS:
@@ -78,7 +69,10 @@ def startProcess():
                     f"Loop surpassing max iter time! Max:{MAXITERTIMEMS}ms | Loop time: {dMS}ms "
                 )
             else:
-                time.sleep((MAXITERTIMEMS - dMS) / 1000)
+                logger.info(f"Loop time: {dMS}ms")
+            # cv2.imshow("frame", undistortedFrame)
+            # if cv2.waitKey(1) & 0xFF == ord("q"):
+            # break
     finally:
         logger.info("process finished, releasing camera object")
         cap.release()

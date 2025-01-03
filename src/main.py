@@ -1,2 +1,2 @@
-from mapDemos import probmapIsolateRangesDemo
-probmapIsolateRangesDemo.startDemo()
+from inference import torchInferencer
+torchInferencer.startDemo()
