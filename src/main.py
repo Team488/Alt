@@ -1,2 +1,2 @@
-from inference import torchInferencer
-torchInferencer.startDemo()
+from mapDemos import mulitStateUKFDemo
+mulitStateUKFDemo.startDemo()

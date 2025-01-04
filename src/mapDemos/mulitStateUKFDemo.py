@@ -1,7 +1,7 @@
 def startDemo():
     import cv2
     import numpy as np
-    from mapinternals.multistateUKF import MultistateUkf
+    from mapinternals.multistateUKFwCovRegularization import MultistateUkf
     from tools.Constants import MapConstants
     from ctypes import windll  # For Windows systems
 
@@ -50,7 +50,7 @@ def startDemo():
 
         cv2.putText(frame,f"Pos: {observationPosition} Vel: {observationVelocity}",(0,20),0,1,(0,255,0),2)
 
-        ukfM.predict_and_update(observationPosition + np.random.normal(0,0.01,2),robotHeight=100)
+        ukfM.predict_and_update(observationPosition + np.random.normal(0,0.01,2))
 
 
 
