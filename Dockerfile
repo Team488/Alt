@@ -1,30 +1,18 @@
-from xdash-alt-base-image
-workdir /app
-copy . .
-COPY /src/assets/librknnrt.so /usr/lib/
+ARG TARGETPLATFORM
+FROM --platform=$BUILDPLATFORM rokadias/python-opencv:main
 
-# Install system dependencies
-run apt-get update && apt-get install -y \
-    libopencv-dev \
-    libglib2.0-0 \
-    libsm6 \
-    libxrender1 \
-    build-essential \
-    gfortran \
-    libssl-dev \
-    libffi-dev \
-    libhdf5-dev \
-    libgrpc-dev \
-    libprotobuf-dev \
-    python3-dev \
-    && rm -rf /var/lib/apt/lists/*
+WORKDIR /xbot/alt/
 
-# Install python dependencies
-# run pip install -r docker-requirements.txt
-run pip install -r aarch-requirements.txt
+COPY ./requirements.txt .
 
-workdir /app/src
+RUN pip install -r /xbot/alt/requirements.txt --no-cache-dir
 
-# you have to run the image with docker-compose to make it work
-# this means the /dev/color_camera symlink has to have been created with udev rules, and then the user must be added to the docker group
-# command for color camera: ATTRS{idProduct}=="6366",ATTRS{idVendor}=="0c45",SYMLINK+="color_camera",GROUP="docker", MODE="0660"
+COPY ./src ./src
+
+RUN if [ "$TARGETPLATFORM" = "linux/amd64" ]; then \
+        pip install rknn-toolkit2==2.3.0 --no-cache-dir; \
+    elif [ "$TARGETPLATFORM" = "linux/arm64" ]; then \
+        pip install rknn-toolkit-lite2==2.3.0 --no-cache-dir; \
+    fi
+
+CMD ["python", "/xbot/alt/src/centralMainProcessAsync.py"]

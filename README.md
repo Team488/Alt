@@ -64,6 +64,26 @@ At the root of this directory run the following:
 ./run.sh src/mapDemos//probmapClickDemo.py
 ```
 
+## Making a deployable version of Alt
+
+You'll need to be able to emulate running on an ARM based system to build an ARM image for the orange pi.
+
+QEMU will allow for emulation to be able to build for other platforms.
+
+There are caveats here, but this should perform the action that you are looking for.
+```bash
+docker run --privileged --rm tonistiigi/binfmt --install all
+```
+
+The steps are outlined below if you run into issues:
+https://docs.docker.com/build/building/multi-platform/#install-qemu-manually
+
+Once that's good you can perform the following steps in order to manually build for the platform.
+```bash
+docker buildx build --platform linux/arm64 -t alt:arm64 .
+docker image save -o alt-arm64.tar alt:arm64
+```
+
 ## General Notes
 
 Alt ingests NetworkTable inputs of:

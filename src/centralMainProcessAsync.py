@@ -1,9 +1,9 @@
 """ Process to run on orin """
-import logging
-import time
+
 import cv2
 import argparse
 import logging
+import time
 import numpy as np
 from tools.Constants import CameraIdOffsets
 from JXTABLES import XTablesClient
@@ -12,19 +12,20 @@ from coreinterface.FramePacket import FramePacket
 from mapinternals.CentralProcessor import CentralProcessor
 from pathplanning.PathGenerator import PathGenerator
 from tools import NtUtils
+
 processName = "Central_Orange_Pi_Process"
 logger = logging.getLogger(processName)
-fh = logging.FileHandler(filename=f"logs/{processName}.log",mode="w")
+fh = logging.FileHandler(filename=f"logs/{processName}.log", mode="w")
 fh.setLevel(logging.INFO)
 ch = logging.StreamHandler()
 ch.setLevel(logging.DEBUG)
- # create formatter and add it to the handlers
-formatter = logging.Formatter('-->%(asctime)s - %(name)s:%(levelname)s - %(message)s')
+# create formatter and add it to the handlers
+formatter = logging.Formatter("-->%(asctime)s - %(name)s:%(levelname)s - %(message)s")
 fh.setFormatter(formatter)
 logger.addHandler(fh)
 logger.addHandler(ch)
 central = CentralProcessor.instance()
-client = XTablesClient(server_port=1735, useZeroMQ=True)
+client = XTablesClient(server_port=1735)
 pathGenerator = PathGenerator(central)
 pathName = "target_waypoints"
 positionOffsetForCentralizing = 0
@@ -34,6 +35,8 @@ updateMap = {
     "REARRIGHT": ([], 60, 0),
     "REARLEFT": ([], 90, 0),
 }
+
+
 def handle_update(key, val):
     global pathGenerator
     global pathName
@@ -50,7 +53,11 @@ def handle_update(key, val):
     packet = (DetectionPacket.toDetections(dataPacket), idOffset, lastidx)
     if packet and packet[0] and packet[0][0]:
         updateMap[key] = packet
+
+
 TIMEPERLOOPMS = 20  # ms
+
+
 def mainLoop(args):
     global client
     global updateMap
@@ -131,6 +138,8 @@ def mainLoop(args):
         logger.info("Ending main process")
         cv2.destroyAllWindows()
         return
+
+
 # print(time.time())
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)

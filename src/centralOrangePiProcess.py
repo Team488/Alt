@@ -1,5 +1,8 @@
 """ Local process to run on each orange pi """
+
 import logging
+import numpy as np
+import argparse
 import cv2
 import socket
 import time
@@ -13,12 +16,12 @@ from tools import calibration, NtUtils, CameraUtils
 
 processName = "Central_Orange_Pi_Process"
 logger = logging.getLogger(processName)
-fh = logging.FileHandler(filename=f"logs/{processName}.log",mode="w")
+fh = logging.FileHandler(filename=f"logs/{processName}.log", mode="w")
 fh.setLevel(logging.INFO)
 ch = logging.StreamHandler()
 ch.setLevel(logging.DEBUG)
- # create formatter and add it to the handlers
-formatter = logging.Formatter('-->%(asctime)s - %(name)s:%(levelname)s - %(message)s')
+# create formatter and add it to the handlers
+formatter = logging.Formatter("-->%(asctime)s - %(name)s:%(levelname)s - %(message)s")
 fh.setFormatter(formatter)
 logger.addHandler(fh)
 logger.addHandler(ch)
@@ -39,7 +42,7 @@ def getCameraName():
 
 classes = ["Robot", "Note"]
 
-MAXITERTIMEMS = 1000/15  # ms (15fps)
+MAXITERTIMEMS = 1000 / 15  # ms (15fps)
 
 
 def startProcess():
@@ -59,7 +62,9 @@ def startProcess():
 
     logger.info("Starting process, device name:", name)
     xclient = XTablesClient(server_port=1735)
-    cap = cv2.VideoCapture(0) # guaranteed as we are passing /dev/color_camera symlink to docker image as /dev/video0
+    cap = cv2.VideoCapture(
+        0
+    )  # guaranteed as we are passing /dev/color_camera symlink to docker image as /dev/video0
     try:
         while cap.isOpened():
             stime = time.time()
