@@ -1,6 +1,7 @@
 import os
 import sys
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from mapinternals.probmap import ProbMap
 import cv2
 
@@ -18,13 +19,13 @@ def mouseDownCallbackGameObj(event, x, y, flags, param):
         isMouseDownG = True
         #  print("clicked at ", x," ", y)
         map.addCustomObjectDetection(
-            x * map.resolution, y * map.resolution, 500, 500, 0.75, 1
+            x * map.resolution, y * map.resolution, 500, 500, 0.75
         )  # adding as a 75% probability
     elif event == cv2.EVENT_MOUSEMOVE:
         if isMouseDownG:
             #   print("dragged at ", x," ", y)
             map.addCustomObjectDetection(
-                x * map.resolution, y * map.resolution, 500, 500, 0.75, 1
+                x * map.resolution, y * map.resolution, 500, 500, 0.75
             )  # adding as a 75% probability
     elif event == cv2.EVENT_LBUTTONUP:
         isMouseDownG = False
@@ -36,13 +37,13 @@ def mouseDownCallbackRobot(event, x, y, flags, param):
         isMouseDownR = True
         #  print("clicked at ", x," ", y)
         map.addCustomRobotDetection(
-            x * map.resolution, y * map.resolution, 500, 500, 0.75, 1
+            x * map.resolution, y * map.resolution, 500, 500, 0.75
         )  # adding as a 75% probability
     elif event == cv2.EVENT_MOUSEMOVE:
         if isMouseDownR:
             #   print("dragged at ", x," ", y)
             map.addCustomRobotDetection(
-                x * map.resolution, y * map.resolution, 500, 500, 0.75, 1
+                x * map.resolution, y * map.resolution, 500, 500, 0.75
             )  # adding as a 75% probability
     elif event == cv2.EVENT_LBUTTONUP:
         isMouseDownR = False
@@ -55,7 +56,7 @@ def startDemo():
     cv2.namedWindow(map.robotWindowName)
     cv2.setMouseCallback(map.robotWindowName, mouseDownCallbackRobot)  # get mouse event
     while True:
-        map.disspateOverTime(5)  # 1s
+        map.disspateOverTime(1)  # 1s
         map.displayHeatMaps()
         print("Best game obj:", map.getHighestGameObject())
         print("Best robot:", map.getHighestRobot())

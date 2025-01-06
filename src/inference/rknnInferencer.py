@@ -8,7 +8,7 @@ from inference import utils
 from inference.coco_utils import COCO_test_helper
 
 class rknnInferencer:
-    def __init__(self, model_path="assets/bestV5.rknn", target="rk3588"):
+    def __init__(self, model_path="assets/bestV5.rknn"):
         # export needed rknpu .so
         so_path = os.getcwd() + "/assets/"
 
@@ -20,16 +20,12 @@ class rknnInferencer:
         print("LD_LIBRARY_PATH:", os.environ["LD_LIBRARY_PATH"])
 
         # load model
-        self.model = self.load_rknn_model(model_path, target)
-        # load anchor
-        with open("assets/bestV5Anchors.txt", "r") as f:
-            values = [float(_v) for _v in f.readline().split(",")]
-            self.anchors = np.array(values).reshape(3, -1, 2).tolist()
+        self.model = self.load_rknn_model(model_path)
 
         self.co_helper = COCO_test_helper(enable_letter_box=True)
 
     # Initialize the RKNN model
-    def load_rknn_model(self, model_path, target):
+    def load_rknn_model(self, model_path):
         rknn = RKNNLite()
         print("Loading RKNN model...")
 
@@ -58,8 +54,7 @@ class rknnInferencer:
         img = np.expand_dims(img, axis=0)  # Now shape is (1, channels, height, width)
         # Run inference
         outputs = self.model.inference(inputs=[img])
-        print(outputs[0].shape)
-        adjusted = utils.adjustBoxesRknn(outputs[0], frame.shape, conf_threshold)
+        adjusted = utils.adjustBoxes(outputs[0], frame.shape, conf_threshold)
 
         nms = utils.non_max_suppression(adjusted)
         return nms

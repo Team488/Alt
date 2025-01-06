@@ -7,7 +7,7 @@ import cv2
 import socket
 import time
 from enum import Enum
-from XTABLES.XTablesClient import XTablesClient
+from JXTABLES.XTablesClient import XTablesClient
 from coreinterface.FramePacket import FramePacket
 from coreinterface.DetectionPacket import DetectionPacket
 from tools.Constants import getCameraValues, CameraIntrinsics, CameraExtrinsics
@@ -42,7 +42,7 @@ def getCameraName():
 
 classes = ["Robot", "Note"]
 
-MAXITERTIMEMS = 50  # ms
+MAXITERTIMEMS = 1000 / 15  # ms (15fps)
 
 
 def startProcess():
@@ -60,9 +60,11 @@ def startProcess():
         cameraIntrinsics.getHres(), cameraIntrinsics.getVres()
     )
 
-    print("Starting process, device name:", name)
-    xclient = XTablesClient.XTablesClient(server_port=1735)
-    cap = cv2.VideoCapture(0)
+    logger.info("Starting process, device name:", name)
+    xclient = XTablesClient(server_port=1735)
+    cap = cv2.VideoCapture(
+        0
+    )  # guaranteed as we are passing /dev/color_camera symlink to docker image as /dev/video0
     try:
         while cap.isOpened():
             stime = time.time()
@@ -98,6 +100,8 @@ def startProcess():
                 logger.warning(
                     f"Loop surpassing max iter time! Max:{MAXITERTIMEMS}ms | Loop time: {dMS}ms "
                 )
+            else:
+                time.sleep((MAXITERTIMEMS - dMS) / 1000)
             # cv2.imshow("frame", undistortedFrame)
             # if cv2.waitKey(1) & 0xFF == ord("q"):
             # break

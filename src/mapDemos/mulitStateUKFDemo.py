@@ -1,12 +1,12 @@
 def startDemo():
     import cv2
     import numpy as np
-    from mapinternals.multistateUKF import MultistateUkf
+    from mapinternals.multistateUKFwCovRegularization import MultistateUkf
     from tools.Constants import MapConstants
     from ctypes import windll  # For Windows systems
 
 
-    ukfM = MultistateUkf(10)
+    ukfM = MultistateUkf(3)
 
     # Initialize an OpenCV window
     window_name = "Multistate UKF Demo"
@@ -61,13 +61,14 @@ def startDemo():
         # Draw particles
         sigmas_f = ukfM.baseUKF.sigmas_f
         mean_weights = ukfM.baseUKF.Wm
-        print(len(mean_weights))
         for sigma,weight in zip(sigmas_f,mean_weights):
             for i in range(ukfM.NUMSIMULATEDSTATES):
                 idx = i*ukfM.SINGLESTATELEN
                 x,y,vx,vy = sigma[idx:idx+ukfM.SINGLESTATELEN]
-                print(f"{x=} {y=}")
-                cv2.circle(frame,(int(x),int(y)),int(abs(weight)*3)+2,(60,255,102),-1)            
+                # print(f"{x=} {y=} {x+vx*10=} {y+vy*10=}")
+                cv2.arrowedLine(frame,tuple(map(int,(x,y))),tuple(map(int,(x+vx*4,y+vy*4))),(0,255,0),1)
+                # print(f"{x=} {y=} {weight=}")
+                # cv2.circle(frame,(int(x),int(y)),int(abs(weight)/100000)+2,(60,255,102),-1)            
 
         # Draw estimated state
         cv2.circle(frame, (int(state_estimate[0]), int(state_estimate[1])), 5, (0, 0, 255), -1)  # Red estimate
@@ -81,7 +82,7 @@ def startDemo():
         last_mouse_position = observationPosition
 
         # Break the loop if 'q' is pressed
-        key = cv2.waitKey(10) & 0xFF
+        key = cv2.waitKey(1) & 0xFF
         if key == ord('q'):
             break
     windll.user32.ShowCursor(True)

@@ -99,9 +99,9 @@ def startDemo():
                 conf = result[2]
                 isRobot = result[3]
                 if isRobot:
-                    simMap.addCustomRobotDetection(int(x), int(y), 200, 200, conf, 1)
+                    simMap.addCustomRobotDetection(int(x), int(y), 200, 200, conf)
                 else:
-                    simMap.addCustomObjectDetection(int(x), int(y), 200, 200, conf, 1)
+                    simMap.addCustomObjectDetection(int(x), int(y), 200, 200, conf)
 
             (gameObjMap, robotMap) = simMap.getHeatMaps()
             height, width = robotMap.shape

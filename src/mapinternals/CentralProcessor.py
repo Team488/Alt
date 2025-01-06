@@ -67,21 +67,12 @@ class CentralProcessor:
                 else:
                     self.kalmanCacheGameObjects.saveKalmanData(id, self.ukf)
                 print(tuple(newState))
-                # now lets also input our new estimated state into the map
+                # input new estimated state into the map
                 if isRobot:
-                    self.map.addDetectedRobot(
-                        int(newState[0]),
-                        int(newState[1]),
-                        prob,
-                        timeStepSeconds,
-                    )
+                    self.map.addDetectedRobot(int(newState[0]), int(newState[1]), prob)
                 else:
                     self.map.addDetectedGameObject(
-                        int(newState[0]),
-                        int(newState[1]),
-                        prob,
-                        timeStepSeconds,
+                        int(newState[0]), int(newState[1]), prob
                     )
 
-                # and now this part is done
         self.map.disspateOverTime(timeStepSeconds)

@@ -135,58 +135,30 @@ def softmaxx(values):
     return exps
 
 
-def adjustBoxesRknn(outputs, imgShape, minConf=0.7, printDebug=False):
+def adjustBoxes(outputs, imgShape, minConf=0.7, printDebug=False):
     predictions = outputs[0]  # Model's predictions = 1 x 25200 x 7
-    adjusted_boxes = []
-    for idx in range(predictions.shape[0]):
-        pred = predictions[idx]
-        objectnessScore = float(pred[4])
+    
+    objectness_scores = predictions[:, 4]
+    class_scores = predictions[:, 5:]
+    class_ids = np.argmax(class_scores, axis=1)
+    confidences = class_scores[np.arange(class_scores.shape[0]), class_ids]
+    scores = objectness_scores * confidences
 
-        class_scores = pred[5:]  # The rest are class probabilities
-        class_scores = softmaxx(class_scores)
-        classId = np.argmax(class_scores)  # Get the most likely class
-        confidence = float(pred[5 + classId])
-        score = objectnessScore * confidence
-        if score < minConf:
-            continue
+    # Filter out predictions below the confidence threshold
+    high_score_indices = np.where(scores >= minConf)[0]
+    filtered_predictions = predictions[high_score_indices]
+    filtered_scores = scores[high_score_indices]
+    filtered_class_ids = class_ids[high_score_indices]
+
+    adjusted_boxes = []
+    for pred, score, class_id in zip(filtered_predictions, filtered_scores, filtered_class_ids):
         x, y, width, height = pred[:4]
-        x1 = x - width / 2
-        x2 = x + width / 2
-        y1 = y - height / 2
-        y2 = y + height / 2
+        x1, x2 = x - width / 2, x + width / 2
+        y1, y2 = y - height / 2, y + height / 2
 
         scaledBox = rescaleBox([x1, y1, x2, y2], imgShape)
         if printDebug:
-            print(f"X {x} Y {y} w {width} h{height} classid {classId}")
-        adjusted_boxes.append([scaledBox, score, classId])
-    return adjusted_boxes
-
-
-def adjustBoxesONNX(outputs, imgShape, minConf=0.7, printDebug=False):
-    predictions = outputs[0]  # Model's predictions = 1 x 25200 x 7
-    adjusted_boxes = []
-    for idx in range(predictions.shape[0]):
-        pred = predictions[idx]
-        # print(tuple(pred))
-        objectnessScore = float(pred[4])
-
-        class_scores = pred[5:]  # The rest are class probabilities
-        class_scores = softmaxx(class_scores)
-        classId = np.argmax(class_scores)  # Get the most likely class
-        confidence = float(pred[5 + classId])
-
-        score = objectnessScore * confidence
-        if score < minConf:
-            continue
-
-        x, y, width, height = pred[:4]
-        x1 = x - width / 2
-        x2 = x + width / 2
-        y1 = y - height / 2
-        y2 = y + height / 2
-
-        scaledBox = rescaleBox([x1, y1, x2, y2], imgShape)
-        if printDebug:
-            print(f"X {x} Y {y} w {width} h{height} classid {classId}")
-        adjusted_boxes.append([scaledBox, confidence, classId])
+            print(f"X {x} Y {y} w {width} h {height} classid {class_id}")
+        adjusted_boxes.append([scaledBox, score, class_id])
+    
     return adjusted_boxes

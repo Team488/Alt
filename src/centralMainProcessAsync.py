@@ -6,7 +6,7 @@ import logging
 import time
 import numpy as np
 from tools.Constants import CameraIdOffsets
-from XTABLES import XTablesClient
+from JXTABLES import XTablesClient
 from coreinterface.DetectionPacket import DetectionPacket
 from coreinterface.FramePacket import FramePacket
 from mapinternals.CentralProcessor import CentralProcessor
@@ -24,10 +24,8 @@ formatter = logging.Formatter("-->%(asctime)s - %(name)s:%(levelname)s - %(messa
 fh.setFormatter(formatter)
 logger.addHandler(fh)
 logger.addHandler(ch)
-
 central = CentralProcessor.instance()
 client = XTablesClient(server_port=1735)
-
 pathGenerator = PathGenerator(central)
 pathName = "target_waypoints"
 positionOffsetForCentralizing = 0
@@ -43,19 +41,15 @@ def handle_update(key, val):
     global pathGenerator
     global pathName
     global updateMap
-
     idOffset = CameraIdOffsets[key]
     lastidx = updateMap[key][2]
     lastidx += 1
-
     if not key or not val:
         return
     if val == "empty":
         updateMap[key] = ([], idOffset, lastidx)
         return
-
     dataPacket = DetectionPacket.fromBase64(val.replace("\\u003d", "="))
-
     packet = (DetectionPacket.toDetections(dataPacket), idOffset, lastidx)
     if packet and packet[0] and packet[0][0]:
         updateMap[key] = packet
@@ -72,7 +66,6 @@ def mainLoop(args):
     try:
         for key in keys:
             client.subscribeForUpdates(key, consumer=handle_update)
-
         while True:
             stime = time.time()
             accumulatedResults = []
@@ -85,7 +78,6 @@ def mainLoop(args):
                     continue
                 localUpdateMap[key] = packetidx
                 accumulatedResults.append(res)
-
             central.processFrameUpdate(
                 cameraResults=accumulatedResults, timeStepSeconds=TIMEPERLOOPMS / 1000
             )
@@ -113,9 +105,7 @@ def mainLoop(args):
                         f"Could not complete loop within {TIMEPERLOOPMS}ms! (Even without calculating a path!!)\n Time elapsed on loop: {deltaMS}ms"
                     )
                 continue
-
             path = pathGenerator.generate((loc[0], loc[1]), target, 0)
-
             logger.debug(f"Path Name: {pathName}")
             logger.debug(f"Generated Path: {path}")
             if path is None:
@@ -131,7 +121,6 @@ def mainLoop(args):
                     for waypoint in path
                 ]
                 client.executePutString(pathName, out)
-
             etime = time.time()
             deltaMS = (etime - stime) * 1000
             if deltaMS < TIMEPERLOOPMS:
@@ -143,7 +132,6 @@ def mainLoop(args):
             # cv2.imshow("Robot Map", maps[1])
             # cv2.imshow("Game object Map", maps[0])
             # cv2.waitKey(1)
-
     except Exception as e:
         print(e)
     finally:

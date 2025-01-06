@@ -13,11 +13,9 @@ class onnxInferencer:
         print(f"Using provider {providers[0]}")
         session_options = ort.SessionOptions()
         if setParallel:
-            print("Reducing threads to handle parallel execution")
-            session_options.intra_op_num_threads = 1  # Threads per provider
             session_options.execution_mode = ort.ExecutionMode.ORT_PARALLEL
         self.session = ort.InferenceSession(
-            model_path, providers=providers, sess_options=session_options
+            model_path, sess_options=session_options
         )
 
 
@@ -34,7 +32,7 @@ class onnxInferencer:
         output_name = self.session.get_outputs()[0].name
 
         predictions = self.session.run([output_name], {input_name: input_frame})[0]
-        adjusted = utils.adjustBoxesONNX(predictions, frame.shape, conf_threshold)
+        adjusted = utils.adjustBoxes(predictions, frame.shape, conf_threshold)
         nmsResults = utils.non_max_suppression(adjusted, conf_threshold)
 
         # do stuff here

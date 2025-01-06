@@ -1,7 +1,6 @@
 import numpy as np
 import cv2
-import math
-from decimal import Decimal, ROUND_HALF_UP, ROUND_HALF_DOWN, ROUND_FLOOR, ROUND_CEILING
+from decimal import Decimal, ROUND_FLOOR
 from tools.Constants import MapConstants
 
 largeValue = 10000000000000000000  # for cv2 thresholding
@@ -24,9 +23,7 @@ class ProbMap:
         gameObjectHeight=MapConstants.gameObjectHeight.value,
         robotWidth=MapConstants.robotWidth.value,
         robotHeight=MapConstants.robotHeight.value,
-        sigma=.9,
-        maxSpeedRobots=100,
-        maxSpeedGameObjects=5,  # gameobjects most likely not very fast
+        sigma=0.9,
     ):
 
         # exposed constants
@@ -56,26 +53,11 @@ class ProbMap:
         self.probmapGameObj = np.zeros(
             (self.internalWidth, self.internalHeight), dtype=np.float64
         )
+
         # robots
         self.probmapRobots = np.zeros(
             (self.internalWidth, self.internalHeight), dtype=np.float64
         )
-
-        """Internal Variables mainly related to object tracking"""
-        # game objects
-        self.lastGameObjMap = None  # object tracking for calculating changes
-        self.tempObjMap = None  # save map state before disspation
-        self.velocityTableGameObj = {}  # hashmaps(dicts) to store previous velocities
-        self.timeSinceLastUpdateGameObj = -1  # time param for velocity
-        # robots
-        self.lastRobotMap = None  # object tracking for calculating changes
-        self.tempRobotMap = None  # save map state before disspation
-        self.velocityTableRobot = {}  # hashmaps(dicts) to store previous velocities
-        self.timeSinceLastUpdateRobot = -1  # time param for velocity
-
-        """ User constants related to object tracking (Will probably be removed)"""
-        self.maxSpeedRobots = maxSpeedRobots  # probably like
-        self.maxSpeedGameObjects = maxSpeedGameObjects
 
         """ Lists storing regions with obstacles, right now rectangular."""
         """ Important note, as internally alot of numpy functions use a row-column(y,x) format, and other things such as cv2 mainly use a column-row(x,y),
@@ -244,53 +226,19 @@ class ProbMap:
             blob_top_edge_loc:blob_bottom_edge_loc,
         ] += gaussian_blob
 
-    def __updateLastParams(self, isGameObj: bool, timeSinceLastUpdate):
-        lastMap = None
-        if isGameObj:
-            # if there was a dissipation or clearing of map, the map state was saved to a temp map for tracking
-            # here we check if there was a temp map and if there was we use it then clear
-            if self.tempObjMap is not None:
-                lastMap = self.tempObjMap
-                # reset temp maps
-                self.tempObjMap = None
-            else:
-                lastMap = self.probmapGameObj
-        else:
-            if self.tempRobotMap is not None:
-                lastMap = self.tempRobotMap
-                # reset temp maps
-                self.tempRobotMap = None
-            else:
-                lastMap = self.probmapRobots
-
-        if isGameObj:
-            self.lastGameObjMap = np.copy(lastMap)
-            self.timeSinceLastUpdateGameObj = timeSinceLastUpdate
-        else:
-            self.lastRobotMap = np.copy(lastMap)
-            self.timeSinceLastUpdateRobot = timeSinceLastUpdate
-
-    def __saveToTemp(self, gameObjProbmap, robotProbmap):
-        self.tempObjMap = gameObjProbmap
-        self.tempRobotMap = robotProbmap
-
     """ Exposed methods for adding detections """
     """ Time parameter used in object tracking, to calculate velocity as distance/time """
 
     """ Regular detection methods use sizes provided in constructor """
 
-    def addDetectedGameObject(
-        self, x: int, y: int, prob: float, timeSinceLastUpdate: float
-    ):
+    def addDetectedGameObject(self, x: int, y: int, prob: float):
         """Add a single game object detection to the probability map.
 
         Args:
             x: X coordinate of detection
             y: Y coordinate of detection
             prob: Probability/confidence of the detection (0-1)
-            timeSinceLastUpdate: Time in seconds since last update (used for velocity calculations)
         """
-        self.__updateLastParams(True, timeSinceLastUpdate)
         self.__add_detection(
             self.probmapGameObj,
             x,
@@ -300,30 +248,24 @@ class ProbMap:
             prob,
         )
 
-    def addDetectedRobot(self, x: int, y: int, prob: float, timeSinceLastUpdate: float):
+    def addDetectedRobot(self, x: int, y: int, prob: float):
         """Add a single robot detection to the probability map.
 
         Args:
             x: X coordinate of detection
             y: Y coordinate of detection
             prob: Probability/confidence of the detection (0-1)
-            timeSinceLastUpdate: Time in seconds since last update (used for velocity calculations)
         """
-        self.__updateLastParams(False, timeSinceLastUpdate)
         self.__add_detection(
             self.probmapRobots, x, y, self.__internalRobotX, self.__internalRobotY, prob
         )
 
-    def addDetectedGameObjectCoords(
-        self, coords: list[tuple], timeSinceLastUpdate: float
-    ):
+    def addDetectedGameObjectCoords(self, coords: list[tuple]):
         """Add multiple game object detections to the probability map.
 
         Args:
             coords: List of tuples containing (x, y, probability) for each detection
-            timeSinceLastUpdate: Time in seconds since last update (used for velocity calculations)
         """
-        self.__updateLastParams(True, timeSinceLastUpdate)
         for coord in coords:
             (x, y, prob) = coord
             self.__add_detection(
@@ -335,14 +277,12 @@ class ProbMap:
                 prob,
             )
 
-    def addDetectedRobotCoords(self, coords: list[tuple], timeSinceLastUpdate: float):
+    def addDetectedRobotCoords(self, coords: list[tuple]):
         """Add multiple robot detections to the probability map.
 
         Args:
             coords: List of tuples containing (x, y, probability) for each detection
-            timeSinceLastUpdate: Time in seconds since last update (used for velocity calculations)
         """
-        self.__updateLastParams(False, timeSinceLastUpdate)
         for coord in coords:
             (x, y, prob) = coord
             self.__add_detection(
@@ -363,7 +303,6 @@ class ProbMap:
         objX: int,
         objY: int,
         prob: float,
-        timeSinceLastUpdate: float,
     ):
         """Add a game object detection with custom size to the probability map.
 
@@ -373,9 +312,7 @@ class ProbMap:
             objX: Width of the object
             objY: Height of the object
             prob: Probability/confidence of the detection (0-1)
-            timeSinceLastUpdate: Time in seconds since last update (used for velocity calculations)
         """
-        self.__updateLastParams(True, timeSinceLastUpdate)
         self.__add_detection(self.probmapGameObj, x, y, objX, objY, prob)
 
     def addCustomRobotDetection(
@@ -385,7 +322,6 @@ class ProbMap:
         objX: int,
         objY: int,
         prob: float,
-        timeSinceLastUpdate: float,
     ):
         """Add a robot detection with custom size to the probability map.
 
@@ -395,9 +331,7 @@ class ProbMap:
             objX: Width of the robot
             objY: Height of the robot
             prob: Probability/confidence of the detection (0-1)
-            timeSinceLastUpdate: Time in seconds since last update (used for velocity calculations)
         """
-        self.__updateLastParams(False, timeSinceLastUpdate)
         self.__add_detection(self.probmapRobots, x, y, objX, objY, prob)
 
     """ Getting views of the map"""
@@ -827,183 +761,6 @@ class ProbMap:
             self.probmapRobots, posX, posY, rangeX, rangeY, threshold
         )
 
-    """ In progress probmap prediction methods | These methods currently find the closest detections between old and new probmaps and calculate velocity based on distance and timestep"""
-
-    def __getNearestPredToCoords(
-        self, coords, x, y, timepassed, maxSpeed
-    ) -> tuple[int, int, np.float64, float, float]:
-        maxDistance = (
-            timepassed * maxSpeed
-        )  # s*cm/s for the max possible distance traveled in one map update
-        minDist = 100000
-        minCoord = None  # x,y,prob,vx,vy
-        for coord in coords:
-            (cx, cy, r, prob) = coord
-            dist = np.sqrt((x - cx) ** 2 + (y - cy) ** 2)
-            if dist <= maxDistance and dist < minDist:
-                minDist = dist
-                minCoord = (cx, cy, prob, (cx - x) / timepassed, (cy - y) / timepassed)
-        return minCoord
-
-    def __getPredictions(
-        self, lastMap, currentMap, timeBetweenMaps, timePrediction, maxSpeedOfType
-    ) -> list[tuple[int, int, int, int, float, float, np.float64]]:
-        predictions = []  # curX,curY,prednewX,prednewY,vX,vY,prob
-        # self.__displayHeatMap(lastMap,"lastmap")
-        # self.__displayHeatMap(currentMap,"currentmap")
-        currentDetectionCoords = self.__getCoordinatesAboveThreshold(
-            currentMap, 0.25
-        )  # very low threshold
-        # print("current\n",currentDetectionCoords)
-        lastDetectionCoords = self.__getCoordinatesAboveThreshold(
-            lastMap, 0.25
-        )  # very low threshold
-        # print("last\n",lastDetectionCoords)
-
-        # now we will go over every coordinate from the old map and try to find the closest match to it on the new set of coordinates. If match is found it will also contain velocity approximations
-        for oldCoord in lastDetectionCoords:
-            (oldX, oldY, r, prob) = oldCoord
-            pred = self.__getNearestPredToCoords(
-                currentDetectionCoords, oldX, oldY, timeBetweenMaps, maxSpeedOfType
-            )
-            if pred is not None:
-                (cx, cy, prob, vx, vy) = pred
-                newX = cx + int(vx * timePrediction)
-                newY = cy + int(vy * timePrediction)
-                # handle edge clipping
-                if newX > self.width:
-                    newX = self.width
-                if newX < 0:
-                    newX = 0
-                if newY > self.height:
-                    newY = self.height
-                if newY < 0:
-                    newY = 0
-                predictions.append((cx, cy, newX, newY, vx, vy, prob))
-        return predictions
-
-    """ Exposed prediction methods (Time scaled)"""
-
-    def getGameObjectMapPredictions(
-        self, timePrediction: float
-    ) -> list[tuple[int, int, int, int, float, float, np.float64]]:
-        """Get predicted locations and velocities for game objects.
-
-        Args:
-            timePrediction: Time in seconds to predict forward
-
-        Returns:
-            List of tuples (currentX, currentY, predictedX, predictedY, velocityX, velocityY, probability)
-        """
-        if self.timeSinceLastUpdateGameObj != -1:
-            return self.__getPredictions(
-                self.lastGameObjMap,
-                self.probmapGameObj,
-                self.timeSinceLastUpdateGameObj,
-                timePrediction,
-                self.maxSpeedGameObjects,
-            )
-
-        print("Probmap needs to be updated more than once to make predictions!")
-        return []
-
-    def getRobotMapPredictions(
-        self, timePrediction: float
-    ) -> list[tuple[int, int, int, int, float, float, np.float64]]:
-        """Get predicted locations and velocities for robots.
-
-        Args:
-            timePrediction: Time in seconds to predict forward
-
-        Returns:
-            List of tuples (currentX, currentY, predictedX, predictedY, velocityX, velocityY, probability)
-        """
-        if self.timeSinceLastUpdateRobot != -1:
-            return self.__getPredictions(
-                self.lastRobotMap,
-                self.probmapRobots,
-                self.timeSinceLastUpdateRobot,
-                timePrediction,
-                self.maxSpeedRobots,
-            )
-
-        print("Probmap needs to be updated more than once to make predictions!")
-        return []
-
-    """ Adds detections where predicted"""
-
-    def __addPredictionsOnMap(self, blankMap, Predictions, isGameObj):
-        # will not work well with custom detections, one way is to use radius value provided when finding blob coordinates using cv2 minareacircle
-        sizeX = self.__internalGameObjectX if isGameObj else self.__internalRobotX
-        sizeY = self.__internalGameObjectY if isGameObj else self.__internalRobotY
-        for prediction in Predictions:
-            (cx, cy, nx, ny, vx, vy, prob) = prediction
-            self.__add_detection(blankMap, nx, ny, sizeX, sizeY, prob)
-        return blankMap
-
-    """ Adds arrows with velocity, this is done after being turned into a heatmap """
-
-    def __drawPredictionsOnMap(self, heatmap, Predictions, isGameObj):
-        for prediction in Predictions:
-            (cx, cy, nx, ny, vx, vy, prob) = prediction
-            # current loc
-            cv2.circle(heatmap, (cx, cy), 4, (255), 2)
-            cv2.line(heatmap, (cx, cy), (nx, ny), (180), 2)
-            # predicted location
-            cv2.circle(heatmap, (nx, ny), 6, (255), 2)
-            # print(prediction)
-            cv2.arrowedLine(heatmap, (nx, ny), (nx + int(vx), ny + int(vy)), (255), 2)
-        return heatmap
-
-    def getGameObjectMapPredictionsAsHeatmap(self, timePrediction: float) -> np.ndarray:
-        """Get visualization of predicted game object locations and velocities.
-
-        Args:
-            timePrediction: Time in seconds to predict forward
-
-        Returns:
-            Heatmap as uint8 numpy array with prediction visualization overlaid
-        """
-        objPredMap = np.zeros(
-            (self.internalWidth, self.internalHeight), dtype=np.float64
-        )
-        if self.timeSinceLastUpdateGameObj != -1:
-            predictions = self.getGameObjectMapPredictions(timePrediction)
-            self.__addPredictionsOnMap(objPredMap, predictions, True)
-            # turn to heatmap
-            objPredMap = self.getHeatMap(objPredMap)
-            # now draw all those pretty arrows
-            self.__drawPredictionsOnMap(objPredMap, predictions, True)
-        else:
-            print("Probmap needs to be updated more than once to make predictions!")
-        return objPredMap
-
-    def getRobotMapPredictionsAsHeatmap(self, timePrediction: float) -> np.ndarray:
-        """Get visualization of predicted robot locations and velocities.
-
-        Args:
-            timePrediction: Time in seconds to predict forward
-
-        Returns:
-            Heatmap as uint8 numpy array with prediction visualization overlaid
-        """
-        robPredMap = np.zeros(
-            (self.internalWidth, self.internalHeight), dtype=np.float64
-        )
-        if self.timeSinceLastUpdateRobot != -1:
-            predictions = self.getRobotMapPredictions(timePrediction)
-            print(predictions)
-            self.__drawPredictionsOnMap(robPredMap, predictions, False)
-            # turn to heatmap
-            robPredMap = self.getHeatMap(robPredMap)
-            # now draw all those pretty arrows
-            self.__drawPredictionsOnMap(robPredMap, predictions, False)
-        else:
-            print("Probmap needs to be updated more than once to make predictions!")
-        return robPredMap
-
-    """ cutting out and manipulating the map (hidden methods)"""
-
     def __setChunkOfMap(self, probmap, x, y, chunkX, chunkY, chunk):
         # also need to invert coords here
         tmp = x
@@ -1096,7 +853,6 @@ class ProbMap:
 
     def clear_maps(self) -> None:
         """Clear both probability maps, resetting all values to zero."""
-        self.__saveToTemp(self.probmapGameObj, self.probmapRobots)
         self.clear_gameObjectMap()
         self.clear_robotMap()
 
@@ -1124,19 +880,9 @@ class ProbMap:
     """ Used in dissipating over time, need to find best smoothing function"""
 
     def __smooth(self, probmap, timeParam):
-
-        # trying gaussian blur
-        # kernel_size = (35, 35)  # (width, height)
-        # probmap = cv2.GaussianBlur(probmap,kernel_size,self.sigma)
-        # return probmap
-
-        # maybe exponential decay will represent time dependent changes better
-        # decayFac = 0.36
-        # return probmap * decayFac ** timeParam
-
         kernel = self.sigma**timeParam * np.array(
             [0.06136, 0.24477, 0.38774, 0.24477, 0.06136]
-        )  # Here you would insert your actual kernel of any size
+        )  
         probmap = np.apply_along_axis(
             lambda x: np.convolve(x, kernel, mode="same"), 0, probmap
         )

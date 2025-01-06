@@ -100,7 +100,7 @@ def __test_randomization_ranges(map: probmap.ProbMap, width, height):
     )  # generates a confidence threshold between 0.65 - 0.95
     # typeRand = random.random() # 50% chance robot / 50% chance object
     print(f"x{x} y{y} conf{confidence}")
-    map.addCustomObjectDetection(x, y, 150, 150, confidence, 0.1)
+    map.addCustomObjectDetection(x, y, 150, 150, confidence)
     # try:
     #     # if typeRand >= .50:
     #     #     map.addDetectedRobot(x,y,confidence,1)

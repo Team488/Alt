@@ -22,8 +22,6 @@ class FramePacket:
         packet_frame.width = frame.shape[0]
         packet_frame.height = frame.shape[1]
         packet_frame.channels = frame.shape[2]
-        flattenedFrame = compressed_frame.flatten()
-        flatlen = packet_frame.width * packet_frame.height * packet_frame.channels
         packet_frame.init("data", len(compressed_frame))
 
         packet_frame.data = compressed_frame.tolist()
@@ -43,6 +41,13 @@ class FramePacket:
     def fromBase64(base64str):
         decoded_bytes = base64.b64decode(base64str)
         with frameNetPacket_capnp.DataPacket.from_bytes(decoded_bytes) as packet:
+            return packet
+
+        return None
+    
+    @staticmethod
+    def fromBytes(bytes):
+        with frameNetPacket_capnp.DataPacket.from_bytes(bytes) as packet:
             return packet
 
         return None

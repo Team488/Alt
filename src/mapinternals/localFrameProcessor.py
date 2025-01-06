@@ -129,9 +129,10 @@ class LocalFrameProcessor:
         endTime = time.time()
 
         fps = 1 / (endTime - startTime)
-        # cv2.putText(frame,f"FPS:{fps}",(10,80),0,1,(0,255,0),2)
 
         if drawBoxes:
+            # cv2.putText(frame,f"FPS:{fps}",(10,80),0,1,(0,255,0),2)
+            print(f"FPS:{fps}")
             # draw a box with id,conf and relative estimate
             for labledResult, relativeResult in zip(labledResults, relativeResults):
                 id = labledResult[0]

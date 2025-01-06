@@ -9,13 +9,21 @@ from tools.Constants import CameraIntrinsics, ObjectReferences
 class PositionEstimator:
     def __init__(self, tryocr=False) -> None:
         self.tryocr = tryocr
-        self.numMapper = NumberMapper(["6328"],["6328"])
+        self.numMapper = NumberMapper(["6328"], ["6328"])
         if tryocr:
             import pytesseract
+            from sys import platform
 
-            pytesseract.pytesseract.tesseract_cmd = (
-                r"c:/Program Files/Tesseract-OCR/tesseract.exe"
-            )
+            if platform == "win32":
+                pytesseract.pytesseract.tesseract_cmd = r"assets/winTesseract.exe"
+            else:
+                try:
+                    # if this fails, the pytesseract executable has not been installed
+                    pytesseract.image_to_string(np.zeros((40, 40), dtype=np.uint8))
+                except Exception:
+                    print("To use OCR make sure tesseract is installed on your machine")
+                    print(f"{{sudo apt-get install tesseract-ocr}}")
+                    exit(0)
             self.pytesseract = pytesseract
         self.__minPerc = 0.005  # minimum percentage of bounding box with bumper color
         self.__blueRobotHist = np.load("assets/simulationBlueRobotHist.npy")
@@ -24,15 +32,17 @@ class PositionEstimator:
 
     """ Extract a rectangular slice of the image, given a bounding box. This is axis aligned"""
 
-    def __crop_image(self, image, top_left, bottom_right,safety_margin = 0): # in decimal percentage. Eg 5% margin -> 0.05
+    def __crop_image(
+        self, image, top_left, bottom_right, safety_margin=0
+    ):  # in decimal percentage. Eg 5% margin -> 0.05
         x1, y1 = top_left
         x2, y2 = bottom_right
         if safety_margin != 0:
-            xMax,yMax = image.shape[1],image.shape[0]
-            x1 = int(np.clip(x1*(1+safety_margin),0,xMax))
-            x2 = int(np.clip(x2*(1+safety_margin),0,xMax))
-            y1 = int(np.clip(y1*(1+safety_margin),0,yMax))
-            y2 = int(np.clip(y2*(1+safety_margin),0,yMax))
+            xMax, yMax = image.shape[1], image.shape[0]
+            x1 = int(np.clip(x1 * (1 + safety_margin), 0, xMax))
+            x2 = int(np.clip(x2 * (1 + safety_margin), 0, xMax))
+            y1 = int(np.clip(y1 * (1 + safety_margin), 0, yMax))
+            y2 = int(np.clip(y2 * (1 + safety_margin), 0, yMax))
 
         cropped_image = image[y1:y2, x1:x2]
 
@@ -165,9 +175,13 @@ class PositionEstimator:
             # cv2.imshow("processed",processed)
             # a bumper with enough percentage was detected
             bumperKernel = np.ones((2, 2), np.uint8)
-            bumper_closed = cv2.morphologyEx(processed, cv2.MORPH_CLOSE, bumperKernel, iterations=2)
+            bumper_closed = cv2.morphologyEx(
+                processed, cv2.MORPH_CLOSE, bumperKernel, iterations=2
+            )
             # cv2.imshow("close bumper",bumper_closed)
-            bumper_opened = cv2.morphologyEx(bumper_closed,cv2.MORPH_OPEN,bumperKernel,iterations=2)
+            bumper_opened = cv2.morphologyEx(
+                bumper_closed, cv2.MORPH_OPEN, bumperKernel, iterations=2
+            )
             # cv2.imshow("open bumper",bumper_opened)
 
             # morphology_final = cv2.morphologyEx(thresh, cv2.MORPH_RECT, kernel, None, (-1, -1), 4)
@@ -175,7 +189,7 @@ class PositionEstimator:
                 bumper_opened, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE
             )
             contour_image = np.zeros_like(bumper_opened)
-            cv2.drawContours(contour_image,contours,-1,(255),1)
+            cv2.drawContours(contour_image, contours, -1, (255), 1)
             # cv2.imshow("Countour image",contour_image)
             if contours:
                 # extracting the bumper
@@ -190,22 +204,32 @@ class PositionEstimator:
                 kernelthreebythree = np.ones((3, 3), np.uint8)
                 backProjNumbers = self.__backProjWhite(bumperOnlyLab)
                 # partial cleanup #1 (this is so we keep try to do ocr before removing any sign of numbers with out next close op)
-                initalOpen = cv2.morphologyEx(backProjNumbers, cv2.MORPH_OPEN, kerneltwobytwo, iterations=1)
+                initalOpen = cv2.morphologyEx(
+                    backProjNumbers, cv2.MORPH_OPEN, kerneltwobytwo, iterations=1
+                )
                 # cv2.imshow("initialOpen",initalOpen)
                 nums = ""
                 if self.tryocr:
                     nums = self.pytesseract.image_to_string(backProjNumbers)
                     # cv2.putText(backProjNumbers,nums,(10,25),0,1,(255,255,255),2)
                 # now merge any numbers into one
-                close = cv2.morphologyEx(initalOpen, cv2.MORPH_CLOSE, kerneltwobytwo, iterations=1)
+                close = cv2.morphologyEx(
+                    initalOpen, cv2.MORPH_CLOSE, kerneltwobytwo, iterations=1
+                )
                 # cv2.imshow("initialClose",close)
                 # one last opening to remove any noise on the edges of the numbers we extract
-                final_open = cv2.morphologyEx(close,cv2.MORPH_OPEN,kerneltwobytwo,iterations=1)
+                final_open = cv2.morphologyEx(
+                    close, cv2.MORPH_OPEN, kerneltwobytwo, iterations=1
+                )
                 # cv2.imshow("finalOpen",final_open)
                 # some cleanup dilation (small amount)
-                final_number_image = cv2.morphologyEx(final_open,cv2.MORPH_DILATE,kerneltwobytwo,iterations=3)
-                
-                _, threshNumbers = cv2.threshold(final_number_image, 50, 255, cv2.THRESH_BINARY)
+                final_number_image = cv2.morphologyEx(
+                    final_open, cv2.MORPH_DILATE, kerneltwobytwo, iterations=3
+                )
+
+                _, threshNumbers = cv2.threshold(
+                    final_number_image, 50, 255, cv2.THRESH_BINARY
+                )
                 contoursNumbers, _ = cv2.findContours(
                     threshNumbers, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE
                 )
@@ -230,7 +254,7 @@ class PositionEstimator:
                         )
                         # print("Ratio", ratio)
                         # Calculate the max of width and height
-                        size_Score = numberWidth*numberHeight
+                        size_Score = numberWidth * numberHeight
 
                         if ratio < 13 and size_Score > largest_size:
                             largest_size = size_Score
@@ -245,18 +269,21 @@ class PositionEstimator:
                         #     # Draw the rectangle on the original image (for visualization)
                         # cv2.drawContours(approximage, [approx], -1, (255, 255, 255), 2)
                         # cv2.imshow("poly dp number approx", approximage)
-                        
-                        
+
                         contourimage = np.zeros_like(close)
                         cv2.drawContours(
-                            contourimage, [largestAcceptable_contour], 0, (255, 255, 0), -1
+                            contourimage,
+                            [largestAcceptable_contour],
+                            0,
+                            (255, 255, 0),
+                            -1,
                         )
                         # last cleanup of edges
                         # cv2.imshow("Best contour",frame)
                         min_area_rect = cv2.minAreaRect(largestAcceptable_contour)
                         box = cv2.boxPoints(min_area_rect)
                         box = np.int0(box)
-                        cv2.drawContours(contourimage,[box],0,(255),2)
+                        cv2.drawContours(contourimage, [box], 0, (255), 2)
 
                         # Get width and height
                         (numberWidth, numberHeight) = min_area_rect[1]
@@ -269,7 +296,7 @@ class PositionEstimator:
                         # cv2.imshow("Number Contour image",contourimage)
                         # cv2.drawContours(bumperOnly,[largestAcceptable_contour],0,[0,0,255],2)
                         return (targetheight, isBlue, nums)
-                        
+
                 else:
                     logging.warning("Failed to extract number from countour!")
             else:
@@ -289,7 +316,7 @@ class PositionEstimator:
         midW = int(w / 2)
         midH = int(h / 2)
         centerX = x1 + midW
-        croppedImg = self.__crop_image(frame, (x1, y1), (x2, y2),safety_margin=0.07)
+        croppedImg = self.__crop_image(frame, (x1, y1), (x2, y2), safety_margin=0.07)
         est = self.__estimateRobotBumperHeight(croppedImg)
         if est is not None:
             (estimatedHeight, isBlue, nums) = est
@@ -297,12 +324,12 @@ class PositionEstimator:
                 ObjectReferences.BUMPERHEIGHT.getMeasurementCm(),
                 estimatedHeight,
                 cameraIntrinsics.getFy(),
-            )* (cv2.getTrackbarPos("Scale Factor", "Simulation Window")/100)
+            )
             print(f"{distance=} {est=}")
             bearing = self.__calcBearing(
-            cameraIntrinsics.getHFov(),
-            cameraIntrinsics.getHres(),
-            int(centerX - cameraIntrinsics.getCx()),
+                cameraIntrinsics.getHFov(),
+                cameraIntrinsics.getHres(),
+                int(centerX - cameraIntrinsics.getCx()),
             )
             estCoords = self.componentizeHDistAndBearing(distance, bearing)
 
