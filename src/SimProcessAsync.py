@@ -80,43 +80,6 @@ NetworkTables.initialize(server="127.0.0.1")
 postable = NetworkTables.getTable("AdvantageKit/RealOutputs/Vision/AprilTags/Results")
 table = NetworkTables.getTable("AdvantageKit/RealOutputs/Odometry")
 
-# def pack_pose3d(translation, quaternion, index):     
-#     msgpack.packb({
-#     "translation": {"x": translation[0], "y": translation[1], "z": translation[2]},
-#     "rotation/q": {"w": quaternion[0], "x": quaternion[1], "y": quaternion[2], "z": quaternion[3]}
-#     })
-
-#     return keys
-
-# def send_pose3d_array(poses,name):
-#     """
-#     Send an array of Pose3d to NetworkTables in the AdvantageScope format.
-#     :param poses: List of tuples [(translation1, quaternion1), (translation2, quaternion2), ...]
-#     """
-
-#     # Create a structure for each Pose3d and push it to NetworkTables
-#     for index, (translation, quaternion) in enumerate(poses):
-#         pose_data = pack_pose3d(translation, quaternion, index)
-
-#         # Push each individual value to NetworkTables with unique keys for each Pose3d
-#         for key, value in pose_data.items():
-#             table.putNumber(f"{name}/{index}/{key}", value)
-
-#     table.putNumber(f"{name}/length", len(poses))
-
-# # Example data
-# poses = [
-#     ((1.0, 2.0, 3.0), (1.0, 0.0, 0.0, 0.0)),  # Pose1: translation, quaternion
-#     ((4.0, 5.0, 6.0), (0.707, 0.707, 0.0, 0.0)),  # Pose2: translation, quaternion
-# ]
-
-# # Send the Pose3d array
-# # Push the byte array to NetworkTables
-
-# while True:
-#     send_pose3d_array(poses,":((")
-#     time.sleep(0.1)
-
 
 
 
@@ -138,7 +101,7 @@ updateMap = {
     "REARRIGHT": ([], offsets[2], 0),
     "REARLEFT": ([], offsets[3], 0),
 }
-ASYNCLOOPTIMEMS = 100 #ms (onnx inference with 4 different "processors" on one device is slooow)
+ASYNCLOOPTIMEMS = 1000 #ms (onnx inference with 4 different "processors" on one device is slooow)
 def async_frameprocess(imitatedProcIdx):
     global running
     cap = caps[imitatedProcIdx]
@@ -169,6 +132,7 @@ def async_frameprocess(imitatedProcIdx):
             else:
                 logger.warning("Cannot get robot location from network tables!")
             
+            print(f"{pos=}")
             # Process the frame
             res = frameProcessor.processFrame(
                 frame,
@@ -212,7 +176,7 @@ localUpdateMap = {
 }
 # Executor outside the with block
 globalexe = ThreadPoolExecutor(max_workers=4)
-futures = [globalexe.submit(async_frameprocess, i) for i in range(2)]
+futures = [globalexe.submit(async_frameprocess, i) for i in range(1)]
 
 try:
     while running:

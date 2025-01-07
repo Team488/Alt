@@ -37,7 +37,6 @@ class KalmanLabeler:
         for i in range(len(singleCameraResults)):
             singleCameraResult = singleCameraResults[i]
             singleCameraResult[0] += cameraIdOffset.getIdOffset()
-            print(singleCameraResult)
             # adjust id by a fixed camera offset, so that id collisions dont happen
             (realId, (x, y, z), conf, isRobot) = singleCameraResult[:4]
             cacheOfChoice: KalmanCache = self.kalmanCacheRobots if isRobot else self.kalmanCacheGameObjects

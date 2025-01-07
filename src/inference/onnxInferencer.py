@@ -47,7 +47,7 @@ class onnxInferencer:
         return nmsResults
 
 
-if __name__ == "__main__":
+def startDemo():
     video_path = "assets/video12qual25clipped.mp4"
     cap = cv2.VideoCapture(video_path)
     inferencer = onnxInferencer()
@@ -69,3 +69,6 @@ if __name__ == "__main__":
             break
     cv2.destroyAllWindows()
     cap.release
+
+if __name__ == "__main__":
+    startDemo()

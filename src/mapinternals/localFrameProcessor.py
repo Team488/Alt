@@ -63,7 +63,6 @@ class LocalFrameProcessor:
         )
         startTime = time.time()
         yoloResults = self.inf.inferenceFrame(frame)
-
         if maxDetections != None:
             yoloResults = yoloResults[:maxDetections]
 

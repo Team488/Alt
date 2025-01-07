@@ -15,7 +15,7 @@ class PositionEstimator:
             from sys import platform
 
             if platform == "win32":
-                pytesseract.pytesseract.tesseract_cmd = r"assets/winTesseract.exe"
+                pytesseract.pytesseract.tesseract_cmd = r"C:\\Program Files\\Tesseract-OCR\\tesseract.exe"
             else:
                 try:
                     # if this fails, the pytesseract executable has not been installed
@@ -141,7 +141,7 @@ class PositionEstimator:
 
     def __calcBearing(self, fov, res, pixelDiff):
         fovperPixel = fov / res
-        return -pixelDiff * fovperPixel
+        return pixelDiff * fovperPixel
 
     """
         This is a multistep process to estimate the height of a robot bumper. TLDR use number on the side of bumper to estimate height
@@ -164,15 +164,15 @@ class PositionEstimator:
     def __estimateRobotBumperHeight(self, croppedframe) -> tuple[float, bool]:
         y = croppedframe.shape[0]
         x = croppedframe.shape[1]
-        # cutting the frame as for all the images i have the bumper is always in the bottom half
-        croppedframe = self.__crop_image(croppedframe, (0, int(y / 2)), (x, y))
-        # cv2.imshow("Cropped frame",croppedframe)
+        # cutting the frame as for all the images i have the bumper is always in the bottom portion
+        croppedframe = self.__crop_image(croppedframe, (0, int(y/2)), (x, y))
+        cv2.imshow("Cropped frame",croppedframe)
         labFrame = cv2.cvtColor(croppedframe, cv2.COLOR_BGR2LAB)
         processed, isBlue = self.__backprojCheck(
             labFrame, self.__redRobotHist, self.__blueRobotHist
         )
         if isBlue != None:
-            # cv2.imshow("processed",processed)
+            cv2.imshow("processed",processed)
             # a bumper with enough percentage was detected
             bumperKernel = np.ones((2, 2), np.uint8)
             bumper_closed = cv2.morphologyEx(
@@ -190,7 +190,7 @@ class PositionEstimator:
             )
             contour_image = np.zeros_like(bumper_opened)
             cv2.drawContours(contour_image, contours, -1, (255), 1)
-            # cv2.imshow("Countour image",contour_image)
+            cv2.imshow("Countour image",contour_image)
             if contours:
                 # extracting the bumper
                 combined_contour = np.concatenate(contours)
@@ -221,10 +221,10 @@ class PositionEstimator:
                 final_open = cv2.morphologyEx(
                     close, cv2.MORPH_OPEN, kerneltwobytwo, iterations=1
                 )
-                # cv2.imshow("finalOpen",final_open)
+                cv2.imshow("finalOpen",final_open)
                 # some cleanup dilation (small amount)
                 final_number_image = cv2.morphologyEx(
-                    final_open, cv2.MORPH_DILATE, kerneltwobytwo, iterations=3
+                    final_open, cv2.MORPH_DILATE, kerneltwobytwo, iterations=4
                 )
 
                 _, threshNumbers = cv2.threshold(
@@ -233,9 +233,12 @@ class PositionEstimator:
                 contoursNumbers, _ = cv2.findContours(
                     threshNumbers, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE
                 )
-                # cv2.imshow("Unprocessed Number image",backProjNumbers)
-                # cv2.imshow("Final morphed Number image",final_number_image)
-                # cv2.imshow("Bumper image",bumperOnly)
+                cv2.imshow("Unprocessed Number image",backProjNumbers)
+                cv2.imshow("Final morphed Number image",final_number_image)
+                cv2.imshow("Bumper image",bumperOnly)
+                contours_image = np.zeros_like(threshNumbers)
+                cv2.drawContours(contours_image,contoursNumbers,-1,(255),1)
+                cv2.imshow("Options",contours_image)
                 # try to isolate bumper digits for their height
                 if contoursNumbers:
                     # largestAcceptable_contour = np.concatenate(contoursNumbers)
@@ -279,7 +282,6 @@ class PositionEstimator:
                             -1,
                         )
                         # last cleanup of edges
-                        # cv2.imshow("Best contour",frame)
                         min_area_rect = cv2.minAreaRect(largestAcceptable_contour)
                         box = cv2.boxPoints(min_area_rect)
                         box = np.int0(box)
@@ -289,11 +291,11 @@ class PositionEstimator:
                         (numberWidth, numberHeight) = min_area_rect[1]
                         # print(f"{numberWidth=}  {numberHeight=} ")
                         targetheight = min(numberHeight, numberWidth)
-                        # heightframe = np.zeros((200,400),dtype=np.uint8)
-                        # cv2.putText(heightframe,f"H:{targetheight:.5f} Num:{self.numMapper.getRobotNumberEstimate(isBlue,nums)}",(10,30),0,1,(255),2)
-                        # cv2.imshow("Height estimate",heightframe)
+                        heightframe = np.zeros((200,400),dtype=np.uint8)
+                        cv2.putText(heightframe,f"H:{targetheight:.5f} Num:{self.numMapper.getRobotNumberEstimate(isBlue,nums)}",(10,30),0,1,(255),2)
+                        cv2.imshow("Height estimate",heightframe)
                         # print(f"HEIGHT----------------------------{targetheight}----------------------------")
-                        # cv2.imshow("Number Contour image",contourimage)
+                        cv2.imshow("Number Contour image",contourimage)
                         # cv2.drawContours(bumperOnly,[largestAcceptable_contour],0,[0,0,255],2)
                         return (targetheight, isBlue, nums)
 
@@ -325,16 +327,15 @@ class PositionEstimator:
                 estimatedHeight,
                 cameraIntrinsics.getFy(),
             )
-            print(f"{distance=} {est=}")
             bearing = self.__calcBearing(
                 cameraIntrinsics.getHFov(),
                 cameraIntrinsics.getHres(),
                 int(centerX - cameraIntrinsics.getCx()),
             )
+            print(f"{distance=} {est=} {bearing=}")
             estCoords = self.componentizeHDistAndBearing(distance, bearing)
 
             return estCoords
-
         return None
 
     """ This current method estimates the position of a note, by using the same method as a robot. However it is slightly simplified, as we can take avantage of the circular nature of a note

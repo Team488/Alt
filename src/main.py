@@ -1,2 +1,2 @@
-from mapDemos import mulitStateUKFDemo
-mulitStateUKFDemo.startDemo()
+from inference import onnxInferencer
+onnxInferencer.startDemo()
