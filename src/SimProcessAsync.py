@@ -4,7 +4,6 @@ import json
 import cv2
 import logging
 from concurrent.futures import ThreadPoolExecutor
-import msgpack
 from networktables import NetworkTables
 from tools.NtUtils import getPose2dFromBytes
 from mapinternals.localFrameProcessor import LocalFrameProcessor
@@ -157,9 +156,9 @@ def async_frameprocess(imitatedProcIdx):
                 # time.sleep(sleeptime)
             else:
                 logger.warning(f"Async Loop Overrun! Time elapsed: {dMS}ms | Max loop time: {ASYNCLOOPTIMEMS}ms")
-            cv2.waitKey(1)
+            # cv2.waitKey(1)
             time.sleep(waittime/1000)
-            cv2.imshow(imitatedProcName,frame)
+            # cv2.imshow(imitatedProcName,frame)
         logger.debug("Exiting async loop")
     except Exception as e:
         logger.fatal(f"Error! {e}")
@@ -185,21 +184,20 @@ try:
         for processName in names:
             localidx = localUpdateMap[processName]
             packet = updateMap[processName]
-            # print(f"{packet=}")
+            print(f"{packet=}")
             result, packetidx = packet[:2], packet[2]
             if localidx == packetidx:
                 continue
+            print(result)
+            
             localUpdateMap[processName] = packetidx
             results.append(result)
-
+        print("Here!")
         central.processFrameUpdate(results, MAINLOOPTIMEMS/1000)
         x, y, p = central.map.getHighestRobot()
         scaleFactor = 100  # cm to m
-        table.getEntry("est/Target_Estimate2").setDoubleArray(
+        table.getEntry("est/Target_Estimate").setDoubleArray(
             [x / scaleFactor, y / scaleFactor, 0, 0]
-        )
-        table.getEntry("est/Target_Estimate1").setDoubleArray(
-            [x / scaleFactor+2, y / scaleFactor+2, 0, 0]
         )
         logger.debug("Updated Target Estimate entry in NetworkTables.")
 
@@ -225,7 +223,7 @@ except KeyboardInterrupt:
 
 finally:
     # Gracefully shut down threads
-    globalexe.shutdown(wait=True)
+    globalexe.shutdown(wait=False)
 
     # Clean up resources
     cv2.destroyAllWindows()
