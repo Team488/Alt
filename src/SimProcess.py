@@ -96,9 +96,8 @@ updateMap = {
     "REARRIGHT": ([], offsets[2], 0),
     "REARLEFT": ([], offsets[3], 0),
 }
-ASYNCLOOPTIMEMS = (
-    1000  # ms (onnx inference with 4 different "processors" on one device is slooow)
-)
+ASYNCLOOPTIMEMS = 1000  # ms (onnx inference with 4 different "processors" on one device is slooow)
+
 
 
 def async_frameprocess(imitatedProcIdx):
@@ -108,7 +107,7 @@ def async_frameprocess(imitatedProcIdx):
     imitatedProcName = names[imitatedProcIdx]
     idoffset = offsets[imitatedProcIdx]
     frameProcessor = frameProcessors[imitatedProcIdx]
-
+    print(f"Starting sim thread idx: {imitatedProcIdx}")
     try:
         while running:
             start_time = time.time()
@@ -123,6 +122,7 @@ def async_frameprocess(imitatedProcIdx):
             if not ret:
                 logging.warning("Failed to retrieve a frame from stream.")
                 exit(1)
+
 
             # Fetch NetworkTables data
             pos = (0, 0, 0)
@@ -142,7 +142,6 @@ def async_frameprocess(imitatedProcIdx):
                 drawBoxes=True,
                 maxDetections=1,
             )
-
             global updateMap
             lastidx = updateMap[imitatedProcName][2]
             lastidx += 1
@@ -151,21 +150,24 @@ def async_frameprocess(imitatedProcIdx):
             etime = time.time()
             dMS = (etime - start_time) * 1000
             sleeptime = 0.001
-            if dMS < ASYNCLOOPTIMEMS:
-                sleeptime = ASYNCLOOPTIMEMS - dMS
-                logger.debug(f"Sleeping for {sleeptime}s")
-                time.sleep(sleeptime)
-            else:
-                logger.warning(
-                    f"Async Loop Overrun! Time elapsed: {dMS}ms | Max loop time: {ASYNCLOOPTIMEMS}ms"
-                )
-            time.sleep(waittime / 1000)
+            # if dMS < ASYNCLOOPTIMEMS:
+            #     sleeptime = ASYNCLOOPTIMEMS - dMS # NOTE this line causes the async loop to hang probably due to an error. Whats the error lol.
+            #     logger.debug(f"Sleeping for {sleeptime}s")
+            #     time.sleep(sleeptime)
+            # else:
+            #     logger.warning(
+            #         f"Async Loop Overrun! Time elapsed: {dMS}ms | Max loop time: {ASYNCLOOPTIMEMS}ms"
+            #     )
+            time.sleep(sleeptime)
+            print("adding to frame queue!")
             frame_queue.put((imitatedProcName, frame))
         logger.debug("Exiting async loop")
     except Exception as e:
         logger.fatal(f"Error! {e}")
     finally:
+        print("Exiting cap!")
         cap.release()
+    print("HEHHE")
 
 
 frame_queue = queue.Queue()
@@ -189,22 +191,20 @@ try:
         for processName in names:
             localidx = localUpdateMap[processName]
             packet = updateMap[processName]
-            print(f"{packet=}")
+            # print(f"{packet=}")
             result, packetidx = packet[:2], packet[2]
             if localidx == packetidx:
                 continue
-            print(result)
 
             localUpdateMap[processName] = packetidx
             results.append(result)
-        print("Here!")
         central.processFrameUpdate(results, MAINLOOPTIMEMS / 1000)
         x, y, p = central.map.getHighestRobot()
         scaleFactor = 100  # cm to m
         table.getEntry("est/Target_Estimate").setDoubleArray(
             [x / scaleFactor, y / scaleFactor, 0, 0]
         )
-        logger.debug("Updated Target Estimate entry in NetworkTables.")
+        # logger.debug("Updated Target Estimate entry in NetworkTables.")
 
         etime = time.time()
         dMS = (etime - stime) * 1000
@@ -219,6 +219,7 @@ try:
         cv2.imshow(f"{title}_notes", central.map.getGameObjectHeatMap())
 
         while not frame_queue.empty():
+            print("In frame queue")
             name, frame = frame_queue.get()
             cv2.imshow(name, frame)
         # Handle keyboard interrupt with cv2.waitKey()
