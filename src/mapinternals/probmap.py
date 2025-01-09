@@ -122,7 +122,7 @@ class ProbMap:
         # print('max = ' + str(np.max(gaussian_blob)) + ' (s/b 1.0)')
         # print(gaussian_blob)
 
-        threshold = 0.1
+        threshold = 0.2
         mask = gaussian_blob >= threshold
 
         # Step 2: Get the coordinates of the values that satisfy the threshold
