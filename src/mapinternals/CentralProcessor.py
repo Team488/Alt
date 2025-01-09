@@ -27,7 +27,7 @@ class CentralProcessor:
             defaultMap = np.load("assets/obstacleMap.npy")
         except Exception as e:
             print("obstaclemap load failed, defaulting to empty map", e)
-        return cv2.resize(defaultMap, (self.map.internalWidth, self.map.internalHeight))
+        return cv2.resize(defaultMap, self.map.getInternalSize())
 
     # async map update per camera, probably want to syncronize this
     def processFrameUpdate(

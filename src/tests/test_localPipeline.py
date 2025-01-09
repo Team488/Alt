@@ -12,7 +12,7 @@ def verifyValidOutput():
     count = 0
     while cap.isOpened():
         ret, frame = cap.read()
-        count += 1  # why no ++count or count++ :(
+        count += 1
         print(count)
         if ret:
             out = frameProcessor.processFrame(frame)

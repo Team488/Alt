@@ -18,5 +18,4 @@ getent group docker || sudo groupadd docker
 # Add user to docker group
 sudo usermod -aG docker $USER
 
-# Prompt to log out and back in or run newgrp
-echo "You may need to log out and back in, or run 'newgrp docker' to apply the group changes."
+sudo newgrp docker

@@ -1,30 +1,19 @@
 """ Process to run on orin """
 import time
 import cv2
-import argparse
 import logging
-import numpy as np
 from tools.Constants import CameraIdOffsets
 from XTABLES import XTablesClient
 from coreinterface.DetectionPacket import DetectionPacket
-from coreinterface.FramePacket import FramePacket
 from mapinternals.CentralProcessor import CentralProcessor
 from pathplanning.PathGenerator import PathGenerator
-from tools.Constants import MapConstants,CameraExtrinsics,CameraIntrinsics
 
 central = CentralProcessor.instance()
 client = XTablesClient()
 
 pathGenerator = PathGenerator(central)
 pathName = "target_waypoints"
-cams = (
-    "FrontCam",
-    "FrontLeftCam",
-    "FrontRightCam",
-    "BackLeftCam",
-    "BackRightCam"
-)
-
+cams = ("FrontCam", "FrontLeftCam", "FrontRightCam", "BackLeftCam", "BackRightCam")
 
 
 def handle_update(key, val):
@@ -70,7 +59,7 @@ def mainLoop():
 
         while True:
             time.sleep(1)
-            
+
     except Exception as e:
         print(e)
     finally:

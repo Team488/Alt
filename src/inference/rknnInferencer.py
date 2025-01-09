@@ -3,9 +3,8 @@ import time
 import cv2
 import numpy as np
 from rknnlite.api import RKNNLite
-from inference import copiedutils
 from inference import utils
-from inference.coco_utils import COCO_test_helper
+
 
 class rknnInferencer:
     def __init__(self, model_path="assets/bestV5.rknn"):
@@ -21,8 +20,6 @@ class rknnInferencer:
 
         # load model
         self.model = self.load_rknn_model(model_path)
-
-        self.co_helper = COCO_test_helper(enable_letter_box=True)
 
     # Initialize the RKNN model
     def load_rknn_model(self, model_path):

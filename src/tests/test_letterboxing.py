@@ -22,4 +22,4 @@ cv2.rectangle(
 cv2.imshow("Original", img)
 cv2.imshow("letterboxed", letterboxed)
 
-cv2.waitKey(10000)
+cv2.waitKey(3)

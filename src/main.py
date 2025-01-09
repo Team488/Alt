@@ -1,2 +1,3 @@
-from inference import onnxInferencer
-onnxInferencer.startDemo()
+from mapDemos import probmapClickDemo
+
+probmapClickDemo.startDemo()

@@ -25,7 +25,6 @@ lastY = -1
 
 
 def __isolateRangeHighest(x, y):
-
     (px, py, prob) = fieldMap.getHighestGameObjectWithinRange(x, y, wX, wY)
     (objMap, robtMap) = fieldMap.getHeatMaps()
     cv2.rectangle(
@@ -39,32 +38,6 @@ def __isolateRangeHighest(x, y):
     if prob > 0:
         cv2.putText(objMap, f"prob{prob}", (x, y), 1, 1, (255, 255, 255))
         cv2.circle(objMap, (px, py), int(6 - prob), (255, 0, 0), 2)
-    else:
-        cv2.putText(objMap, "No detections in region", (x, y), 1, 1, (255, 255, 255))
-
-    cv2.imshow(fieldMap.gameObjWindowName, objMap)
-
-
-def __isolateRangeAll(x, y):
-
-    coords = fieldMap.getAllGameObjectsWithinRangeT(
-        x, y, wX, wY, 0.3
-    )  # threshold is .3
-    (objMap, robtMap) = fieldMap.getHeatMaps()
-    cv2.rectangle(
-        objMap,
-        (int(x - wX / 2), int(y - wY / 2)),
-        (int(x + wX / 2), int(y + wY / 2)),
-        (255, 255, 255),
-        2,
-    )
-    print(coords)
-    if coords:
-        for coord in coords:
-            (px, py, r, prob) = coord
-            if prob > 0:
-                # cv2.putText(objMap,f"prob{prob}",(x,y),1,1,(255,255,255))
-                cv2.circle(objMap, (px, py), 2 * r, (255, 0, 0), 2)
     else:
         cv2.putText(objMap, "No detections in region", (x, y), 1, 1, (255, 255, 255))
 

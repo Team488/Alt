@@ -44,7 +44,7 @@ class FramePacket:
             return packet
 
         return None
-    
+
     @staticmethod
     def fromBytes(bytes):
         with frameNetPacket_capnp.DataPacket.from_bytes(bytes) as packet:
@@ -59,7 +59,7 @@ class FramePacket:
         return decompressed_frame
 
 
-if __name__ == "__main__":
+def test_packet():
     cap = cv2.VideoCapture("assets/video12qual25clipped.mp4")
     while cap.isOpened():
         ret, frame = cap.read()
@@ -79,3 +79,7 @@ if __name__ == "__main__":
 
         if cv2.waitKey(1) & 0xFF == ord("q"):
             break
+
+
+if __name__ == "__main__":
+    test_packet()

@@ -23,7 +23,8 @@ class ProbMap:
         gameObjectHeight=MapConstants.gameObjectHeight.value,
         robotWidth=MapConstants.robotWidth.value,
         robotHeight=MapConstants.robotHeight.value,
-        sigma=0.9,
+        sigma=0.1,
+        alpha=0.5,
     ):
 
         # exposed constants
@@ -36,14 +37,16 @@ class ProbMap:
 
         # flip values due to numpy using row,col (y,x)
         # internal values (some resolution adjusted)
-        self.internalWidth = y // resolution
-        self.internalHeight = x // resolution
+        self.__internalWidth = y // resolution
+        self.__internalHeight = x // resolution
+        # NOTE these values are not resized, because they are resized right before adding to the map
         self.__internalGameObjectX = gameObjectHeight
         self.__internalGameObjectY = gameObjectWidth
         self.__internalRobotX = robotHeight
         self.__internalRobotY = robotWidth
 
         self.sigma = sigma  # dissipation rate for gaussian blur
+        self.alpha = alpha  # weight of new inputs
         self.resolution = resolution
         self.gameObjWindowName = "GameObject Map"
         self.robotWindowName = "Robot Map"
@@ -51,47 +54,23 @@ class ProbMap:
 
         # game objects
         self.probmapGameObj = np.zeros(
-            (self.internalWidth, self.internalHeight), dtype=np.float64
+            (self.__internalWidth, self.__internalHeight), dtype=np.float64
         )
 
         # robots
         self.probmapRobots = np.zeros(
-            (self.internalWidth, self.internalHeight), dtype=np.float64
+            (self.__internalWidth, self.__internalHeight), dtype=np.float64
         )
 
-        """ Lists storing regions with obstacles, right now rectangular."""
-        """ Important note, as internally alot of numpy functions use a row-column(y,x) format, and other things such as cv2 mainly use a column-row(x,y),
-            i figure its best to avoid flipping each time and store a flipped version on update of the obstacles"""
-        self.obstacleRegionsReg = []
-        self.obstacleRegionsRC = []
-
-    def setObstacleRegions(
-        self, rectangleCoords: list[tuple[tuple[int, int], tuple[int, int]]]
-    ):
-        """Set rectangular regions that are considered obstacles.
-
-        Args:
-            rectangleCoords: List of tuples containing two coordinate pairs ((x1,y1), (x2,y2))
-                           representing the top-left and bottom-right corners of each obstacle rectangle
-        """
-        self.obstacleRegionsReg = rectangleCoords
-        self.obstacleRegionsRC = [
-            ((y1, x1), (y2, x2)) for ((x1, y1), (x2, y2)) in rectangleCoords
-        ]
-
-    def isPointInsideObstacles(self, x, y):
-        for obstacle in self.obstacleRegionsRC:
-            (x1, y1) = obstacle[0]
-            (x2, y2) = obstacle[1]
-            if x > x1 and x < x2 and y > y1 and y < y2:
-                return True
-        return False
+    def getInternalSize(self):
+        return (self.__internalWidth, self.__internalHeight)
 
     """ Adding detections to the probability maps"""
 
     # After testing speed, see if we need some sort of hashmap to detection patches
     # We could add the center of detections to the hashmap, then on every smooth cycle we traverse each patch in the map and see if the probability has dissipated to zero, if so then we remove from map
     def __add_detection(self, probmap, x, y, obj_x, obj_y, prob):
+        # print(f"Adding detection at {x},{y} with size {obj_x},{obj_y}")
 
         # not perfect workaround, but transpose fix leads to x and y values being flipped, we can get by this by just flipping before putting in to map
         tmp = x
@@ -102,11 +81,10 @@ class ProbMap:
         obj_x = obj_y // self.resolution
         obj_y = tmpX // self.resolution
 
-        print(f"Adding detection at {x},{y} with size {obj_x},{obj_y}")
-
-        if x > self.internalWidth:
+        # print(f"internal values :  {x},{y} with size {obj_x},{obj_y}")
+        if x > self.__internalWidth:
             print("Error X too large! clipping")
-            x = self.internalWidth
+            x = self.__internalWidth
             # return
 
         if x < 0:
@@ -114,20 +92,15 @@ class ProbMap:
             x = 0
             # return
 
-        if y > self.internalHeight:
+        if y > self.__internalHeight:
             print("Error y too large! clipping")
-            y = self.internalHeight
+            y = self.__internalHeight
             # return
 
         if y < 0:
             print("Error y too small! clipping")
             y = 0
             # return
-
-        # # for now we will just print a simple warning if the center of the blob is inside an obstacle region
-        # # proper way is to adjust the gaussian based on the obstacle. Not sure exactly how as of right now
-        # if self.isPointInsideObstacles(x, y):
-        #     print("Center of blob is inside of obstacles!")
 
         # print("confidence", prob)
         # Given the object size, spread the detection out by stddevs of probabilities
@@ -148,6 +121,21 @@ class ProbMap:
         # print('min = ' + str(np.min(gaussian_blob)) + ' (s/b 0.0)')
         # print('max = ' + str(np.max(gaussian_blob)) + ' (s/b 1.0)')
         # print(gaussian_blob)
+
+        threshold = 0.1
+        mask = gaussian_blob >= threshold
+
+        # Step 2: Get the coordinates of the values that satisfy the threshold
+        coords = np.argwhere(mask)
+
+        if coords.size == 0:
+            print("Failed to extract smaller mask!")
+
+        y_min, x_min = coords.min(axis=0)
+        y_max, x_max = coords.max(axis=0)
+
+        # Step 4: Crop the Gaussian blob
+        gaussian_blob = gaussian_blob[y_min : y_max + 1, x_min : x_max + 1]
 
         blob_height, blob_width = gaussian_blob.shape[0:2]
         blob_height = Decimal(blob_height)
@@ -187,27 +175,27 @@ class ProbMap:
             gaussian_blob = gaussian_blob[-blob_left_edge_loc:, :]
             blob_left_edge_loc = 0
 
-        if blob_right_edge_loc > self.internalWidth:
+        if blob_right_edge_loc > self.__internalWidth:
             # print("right edge out of bounds")
             gaussian_blob = gaussian_blob[
-                : -(blob_right_edge_loc - self.internalWidth), :
+                : -(blob_right_edge_loc - self.__internalWidth), :
             ]
-            blob_right_edge_loc = self.internalWidth
+            blob_right_edge_loc = self.__internalWidth
 
         if blob_top_edge_loc < 0:
             # print("top edge out of bounds")
             gaussian_blob = gaussian_blob[:, -blob_top_edge_loc:]
             blob_top_edge_loc = 0
 
-        if blob_bottom_edge_loc > self.internalHeight:
+        if blob_bottom_edge_loc > self.__internalHeight:
             # print("bottom edge out of bounds")
             gaussian_blob = gaussian_blob[
-                :, : -(blob_bottom_edge_loc - self.internalHeight)
+                :, : -(blob_bottom_edge_loc - self.__internalHeight)
             ]
-            blob_bottom_edge_loc = self.internalHeight
+            blob_bottom_edge_loc = self.__internalHeight
 
         gaussian_blob = gaussian_blob.astype(np.float64)
-        # is this needed?
+
         gaussian_blob *= prob
         # blob_height, blob_width = gaussian_blob.shape[0:2]
         # print("\n" + "gaussian size: " + str(blob_height) + ", " + str(blob_width))
@@ -220,11 +208,20 @@ class ProbMap:
         # print("prob map x", probmap[blob_top_edge_loc:blob_bottom_edge_loc].shape)
         # print("prob map y", probmap[blob_left_edge_loc:blob_right_edge_loc].shape)
 
-        # slicing
         probmap[
             blob_left_edge_loc:blob_right_edge_loc,
             blob_top_edge_loc:blob_bottom_edge_loc,
-        ] += gaussian_blob
+        ] *= (
+            1 - self.alpha
+        )
+
+        # new input
+        probmap[
+            blob_left_edge_loc:blob_right_edge_loc,
+            blob_top_edge_loc:blob_bottom_edge_loc,
+        ] += (
+            gaussian_blob * self.alpha
+        )
 
     """ Exposed methods for adding detections """
     """ Time parameter used in object tracking, to calculate velocity as distance/time """
@@ -355,7 +352,7 @@ class ProbMap:
     """ Displaying heat maps"""
 
     def __displayHeatMap(self, probmap, name: str):
-        cv2.imshow(name, self.getHeatMap(probmap))
+        cv2.imshow(name, self.__getHeatMap(probmap))
 
     """ Exposed display heatmap method"""
 
@@ -375,19 +372,16 @@ class ProbMap:
 
     """ Getting heatmaps """
 
-    def getHeatMap(self, probmap):
+    def __getHeatMap(self, probmap):
         heatmap = np.copy(probmap)
+        heatmap = cv2.resize(
+            heatmap, (self.width, self.height)
+        )  # dont show with small internal resolution
         heatmap = heatmap * 255.0
         heatmap = np.clip(heatmap, a_min=0.0, a_max=255.0)
         heatmap = np.rint(heatmap).astype(np.uint8)
         # dont know if this line is neccesary, we can just reduce the clip value above
         heatmap = np.where(heatmap > 255, 255, heatmap).astype(np.uint8)
-
-        # draw obstacle regions
-        for setOfCoords in self.obstacleRegionsReg:
-            p1 = setOfCoords[0]  # tuple of x,y top left
-            p2 = setOfCoords[1]  # tuple of x,y bottom right
-            cv2.rectangle(heatmap, p1, p2, (175), 3)
 
         return heatmap
 
@@ -401,8 +395,8 @@ class ProbMap:
             Tuple of (game object heatmap, robot heatmap) as uint8 numpy arrays
         """
         return (
-            self.getHeatMap(self.probmapGameObj),
-            self.getHeatMap(self.probmapRobots),
+            self.__getHeatMap(self.probmapGameObj),
+            self.__getHeatMap(self.probmapRobots),
         )
 
     def getRobotHeatMap(self) -> np.ndarray:
@@ -411,7 +405,7 @@ class ProbMap:
         Returns:
             Robot heatmap as uint8 numpy array
         """
-        return self.getHeatMap(self.probmapRobots)
+        return self.__getHeatMap(self.probmapRobots)
 
     def getGameObjectHeatMap(self) -> np.ndarray:
         """Get visualization of game object probability map.
@@ -419,7 +413,7 @@ class ProbMap:
         Returns:
             Game object heatmap as uint8 numpy array
         """
-        return self.getHeatMap(self.probmapGameObj)
+        return self.__getHeatMap(self.probmapGameObj)
 
     """ Getting highest probability objects """
 
@@ -789,17 +783,17 @@ class ProbMap:
             # print("left edge out of bounds")
             chunk_left_edge_loc = 0
 
-        if chunk_right_edge_loc > self.internalWidth:
+        if chunk_right_edge_loc > self.__internalWidth:
             # print("right edge out of bounds")
-            chunk_right_edge_loc = self.internalWidth
+            chunk_right_edge_loc = self.__internalWidth
 
         if chunk_top_edge_loc < 0:
             # print("top edge out of bounds")
             chunk_top_edge_loc = 0
 
-        if chunk_bottom_edge_loc > self.internalHeight:
+        if chunk_bottom_edge_loc > self.__internalHeight:
             # print("bottom edge out of bounds")
-            chunk_bottom_edge_loc = self.internalHeight
+            chunk_bottom_edge_loc = self.__internalHeight
         probmap[
             chunk_left_edge_loc:chunk_right_edge_loc,
             chunk_top_edge_loc:chunk_bottom_edge_loc,
@@ -833,17 +827,17 @@ class ProbMap:
             # print("left edge out of bounds")
             chunk_left_edge_loc = 0
 
-        if chunk_right_edge_loc > self.internalWidth:
+        if chunk_right_edge_loc > self.__internalWidth:
             # print("right edge out of bounds")
-            chunk_right_edge_loc = self.internalWidth
+            chunk_right_edge_loc = self.__internalWidth
 
         if chunk_top_edge_loc < 0:
             # print("top edge out of bounds")
             chunk_top_edge_loc = 0
 
-        if chunk_bottom_edge_loc > self.internalHeight:
+        if chunk_bottom_edge_loc > self.__internalHeight:
             # print("bottom edge out of bounds")
-            chunk_bottom_edge_loc = self.internalHeight
+            chunk_bottom_edge_loc = self.__internalHeight
         return probmap[
             chunk_left_edge_loc:chunk_right_edge_loc,
             chunk_top_edge_loc:chunk_bottom_edge_loc,
@@ -858,12 +852,12 @@ class ProbMap:
 
     def clear_robotMap(self) -> None:
         self.probmapRobots = np.zeros(
-            (self.internalWidth, self.internalHeight), dtype=np.float64
+            (self.__internalWidth, self.__internalHeight), dtype=np.float64
         )
 
     def clear_gameObjectMap(self) -> None:
         self.probmapGameObj = np.zeros(
-            (self.internalWidth, self.internalHeight), dtype=np.float64
+            (self.__internalWidth, self.__internalHeight), dtype=np.float64
         )
 
     """ Get the shape of the probability maps"""
@@ -882,7 +876,8 @@ class ProbMap:
     def __smooth(self, probmap, timeParam):
         kernel = self.sigma**timeParam * np.array(
             [0.06136, 0.24477, 0.38774, 0.24477, 0.06136]
-        )  
+        )
+        kernel = kernel / kernel.sum()  # Normalize
         probmap = np.apply_along_axis(
             lambda x: np.convolve(x, kernel, mode="same"), 0, probmap
         )
@@ -902,3 +897,34 @@ class ProbMap:
         # self.__saveToTemp(self.probmapGameObj,self.probmapRobots)
         self.probmapGameObj = self.__smooth(self.probmapGameObj, timeSeconds)
         self.probmapRobots = self.__smooth(self.probmapRobots, timeSeconds)
+
+    """Granular interaction with the map"""
+
+    """Internal method, takes external values.
+    the x,y passed in from the outside is scaled down by mapres
+    and flipped to account for numpy using row,col format
+
+    (x,y) -> (y//res,x//res)
+    """
+
+    def __getSpecificValue(self, map, x: int, y: int):
+        i_X = y // self.resolution
+        i_Y = x // self.resolution
+        if (
+            i_X < 0
+            or i_X >= self.__internalWidth
+            or i_Y < 0
+            or i_Y >= self.__internalHeight
+        ):
+            print(
+                f"Warning! Invalid coordinates provided! | {x=} {y=} | {self.width=} {self.height=}"
+            )
+            return None
+
+        return map[i_X][i_Y]
+
+    def getSpecificRobotValue(self, x: int, y: int):
+        return self.__getSpecificValue(self.probmapRobots, x, y)
+
+    def getSpecificGameObjectValue(self, x: int, y: int):
+        return self.__getSpecificValue(self.probmapGameObj, x, y)

@@ -1,7 +1,3 @@
-import os
-import sys
-
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from mapinternals.probmap import ProbMap
 import cv2
 
@@ -19,13 +15,13 @@ def mouseDownCallbackGameObj(event, x, y, flags, param):
         isMouseDownG = True
         #  print("clicked at ", x," ", y)
         map.addCustomObjectDetection(
-            x * map.resolution, y * map.resolution, 500, 500, 0.75
+            x, y, 500, 500, 0.75
         )  # adding as a 75% probability
     elif event == cv2.EVENT_MOUSEMOVE:
         if isMouseDownG:
             #   print("dragged at ", x," ", y)
             map.addCustomObjectDetection(
-                x * map.resolution, y * map.resolution, 500, 500, 0.75
+                x, y, 500, 500, 0.75
             )  # adding as a 75% probability
     elif event == cv2.EVENT_LBUTTONUP:
         isMouseDownG = False
@@ -36,14 +32,12 @@ def mouseDownCallbackRobot(event, x, y, flags, param):
     if event == cv2.EVENT_LBUTTONDOWN:
         isMouseDownR = True
         #  print("clicked at ", x," ", y)
-        map.addCustomRobotDetection(
-            x * map.resolution, y * map.resolution, 500, 500, 0.75
-        )  # adding as a 75% probability
+        map.addCustomRobotDetection(x, y, 500, 500, 0.75)  # adding as a 75% probability
     elif event == cv2.EVENT_MOUSEMOVE:
         if isMouseDownR:
             #   print("dragged at ", x," ", y)
             map.addCustomRobotDetection(
-                x * map.resolution, y * map.resolution, 500, 500, 0.75
+                x, y, 500, 500, 0.75
             )  # adding as a 75% probability
     elif event == cv2.EVENT_LBUTTONUP:
         isMouseDownR = False

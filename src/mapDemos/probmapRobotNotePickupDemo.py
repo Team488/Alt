@@ -1,8 +1,4 @@
 import traceback
-import os
-import sys
-
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from mapinternals.probmap import ProbMap
 import random
 import cv2
@@ -39,21 +35,16 @@ def getRangeHighest(x, y):
     (px, py, prob) = fieldMap.getHighestGameObjectWithinRangeT(
         x, y, wX, wY, 0.30
     )  # .30 threshold
-    px //= fieldMap.resolution
-    py //= fieldMap.resolution
-    x //= fieldMap.resolution
-    y //= fieldMap.resolution
-
     (objMap, robtMap) = fieldMap.getHeatMaps()
     cv2.rectangle(
         objMap,
         (
-            int(x - wX / 2) // fieldMap.resolution,
-            int(y - wY / 2) // fieldMap.resolution,
+            int(x - wX / 2),
+            int(y - wY / 2),
         ),
         (
-            int(x + wX / 2) // fieldMap.resolution,
-            int(y + wY / 2) // fieldMap.resolution,
+            int(x + wX / 2),
+            int(y + wY / 2),
         ),
         (255),
         2,
@@ -126,47 +117,48 @@ def startDemo():
     robotX = int(fieldX / 2)
     robotY = int(fieldY / 2)
     while True:
-        for i in range(20000):
-            Move = None
-            highestCoords = getRangeHighest(robotX, robotY)
-            if highestCoords is not None:
-                (goalX, goalY) = highestCoords
-                Move = getMove(
-                    robotX, robotY, goalX, goalY, maxRobotSpeed * 1
-                )  # 1s for now
-            else:
-                Move = getRandomMove(robotX, robotY, fieldX, fieldY, maxRobotSpeed * 1)
+        Move = None
+        highestCoords = getRangeHighest(robotX, robotY)
+        if highestCoords is not None:
+            print("Sucess!")
+            (goalX, goalY) = highestCoords
+            Move = getMove(
+                robotX, robotY, goalX, goalY, maxRobotSpeed * 1
+            )  # 1s for now
+        else:
+            # Move = getRandomMove(robotX, robotY, fieldX, fieldY, maxRobotSpeed * 1)
+            Move = (0, 0)
 
-            (moveX, moveY) = Move
-            robotX += moveX
-            robotY += moveY
+        (moveX, moveY) = Move
+        robotX += moveX
+        robotY += moveY
 
-            test_randomization_ranges(fieldMap, fieldMap.width, fieldMap.height)
+        test_randomization_ranges(fieldMap, fieldMap.width, fieldMap.height)
 
-            # slowly dissipate
-            fieldMap.disspateOverTime(0.1)  # 1s
+        # slowly dissipate
+        if random.randrange(0, 10) == 5:
+            fieldMap.disspateOverTime(1)  # 1s
 
-            k = cv2.waitKey(100) & 0xFF
-            if k == ord("q"):
-                return
-            if k == ord("c"):
-                fieldMap.clear_maps()
-            # fieldMap.clear_map()
+        k = cv2.waitKey(100) & 0xFF
+        if k == ord("q"):
+            return
+        if k == ord("c"):
+            fieldMap.clear_maps()
 
 
 def test_randomization_ranges(map: ProbMap, width, height):
-    # for i in range(1):
-    x = random.randrange(0, width)
-    y = random.randrange(0, height)
-    # obj_size = 36*6 #size*total potential STD #random.randrange(36, 36)
-    confidence = (
-        random.randrange(65, 95, 1) / 100
-    )  # generates a confidence threshold between 0.65 - 0.95
-    try:
-        map.addCustomObjectDetection(x, y, 100, 100, confidence)  # 1s since last update
+    for _ in range(2):
+        x = random.randrange(0, width)
+        y = random.randrange(0, height)
+        # obj_size = 36*6 #size*total potential STD #random.randrange(36, 36)
+        confidence = (
+            random.randrange(65, 95, 1) / 100
+        )  # generates a confidence threshold between 0.65 - 0.95
+        try:
+            map.addCustomObjectDetection(x, y, 100, 100, confidence)
 
-    except Exception:
-        traceback.print_exc()
+        except Exception:
+            traceback.print_exc()
 
 
 if __name__ == "__main__":

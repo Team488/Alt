@@ -2,15 +2,16 @@ from tools.Constants import CameraExtrinsics
 import math
 import numpy as np
 
-def transformWithYaw(posVector,yaw):
+
+def transformWithYaw(posVector, yaw):
     # print(f"{posVector=} {yaw=}")
     yawTransform = np.array(
-            [
-                [math.cos(yaw), -math.sin(yaw), 0],
-                [math.sin(yaw), math.cos(yaw), 0],
-                [0, 0, 1],
-            ]
-        )
+        [
+            [math.cos(yaw), -math.sin(yaw), 0],
+            [math.sin(yaw), math.cos(yaw), 0],
+            [0, 0, 1],
+        ]
+    )
     return yawTransform @ posVector
 
 
@@ -30,7 +31,7 @@ class CameraToRobotTranslator:
 
         noteVector = np.array(
             [[relativeX], [relativeY], [0]]
-        )  # z is 0 because we are not factoring in target height relative to camera for now
+        )  # z is 0 because we are not factoring in target height relative to camera
 
         # Define rotation matrices
         yawTransform = np.array(

@@ -5,18 +5,15 @@ import time
 from enum import Enum
 from JXTABLES.XTablesClient import XTablesClient
 from coreinterface.FramePacket import FramePacket
-from tools.Constants import getCameraValues, CameraIntrinsics, CameraExtrinsics
-from mapinternals.localFrameProcessor import LocalFrameProcessor
-from tools import calibration, NtUtils, CameraUtils
 
 processName = "Orange_Pi_Test_Process"
 logger = logging.getLogger(processName)
-fh = logging.FileHandler(filename=f"logs/{processName}.log",mode="w")
+fh = logging.FileHandler(filename=f"logs/{processName}.log", mode="w")
 fh.setLevel(logging.INFO)
 ch = logging.StreamHandler()
 ch.setLevel(logging.DEBUG)
- # create formatter and add it to the handlers
-formatter = logging.Formatter('-->%(asctime)s - %(name)s:%(levelname)s - %(message)s')
+# create formatter and add it to the handlers
+formatter = logging.Formatter("-->%(asctime)s - %(name)s:%(levelname)s - %(message)s")
 fh.setFormatter(formatter)
 logger.addHandler(fh)
 logger.addHandler(ch)
@@ -37,18 +34,16 @@ def getCameraName():
     return CameraName(name)
 
 
-
-MAXITERTIMEMS = 1000/15  # ms (15fps)
+MAXITERTIMEMS = 1000 / 15  # ms (15fps)
 
 
 def startProcess():
     name = getCameraName().name
 
-
     logger.info("Starting process, device name:", name)
     xclient = XTablesClient(ip="192.168.0.17")
     cap = cv2.VideoCapture(0)
-    cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG'))
+    cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*"MJPG"))
     print("FourCC:", cap.get(cv2.CAP_PROP_FOURCC))
 
     try:
@@ -58,10 +53,8 @@ def startProcess():
             if ret:
                 print(f"sending to key{name}")
                 timeStamp = time.time()
-                frame = FramePacket.createPacket(
-                    timeStamp, name, frame
-                )
-                xclient.putUnknownBytes(name,frame.to_bytes())
+                frame = FramePacket.createPacket(timeStamp, name, frame)
+                xclient.putUnknownBytes(name, frame.to_bytes())
             etime = time.time()
             dMS = (etime - stime) * 1000
             if dMS > MAXITERTIMEMS:

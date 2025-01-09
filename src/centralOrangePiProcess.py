@@ -1,18 +1,15 @@
 """ Local process to run on each orange pi """
 
 import logging
-import numpy as np
-import argparse
 import cv2
 import socket
 import time
 from enum import Enum
 from JXTABLES.XTablesClient import XTablesClient
-from coreinterface.FramePacket import FramePacket
 from coreinterface.DetectionPacket import DetectionPacket
-from tools.Constants import getCameraValues, CameraIntrinsics, CameraExtrinsics
+from tools.Constants import getCameraValues
 from mapinternals.localFrameProcessor import LocalFrameProcessor
-from tools import calibration, NtUtils, CameraUtils
+from tools import calibration, NtUtils
 
 processName = "Central_Orange_Pi_Process"
 logger = logging.getLogger(processName)

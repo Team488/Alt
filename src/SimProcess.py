@@ -1,15 +1,27 @@
+import struct
 import time
+import queue
 import cv2
 import logging
-import struct
+from concurrent.futures import ThreadPoolExecutor
 from networktables import NetworkTables
 from tools.NtUtils import getPose2dFromBytes
 from mapinternals.localFrameProcessor import LocalFrameProcessor
 from mapinternals.CentralProcessor import CentralProcessor
 from tools.Constants import CameraExtrinsics, CameraIntrinsics, CameraIdOffsets
 
-# Enable logging for debugging
-logging.basicConfig(level=logging.DEBUG)
+
+processName = "Simulation_Process"
+logger = logging.getLogger(processName)
+fh = logging.FileHandler(filename=f"logs/{processName}.log", mode="w")
+fh.setLevel(logging.INFO)
+ch = logging.StreamHandler()
+ch.setLevel(logging.DEBUG)
+# create formatter and add it to the handlers
+formatter = logging.Formatter("-->%(asctime)s - %(name)s:%(levelname)s - %(message)s")
+fh.setFormatter(formatter)
+logger.addHandler(fh)
+logger.addHandler(ch)
 
 # MJPEG stream URLs
 FRUrl = "http://localhost:3000/Robot_FrontRight%20Camera?dummy=param.mjpg"
@@ -23,21 +35,6 @@ capFR = cv2.VideoCapture(FRUrl, cv2.CAP_FFMPEG)
 capFL = cv2.VideoCapture(FLUrl, cv2.CAP_FFMPEG)
 capRR = cv2.VideoCapture(RRUrl, cv2.CAP_FFMPEG)
 capRL = cv2.VideoCapture(RLUrl, cv2.CAP_FFMPEG)
-caps = [capFR, capFL, capRR, capRL]
-# caps = [capFR]
-extrinsics = [
-    CameraExtrinsics.FRONTRIGHT,
-    CameraExtrinsics.FRONTLEFT,
-    CameraExtrinsics.REARRIGHT,
-    CameraExtrinsics.REARLEFT,
-]
-offsets = [
-    CameraIdOffsets.FRONTRIGHT,
-    CameraIdOffsets.FRONTLEFT,
-    CameraIdOffsets.REARRIGHT,
-    CameraIdOffsets.REARLEFT,
-]
-central = CentralProcessor.instance()
 
 if (
     not capFR.isOpened()
@@ -51,83 +48,201 @@ if (
     )
     exit(1)
 
-# Initialize the frame processor
-frameProcessor = LocalFrameProcessor(
-    cameraIntrinsics=CameraIntrinsics.SIMULATIONCOLOR,
-    cameraExtrinsics=CameraExtrinsics.FRONTRIGHT,
-    useRknn=False,
-)
+names = ["FRONTLEFT", "FRONTRIGHT", "REARRIGHT", "REARLEFT"]
+caps = [capFR, capFL, capRR, capRL]
+
+extrinsics = [
+    CameraExtrinsics.FRONTRIGHT,
+    CameraExtrinsics.FRONTLEFT,
+    CameraExtrinsics.REARRIGHT,
+    CameraExtrinsics.REARLEFT,
+]
+offsets = [
+    CameraIdOffsets.FRONTRIGHT,
+    CameraIdOffsets.FRONTLEFT,
+    CameraIdOffsets.REARRIGHT,
+    CameraIdOffsets.REARLEFT,
+]
+
+frameProcessors = [
+    LocalFrameProcessor(
+        cameraIntrinsics=CameraIntrinsics.SIMULATIONCOLOR,
+        cameraExtrinsics=extrinsics[i],
+        useRknn=False,
+        setParallel=True,
+        tryOCR=True,
+    )
+    for i in range(len(offsets))
+]
+
+central = CentralProcessor.instance()
 
 # Initialize NetworkTables
 NetworkTables.initialize(server="127.0.0.1")
 postable = NetworkTables.getTable("AdvantageKit/RealOutputs/Vision/AprilTags/Results")
 table = NetworkTables.getTable("AdvantageKit/RealOutputs/Odometry")
 
-# Window setup for displaying the camera feed
-title = "MJPEG Stream - Front Right Camera"
-cv2.namedWindow(title)
-cv2.createTrackbar("Camera to inference", title, 1, 4, lambda x: None)
-cv2.createTrackbar("Scale Factor", title, 1, 1000, lambda x: None)
-cv2.setTrackbarPos("Scale Factor", title, 100)
 
-try:
-    while True:
-        # Fetch NetworkTables data
-        raw_data = postable.getEntry("Estimated Pose").get()
-        if raw_data:
-            x, y, rotation = getPose2dFromBytes(raw_data)
-            logging.info(f"Pose: x={x}, y={y}, rotation={rotation}")
-            index = cv2.getTrackbarPos("Camera to inference", title) % 4
-            cap = caps[index]
+# exit(0)
+
+
+# Window setup for displaying the camera feed
+title = "Simulation_Window"
+cv2.namedWindow(title)
+
+updateMap = {
+    "FRONTLEFT": ([], offsets[0], 0),
+    "FRONTRIGHT": ([], offsets[1], 0),
+    "REARRIGHT": ([], offsets[2], 0),
+    "REARLEFT": ([], offsets[3], 0),
+}
+ASYNCLOOPTIMEMS = (
+    1000  # ms (onnx inference with 4 different "processors" on one device is slooow)
+)
+
+
+def async_frameprocess(imitatedProcIdx):
+    global running
+    global frame_queue
+    cap = caps[imitatedProcIdx]
+    imitatedProcName = names[imitatedProcIdx]
+    idoffset = offsets[imitatedProcIdx]
+    frameProcessor = frameProcessors[imitatedProcIdx]
+
+    try:
+        while running:
             start_time = time.time()
             # Skip older frames in the buffer
             while cap.grab():
                 if time.time() - start_time > 0.100:  # Timeout after 100ms
                     logging.warning("Skipping buffer due to timeout.")
                     break
+
             # Read a frame from the Front-Right camera stream
             ret, frame = cap.read()
             if not ret:
                 logging.warning("Failed to retrieve a frame from stream.")
                 exit(1)
 
-            results = []
+            # Fetch NetworkTables data
+            pos = (0, 0, 0)
+            raw_data = postable.getEntry("Estimated Pose").get()
+            if raw_data:
+                pos = getPose2dFromBytes(raw_data)
+            else:
+                logger.warning("Cannot get robot location from network tables!")
+
+            print(f"{pos=}")
             # Process the frame
             res = frameProcessor.processFrame(
                 frame,
-                robotPosXCm=x * 100,  # Convert meters to cm
-                robotPosYCm=y * 100,
-                robotYawRad=rotation,
+                robotPosXCm=pos[0] * 100,  # Convert meters to cm
+                robotPosYCm=pos[1] * 100,
+                robotYawRad=pos[2],
                 drawBoxes=True,
-                customCameraExtrinsics=extrinsics[index],
                 maxDetections=1,
             )
 
-            results.append((res, offsets[index]))
+            global updateMap
+            lastidx = updateMap[imitatedProcName][2]
+            lastidx += 1
+            packet = (res, idoffset, lastidx)
+            updateMap[imitatedProcName] = packet
+            etime = time.time()
+            dMS = (etime - start_time) * 1000
+            sleeptime = 0.001
+            if dMS < ASYNCLOOPTIMEMS:
+                sleeptime = ASYNCLOOPTIMEMS - dMS
+                logger.debug(f"Sleeping for {sleeptime}s")
+                time.sleep(sleeptime)
+            else:
+                logger.warning(
+                    f"Async Loop Overrun! Time elapsed: {dMS}ms | Max loop time: {ASYNCLOOPTIMEMS}ms"
+                )
+            time.sleep(waittime / 1000)
+            frame_queue.put((imitatedProcName, frame))
+        logger.debug("Exiting async loop")
+    except Exception as e:
+        logger.fatal(f"Error! {e}")
+    finally:
+        cap.release()
 
-            cv2.imshow(offsets[index].name, frame)
 
-            central.processFrameUpdate(results, 0.15)
-            x, y, p = central.map.getHighestRobot()
-            # Update NetworkTables if processing results are available
-            scaleFactor = 100  # + cv2.getTrackbarPos("Scale factor", title)
-            table.getEntry("NoteEstimate3").setDoubleArray(
-                [x / scaleFactor, y / scaleFactor, 0, 0]
+frame_queue = queue.Queue()
+
+running = True
+MAINLOOPTIMEMS = 100  # ms
+localUpdateMap = {
+    "FRONTLEFT": 0,
+    "FRONTRIGHT": 0,
+    "REARRIGHT": 0,
+    "REARLEFT": 0,
+}
+# Executor outside the with block
+globalexe = ThreadPoolExecutor(max_workers=4)
+futures = [globalexe.submit(async_frameprocess, i) for i in range(1)]
+
+try:
+    while running:
+        stime = time.time()
+        results = []
+        for processName in names:
+            localidx = localUpdateMap[processName]
+            packet = updateMap[processName]
+            print(f"{packet=}")
+            result, packetidx = packet[:2], packet[2]
+            if localidx == packetidx:
+                continue
+            print(result)
+
+            localUpdateMap[processName] = packetidx
+            results.append(result)
+        print("Here!")
+        central.processFrameUpdate(results, MAINLOOPTIMEMS / 1000)
+        x, y, p = central.map.getHighestRobot()
+        scaleFactor = 100  # cm to m
+        table.getEntry("est/Target_Estimate").setDoubleArray(
+            [x / scaleFactor, y / scaleFactor, 0, 0]
+        )
+        logger.debug("Updated Target Estimate entry in NetworkTables.")
+
+        etime = time.time()
+        dMS = (etime - stime) * 1000
+        waittime = 0.001
+        if dMS < MAINLOOPTIMEMS:
+            waittime = int(MAINLOOPTIMEMS - dMS)
+        else:
+            logger.warning(
+                f"Overran Loop! Time elapsed: {dMS}ms | Max loop time: {MAINLOOPTIMEMS}ms"
             )
-            logging.debug("Updated NoteEstimate3 entry in NetworkTables.")
+        cv2.imshow(f"{title}_robots", central.map.getRobotHeatMap())
+        cv2.imshow(f"{title}_notes", central.map.getGameObjectHeatMap())
 
-            # Display the current frame
-            cv2.imshow("aa", central.map.getRobotHeatMap())
+        while not frame_queue.empty():
+            name, frame = frame_queue.get()
+            cv2.imshow(name, frame)
+        # Handle keyboard interrupt with cv2.waitKey()
+        if cv2.waitKey(1) & 0xFF == ord("q"):
+            running = False
 
-            # Break the loop if 'q' is pressed
-            if cv2.waitKey(1) & 0xFF == ord("q"):
-                break
+        time.sleep(waittime / 1000)
+
+except KeyboardInterrupt:
+    print("Keyboard Interrupt detected, shutting down...")
+    running = False
 
 finally:
-    # Release all resources
-    capFR.release()
-    capFL.release()
-    capRR.release()
-    capRL.release()
+    # Gracefully shut down threads
+    globalexe.shutdown(wait=False)
+
+    # Clean up resources
     cv2.destroyAllWindows()
+    if capFL.isOpened():
+        capFL.release()
+    if capFR.isOpened():
+        capFR.release()
+    if capRL.isOpened():
+        capRL.release()
+    if capRR.isOpened():
+        capRR.release()
     logging.info("Released all resources and closed windows.")

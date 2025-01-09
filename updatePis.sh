@@ -6,5 +6,5 @@ targets=(
 )
 for target in "${targets[@]}"
 do
-sshpass -p 'raspberry' rsync -avz / pi@${target}:/var/tmp/xbot/
+sshpass -p 'raspberry' rsync -avz / pi@${target}:/file/location/for/{xbot}
 done
