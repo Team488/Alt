@@ -61,7 +61,7 @@ def startProcess():
 
                 undistortedFrame = calibration.undistortFrame(frame, mapx, mapy)
                 undistortedFrame = frame
-                posebytes = xclient.getString("robot_pose", TIMEOUT=20)  # ms
+                posebytes = xclient.getBytes("robot_pose")  # ms
                 loc = (0, 0, 0)  # x(m),y(m),rotation(rad)
                 if posebytes:
                     loc = NtUtils.getPose2dFromBytes(posebytes)
@@ -77,9 +77,9 @@ def startProcess():
                     processedResults, name, timeStamp
                 )
                 # sending network packets
-                xclient.putUnknownBytes(name, detectionPacket.to_bytes())
+                xclient.putBytes(name, detectionPacket.to_bytes())
             else:
-                xclient.putUnknownBytes(name, defaultBytes)
+                xclient.putBytes(name, defaultBytes)
             # cv2.imshow("frame", undistortedFrame)
             # if cv2.waitKey(1) & 0xFF == ord("q"):
             # break
