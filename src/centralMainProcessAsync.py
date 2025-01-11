@@ -7,6 +7,7 @@ import time
 import numpy as np
 from tools.Constants import CameraIdOffsets
 from JXTABLES.XTablesClient import XTablesClient
+from JXTABLES import XTableValues_pb2
 from coreinterface.DetectionPacket import DetectionPacket
 from coreinterface.FramePacket import FramePacket
 from mapinternals.CentralProcessor import CentralProcessor
@@ -109,15 +110,11 @@ def mainLoop():
                 logger.warning(f"No path found!")
                 client.putCoordinates(pathName, [])
             else:
-                out = [
-                    # turn cm to m
-                    {
-                        "x": (waypoint[0]) / 100,
-                        "y": (waypoint[1]) / 100,
-                    }
-                    for waypoint in path
-                ]
-                client.putCoordinates(pathName, out)
+                coordinates = []
+                for waypoint in path:
+                    element = XTableValues_pb2.Coordinate(x = waypoint[0]/100,y = waypoint[1]/100)
+                    coordinates.append(element)
+                client.putCoordinates(pathName, coordinates)
             etime = time.time()
             deltaMS = (etime - stime) * 1000
             if deltaMS < TIMEPERLOOPMS:
