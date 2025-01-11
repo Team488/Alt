@@ -18,7 +18,7 @@ class LocalFrameProcessor:
         cameraIntrinsics: CameraIntrinsics,
         cameraExtrinsics: CameraExtrinsics,
         useRknn=False,
-        setParallel = False,
+        isSimulationMode = False,
         tryOCR = False
     ) -> None:
         if useRknn:
@@ -31,7 +31,7 @@ class LocalFrameProcessor:
         self.baseLabler: DeepSortBaseLabler = DeepSortBaseLabler()
         self.cameraIntrinsics: CameraIntrinsics = cameraIntrinsics
         self.cameraExtrinsics: CameraExtrinsics = cameraExtrinsics
-        self.estimator = PositionEstimator(tryocr=tryOCR)
+        self.estimator = PositionEstimator(isSimulationMode=isSimulationMode,tryocr=tryOCR)
         self.translator = CameraToRobotTranslator()
         self.colors = [
             (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
@@ -46,7 +46,7 @@ class LocalFrameProcessor:
         robotPosYCm=0,
         robotPosZCm=0,
         robotYawRad=0,
-        drawBoxes=True,
+        drawBoxes=False,
         customCameraExtrinsics=None,
         customCameraIntrinsics=None,
         maxDetections=None,
@@ -87,12 +87,12 @@ class LocalFrameProcessor:
                 cv2.rectangle(frame, bbox[0:2], bbox[2:4], color)
                 cv2.putText(
                     frame,
-                    f"Id:{id} Conf{conf} IsRobot{isRobot}",
+                    f"Id:{id} Conf{conf:.2f} IsRobot{isRobot}",
                     (10, 30),
                     0,
                     1,
                     color,
-                    2,
+                    1,
                 )
 
         # id(unique),estimated x/y,conf,isrobot,features,
@@ -100,6 +100,7 @@ class LocalFrameProcessor:
             frame, labledResults.copy(), camIntrinsics
         )
 
+        # print(f"{robotPosXCm=} {robotPosYCm=} {robotYawRad=}")
         absoluteResults = []
         for result in relativeResults:
             ((relCamX, relCamY)) = result[1]
@@ -131,7 +132,7 @@ class LocalFrameProcessor:
 
         if drawBoxes:
             # cv2.putText(frame,f"FPS:{fps}",(10,80),0,1,(0,255,0),2)
-            print(f"FPS:{fps}")
+            # print(f"FPS:{fps}")
             # draw a box with id,conf and relative estimate
             for labledResult, relativeResult in zip(labledResults, relativeResults):
                 id = labledResult[0]
@@ -143,21 +144,21 @@ class LocalFrameProcessor:
                 cv2.rectangle(frame, bbox[0:2], bbox[2:4], color)
                 cv2.putText(
                     frame,
-                    f"Id:{id} Conf{conf} IsRobot{isRobot}",
+                    f"Id:{id} Conf{conf:.2f} IsRobot{isRobot}",
                     (10, 30),
                     0,
                     1,
                     color,
-                    2,
+                    1,
                 )
                 cv2.putText(
                     frame,
-                    f"Relative estimate:{tuple(map(lambda x: round(x, 2),estXYZ))}",
+                    f"Absolute estimate:{tuple(map(lambda x: round(x, 2),estXYZ))}",
                     (10, 100),
                     0,
                     1,
                     color,
-                    2,
+                    1,
                 )
 
         return absoluteResults

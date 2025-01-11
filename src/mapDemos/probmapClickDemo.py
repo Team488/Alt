@@ -14,11 +14,11 @@ def mouseDownCallbackGameObj(event, x, y, flags, param):
     if event == cv2.EVENT_LBUTTONDOWN:
         isMouseDownG = True
         #  print("clicked at ", x," ", y)
-        map.addCustomObjectDetection(x, y, 500, 500, 1)
+        map.addCustomObjectDetection(x, y, 250, 250, 1)
     elif event == cv2.EVENT_MOUSEMOVE:
         if isMouseDownG:
             #   print("dragged at ", x," ", y)
-            map.addCustomObjectDetection(x, y, 500, 500, 1)
+            map.addCustomObjectDetection(x, y, 250, 250, 1)
     elif event == cv2.EVENT_LBUTTONUP:
         isMouseDownG = False
 
@@ -28,11 +28,11 @@ def mouseDownCallbackRobot(event, x, y, flags, param):
     if event == cv2.EVENT_LBUTTONDOWN:
         isMouseDownR = True
         #  print("clicked at ", x," ", y)
-        map.addCustomRobotDetection(x, y, 500, 500, 1)
+        map.addCustomRobotDetection(x, y, 250, 250, 1)
     elif event == cv2.EVENT_MOUSEMOVE:
         if isMouseDownR:
             #   print("dragged at ", x," ", y)
-            map.addCustomRobotDetection(x, y, 500, 500, 1)
+            map.addCustomRobotDetection(x, y, 250, 250, 1)
     elif event == cv2.EVENT_LBUTTONUP:
         isMouseDownR = False
 

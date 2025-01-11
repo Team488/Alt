@@ -6,6 +6,7 @@ import cv2
 import logging
 from concurrent.futures import ThreadPoolExecutor
 from networktables import NetworkTables
+import numpy as np
 from tools.NtUtils import getPose2dFromBytes
 from mapinternals.localFrameProcessor import LocalFrameProcessor
 from mapinternals.CentralProcessor import CentralProcessor
@@ -105,55 +106,6 @@ updateMap = {
 }
 
 
-def run_frameprocess(imitatedProcIdx):
-    cap = caps[imitatedProcIdx]
-    imitatedProcName = names[imitatedProcIdx]
-    idoffset = offsets[imitatedProcIdx]
-    frameProcessor = frameProcessors[imitatedProcIdx]
-    print(f"Starting sim thread idx: {imitatedProcIdx}")
-    start_time = time.time()
-    # Skip older frames in the buffer
-    while cap.grab():
-        if time.time() - start_time > 0.100:  # Timeout after 100ms
-            logging.warning("Skipping buffer due to timeout.")
-            break
-
-    # Read a frame from the Front-Right camera stream
-    ret, frame = cap.read()
-    if not ret:
-        logging.warning("Failed to retrieve a frame from stream.")
-        exit(1)
-
-
-    # Fetch NetworkTables data
-    pos = (0, 0, 0)
-    raw_data = postable.getEntry("Robot").get()
-    if raw_data:
-        pos = raw_data
-        # pos = getPose2dFromBytes(raw_data)
-    else:
-        logger.warning("Cannot get robot location from network tables!")
-
-    print(f"{pos=}")
-    # Process the frame
-    res = frameProcessor.processFrame(
-        frame,
-        robotPosXCm=pos[0] * 100,  # Convert meters to cm
-        robotPosYCm=pos[1] * 100,
-        robotYawRad=(pos[2]/180)*math.pi,
-        drawBoxes=True,
-        maxDetections=1,
-    )
-    print(res)
-    global updateMap
-    lastidx = updateMap[imitatedProcName][2]
-    lastidx += 1
-    packet = (res, idoffset, lastidx)
-    updateMap[imitatedProcName] = packet
-    cv2.imshow("Current Cam",frame)
-
-
-
 frame_queue = queue.Queue()
 
 running = True
@@ -168,25 +120,14 @@ localUpdateMap = {
 
 try:
     while running:
-        run_frameprocess(cv2.getTrackbarPos(camera_selector_name,title))
-        
-        stime = time.time()
-        results = []
-        for processName in names:
-            localidx = localUpdateMap[processName]
-            packet = updateMap[processName]
-            # print(f"{packet=}")
-            result, packetidx = packet[:2], packet[2]
-            if localidx == packetidx:
-                continue
+        fakeData = [[3, np.array([429.48758498, 312.35349501,  30.60498969]), 1, False, np.ones(128)]]
 
-            localUpdateMap[processName] = packetidx
-            results.append(result)
-        central.processFrameUpdate(results, 2)
+        
+        central.processFrameUpdate([fakeData], 0.2)
         coord = central.map.getHighestGameObjectT(0.1)
         if coord is not None:
             x, y, p = coord
-            scaleFactor = 99  # cm to m
+            scaleFactor = 100  # cm to m
             table.getEntry("est/Target_Estimate").setDoubleArray(
                 [x / scaleFactor, y / scaleFactor, 0, 0]
             )
@@ -199,14 +140,7 @@ try:
         # logger.debug("Updated Target Estimate entry in NetworkTables.")
 
         etime = time.time()
-        dMS = (etime - stime) * 1000
         waittime = 0.001
-        if dMS < MAINLOOPTIMEMS:
-            waittime = int(MAINLOOPTIMEMS - dMS)
-        else:
-            logger.warning(
-                f"Overran Loop! Time elapsed: {dMS}ms | Max loop time: {MAINLOOPTIMEMS}ms"
-            )
         cv2.imshow(f"{title}_robots", central.map.getRobotHeatMap())
         cv2.imshow(f"{title}_notes", central.map.getGameObjectHeatMap())
 

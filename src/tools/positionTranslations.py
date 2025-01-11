@@ -51,7 +51,7 @@ class CameraToRobotTranslator:
         )
 
         # Calculate the final transformation matrix
-        rotationMatrix = yawTransform @ pitchTransform
+        rotationMatrix =  pitchTransform @ yawTransform
 
         # Undo the camera offsets from rotation
         rotatedNoteVector = rotationMatrix @ noteVector

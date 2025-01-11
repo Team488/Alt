@@ -125,7 +125,7 @@ class MapConstants(Enum):
     RobotAcceleration = 150  # cm/s^2 this is probably inaccurate?
     fieldWidth = 1653  # 54' 3" in cm
     fieldHeight = 800  # 26' 3" in cm
-    res = 3  # cm
+    res = 5  # cm
     robotWidth = 75  # cm
     robotHeight = 75  # cm assuming square robot with max frame perimiter of 300
     gameObjectWidth = 35  # cm

@@ -19,7 +19,7 @@ class onnxInferencer:
         )
 
 
-    def inferenceFrame(self, frame, conf_threshold=0.4, drawBox=False):
+    def inferenceFrame(self, frame, conf_threshold=0.4, drawBox=True):
         # Preprocess the frame if needed (resize, normalize, etc.)
         input_frame = utils.letterbox_image(frame.copy())
         # Convert from HWC (height, width, channels) to CHW (channels, height, width)
@@ -39,7 +39,6 @@ class onnxInferencer:
         if drawBox:
             labels = ["robot", "note"]
             for (bbox, conf, class_id) in nmsResults:
-                print("out!")
                 p1 = tuple(map(int, bbox[:2]))  # Convert to integer tuple
                 p2 = tuple(map(int, bbox[2:4]))  # Convert to integer tuple
                 cv2.rectangle(frame, p1, p2, (0, 255, 0), 1)  # Drawing the rectangle

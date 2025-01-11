@@ -1,3 +1,4 @@
+import time
 import numpy as np
 import os
 import sys
@@ -20,21 +21,37 @@ class PathGenerator:
     def generate(
         self, start, goal, minHeightCm, customObstacleMap=None, reducePoints=False
     ):
+        if len(start) > 2 or len(goal) > 2:
+            print(f"{start=} {goal=}")
+            print("Start and goal invalid length!!")
+            return None
         obstacleMap = self.centralProcess.obstacleMap
         if customObstacleMap is not None:
             obstacleMap = np.minimum(obstacleMap, customObstacleMap)
+        internal_height,internal_width = self.centralProcess.map.getInternalSize()
+        # flipping col,row into standard row,col
+        start = np.flip(start)
+        goal = np.flip(goal)
+        # reducing to internal scale
+        start = tuple(map(int,start/self.centralProcess.map.resolution))
+        goal = tuple(map(int,goal/self.centralProcess.map.resolution))
+        
+        stime = time.time()
         path = AStarGrid.a_star_search(
             obstacleMap,
             start,
             goal,
             minHeightCm,
-            self.centralProcess.map.internalHeight,
-            self.centralProcess.map.internalWidth,
+            internal_height,
+            internal_width,
         )
-        if path is not None and reducePoints:
-            path = self.reduce_path(path)
-        return path
-
+        etime = time.time()
+        print(f"Time elapsed === {(etime-stime)*1000:2f}")
+        if path is not None:
+            if reducePoints:
+                path = self.reduce_path(path)
+            return [coord * self.centralProcess.map.resolution for coord in path]
+        return None
     def estimateTimeToPoint(
         self, cur, point, expectedMaxSpeed=MapConstants.RobotMaxVelocity.value
     ):

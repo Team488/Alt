@@ -59,6 +59,12 @@ class DetectionPacket:
         with detectionNetPacket_capnp.DataPacket.from_bytes(decoded_bytestr) as packet:
             return packet
         return None
+    
+    @staticmethod
+    def fromBytes(bytes):
+        with detectionNetPacket_capnp.DataPacket.from_bytes(bytes) as packet:
+            return packet
+        return None
 
     @staticmethod
     def toDetections(packet):

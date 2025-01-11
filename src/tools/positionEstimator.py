@@ -7,7 +7,7 @@ from tools.Constants import CameraIntrinsics, ObjectReferences
 
 
 class PositionEstimator:
-    def __init__(self, tryocr=False) -> None:
+    def __init__(self, isSimulationMode = False, tryocr=False) -> None:
         self.tryocr = tryocr
         self.numMapper = NumberMapper(["6328"], ["6328"])
         if tryocr:
@@ -26,7 +26,12 @@ class PositionEstimator:
                     exit(0)
             self.pytesseract = pytesseract
         self.__minPerc = 0.005  # minimum percentage of bounding box with bumper color
-        self.__blueRobotHist = np.load("assets/simulationBlueRobotHist.npy")
+        # simulation currently only has blue robots
+        if isSimulationMode:
+            self.__blueRobotHist = np.load("assets/simulationBlueRobotCinematicHist.npy")
+        else:
+            self.__blueRobotHist = np.load("assets/blueRobotHist.npy")
+
         self.__redRobotHist = np.load("assets/redRobotHist.npy")
         self.__MAXRATIO = 4.5  # max ratio between number width/height or vice versa
 
@@ -141,7 +146,7 @@ class PositionEstimator:
 
     def __calcBearing(self, fov, res, pixelDiff):
         fovperPixel = fov / res
-        return pixelDiff * fovperPixel
+        return -pixelDiff * fovperPixel
 
     """
         This is a multistep process to estimate the height of a robot bumper. TLDR use number on the side of bumper to estimate height
@@ -166,13 +171,13 @@ class PositionEstimator:
         x = croppedframe.shape[1]
         # cutting the frame as for all the images i have the bumper is always in the bottom portion
         croppedframe = self.__crop_image(croppedframe, (0, int(y/2)), (x, y))
-        # cv2.imshow("Cropped frame",croppedframe)
+        cv2.imshow("Cropped frame",croppedframe)
         labFrame = cv2.cvtColor(croppedframe, cv2.COLOR_BGR2LAB)
         processed, isBlue = self.__backprojCheck(
             labFrame, self.__redRobotHist, self.__blueRobotHist
         )
         if isBlue != None:
-            # cv2.imshow("processed",processed)
+            cv2.imshow("processed",processed)
             # a bumper with enough percentage was detected
             bumperKernel = np.ones((2, 2), np.uint8)
             bumper_closed = cv2.morphologyEx(
@@ -190,7 +195,7 @@ class PositionEstimator:
             )
             contour_image = np.zeros_like(bumper_opened)
             cv2.drawContours(contour_image, contours, -1, (255), 1)
-            # cv2.imshow("Countour image",contour_image)
+            cv2.imshow("Countour image",contour_image)
             if contours:
                 # extracting the bumper
                 combined_contour = np.concatenate(contours)
@@ -207,7 +212,7 @@ class PositionEstimator:
                 initalOpen = cv2.morphologyEx(
                     backProjNumbers, cv2.MORPH_OPEN, kerneltwobytwo, iterations=1
                 )
-                # cv2.imshow("initialOpen",initalOpen)
+                cv2.imshow("initialOpen",initalOpen)
                 nums = ""
                 if self.tryocr:
                     nums = self.pytesseract.image_to_string(backProjNumbers)
@@ -216,12 +221,12 @@ class PositionEstimator:
                 close = cv2.morphologyEx(
                     initalOpen, cv2.MORPH_CLOSE, kerneltwobytwo, iterations=1
                 )
-                # cv2.imshow("initialClose",close)
+                cv2.imshow("initialClose",close)
                 # one last opening to remove any noise on the edges of the numbers we extract
                 final_open = cv2.morphologyEx(
                     close, cv2.MORPH_OPEN, kerneltwobytwo, iterations=1
                 )
-                # cv2.imshow("finalOpen",final_open)
+                cv2.imshow("finalOpen",final_open)
                 # some cleanup dilation (small amount)
                 final_number_image = cv2.morphologyEx(
                     final_open, cv2.MORPH_DILATE, kerneltwobytwo, iterations=4
@@ -233,9 +238,9 @@ class PositionEstimator:
                 contoursNumbers, _ = cv2.findContours(
                     threshNumbers, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE
                 )
-                # cv2.imshow("Unprocessed Number image",backProjNumbers)
-                # cv2.imshow("Final morphed Number image",final_number_image)
-                # cv2.imshow("Bumper image",bumperOnly)
+                cv2.imshow("Unprocessed Number image",backProjNumbers)
+                cv2.imshow("Final morphed Number image",final_number_image)
+                cv2.imshow("Bumper image",bumperOnly)
                 contours_image = np.zeros_like(threshNumbers)
                 cv2.drawContours(contours_image,contoursNumbers,-1,(255),1)
                 # cv2.imshow("Options",contours_image)
@@ -293,9 +298,9 @@ class PositionEstimator:
                         targetheight = min(numberHeight, numberWidth)
                         heightframe = np.zeros((200,400),dtype=np.uint8)
                         cv2.putText(heightframe,f"H:{targetheight:.5f} Num:{self.numMapper.getRobotNumberEstimate(isBlue,nums)}",(10,30),0,1,(255),2)
-                        # cv2.imshow("Height estimate",heightframe)
-                        # print(f"HEIGHT----------------------------{targetheight}----------------------------")
-                        # cv2.imshow("Number Contour image",contourimage)
+                        cv2.imshow("Height estimate",heightframe)
+                        print(f"HEIGHT----------------------------{targetheight}----------------------------")
+                        cv2.imshow("Number Contour image",contourimage)
                         # cv2.drawContours(bumperOnly,[largestAcceptable_contour],0,[0,0,255],2)
                         return (targetheight, isBlue, nums)
 
@@ -364,6 +369,7 @@ class PositionEstimator:
             cameraIntrinsics.getHres(),
             int(centerX - cameraIntrinsics.getCx()),
         )
+        print(f"{bearing=}")
         estCoords = self.componentizeHDistAndBearing(distance, bearing)
         return estCoords
 
@@ -404,4 +410,9 @@ class PositionEstimator:
     def componentizeHDistAndBearing(self, hDist, bearing):
         x = hDist
         y = math.tan(bearing) * hDist
+        return x, y
+    
+    def componentizeMagnitudeAndBearing(self, magnitude, bearing):
+        x = math.cos(bearing) * magnitude
+        y = math.sin(bearing) * magnitude
         return x, y

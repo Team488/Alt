@@ -6,7 +6,7 @@ import logging
 import time
 import numpy as np
 from tools.Constants import CameraIdOffsets
-from JXTABLES import XTablesClient
+from JXTABLES.XTablesClient import XTablesClient
 from coreinterface.DetectionPacket import DetectionPacket
 from coreinterface.FramePacket import FramePacket
 from mapinternals.CentralProcessor import CentralProcessor
@@ -15,7 +15,7 @@ from tools import NtUtils
 
 processName = "Central_Orange_Pi_Process"
 logger = logging.getLogger(processName)
-fh = logging.FileHandler(filename=f"logs/{processName}.log", mode="w")
+fh = logging.FileHandler(filename=f"{processName}.log", mode="w")
 fh.setLevel(logging.INFO)
 ch = logging.StreamHandler()
 ch.setLevel(logging.DEBUG)
@@ -25,10 +25,9 @@ fh.setFormatter(formatter)
 logger.addHandler(fh)
 logger.addHandler(ch)
 central = CentralProcessor.instance()
-client = XTablesClient(server_port=1735)
+client = XTablesClient()
 pathGenerator = PathGenerator(central)
 pathName = "target_waypoints"
-positionOffsetForCentralizing = 0
 updateMap = {
     "FRONTLEFT": ([], 0, 0),
     "FRONTRIGHT": ([], 30, 0),
@@ -37,35 +36,35 @@ updateMap = {
 }
 
 
-def handle_update(key, val):
-    global pathGenerator
-    global pathName
+def handle_update(ret):
     global updateMap
+    key = ret.key
+    val = ret.value
     idOffset = CameraIdOffsets[key]
     lastidx = updateMap[key][2]
     lastidx += 1
     if not key or not val:
         return
-    if val == "empty":
+    if val == b"":
         updateMap[key] = ([], idOffset, lastidx)
         return
-    dataPacket = DetectionPacket.fromBase64(val.replace("\\u003d", "="))
-    packet = (DetectionPacket.toDetections(dataPacket), idOffset, lastidx)
-    if packet and packet[0] and packet[0][0]:
-        updateMap[key] = packet
+    det_packet = DetectionPacket.fromBytes(val)
+    # print(f"{det_packet.timestamp=}")
+    packet = (DetectionPacket.toDetections(det_packet), idOffset, lastidx)
+    updateMap[key] = packet
 
 
-TIMEPERLOOPMS = 20  # ms
+TIMEPERLOOPMS = 50  # ms
 
 
-def mainLoop(args):
+def mainLoop():
     global client
     global updateMap
     localUpdateMap = {"FRONTLEFT": 0, "FRONTRIGHT": 0, "REARRIGHT": 0, "REARLEFT": 0}
     keys = ["REARRIGHT", "REARLEFT", "FRONTLEFT", "FRONTRIGHT"]
     try:
         for key in keys:
-            client.subscribeForUpdates(key, consumer=handle_update)
+            client.subscribe(key, consumer=handle_update)
         while True:
             stime = time.time()
             accumulatedResults = []
@@ -95,7 +94,7 @@ def mainLoop(args):
             target = central.map.getHighestGameObject()
             if target[:2] == (0, 0):
                 logger.warning("No suitable target found!")
-                client.executePutString(pathName, [])
+                client.putCoordinates(pathName, [])
                 etime = time.time()
                 deltaMS = (etime - stime) * 1000
                 if deltaMS < TIMEPERLOOPMS:
@@ -105,12 +104,12 @@ def mainLoop(args):
                         f"Could not complete loop within {TIMEPERLOOPMS}ms! (Even without calculating a path!!)\n Time elapsed on loop: {deltaMS}ms"
                     )
                 continue
-            path = pathGenerator.generate((loc[0], loc[1]), target, 0)
+            path = pathGenerator.generate((loc[0]*100, loc[1]*100), target[:2], 0) # m to cm
             logger.debug(f"Path Name: {pathName}")
             logger.debug(f"Generated Path: {path}")
             if path is None:
                 logger.warning(f"No path found!")
-                client.executePutString(pathName, [])
+                client.putCoordinates(pathName, [])
             else:
                 out = [
                     # turn cm to m
@@ -120,7 +119,7 @@ def mainLoop(args):
                     }
                     for waypoint in path
                 ]
-                client.executePutString(pathName, out)
+                client.putCoordinates(pathName, out)
             etime = time.time()
             deltaMS = (etime - stime) * 1000
             if deltaMS < TIMEPERLOOPMS:
@@ -129,8 +128,7 @@ def mainLoop(args):
                 logger.warning(
                     f"Could not complete loop within {TIMEPERLOOPMS}ms! | Time elapsed on loop: {deltaMS}ms"
                 )
-            # cv2.imshow("Robot Map", maps[1])
-            # cv2.imshow("Game object Map", maps[0])
+            # central.map.displayHeatMaps()
             # cv2.waitKey(1)
     except Exception as e:
         print(e)
@@ -142,11 +140,4 @@ def mainLoop(args):
 
 # print(time.time())
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
-    parser = argparse.ArgumentParser()
-    # Add an argument
-    parser.add_argument("--show", type=bool, required=False, default=False)
-    parser.add_argument("--fetchframe", type=bool, required=False, default=False)
-    # Parse the argument
-    args = parser.parse_args()
-    mainLoop(args=args)
+    mainLoop()

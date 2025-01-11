@@ -23,8 +23,8 @@ class ProbMap:
         gameObjectHeight=MapConstants.gameObjectHeight.value,
         robotWidth=MapConstants.robotWidth.value,
         robotHeight=MapConstants.robotHeight.value,
-        sigma=0.1,
-        alpha=0.5,
+        sigma=0.9,
+        alpha=0.8,
     ):
 
         # exposed constants
@@ -82,9 +82,9 @@ class ProbMap:
         obj_y = tmpX // self.resolution
 
         # print(f"internal values :  {x},{y} with size {obj_x},{obj_y}")
-        if x > self.__internalWidth:
+        if x >= self.__internalWidth:
             print("Error X too large! clipping")
-            x = self.__internalWidth
+            x = self.__internalWidth-1
             # return
 
         if x < 0:
@@ -92,9 +92,9 @@ class ProbMap:
             x = 0
             # return
 
-        if y > self.__internalHeight:
+        if y >= self.__internalHeight:
             print("Error y too large! clipping")
-            y = self.__internalHeight
+            y = self.__internalHeight-1
             # return
 
         if y < 0:
@@ -133,6 +133,9 @@ class ProbMap:
 
         y_min, x_min = coords.min(axis=0)
         y_max, x_max = coords.max(axis=0)
+
+        coords[:,0] -= y_min
+        coords[:,1] -= x_min
 
         # Step 4: Crop the Gaussian blob
         gaussian_blob = gaussian_blob[y_min : y_max + 1, x_min : x_max + 1]
@@ -196,7 +199,7 @@ class ProbMap:
 
         gaussian_blob = gaussian_blob.astype(np.float64)
 
-        gaussian_blob *= prob
+        # gaussian_blob *= prob
         # blob_height, blob_width = gaussian_blob.shape[0:2]
         # print("\n" + "gaussian size: " + str(blob_height) + ", " + str(blob_width))
 
@@ -208,20 +211,29 @@ class ProbMap:
         # print("prob map x", probmap[blob_top_edge_loc:blob_bottom_edge_loc].shape)
         # print("prob map y", probmap[blob_left_edge_loc:blob_right_edge_loc].shape)
 
+        adjusted_coords = coords + np.array([blob_left_edge_loc, blob_top_edge_loc])
+        
         probmap[
-            blob_left_edge_loc:blob_right_edge_loc,
-            blob_top_edge_loc:blob_bottom_edge_loc,
+            adjusted_coords[:,0],
+            adjusted_coords[:,1],
         ] *= (
             1 - self.alpha
         )
 
-        # new input
+        # Adjusted coordinates for the Gaussian blob
+
+        # # Optional: Bounds checking, likely not needed
+        # valid = (adjusted_coords[:, 0] >= 0) & (adjusted_coords[:, 0] < probmap.shape[0]) & \
+        #         (adjusted_coords[:, 1] >= 0) & (adjusted_coords[:, 1] < probmap.shape[1])
+        # adjusted_coords = adjusted_coords[valid]
+        # valid_coords = coords[valid]
+
+        # Apply the Gaussian blob using the valid coordinates
         probmap[
-            blob_left_edge_loc:blob_right_edge_loc,
-            blob_top_edge_loc:blob_bottom_edge_loc,
-        ] += (
-            gaussian_blob * self.alpha
-        )
+            adjusted_coords[:, 0],
+            adjusted_coords[:, 1]
+        ] += gaussian_blob[coords[:, 0], coords[:, 1]] * self.alpha
+
 
     """ Exposed methods for adding detections """
     """ Time parameter used in object tracking, to calculate velocity as distance/time """
@@ -875,7 +887,7 @@ class ProbMap:
 
     def __smooth(self, probmap, timeParam):
         kernel = self.sigma**timeParam * np.array(
-            [0.06136, 0.24477, 0.38774, 0.24477, 0.06136]
+            [0.05, 0.2, 0.5, 0.2, 0.05]
         )
         kernel = kernel / kernel.sum()  # Normalize
         probmap = np.apply_along_axis(

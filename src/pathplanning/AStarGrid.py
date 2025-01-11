@@ -33,7 +33,7 @@ def calculate_h_value(row, col, dest):
 
 # Trace the path from source to destination
 def trace_path(cell_details, dest):
-    print("The Path is ")
+    # print("The Path is ")
     path = []
     row = dest[0]
     col = dest[1]
@@ -59,11 +59,6 @@ def trace_path(cell_details, dest):
 
 # Implement the A* search algorithm
 def a_star_search(grid, src, dest, minHeight, WIDTH, HEIGHT):
-    # flipping col,row into standard row,col
-    print(dest)
-    src = np.flip(src)
-    dest = np.flip(dest)
-    print(dest)
 
     # Check if the source and destination are valid
     if not is_valid(src[0], src[1], WIDTH, HEIGHT) or not is_valid(
