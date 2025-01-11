@@ -1,3 +1,3 @@
-from inference import onnxInferencer
+from pathplanning import obstacleMapGenerator
 
-onnxInferencer.startDemo()
+obstacleMapGenerator.startGeneration()

@@ -80,8 +80,7 @@ def mainLoop():
             central.processFrameUpdate(
                 cameraResults=accumulatedResults, timeStepSeconds=TIMEPERLOOPMS / 1000
             )
-            timeout = 20  # ms
-            posebytes = client.getString("robot_pose", TIMEOUT=timeout)  # ms
+            posebytes = client.getBytes("robot_pose")  # ms
             loc = (0, 0, 0)  # x(m),y(m),rotation(rad)
             if posebytes:
                 loc = NtUtils.getPose2dFromBytes(posebytes)
@@ -89,7 +88,6 @@ def mainLoop():
                 logger.warning(
                     "Unable to get robot position! using origin (0,0,0) instead"
                 )
-                logger.warning(f"Using timeout value : {timeout}")
             # maps = central.map.getHeatMaps()
             target = central.map.getHighestGameObject()
             if target[:2] == (0, 0):
