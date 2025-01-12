@@ -1,3 +1,3 @@
-from inference import onnxInferencer
+from mapDemos import reefPointDemo
 
-onnxInferencer.startDemo()
+reefPointDemo.startDemo()
