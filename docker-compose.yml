@@ -11,3 +11,4 @@ services:
     volumes:
       - "/proc/device-tree/compatible:/proc/device-tree/compatible:ro"
     command: ["python", "centralOrangePiProcess.py"]
+    restart: always
