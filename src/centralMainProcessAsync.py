@@ -7,6 +7,7 @@ import time
 import numpy as np
 from tools.Constants import CameraIdOffsets
 from JXTABLES.XTablesClient import XTablesClient
+from JXTABLES import XTableValues_pb2
 from coreinterface.DetectionPacket import DetectionPacket
 from coreinterface.FramePacket import FramePacket
 from mapinternals.CentralProcessor import CentralProcessor
@@ -80,8 +81,7 @@ def mainLoop():
             central.processFrameUpdate(
                 cameraResults=accumulatedResults, timeStepSeconds=TIMEPERLOOPMS / 1000
             )
-            timeout = 20  # ms
-            posebytes = client.getString("robot_pose", TIMEOUT=timeout)  # ms
+            posebytes = client.getBytes("robot_pose")  # ms
             loc = (0, 0, 0)  # x(m),y(m),rotation(rad)
             if posebytes:
                 loc = NtUtils.getPose2dFromBytes(posebytes)
@@ -89,7 +89,6 @@ def mainLoop():
                 logger.warning(
                     "Unable to get robot position! using origin (0,0,0) instead"
                 )
-                logger.warning(f"Using timeout value : {timeout}")
             # maps = central.map.getHeatMaps()
             target = central.map.getHighestGameObject()
             if target[:2] == (0, 0):
@@ -111,15 +110,11 @@ def mainLoop():
                 logger.warning(f"No path found!")
                 client.putCoordinates(pathName, [])
             else:
-                out = [
-                    # turn cm to m
-                    {
-                        "x": (waypoint[0]) / 100,
-                        "y": (waypoint[1]) / 100,
-                    }
-                    for waypoint in path
-                ]
-                client.putCoordinates(pathName, out)
+                coordinates = []
+                for waypoint in path:
+                    element = XTableValues_pb2.Coordinate(x = waypoint[0]/100,y = waypoint[1]/100)
+                    coordinates.append(element)
+                client.putCoordinates(pathName, coordinates)
             etime = time.time()
             deltaMS = (etime - stime) * 1000
             if deltaMS < TIMEPERLOOPMS:
