@@ -1,6 +1,8 @@
 import math
+import cv2
 import random
 from mapinternals.probmap import ProbMap
+from tools.Constants import CameraExtrinsics, CameraIntrinsics
 
 
 def __myRandom(random, a, b):
@@ -67,3 +69,80 @@ def rescaleCoordsUp(x, y, probmap: ProbMap):
 
 def rescaleCoordsTogetherUp(coords, probmap: ProbMap):
     return coords[0] * probmap.resolution, coords[1] * probmap.resolution
+
+
+def drawRobotWithCam(
+    frame,
+    width,
+    height,
+    posX,
+    posY,
+    rotationRad,
+    cameraIntrinsics: CameraIntrinsics,
+    cameraExtrinsic: CameraExtrinsics,
+):  # fov 90 deg  | fovLen = 70cm # camera is facing 45 to the left
+    # drawing robot
+    FrameOffset = math.atan((height / 2) / (width / 2))
+    RobotAngLeft = rotationRad - FrameOffset
+    RobotAngRight = rotationRad + FrameOffset
+    FLx = int(posX + math.cos(RobotAngLeft) * width)
+    FLy = int(posY + math.sin(RobotAngLeft) * height)
+    FRx = int(posX + math.cos(RobotAngRight) * width)
+    FRy = int(posY + math.sin(RobotAngRight) * height)
+
+    BLx = int(posX - math.cos(RobotAngRight) * width)
+    BLy = int(posY - math.sin(RobotAngRight) * height)
+    BRx = int(posX - math.cos(RobotAngLeft) * width)
+    BRy = int(posY - math.sin(RobotAngLeft) * height)
+    cv2.line(frame, (FLx, FLy), (FRx, FRy), (0, 0, 255), 2)
+    cv2.line(frame, (BLx, BLy), (BRx, BRy), (255, 0, 0), 2)
+    cv2.line(frame, (BLx, BLy), (FLx, FLy), (255, 255, 255), 2)
+    cv2.line(frame, (BRx, BRy), (FRx, FRy), (255, 255, 255), 2)
+
+    camX = posX + cameraExtrinsic.getOffsetX()
+    camY = posY + cameraExtrinsic.getOffsetY()
+    # drawing fov (from center of robot for now)
+    cameraOffset = cameraExtrinsic.getYawOffsetAsRadians()
+    fov = cameraIntrinsics.getHFov()
+    fovLen = 300  # todo*
+    rotLeft = (rotationRad - cameraOffset) - fov / 2
+    rotRight = (rotationRad - cameraOffset) + fov / 2
+
+    LeftX = int(camX + math.cos(rotLeft) * fovLen)
+    LeftY = int(camY + math.sin(rotLeft) * fovLen)
+
+    RightX = int(camX + math.cos(rotRight) * fovLen)
+    RightY = int(camY + math.sin(rotRight) * fovLen)
+
+    camX = int(camX)
+    camY = int(camY)
+
+    cv2.line(frame, (camX, camY), (LeftX, LeftY), (255, 130, 0), 1)
+    cv2.line(frame, (camX, camY), (RightX, RightY), (255, 130, 0), 1)
+
+def drawRobot(
+    frame,
+    width,
+    height,
+    posX,
+    posY,
+    rotationRad,
+):  # fov 90 deg  | fovLen = 70cm # camera is facing 45 to the left
+    # drawing robot
+    FrameOffset = math.atan((height / 2) / (width / 2))
+    RobotAngLeft = rotationRad - FrameOffset
+    RobotAngRight = rotationRad + FrameOffset
+    FLx = int(posX + math.cos(RobotAngLeft) * width)
+    FLy = int(posY + math.sin(RobotAngLeft) * height)
+    FRx = int(posX + math.cos(RobotAngRight) * width)
+    FRy = int(posY + math.sin(RobotAngRight) * height)
+
+    BLx = int(posX - math.cos(RobotAngRight) * width)
+    BLy = int(posY - math.sin(RobotAngRight) * height)
+    BRx = int(posX - math.cos(RobotAngLeft) * width)
+    BRy = int(posY - math.sin(RobotAngLeft) * height)
+    cv2.line(frame, (FLx, FLy), (FRx, FRy), (0, 0, 255), 2)
+    cv2.line(frame, (BLx, BLy), (BRx, BRy), (255, 0, 0), 2)
+    cv2.line(frame, (BLx, BLy), (FLx, FLy), (255, 255, 255), 2)
+    cv2.line(frame, (BRx, BRy), (FRx, FRy), (255, 255, 255), 2)
+
