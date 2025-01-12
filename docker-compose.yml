@@ -1,7 +1,7 @@
 version: "3.9"
 services:
   my-service:
-    image: xdash-image
+    image: xdash-docker-image
     container_name: orange-pi-alt-container
     hostname: ${HOSTNAME}  # Uses the current hostname of the system
     privileged: true  # Equivalent to --privileged flag
