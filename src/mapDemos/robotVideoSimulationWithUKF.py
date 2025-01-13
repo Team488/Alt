@@ -49,7 +49,7 @@ def startDemo():
     cap = cv2.VideoCapture("assets/video12qual25clipped.mp4")
     firstRun = True
     cap_outM = None
-    frameProcessor = LocalFrameProcessor(cameraIntr, cameraExtr)
+    frameProcessor = LocalFrameProcessor(cameraIntr, cameraExtr,unitMode=UnitMode.CM)
     centralProcessor = CentralProcessor.instance()
     fps = cap.get(cv2.CAP_PROP_FPS)
     timePassed = 0
@@ -162,8 +162,8 @@ def __drawRobot(
     cv2.line(frame, (BLx, BLy), (FLx, FLy), (255, 255, 255), 2)
     cv2.line(frame, (BRx, BRy), (FRx, FRy), (255, 255, 255), 2)
 
-    camX = posX + cameraExtrinsic.getOffsetX()
-    camY = posY + cameraExtrinsic.getOffsetY()
+    camX = posX + cameraExtrinsic.getOffsetXIN()
+    camY = posY + cameraExtrinsic.getOffsetYIN()
     # drawing fov (from center of robot for now)
     cameraOffset = cameraExtrinsic.getYawOffsetAsRadians()
     fov = cameraIntrinsics.getHFov()

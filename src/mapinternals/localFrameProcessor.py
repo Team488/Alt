@@ -1,7 +1,7 @@
 import random
 import time
 from mapinternals.deepSortBaseLabler import DeepSortBaseLabler
-from tools.Constants import CameraIntrinsics, CameraExtrinsics, MapConstants
+from tools.Constants import CameraIntrinsics, CameraExtrinsics, MapConstants, UnitMode
 from tools.positionEstimator import PositionEstimator
 from tools.positionTranslations import CameraToRobotTranslator, transformWithYaw
 import numpy as np
@@ -17,10 +17,12 @@ class LocalFrameProcessor:
         self,
         cameraIntrinsics: CameraIntrinsics,
         cameraExtrinsics: CameraExtrinsics,
+        unitMode: UnitMode,
         useRknn=False,
         isSimulationMode = False,
         tryOCR = False
     ) -> None:
+        self.unitMode = unitMode
         if useRknn:
             from inference.rknnInferencer import rknnInferencer
 

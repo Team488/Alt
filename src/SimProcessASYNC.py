@@ -8,7 +8,7 @@ from networktables import NetworkTables
 from tools.NtUtils import getPose2dFromBytes
 from mapinternals.localFrameProcessor import LocalFrameProcessor
 from mapinternals.CentralProcessor import CentralProcessor
-from tools.Constants import CameraExtrinsics, CameraIntrinsics, CameraIdOffsets
+from tools.Constants import CameraExtrinsics, CameraIntrinsics, CameraIdOffsets, UnitMode
 
 
 processName = "Simulation_Process"
@@ -68,6 +68,7 @@ frameProcessors = [
     LocalFrameProcessor(
         cameraIntrinsics=CameraIntrinsics.SIMULATIONCOLOR,
         cameraExtrinsics=extrinsics[i],
+        unitMode=UnitMode.CM,
         useRknn=False,
         tryOCR=True,
         isSimulationMode=True
