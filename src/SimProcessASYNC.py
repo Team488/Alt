@@ -1,3 +1,4 @@
+import math
 import struct
 import time
 import queue
@@ -80,7 +81,7 @@ central = CentralProcessor.instance()
 
 # Initialize NetworkTables
 NetworkTables.initialize(server="127.0.0.1")
-postable = NetworkTables.getTable("AdvantageKit/RealOutputs/Vision/AprilTags/Results")
+postable = NetworkTables.getTable("SmartDashboard/Field")
 table = NetworkTables.getTable("AdvantageKit/RealOutputs/Odometry")
 
 
@@ -127,9 +128,10 @@ def async_frameprocess(imitatedProcIdx):
 
             # Fetch NetworkTables data
             pos = (0, 0, 0)
-            raw_data = postable.getEntry("Estimated Pose").get()
+            raw_data = postable.getEntry("Robot").get()
             if raw_data:
-                pos = getPose2dFromBytes(raw_data)
+                # pos = getPose2dFromBytes(raw_data)
+                pos = raw_data
             else:
                 logger.warning("Cannot get robot location from network tables!")
 
@@ -139,7 +141,7 @@ def async_frameprocess(imitatedProcIdx):
                 frame,
                 robotPosXCm=pos[0] * 100,  # Convert meters to cm
                 robotPosYCm=pos[1] * 100,
-                robotYawRad=pos[2],
+                robotYawRad=(pos[2] /180) * math.pi,
                 drawBoxes=True,
                 maxDetections=1,
             )
@@ -199,7 +201,7 @@ try:
             localUpdateMap[processName] = packetidx
             results.append(result)
         central.processFrameUpdate(results, 1)
-        x, y, p = central.map.getHighestRobot()
+        x, y, p = central.map.getHighestGameObject()
         scaleFactor = 100  # cm to m
         table.getEntry("est/Target_Estimate").setDoubleArray(
             [x / scaleFactor, y / scaleFactor, 0, 0]
