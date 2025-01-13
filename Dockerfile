@@ -1,5 +1,5 @@
 ARG TARGETPLATFORM
-FROM --platform=$BUILDPLATFORM rokadias/python-opencv:main
+FROM xdash-alt-base-image
 
 WORKDIR /xbot/Alt
 
