@@ -1,7 +1,7 @@
 version: "3.9"
 services:
   my-service:
-    image: alt:arm64
+    image: xdash-docker-image
     container_name: orange-pi-alt-container
     hostname: ${HOSTNAME}  # Uses the current hostname of the system
     privileged: true  # Equivalent to --privileged flag
@@ -11,3 +11,4 @@ services:
     volumes:
       - "/proc/device-tree/compatible:/proc/device-tree/compatible:ro"
     command: ["python", "centralOrangePiProcess.py"]
+    restart: always
