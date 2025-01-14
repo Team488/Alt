@@ -30,7 +30,7 @@ COPY ./requirements.txt .
 
 # Install Python packages globally from requirements.txt
 RUN pip install -r ./requirements.txt
-RUN pip install XTablesClient
+RUN pip install XTablesClient==5.2.4
 
 COPY ./src ./src
 
