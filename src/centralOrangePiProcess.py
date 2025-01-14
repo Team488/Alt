@@ -7,7 +7,7 @@ import time
 from enum import Enum
 from JXTABLES.XTablesClient import XTablesClient
 from coreinterface.DetectionPacket import DetectionPacket
-from tools.Constants import getCameraValues
+from tools.Constants import UnitMode, getCameraValues
 from mapinternals.localFrameProcessor import LocalFrameProcessor
 from tools import calibration, NtUtils
 
@@ -38,6 +38,7 @@ def startProcess():
     processor = LocalFrameProcessor(
         cameraIntrinsics=cameraIntrinsics,
         cameraExtrinsics=cameraExtrinsics,
+        unitMode=UnitMode.CM,
         useRknn=True,
     )
 

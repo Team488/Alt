@@ -22,9 +22,9 @@ class CameraToRobotTranslator:
     def turnCameraCoordinatesIntoRobotCoordinates(
         self, relativeX, relativeY, cameraExtrinsics: CameraExtrinsics
     ) -> tuple[float, float, float]:
-        dx = cameraExtrinsics.getOffsetX()
-        dy = cameraExtrinsics.getOffsetY()
-        dz = cameraExtrinsics.getOffsetZ()
+        dx = cameraExtrinsics.getOffsetXCM()
+        dy = cameraExtrinsics.getOffsetYCM()
+        dz = cameraExtrinsics.getOffsetZCM()
         yaw = cameraExtrinsics.getYawOffsetAsRadians()
         pitch = cameraExtrinsics.getPitchOffsetAsRadians()
         # print(f"camera offset: [{dx}, {dy}, {dz}] pitch: {yaw} yaw: {pitch}")

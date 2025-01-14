@@ -5,7 +5,7 @@ import numpy as np
 
 
 class CameraExtrinsics(Enum):
-    #   {PositionName} = ((offsetX,offsetY,offsetZ),(yawOffset,pitchOffset))
+    #   {PositionName} = ((offsetX(in),offsetY(in),offsetZ(in)),(yawOffset(deg),pitchOffset(deg)))
     FRONTLEFT = ((13.779, 13.887, 10.744), (80, -3))
     FRONTRIGHT = ((13.779, -13.887, 10.744), (280, -3))
     REARLEFT = ((-13.116, 12.853, 10.52), (215, -3.77))
@@ -14,14 +14,23 @@ class CameraExtrinsics(Enum):
     DEPTHRIGHT = ((13.018, -2.548, 19.743), (-24, -17))
     NONE = ((0, 0, 0), (0, 0))
 
-    def getOffsetX(self):
+    def getOffsetXIN(self):
         return self.value[0][0]
+    
+    def getOffsetXCM(self):
+        return self.value[0][0]*2.54
 
-    def getOffsetY(self):
+    def getOffsetYIN(self):
         return self.value[0][1]
+    
+    def getOffsetYCM(self):
+        return self.value[0][1]*2.54
 
-    def getOffsetZ(self):
+    def getOffsetZIN(self):
         return self.value[0][2]
+    
+    def getOffsetZCM(self):
+        return self.value[0][1]*2.54
 
     def getYawOffset(self):
         return self.value[1][0]
@@ -143,6 +152,9 @@ class MapConstants(Enum):
 class LabelingConstants(Enum):
     MAXFRAMESNOTSEEN = 15
 
+class UnitMode(Enum):
+    CM = "cm"
+    IN = "inch"
 
 # todo consolidate camera info into one central enum
 # class CAMERA(Enum):

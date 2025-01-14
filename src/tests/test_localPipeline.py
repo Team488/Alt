@@ -1,11 +1,11 @@
 from mapinternals.localFrameProcessor import LocalFrameProcessor
-from tools.Constants import CameraExtrinsics, CameraIntrinsics
+from tools.Constants import CameraExtrinsics, CameraIntrinsics, UnitMode
 import cv2
 
 
 def verifyValidOutput():
     frameProcessor = LocalFrameProcessor(
-        CameraIntrinsics.OAKDLITE, CameraExtrinsics.DEPTHLEFT
+        CameraIntrinsics.OAKDLITE, CameraExtrinsics.DEPTHLEFT,unitMode=UnitMode.CM
     )  # these are not needed for the test
     cap = cv2.VideoCapture("assets/video12qual25clipped.mp4")
     cap.set(cv2.CAP_PROP_POS_FRAMES, 768)

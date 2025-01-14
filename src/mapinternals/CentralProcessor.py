@@ -2,10 +2,11 @@ import numpy as np
 import cv2
 from singleton.singleton import Singleton
 from mapinternals.UKF import Ukf
-from tools.Constants import MapConstants, CameraIdOffsets
+from tools.Constants import MapConstants, CameraIdOffsets, UnitMode
 from mapinternals.probmap import ProbMap
 from mapinternals.KalmanLabeler import KalmanLabeler
 from mapinternals.KalmanCache import KalmanCache
+
 
 
 @Singleton
@@ -18,6 +19,7 @@ class CentralProcessor:
         self.labler = KalmanLabeler(self.kalmanCacheRobots, self.kalmanCacheGameObjects)
         # adapt to numpys row,col by transposing
         self.obstacleMap = self.__tryLoadObstacleMap().transpose()
+        self.unitMode = UnitMode.CM
 
     def __tryLoadObstacleMap(self):
         defaultMap = np.ones(

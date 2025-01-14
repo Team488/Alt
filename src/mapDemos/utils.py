@@ -78,8 +78,11 @@ def drawRobotWithCam(
     posX,
     posY,
     rotationRad,
-    cameraIntrinsics: CameraIntrinsics,
-    cameraExtrinsic: CameraExtrinsics,
+    camOffsetX,
+    camOffsetY,
+    camYawRad,
+    camFovRad,
+    cameraLineLength = 300
 ):  # fov 90 deg  | fovLen = 70cm # camera is facing 45 to the left
     # drawing robot
     FrameOffset = math.atan((height / 2) / (width / 2))
@@ -99,20 +102,18 @@ def drawRobotWithCam(
     cv2.line(frame, (BLx, BLy), (FLx, FLy), (255, 255, 255), 2)
     cv2.line(frame, (BRx, BRy), (FRx, FRy), (255, 255, 255), 2)
 
-    camX = posX + cameraExtrinsic.getOffsetX()
-    camY = posY + cameraExtrinsic.getOffsetY()
+    camX = posX + camOffsetX*math.cos(rotationRad)-camOffsetY*math.sin(rotationRad)
+    camY = posY + camOffsetX*math.sin(rotationRad)+camOffsetY*math.cos(rotationRad)
     # drawing fov (from center of robot for now)
-    cameraOffset = cameraExtrinsic.getYawOffsetAsRadians()
-    fov = cameraIntrinsics.getHFov()
-    fovLen = 300  # todo*
-    rotLeft = (rotationRad - cameraOffset) - fov / 2
-    rotRight = (rotationRad - cameraOffset) + fov / 2
+    cameraOffset = camYawRad
+    rotLeft = (rotationRad + cameraOffset) - camFovRad / 2
+    rotRight = (rotationRad + cameraOffset) + camFovRad / 2
 
-    LeftX = int(camX + math.cos(rotLeft) * fovLen)
-    LeftY = int(camY + math.sin(rotLeft) * fovLen)
+    LeftX = int(camX + math.cos(rotLeft) * cameraLineLength)
+    LeftY = int(camY + math.sin(rotLeft) * cameraLineLength)
 
-    RightX = int(camX + math.cos(rotRight) * fovLen)
-    RightY = int(camY + math.sin(rotRight) * fovLen)
+    RightX = int(camX + math.cos(rotRight) * cameraLineLength)
+    RightY = int(camY + math.sin(rotRight) * cameraLineLength)
 
     camX = int(camX)
     camY = int(camY)
