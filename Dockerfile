@@ -3,9 +3,12 @@ FROM xdash-alt-base-image
 
 WORKDIR /xbot/Alt
 
-RUN mkdir src
+COPY non-base-requirements.txt /xbot/Alt/non-base-requirements.txt
 
-RUN pip install --prefer-binary XTablesClient
+RUN mkdir src && \
+    pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir --prefer-binary -r non-base-requirements.txt && \
+    pip install --no-cache-dir --prefer-binary XTablesClient
 
 COPY ./src ./src
 
