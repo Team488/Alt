@@ -141,7 +141,7 @@ class MapConstants(Enum):
     gameObjectHeight = 35  # cm circular note
 
     mapObstacles = []  # todo define these
-    chainsAtMinPoint = 71.755 # cm
+    reefRadius = 83.185 # cm
 
     def getCM(self):
         return self.value

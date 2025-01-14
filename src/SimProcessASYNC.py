@@ -141,6 +141,7 @@ def async_frameprocess(imitatedProcIdx):
                 frame,
                 robotPosXCm=pos[0] * 100,  # Convert meters to cm
                 robotPosYCm=pos[1] * 100,
+                # robotYawRad=pos[2],
                 robotYawRad=(pos[2] /180) * math.pi,
                 drawBoxes=True,
                 maxDetections=1,
