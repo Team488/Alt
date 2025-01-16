@@ -166,7 +166,7 @@ def __drawRobot(
     camY = posY + cameraExtrinsic.getOffsetYIN()
     # drawing fov (from center of robot for now)
     cameraOffset = cameraExtrinsic.getYawOffsetAsRadians()
-    fov = cameraIntrinsics.getHFov()
+    fov = cameraIntrinsics.getHFovRad()
     fovLen = 300  # todo*
     rotLeft = (rotation - cameraOffset) - fov / 2
     rotRight = (rotation - cameraOffset) + fov / 2

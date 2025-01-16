@@ -81,7 +81,7 @@ central = CentralProcessor.instance()
 
 # Initialize NetworkTables
 NetworkTables.initialize(server="127.0.0.1")
-postable = NetworkTables.getTable("SmartDashboard/Field")
+postable = NetworkTables.getTable("SmartDashboard/VisionSystemSim-main/Sim Field")
 table = NetworkTables.getTable("AdvantageKit/RealOutputs/Odometry")
 
 
@@ -130,7 +130,7 @@ def run_frameprocess(imitatedProcIdx):
     pos = (0, 0, 0)
     raw_data = postable.getEntry("Robot").get()
     if raw_data:
-        pos = raw_data
+        pos = (raw_data[0],raw_data[1],math.radians(raw_data[2])) # this one gives degrees by default
         # pos = getPose2dFromBytes(raw_data)
     else:
         logger.warning("Cannot get robot location from network tables!")
@@ -141,7 +141,7 @@ def run_frameprocess(imitatedProcIdx):
         frame,
         robotPosXCm=pos[0] * 100,  # Convert meters to cm
         robotPosYCm=pos[1] * 100,
-        robotYawRad=(pos[2]/180)*math.pi,
+        robotYawRad=pos[2],
         drawBoxes=True,
         maxDetections=1,
     )

@@ -169,6 +169,9 @@ class PositionEstimator:
     def __estimateRobotBumperHeight(self, croppedframe) -> tuple[float, bool]:
         y = croppedframe.shape[0]
         x = croppedframe.shape[1]
+        if y < 2 or x < 2:
+            print("Invalid bbox!")
+            return None
         # cutting the frame as for all the images i have the bumper is always in the bottom portion
         croppedframe = self.__crop_image(croppedframe, (0, int(y/2)), (x, y))
         cv2.imshow("Cropped frame",croppedframe)
@@ -333,7 +336,7 @@ class PositionEstimator:
                 cameraIntrinsics.getFy(),
             )
             bearing = self.__calcBearing(
-                cameraIntrinsics.getHFov(),
+                cameraIntrinsics.getHFovRad(),
                 cameraIntrinsics.getHres(),
                 int(centerX - cameraIntrinsics.getCx()),
             )
@@ -365,7 +368,7 @@ class PositionEstimator:
             cameraIntrinsics.getFx(),
         )
         bearing = self.__calcBearing(
-            cameraIntrinsics.getHFov(),
+            cameraIntrinsics.getHFovRad(),
             cameraIntrinsics.getHres(),
             int(centerX - cameraIntrinsics.getCx()),
         )

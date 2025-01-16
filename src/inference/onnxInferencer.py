@@ -15,7 +15,7 @@ class onnxInferencer:
         if setParallel:
             session_options.execution_mode = ort.ExecutionMode.ORT_PARALLEL
         self.session = ort.InferenceSession(
-            model_path, sess_options=session_options
+            model_path, sess_options=session_options,providers=providers
         )
 
 

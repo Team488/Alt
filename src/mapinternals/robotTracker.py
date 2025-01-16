@@ -41,7 +41,10 @@ class RobotTracker:
             dets.append(Detection(bbox, scores[bbox_id], np.ones(128)))
 
         self.tracker.predict()
-        self.tracker.update(dets)
+        try:
+            self.tracker.update(dets)
+        except IndexError:
+            print("Weird deepsort error that happens once a thousand times happened. This is here until you fix it!")
         self.update_tracks()
 
     def update_tracks(self):

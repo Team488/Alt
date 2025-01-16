@@ -1,7 +1,8 @@
 from enum import Enum
 import math
-
 import numpy as np
+
+
 
 
 class CameraExtrinsics(Enum):
@@ -71,19 +72,19 @@ class CameraIntrinsics(Enum):
     def getVres(self):
         return self.value[0][1]
 
-    def getHFov(self):
+    def getHFovRad(self):
         return self.value[1][0]
 
-    def getVFov(self):
+    def getVFovRad(self):
         return self.value[1][1]
 
-    def getFocalLength(self):
+    def getFocalLengthMM(self):
         return self.value[2][0]
 
-    def getPixelSize(self):
+    def getPixelSizeMM(self):
         return self.value[2][1]
 
-    def getSensorSize(self):
+    def getSensorSizeMM(self):
         return self.value[2][2]
 
     def getFx(self):
@@ -138,16 +139,28 @@ class MapConstants(Enum):
     robotWidth = 75  # cm
     robotHeight = 75  # cm assuming square robot with max frame perimiter of 300
     gameObjectWidth = 35  # cm
-    gameObjectHeight = 35  # cm circular note
+    gameObjectHeight = 35  # cm 
 
     mapObstacles = []  # todo define these
     reefRadius = 83.185 # cm
+    b_reef_center = (454, 402) # cm
+    r_reef_center = (1234, 402) # cm
+    reef_post_radius = 1.5875
+
+    algae_radius = 40.64 #cm
+
+    coral_inner_diameter = 10.16 #cm
+    coral_outer_diameter = 11.43 #cm
+
+    coral_width = 30.16 #cm
+
+    
 
     def getCM(self):
         return self.value
     def getIn(self):
         return self.value / 2.54
-
+        
 
 class LabelingConstants(Enum):
     MAXFRAMESNOTSEEN = 15

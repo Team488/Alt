@@ -1,23 +1,25 @@
 import math
 import cv2
 import numpy as np
-from tools.Constants import CameraIntrinsics,CameraExtrinsics
-from mapDemos.utils import drawRobotWithCam
+from tools.Constants import CameraIntrinsics,CameraExtrinsics,MapConstants
+from mapDemos.utils import drawRobotWithCams
+from reefTracking.reefPositioner import ReefPositioner
 
 def startDemo():
-    size_x = 1000
-    size_y = 500
-
-    reef_center = (size_x//3,size_y//2)
-    reef_radius = size_x//20
+    size_x = MapConstants.fieldWidth.getCM()
+    size_y = MapConstants.fieldHeight.getCM()
+    positioner = ReefPositioner()
 
     robot_pos = (0,0)
-    robot_width = size_x//25
-    robot_height = size_x//25
+    robot_width = MapConstants.robotWidth.getCM()
+    robot_height = MapConstants.robotHeight.getCM()
 
-    robotcam_offset = (robot_width//2,robot_height//2)
-    robotcam_yaw_rad = math.pi/2
-    robotcam_fov_rad = math.radians(70)
+    b_reef_center = MapConstants.b_reef_center.getCM()
+    r_reef_center = MapConstants.r_reef_center.getCM()
+    reef_radius = int(MapConstants.reefRadius.getCM())
+
+    robotcam_extr = CameraExtrinsics.FRONTRIGHT
+    robotcam_intr = CameraIntrinsics.OV9782COLOR
 
 
     title = "reef_point_demo"
@@ -30,53 +32,35 @@ def startDemo():
         robot_pos = (x,y)
 
     cv2.setMouseCallback(title,hover_callback)
-
-    def wrap(ang):
-        cut = ang % (2 * math.pi)
-        if cut > math.pi:
-            # wrap as negative
-            return (2*math.pi)-cut
-        return cut
-
-    def calculateSeenPoint(frame,reef_pos,reef_radius,robot_pos,robot_rot_rad,robotcam_offset,robotcam_yaw_rad,robotcam_fov_rad):
-        dx = robotcam_offset[0]
-        dy = robotcam_offset[1]
-        cameraPos = (robot_pos[0] + dx*math.cos(robot_rot_rad)-dy*math.sin(robot_rot_rad), robot_pos[1] + dx*math.sin(robot_rot_rad) + dy*math.cos(robot_rot_rad))
-        obj_vec = np.subtract(reef_pos,cameraPos)
-        
-        obj_ang = np.arctan2(obj_vec[1],obj_vec[0])
-        cam_ang = robot_rot_rad + robotcam_yaw_rad
-
-        D_ang = (obj_ang-cam_ang)
-        cv2.putText(frame,f"Delta {D_ang:.2f} Thresh {robotcam_fov_rad/2:.2f}",(10,20),1,1,(255,255,255),1)
-
-        if wrap(D_ang) > robotcam_fov_rad/2:
-            # out of view
-            return None
-
-        sixty = math.radians(60)
-        
-        return round((obj_ang + math.pi)/(sixty))*(sixty) # angle of point on reef
-
     while True:
+        is_blue_focus = robot_pos[0] <= size_x/2 # if we are on left half of field, be in "blue mode" else right mode
+        focused_reef_center = b_reef_center if is_blue_focus else r_reef_center
+        
         frame = np.zeros((size_y,size_x,3),dtype=np.uint8)
 
-        # draw reef
-        cv2.circle(frame,reef_center,reef_radius,(100,100,100),1)
+        # draw reefs
+        cv2.circle(frame,b_reef_center,reef_radius,(255,0,0),1)
+        cv2.circle(frame,r_reef_center,reef_radius,(0,0,255),1)
 
         robot_rot = math.radians(cv2.getTrackbarPos(rot_trackbar_name,title))
 
-        drawRobotWithCam(frame,robot_width,robot_height,robot_pos[0],robot_pos[1],robot_rot,robotcam_offset[0],robotcam_offset[1],robotcam_yaw_rad,robotcam_fov_rad,cameraLineLength=500)
+        drawRobotWithCams(frame,robot_width,robot_height,robot_pos[0],robot_pos[1],robot_rot,[(robotcam_extr,robotcam_intr)],cameraLineLength=500)
         
-        ang = calculateSeenPoint(frame,reef_center,reef_radius,robot_pos,robot_rot,robotcam_offset,robotcam_yaw_rad,robotcam_fov_rad)
-        if ang is not None:
+        res = positioner.getPostCoordinatesWconst(is_blue_focus,robot_pos,robot_rot,robotcam_extr,robotcam_intr)
+        if res is not None:
             # draw two "posts"
+            x,y,postidx = res
+            cv2.circle(frame,(int(x),int(y)),5,(0,255,0),-1)
+            cv2.putText(frame,f"P Idx: {postidx}",(10,20),1,1,(255,255,255),1)
+            
+            # draw "posts"
+            ang = math.radians(60) * postidx # assuming first post starts at angle 0
             offset = math.radians(10)
-            Vx1 = reef_center[0] + reef_radius * math.cos(ang-offset)
-            Vy1 = reef_center[1] + reef_radius * math.sin(ang-offset)
+            Vx1 = focused_reef_center[0] + reef_radius * math.cos(ang-offset)
+            Vy1 = focused_reef_center[1] + reef_radius * math.sin(ang-offset)
             cv2.circle(frame,(int(Vx1),int(Vy1)),5,(255, 192, 203),1)
-            Vx2 = reef_center[0] + reef_radius * math.cos(ang+offset)
-            Vy2 = reef_center[1] + reef_radius * math.sin(ang+offset)
+            Vx2 = focused_reef_center[0] + reef_radius * math.cos(ang+offset)
+            Vy2 = focused_reef_center[1] + reef_radius * math.sin(ang+offset)
             cv2.circle(frame,(int(Vx2),int(Vy2)),5,(255, 192, 203),1)
 
 
