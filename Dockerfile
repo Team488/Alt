@@ -12,6 +12,7 @@ RUN mkdir src && \
 
 COPY ./src ./src
 
+
 WORKDIR /xbot/Alt/src
 
 RUN if [ "$TARGETPLATFORM" = "linux/amd64" ]; then \

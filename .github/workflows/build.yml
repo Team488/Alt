@@ -66,11 +66,3 @@ jobs:
           outputs: type=docker,dest=/tmp/alt_${{ steps.platform_name.outputs.PLATFORM_NAME }}.tar
           cache-from: type=gha
           cache-to: type=gha,mode=max
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: alt_${{ steps.platform_name.outputs.PLATFORM_NAME }}.tar
-          path: /tmp/alt_${{ steps.platform_name.outputs.PLATFORM_NAME }}.tar
-          if-no-files-found: error
-          retention-days: 5
