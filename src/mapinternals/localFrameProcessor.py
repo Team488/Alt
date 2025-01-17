@@ -124,8 +124,8 @@ class LocalFrameProcessor:
 
             # note at this point these values are expected to be absolute
 
-            # if not self.isiregularDetection(relToRobotX,relToRobotY,relToRobotZ):
-            absoluteResults.append(result)
+            if not self.isiregularDetection(relToRobotX,relToRobotY,relToRobotZ):
+                absoluteResults.append(result)
         # output is id,(absX,absY,absZ),conf,isRobot,features
 
         endTime = time.time()
@@ -165,12 +165,12 @@ class LocalFrameProcessor:
 
         return absoluteResults
 
-    def isiregularDetection(self, x, y, z, maxDelta=25):
+    def isiregularDetection(self, x, y, z, maxDelta=50): #cm
         return (
             x < -maxDelta
             or x > MapConstants.fieldWidth.value + maxDelta
             or y < -maxDelta
             or y > MapConstants.fieldHeight.value + maxDelta
-            or z < -maxDelta
-            or z > maxDelta
+            # or z < -maxDelta
+            # or z > maxDelta
         )
