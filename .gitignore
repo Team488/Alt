@@ -176,7 +176,10 @@ cython_debug/
 out.mp4
 # *.csv
 
+
 # *.pb
+
+*.svg
 
 deep_sort/
 
