@@ -56,7 +56,7 @@ def startDemo():
 
         sixty = math.radians(60)
         
-        return round((obj_ang + math.pi)/(sixty))*(sixty) # angle of point on reef
+        return round((obj_ang + math.pi)/(sixty))*(sixty), obj_ang+math.pi  # angle of point on reef
 
     while True:
         frame = np.zeros((size_y,size_x,3),dtype=np.uint8)
@@ -68,16 +68,22 @@ def startDemo():
 
         drawRobotWithCam(frame,robot_width,robot_height,robot_pos[0],robot_pos[1],robot_rot,robotcam_offset[0],robotcam_offset[1],robotcam_yaw_rad,robotcam_fov_rad,cameraLineLength=500)
         
-        ang = calculateSeenPoint(frame,reef_center,reef_radius,robot_pos,robot_rot,robotcam_offset,robotcam_yaw_rad,robotcam_fov_rad)
-        if ang is not None:
+        res = calculateSeenPoint(frame,reef_center,reef_radius,robot_pos,robot_rot,robotcam_offset,robotcam_yaw_rad,robotcam_fov_rad)
+        if res is not None:
+            postAng, fullAng = res
             # draw two "posts"
             offset = math.radians(10)
-            Vx1 = reef_center[0] + reef_radius * math.cos(ang-offset)
-            Vy1 = reef_center[1] + reef_radius * math.sin(ang-offset)
+            Vx1 = reef_center[0] + reef_radius * math.cos(postAng-offset)
+            Vy1 = reef_center[1] + reef_radius * math.sin(postAng-offset)
             cv2.circle(frame,(int(Vx1),int(Vy1)),5,(255, 192, 203),1)
-            Vx2 = reef_center[0] + reef_radius * math.cos(ang+offset)
-            Vy2 = reef_center[1] + reef_radius * math.sin(ang+offset)
+            Vx2 = reef_center[0] + reef_radius * math.cos(postAng+offset)
+            Vy2 = reef_center[1] + reef_radius * math.sin(postAng+offset)
             cv2.circle(frame,(int(Vx2),int(Vy2)),5,(255, 192, 203),1)
+
+            x = reef_center[0] + reef_radius * math.cos(fullAng)
+            y = reef_center[1] + reef_radius * math.sin(fullAng)
+            # draw actual angle seen
+            cv2.circle(frame,(int(x),int(y)),5,(0,0,255),1)
 
 
         

@@ -9,6 +9,7 @@ RUN mkdir src && \
     pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir --prefer-binary -r non-base-requirements.txt && \
     pip install --no-cache-dir --prefer-binary XTablesClient
+    pip install pyflame
 
 COPY ./src ./src
 
