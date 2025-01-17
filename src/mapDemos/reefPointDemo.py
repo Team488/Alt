@@ -63,6 +63,11 @@ def startDemo():
             Vy2 = focused_reef_center[1] + reef_radius * math.sin(ang+offset)
             cv2.circle(frame,(int(Vx2),int(Vy2)),5,(255, 192, 203),1)
 
+            x = reef_center[0] + reef_radius * math.cos(fullAng)
+            y = reef_center[1] + reef_radius * math.sin(fullAng)
+            # draw actual angle seen
+            cv2.circle(frame,(int(x),int(y)),5,(0,0,255),1)
+
 
         
         cv2.imshow(title,frame)
