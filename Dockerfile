@@ -1,5 +1,5 @@
 ARG TARGETPLATFORM
-FROM xdash-alt-base-image
+FROM kobeeeef/xdash-alt-base-image:today
 
 WORKDIR /xbot/Alt
 
@@ -8,18 +8,19 @@ COPY non-base-requirements.txt /xbot/Alt/non-base-requirements.txt
 RUN mkdir src && \
     pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir --prefer-binary -r non-base-requirements.txt && \
-    pip install --no-cache-dir --prefer-binary XTablesClient
+    pip install --no-cache-dir --prefer-binary XTablesClient && \
     pip install pyflame
+
+RUN pip install rknn-toolkit-lite2==2.3.0 --no-cache-dir
+
 
 COPY ./src ./src
 
 
 WORKDIR /xbot/Alt/src
 
-RUN if [ "$TARGETPLATFORM" = "linux/amd64" ]; then \
-        pip install rknn-toolkit2==2.3.0 --no-cache-dir; \
-    elif [ "$TARGETPLATFORM" = "linux/arm64" ]; then \
-        pip install rknn-toolkit-lite2==2.3.0 --no-cache-dir; \
-    fi
+
+COPY ./src/assets/librknnrt.so /usr/lib/librknnrt.so
+
 
 CMD ["python", "centralOrangePiProcess.py"]
