@@ -2,11 +2,15 @@
 # make config directory
 sudo mkdir -p /xbot/config
 
-# Update and upgrade
-sudo apt-get update
+# Update and upgrade    
 sudo apt-get upgrade -y
-sudo apt-get install -y docker.io
-sudo apt-get install -y docker-compose-plugin
+sudo apt update
+sudo apt install -y ca-certificates curl gnupg
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+sudo apt update
+sudo apt install -y docker-ce docker-ce-cli containerd.io
 
 # Create udev rules for the color camera (ov9782)
 echo 'ATTRS{idProduct}=="6366",ATTRS{idVendor}=="0c45",SYMLINK+="color_camera",GROUP="docker", MODE="0660"' | sudo tee /etc/udev/rules.d/99-usb-camera.rules
