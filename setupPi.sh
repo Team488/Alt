@@ -21,3 +21,26 @@ getent group docker || sudo groupadd docker
 sudo usermod -aG docker $USER
 
 sudo newgrp docker
+
+USERNAME="pv"
+PASSWORD="pv"
+SHELL="/bin/bash"
+GROUP="pv,sudo"
+
+# Create the user and add to the group
+sudo useradd -m -s "$SHELL" -G "$GROUP" "$USERNAME"
+
+SERVICE_FILE="/etc/systemd/system/photonvision.service"
+
+# Check if the line already exists and add or replace it
+if grep -q "^User=" "$SERVICE_FILE"; then
+    # Replace the existing User line
+    sudo sed -i "s/^User=.*/User=pv/" "$SERVICE_FILE"
+else
+    # Add the User line under the [Service] section
+    sudo sed -i "/^\[Service\]/a User=pv" "$SERVICE_FILE"
+fi
+
+# Reload systemd to apply changes
+sudo systemctl daemon-reload
+sudo systemctl restart photonvision
