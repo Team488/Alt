@@ -1,4 +1,6 @@
 # One-time setup for the Orange Pi's, needs to be connected to the internet
+# make config directory
+sudo mkdir -p /xbot/config
 
 # Update and upgrade
 sudo apt-get update

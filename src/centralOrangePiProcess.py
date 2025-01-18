@@ -9,8 +9,8 @@ from JXTABLES.XTablesClient import XTablesClient
 from coreinterface.DetectionPacket import DetectionPacket
 from tools.Constants import UnitMode, getCameraValues
 from mapinternals.localFrameProcessor import LocalFrameProcessor
-from tools import calibration, NtUtils
-
+from tools import calibration, NtUtils, configLoader
+from networktables import NetworkTables
 
 processName = "Central_Orange_Pi_Process"
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -32,8 +32,8 @@ def getCameraName():
 
 
 def startProcess():
-    name = getCameraName().name
-    cameraIntrinsics, cameraExtrinsics, _ = getCameraValues(name)
+    device_name = getCameraName().name
+    cameraIntrinsics, cameraExtrinsics, _ = getCameraValues(device_name)
     logger.info("Creating Frame Processor...")
     processor = LocalFrameProcessor(
         cameraIntrinsics=cameraIntrinsics,
@@ -41,14 +41,30 @@ def startProcess():
         unitMode=UnitMode.CM,
         useRknn=True,
     )
-
+    calib = configLoader.loadSavedCalibration()
     # frame undistortion maps
     mapx, mapy = calibration.createMapXYForUndistortion(
-        cameraIntrinsics.getHres(), cameraIntrinsics.getVres()
+        cameraIntrinsics.getHres(), cameraIntrinsics.getVres(), calib
     )
 
-    logger.info(f"Starting process, device name: {name}")
+    opiconfig = configLoader.loadOpiConfig() 
+    pos_table : str = opiconfig["positionTable"]
+    useXTablesForPos = opiconfig["useXTablesForPos"]
+    logger.info(f"Starting process, device name: {device_name}")
     xclient = XTablesClient()
+    if useXTablesForPos: 
+        pos_entry = pos_table # xtables dosent really have tables like network tables
+        client = xclient # use xtables for pos aswell
+    else:
+        NetworkTables.initialize(server="127.0.0.1")
+        split_idx = pos_table.rfind("/")
+        if split_idx == -1:
+            logger.fatal(f"Invalid pos_table provided for network tables!: {pos_table}")
+            exit(1)
+        pos_entry = pos_table[split_idx+1:] # +1 to skip the "/"
+        pos_table = pos_table[:split_idx]
+        table = NetworkTables.getTable(pos_table)
+        client = table
     cap = cv2.VideoCapture(
         0
     )  # guaranteed as we are passing /dev/color_camera symlink to docker image as /dev/video0
@@ -61,9 +77,11 @@ def startProcess():
                 timeStamp = time.time()
 
                 undistortedFrame = calibration.undistortFrame(frame, mapx, mapy)
-                undistortedFrame = frame
-                posebytes = xclient.getBytes("robot_pose")  # ms
-                loc = (0, 0, 0)  # x(m),y(m),rotation(rad)
+                loc = (0, 0, 0)  # default position x(m),y(m),rotation(rad)
+                if useXTablesForPos:
+                    posebytes = client.getBytes(pos_entry)
+                else:
+                    posebytes = client.getEntry(pos_entry).get()
                 if posebytes:
                     loc = NtUtils.getPose2dFromBytes(posebytes)
                 else:
@@ -75,12 +93,12 @@ def startProcess():
                     robotYawRad=loc[2],
                 )  # processing as absolute if a robot pose is found
                 detectionPacket = DetectionPacket.createPacket(
-                    processedResults, name, timeStamp
+                    processedResults, device_name, timeStamp
                 )
                 # sending network packets
-                xclient.putBytes(name, detectionPacket.to_bytes())
+                xclient.putBytes(device_name, detectionPacket.to_bytes())
             else:
-                xclient.putBytes(name, defaultBytes)
+                xclient.putBytes(device_name, defaultBytes)
             # cv2.imshow("frame", undistortedFrame)
             # if cv2.waitKey(1) & 0xFF == ord("q"):
             # break

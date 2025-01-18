@@ -2,24 +2,20 @@ import codecs
 import json
 import numpy as np
 import cv2
+from tools.configLoader import loadSavedCalibration
 
-
-def startCalibration():
+def startCalibration(chessBoardDim = (7, 10)):
     windowName = "Calibration View"
     cv2.namedWindow(windowName)
     trackbarName = "Time Per Cap: "
 
-    def n(i):
-        pass
-
-    cv2.createTrackbar(trackbarName, windowName, 3, 5, n)
+    cv2.createTrackbar(trackbarName, windowName, 3, 5, lambda x : None)
 
     waitTime = 3000  # default 3s per capture
     frameRate = 1  # 1ms wait
     timePassed = 0  # ms
     # termination criteria
     criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
-    chessBoardDim = (7, 10)
     # prepare object points, like (0,0,0), (1,0,0), (2,0,0) ....,(6,5,0)
     objp = np.zeros((chessBoardDim[0] * chessBoardDim[1], 3), np.float32)
     objp[:, :2] = (
@@ -87,38 +83,13 @@ def startCalibration():
     cap.release()
 
 
-def loadSavedCalibration():
-    try:
-        savedCalib = json.load(
-            codecs.open("assets/camera_calib.json", "r", encoding="utf-8")
-        )
-        return savedCalib
-    except Exception as e:
-        print("Error occured when loading calibration, defaulting to saved values", e)
-        return {
-            "CameraMatrix": [
-                [541.6373297834168, 0.0, 350.2246103229324],
-                [0.0, 542.5632693416148, 224.8432462256541],
-                [0.0, 0.0, 1.0],
-            ],
-            "DistortionCoeff": [
-                [
-                    0.03079145286029344,
-                    -0.0037492997547329213,
-                    -0.0009340163324388664,
-                    0.0012027838051384778,
-                    -0.07882030659375006,
-                ]
-            ],
-        }
 
 
-def createMapXYForUndistortion(w, h):
-    savedCalib = loadSavedCalibration()
 
-    cameraMatrix = np.array(savedCalib["CameraMatrix"])
-    distCoeffs = np.array(savedCalib["DistortionCoeff"])
-    print(cameraMatrix)
+def createMapXYForUndistortion(w, h, loadedCalibration):
+    cameraMatrix = np.array(loadedCalibration["CameraMatrix"])
+    distCoeffs = np.array(loadedCalibration["DistortionCoeff"])
+    # print(cameraMatrix)
     # Compute the optimal new camera matrix
     newCameraMatrix, roi = cv2.getOptimalNewCameraMatrix(
         cameraMatrix, distCoeffs, (w, h), 1, (w, h)

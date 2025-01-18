@@ -10,5 +10,6 @@ services:
       - "/dev/dri/renderD129:/dev/dri/renderD129" # rknpu device
     volumes:
       - "/proc/device-tree/compatible:/proc/device-tree/compatible:ro"
+      - "/xbot/config:/xbot/config:ro"
     command: ["python", "centralOrangePiProcess.py"]
     restart: always

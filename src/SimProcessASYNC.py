@@ -80,7 +80,7 @@ frameProcessors = [
 central = CentralProcessor.instance()
 
 # Initialize NetworkTables
-NetworkTables.initialize(server="127.0.0.1")
+NetworkTables.initialize(server="10.4.88.2")
 postable = NetworkTables.getTable("SmartDashboard/VisionSystemSim-main/Sim Field")
 table = NetworkTables.getTable("AdvantageKit/RealOutputs/Odometry")
 
