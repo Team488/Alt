@@ -1,6 +1,8 @@
 import json
 import codecs
+
 CONFIG_PATH = "/xbot/config"
+
 
 def loadSavedCalibration():
     try:
@@ -26,7 +28,8 @@ def loadSavedCalibration():
                 ]
             ],
         }
-    
+
+
 def loadOpiConfig():
     try:
         savedCalib = json.load(
@@ -36,6 +39,6 @@ def loadOpiConfig():
     except Exception as e:
         print("Error occured when loading config, defaulting to saved values", e)
         return {
-            "positionTable": "Robot_Pose",
-            "useXTablesForPos": True,
+            "positionTable": "/AdvantageKit/RealOutputs/PoseSubsystem/RobotPose",
+            "useXTablesForPos": False,
         }
