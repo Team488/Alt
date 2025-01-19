@@ -1,4 +1,3 @@
-version: "3.9"
 services:
   my-service:
     image: xdash-docker-image
