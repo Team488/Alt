@@ -5,6 +5,7 @@ services:
     container_name: orange-pi-alt-container
     hostname: ${HOSTNAME}  # Uses the current hostname of the system
     privileged: true  # Equivalent to --privileged flag
+    network_mode: "host" # Expose the container to the network
     devices:
       - "/dev/color_camera:/dev/video0" # passing in the symlink to the camera
       - "/dev/dri/renderD129:/dev/dri/renderD129" # rknpu device
