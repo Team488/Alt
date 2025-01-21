@@ -2,10 +2,12 @@ import numpy as np
 from mapinternals.probmap import ProbMap
 from mapinternals.localFrameProcessor import LocalFrameProcessor
 from tools.CsvParser import CsvParser
-from tools.Constants import CameraIntrinsics, CameraExtrinsics, UnitMode
+from tools.Constants import CameraIntrinsics, CameraExtrinsics
 from inference.onnxInferencer import onnxInferencer
 import cv2
 import math
+
+from tools.Units import UnitMode
 
 
 def startDemo():

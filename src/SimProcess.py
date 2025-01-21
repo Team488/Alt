@@ -9,7 +9,8 @@ from networktables import NetworkTables
 from tools.NtUtils import getPose2dFromBytes
 from mapinternals.localFrameProcessor import LocalFrameProcessor
 from mapinternals.CentralProcessor import CentralProcessor
-from tools.Constants import CameraExtrinsics, CameraIntrinsics, CameraIdOffsets,UnitMode
+from tools.Constants import CameraExtrinsics, CameraIntrinsics, CameraIdOffsets
+from tools.Units import UnitMode
 
 
 processName = "Simulation_Process"

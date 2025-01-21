@@ -10,9 +10,10 @@ from JXTABLES.XTablesClient import XTablesClient
 from networktables import NetworkTables
 from tools.NtUtils import getPose2dFromBytes
 from coreinterface.DetectionPacket import DetectionPacket
-from tools.Constants import UnitMode, getCameraValues
+from tools.Constants import getCameraValues
 from mapinternals.localFrameProcessor import LocalFrameProcessor
 from tools import calibration, NtUtils
+from tools.Units import UnitMode
 
 
 processName = "Central_Orange_Pi_Process"

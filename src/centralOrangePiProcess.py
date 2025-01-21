@@ -7,10 +7,12 @@ import time
 from enum import Enum
 from JXTABLES.XTablesClient import XTablesClient
 from coreinterface.DetectionPacket import DetectionPacket
-from tools.Constants import UnitMode, getCameraValues
+from tools.Constants import getCameraValues
 from mapinternals.localFrameProcessor import LocalFrameProcessor
 from tools import calibration, NtUtils, configLoader
 from networktables import NetworkTables
+
+from tools.Units import UnitMode
 
 processName = "Central_Orange_Pi_Process"
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')

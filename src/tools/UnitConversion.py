@@ -1,16 +1,29 @@
 from collections.abc import Iterable 
-import math
-def degtorad(deg):
-    return deg*math.pi/180
-
-def radtodeg(rad):
-    return rad*180/math.pi
 
 def mtoin(m):
     return m*39.37
 
 def intom(inch):
     return inch/39.37
+
+def intocm(inch):
+    return inch*2.54
+
+def cmtoin(cm):
+    return cm/2.54
+
+def ftocm(f):
+    return f*30.48
+
+def cmtof(cm):
+    return cm/30.48
+
+def ytocm(y):
+    return y * 91.44
+
+def cmtoy(cm):
+    return cm / 91.44
+
 
 def toint(value):
     if isinstance(value,Iterable):

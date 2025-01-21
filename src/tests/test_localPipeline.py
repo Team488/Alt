@@ -1,6 +1,8 @@
 from mapinternals.localFrameProcessor import LocalFrameProcessor
-from tools.Constants import CameraExtrinsics, CameraIntrinsics, UnitMode
+from tools.Constants import CameraExtrinsics, CameraIntrinsics
 import cv2
+
+from tools.Units import UnitMode
 
 
 def verifyValidOutput():

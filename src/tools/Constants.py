@@ -165,10 +165,6 @@ class MapConstants(Enum):
 class LabelingConstants(Enum):
     MAXFRAMESNOTSEEN = 15
 
-class UnitMode(Enum):
-    CM = "cm"
-    IN = "inch"
-
 # todo consolidate camera info into one central enum
 # class CAMERA(Enum):
 

@@ -1,7 +1,8 @@
 import random
 import time
 from mapinternals.deepSortBaseLabler import DeepSortBaseLabler
-from tools.Constants import CameraIntrinsics, CameraExtrinsics, MapConstants, UnitMode
+from tools.Constants import CameraIntrinsics, CameraExtrinsics, MapConstants
+from tools.Units import UnitMode
 from tools.positionEstimator import PositionEstimator
 from tools.positionTranslations import CameraToRobotTranslator, transformWithYaw
 import numpy as np
