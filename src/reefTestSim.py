@@ -29,7 +29,7 @@ cams = [
 ]
 
 
-NetworkTables.initialize(server="127.0.0.1")
+NetworkTables.initialize(server="192.168.0.17")
 postable = NetworkTables.getTable("SmartDashboard/VisionSystemSim-main/Sim Field")
 table = NetworkTables.getTable("AdvantageKit/RealOutputs/Odometry")
 

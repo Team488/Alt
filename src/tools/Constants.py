@@ -143,8 +143,8 @@ class MapConstants(Enum):
 
     mapObstacles = []  # todo define these
     reefRadius = 83.185 # cm
-    b_reef_center = (454, 402) # cm
-    r_reef_center = (1234, 402) # cm
+    b_reef_center = (411.48, 365.76) # cm
+    r_reef_center = (1234.44, 365.76) # cm
     reef_post_radius = 1.5875
 
     algae_radius = 40.64 #cm

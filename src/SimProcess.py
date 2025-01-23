@@ -4,6 +4,8 @@ import time
 import queue
 import cv2
 import logging
+from JXTABLES.XTablesClient import XTablesClient
+from JXTABLES import XTableValues_pb2
 from concurrent.futures import ThreadPoolExecutor
 from networktables import NetworkTables
 from tools.NtUtils import getPose2dFromBytes
@@ -11,6 +13,8 @@ from mapinternals.localFrameProcessor import LocalFrameProcessor
 from mapinternals.CentralProcessor import CentralProcessor
 from tools.Constants import CameraExtrinsics, CameraIntrinsics, CameraIdOffsets
 from tools.Units import UnitMode
+from pathplanning.PathGenerator import PathGenerator
+
 
 
 processName = "Simulation_Process"
@@ -70,7 +74,6 @@ frameProcessors = [
     LocalFrameProcessor(
         cameraIntrinsics=CameraIntrinsics.SIMULATIONCOLOR,
         cameraExtrinsics=extrinsics[i],
-        unitMode=UnitMode.CM,
         useRknn=False,
         tryOCR=True,
         isSimulationMode=True
@@ -79,12 +82,13 @@ frameProcessors = [
 ]
 
 central = CentralProcessor.instance()
+pathGenerator = PathGenerator(central)
 
 # Initialize NetworkTables
 NetworkTables.initialize(server="127.0.0.1")
-postable = NetworkTables.getTable("SmartDashboard/VisionSystemSim-main/Sim Field")
-table = NetworkTables.getTable("AdvantageKit/RealOutputs/Odometry")
+postable = NetworkTables.getTable("AdvantageKit/RealOutputs/PoseSubsystem")
 
+xclient = XTablesClient(ip="192.168.0.17",push_port=9999)
 
 # exit(0)
 
@@ -129,10 +133,10 @@ def run_frameprocess(imitatedProcIdx):
 
     # Fetch NetworkTables data
     pos = (0, 0, 0)
-    raw_data = postable.getEntry("Robot").get()
+    raw_data = postable.getEntry("RobotPose").get()
     if raw_data:
-        pos = (raw_data[0],raw_data[1],math.radians(raw_data[2])) # this one gives degrees by default
-        # pos = getPose2dFromBytes(raw_data)
+        pos = getPose2dFromBytes(raw_data)
+        pos = (pos[0],pos[1],math.radians(pos[2])) # this one gives degrees by default
     else:
         logger.warning("Cannot get robot location from network tables!")
 
@@ -184,21 +188,31 @@ try:
 
             localUpdateMap[processName] = packetidx
             results.append(result)
+            print(results)
         central.processFrameUpdate(results, 2)
-        coord = central.map.getHighestGameObjectT(0.1)
-        if coord is not None:
-            x, y, p = coord
-            scaleFactor = 99  # cm to m
-            table.getEntry("est/Target_Estimate").setDoubleArray(
-                [x / scaleFactor, y / scaleFactor, 0, 0]
-            )
+        
+        pos = (0, 0, 0)
+        raw_data = postable.getEntry("RobotPose").get()
+        if raw_data:
+            pos = getPose2dFromBytes(raw_data)
+            pos = (pos[0],pos[1],math.radians(pos[2])) # this one gives degrees by default
         else:
-            table.getEntry("est/Target_Estimate").setDoubleArray(
-                [0,0, 0, 0]
-            )
-
+            logger.warning("Cannot get robot location from network tables!")
+        
+        target = central.map.getHighestGameObjectT(0.2)
+        path = pathGenerator.generate((pos[0]*100, pos[1]*100), target[:2], 0) # m to cm
+        logger.debug(f"Generated Path: {path}")
+        if path is None:
+            logger.warning(f"No path found!")
+            xclient.putCoordinates("target_waypoints", [])
+        else:
+            coordinates = []
+            for waypoint in path:
+                element = XTableValues_pb2.Coordinate(x = waypoint[0]/100,y = waypoint[1]/100)
+                coordinates.append(element)
+            xclient.putCoordinates("target_waypoints", coordinates)
+        
         print(central.map.getHighestGameObject())
-        # logger.debug("Updated Target Estimate entry in NetworkTables.")
 
         etime = time.time()
         dMS = (etime - stime) * 1000

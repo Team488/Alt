@@ -18,12 +18,10 @@ class LocalFrameProcessor:
         self,
         cameraIntrinsics: CameraIntrinsics,
         cameraExtrinsics: CameraExtrinsics,
-        unitMode: UnitMode,
         useRknn=False,
         isSimulationMode = False,
         tryOCR = False
     ) -> None:
-        self.unitMode = unitMode
         if useRknn:
             from inference.rknnInferencer import rknnInferencer
 
@@ -102,6 +100,7 @@ class LocalFrameProcessor:
         relativeResults = self.estimator.estimateDetectionPositions(
             frame, labledResults.copy(), camIntrinsics
         )
+        print(relativeResults)
 
         # print(f"{robotPosXCm=} {robotPosYCm=} {robotYawRad=}")
         absoluteResults = []
@@ -124,9 +123,12 @@ class LocalFrameProcessor:
             )
 
             # note at this point these values are expected to be absolute
-
-            if not self.isiregularDetection(relToRobotX,relToRobotY,relToRobotZ):
+            absx,absy,absz = result[1]
+            if not self.isiregularDetection(absx,absy,absz):
                 absoluteResults.append(result)
+            else:
+                print("Iregular Detection!:")
+                print(f"{relToRobotX =} {relToRobotY =} {relToRobotZ =}")
         # output is id,(absX,absY,absZ),conf,isRobot,features
 
         endTime = time.time()

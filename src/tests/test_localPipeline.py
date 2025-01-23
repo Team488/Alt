@@ -7,7 +7,7 @@ from tools.Units import UnitMode
 
 def verifyValidOutput():
     frameProcessor = LocalFrameProcessor(
-        CameraIntrinsics.OAKDLITE, CameraExtrinsics.DEPTHLEFT,unitMode=UnitMode.CM
+        CameraIntrinsics.OAKDLITE, CameraExtrinsics.DEPTHLEFT 
     )  # these are not needed for the test
     cap = cv2.VideoCapture("assets/video12qual25clipped.mp4")
     cap.set(cv2.CAP_PROP_POS_FRAMES, 768)

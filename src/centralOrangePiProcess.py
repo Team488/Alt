@@ -40,7 +40,7 @@ def startProcess():
     processor = LocalFrameProcessor(
         cameraIntrinsics=cameraIntrinsics,
         cameraExtrinsics=cameraExtrinsics,
-        unitMode=UnitMode.CM,
+         ,
         useRknn=True,
     )
     calib = configLoader.loadSavedCalibration()

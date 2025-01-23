@@ -70,7 +70,6 @@ frameProcessors = [
     LocalFrameProcessor(
         cameraIntrinsics=CameraIntrinsics.SIMULATIONCOLOR,
         cameraExtrinsics=extrinsics[i],
-        unitMode=UnitMode.CM,
         useRknn=False,
         tryOCR=True,
         isSimulationMode=True

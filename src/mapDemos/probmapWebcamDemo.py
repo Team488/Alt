@@ -35,7 +35,7 @@ def startDemo():
     cameraIntr = CameraIntrinsics.OV9782COLOR
     cap = cv2.VideoCapture(0)
 
-    frameProcessor = LocalFrameProcessor(cameraIntr, cameraExtr,unitMode=UnitMode.CM)
+    frameProcessor = LocalFrameProcessor(cameraIntr, cameraExtr)
     while cap.isOpened():
         ret, frame = cap.read()
         if ret:
