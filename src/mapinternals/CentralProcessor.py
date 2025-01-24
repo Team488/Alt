@@ -18,17 +18,18 @@ class CentralProcessor:
         self.ukf = Ukf()
         self.labler = KalmanLabeler(self.kalmanCacheRobots, self.kalmanCacheGameObjects)
         # adapt to numpys row,col by transposing
-        self.obstacleMap = self.__tryLoadObstacleMap().transpose()
+        self.obstacleMap = self.__tryLoadObstacleMap()
 
     def __tryLoadObstacleMap(self):
-        defaultMap = np.ones(
-            (MapConstants.fieldHeight.value, MapConstants.fieldWidth.value)
+        defaultMap = np.zeros(
+            (MapConstants.fieldWidth.value, MapConstants.fieldHeight.value),dtype=bool
         )
         try:
             defaultMap = np.load("assets/obstacleMap.npy")
         except Exception as e:
             print("obstaclemap load failed, defaulting to empty map", e)
-        return cv2.resize(defaultMap, self.map.getInternalSize())
+        
+        return defaultMap
 
     # async map update per camera, probably want to syncronize this
     def processFrameUpdate(

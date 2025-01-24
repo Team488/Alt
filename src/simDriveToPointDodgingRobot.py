@@ -8,28 +8,27 @@ from JXTABLES.XTablesClient import XTablesClient
 from JXTABLES import XTableValues_pb2
 from concurrent.futures import ThreadPoolExecutor
 from networktables import NetworkTables
+import numpy as np
 from tools.NtUtils import getPose2dFromBytes
 from mapinternals.localFrameProcessor import LocalFrameProcessor
 from mapinternals.CentralProcessor import CentralProcessor
-from tools.Constants import CameraExtrinsics, CameraIntrinsics, CameraIdOffsets, InferenceMode
+from tools.Constants import (
+    CameraExtrinsics,
+    CameraIntrinsics,
+    CameraIdOffsets,
+    InferenceMode,
+    MapConstants
+)
 from tools.Units import UnitMode
 from pathplanning.PathGenerator import PathGenerator
 
 
-
-processName = "Simulation_Process"
+processName = "Path_Test"
 logger = logging.getLogger(processName)
-fh = logging.FileHandler(filename=f"logs/{processName}.log", mode="w")
-fh.setLevel(logging.INFO)
-ch = logging.StreamHandler()
-ch.setLevel(logging.DEBUG)
-# create formatter and add it to the handlers
-formatter = logging.Formatter("-->%(asctime)s - %(name)s:%(levelname)s - %(message)s")
-fh.setFormatter(formatter)
-logger.addHandler(fh)
-logger.addHandler(ch)
 
 # MJPEG stream URLs
+
+
 FRUrl = "http://localhost:3000/Robot_FrontRight%20Camera?dummy=param.mjpg"
 FLUrl = "http://localhost:3000/Robot_FrontLeft%20Camera?dummy=param.mjpg"
 RRUrl = "http://localhost:3000/Robot_RearRight%20Camera?dummy=param.mjpg"
@@ -74,7 +73,7 @@ frameProcessors = [
     LocalFrameProcessor(
         cameraIntrinsics=CameraIntrinsics.SIMULATIONCOLOR,
         cameraExtrinsics=extrinsics[i],
-        inferenceMode=InferenceMode.ONNX2024,
+        inferenceMode=InferenceMode.ULTRALYTICS2025,
         tryOCR=True,
         isSimulationMode=True
     )
@@ -88,7 +87,7 @@ pathGenerator = PathGenerator(central)
 NetworkTables.initialize(server="127.0.0.1")
 postable = NetworkTables.getTable("AdvantageKit/RealOutputs/PoseSubsystem")
 
-xclient = XTablesClient(ip="192.168.0.17",push_port=9999)
+xclient = XTablesClient(ip="192.168.0.17", push_port=9999)
 
 # exit(0)
 
@@ -97,11 +96,50 @@ xclient = XTablesClient(ip="192.168.0.17",push_port=9999)
 title = "Simulation_Window"
 camera_selector_name = "Camera Selection"
 cv2.namedWindow(title)
+camera_selector_name = "Camera Selection"
 cv2.createTrackbar(camera_selector_name,title,0,3, lambda x: None)
 cv2.setTrackbarPos(camera_selector_name,title,2)
+cv2.createTrackbar("TestRobotX",title,0,MapConstants.fieldWidth.getCM(), lambda x: None)
+cv2.setTrackbarPos("TestRobotX",title,660)
+cv2.createTrackbar("TestRobotY",title,0,MapConstants.fieldHeight.getCM(), lambda x: None)
+cv2.setTrackbarPos("TestRobotY",title,535)
+clickpos = None
+currentPath = None
 
-cv2.createTrackbar("a",title,0,640,lambda x : None)
-cv2.setTrackbarPos("a",title,320)
+def getAndSetPath(clickpos):
+    global currentPath
+    pos = (0, 0, 0)
+    raw_data = postable.getEntry("RobotPose").get()
+    if raw_data:
+        pos = getPose2dFromBytes(raw_data)
+    else:
+        logger.warning("Cannot get robot location from network tables!")
+
+    path = pathGenerator.generate(
+        (MapConstants.fieldWidth.getCM()-pos[0] * 100, pos[1] * 100), clickpos, central.map.getRobotMap() > 0.1
+    )  # m to cm
+    logger.debug(f"Generated Path: {path}")
+    if path is None:
+        logger.warning(f"No path found!")
+        xclient.putCoordinates("target_waypoints", [])
+    else:
+        currentPath = path
+        coordinates = []
+        for waypoint in path:
+            element = XTableValues_pb2.Coordinate(
+                x=waypoint[0] / 100, y=waypoint[1] / 100
+            )
+            coordinates.append(element)
+        xclient.putCoordinates("target_waypoints", coordinates)
+
+def clickCallback(event, x, y, flags, param):
+    global clickpos
+    if event == cv2.EVENT_LBUTTONDOWN:
+        getAndSetPath((x, y))
+
+
+cv2.setMouseCallback(title, clickCallback)
+
 
 updateMap = {
     "FRONTLEFT": ([], offsets[0], 0),
@@ -130,13 +168,22 @@ def run_frameprocess(imitatedProcIdx):
         logging.warning("Failed to retrieve a frame from stream.")
         exit(1)
 
+    # put test robot pose
+    x = cv2.getTrackbarPos("TestRobotX",title)
+    y = cv2.getTrackbarPos("TestRobotY",title)
+    postable.getEntry("TestRobotPose").setDoubleArray([x/100,y/100,0])
+
+    highestRobot = central.map.getHighestRobot()
+    postable.getEntry("VisionEstimatedRobotLocation").setDoubleArray([highestRobot[0]/100,highestRobot[1]/100,0])
+    cv2.circle(frame,(int(MapConstants.fieldWidth.getCM()-highestRobot[0]),int(highestRobot[1])),5,(255),-1)
+
+
 
     # Fetch NetworkTables data
     pos = (0, 0, 0)
     raw_data = postable.getEntry("RobotPose").get()
     if raw_data:
         pos = getPose2dFromBytes(raw_data)
-        pos = (pos[0],pos[1],math.radians(pos[2])) # this one gives degrees by default
     else:
         logger.warning("Cannot get robot location from network tables!")
 
@@ -169,87 +216,35 @@ localUpdateMap = {
     "REARRIGHT": 0,
     "REARLEFT": 0,
 }
-# Executor outside the with block
-
-try:
-    while running:
-        run_frameprocess(cv2.getTrackbarPos(camera_selector_name,title))
         
-        stime = time.time()
-        results = []
-        for processName in names:
-            localidx = localUpdateMap[processName]
-            packet = updateMap[processName]
-            # print(f"{packet=}")
-            result, packetidx = packet[:2], packet[2]
-            if localidx == packetidx:
-                continue
 
-            localUpdateMap[processName] = packetidx
-            results.append(result)
-            print(results)
-        central.processFrameUpdate(results, 2)
-        
-        pos = (0, 0, 0)
-        raw_data = postable.getEntry("RobotPose").get()
-        if raw_data:
-            pos = getPose2dFromBytes(raw_data)
-            pos = (pos[0],pos[1],math.radians(pos[2])) # this one gives degrees by default
-        else:
-            logger.warning("Cannot get robot location from network tables!")
-        
-        target = central.map.getHighestGameObjectT(0.2)
-        path = pathGenerator.generate((pos[0]*100, pos[1]*100), target[:2], 0) # m to cm
-        logger.debug(f"Generated Path: {path}")
-        if path is None:
-            logger.warning(f"No path found!")
-            xclient.putCoordinates("target_waypoints", [])
-        else:
-            coordinates = []
-            for waypoint in path:
-                element = XTableValues_pb2.Coordinate(x = waypoint[0]/100,y = waypoint[1]/100)
-                coordinates.append(element)
-            xclient.putCoordinates("target_waypoints", coordinates)
-        
-        print(central.map.getHighestGameObject())
+while True:
+    run_frameprocess(cv2.getTrackbarPos(camera_selector_name,title))
+    stime = time.time()
+    results = []
+    for processName in names:
+        localidx = localUpdateMap[processName]
+        packet = updateMap[processName]
+        # print(f"{packet=}")
+        result, packetidx = packet[:2], packet[2]
+        if localidx == packetidx:
+            continue
 
-        etime = time.time()
-        dMS = (etime - stime) * 1000
-        waittime = 0.001
-        if dMS < MAINLOOPTIMEMS:
-            waittime = int(MAINLOOPTIMEMS - dMS)
-        else:
-            logger.warning(
-                f"Overran Loop! Time elapsed: {dMS}ms | Max loop time: {MAINLOOPTIMEMS}ms"
-            )
-        cv2.imshow(f"{title}_robots", central.map.getRobotHeatMap())
-        cv2.imshow(f"{title}_notes", central.map.getGameObjectHeatMap())
+        localUpdateMap[processName] = packetidx
+        results.append(result)
+        print(results)
+    central.processFrameUpdate(results, 2)
+    
+    frame = central.map.getRobotHeatMap().copy()
+    if currentPath is not None:
+        for point in currentPath:
+            cv2.circle(frame,point,2,(255,255,255),-1)
 
-        while not frame_queue.empty():
-            print("In frame queue")
-            name, frame = frame_queue.get()
-            cv2.imshow(name, frame)
-        # Handle keyboard interrupt with cv2.waitKey()
-        if cv2.waitKey(1) & 0xFF == ord("q"):
-            running = False
+    cv2.imshow(title, frame)
 
-        time.sleep(waittime / 1000)
+    # Handle keyboard interrupt with cv2.waitKey()
+    if cv2.waitKey(1) & 0xFF == ord("q"):
+        break
 
-except KeyboardInterrupt:
-    print("Keyboard Interrupt detected, shutting down...")
-    running = False
-
-finally:
-    # Gracefully shut down threads
-
-    # Clean up resources
-    cv2.destroyAllWindows()
-    if capFL.isOpened():
-        capFL.release()
-    if capFR.isOpened():
-        capFR.release()
-    if capRL.isOpened():
-        capRL.release()
-    if capRR.isOpened():
-        capRR.release()
-    logging.info("Released all resources and closed windows.")
+cv2.destroyAllWindows()
+logging.info("Released all resources and closed windows.")

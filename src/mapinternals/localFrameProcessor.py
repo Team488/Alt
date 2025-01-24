@@ -23,6 +23,7 @@ class LocalFrameProcessor:
         tryOCR = False
     ) -> None:
         self.inf = self.createInferencer(inferenceMode)
+        self.inferenceMode = inferenceMode
         self.baseLabler: DeepSortBaseLabler = DeepSortBaseLabler()
         self.cameraIntrinsics: CameraIntrinsics = cameraIntrinsics
         self.cameraExtrinsics: CameraExtrinsics = cameraExtrinsics
@@ -91,12 +92,12 @@ class LocalFrameProcessor:
                 id = labledResult[0]
                 bbox = labledResult[1]
                 conf = labledResult[2]
-                isRobot = labledResult[3]
+                isL1 = labledResult[3]
                 color = self.colors[id % len(self.colors)]
                 cv2.rectangle(frame, bbox[0:2], bbox[2:4], color)
                 cv2.putText(
                     frame,
-                    f"Id:{id} Conf{conf:.2f} IsRobot{isRobot}",
+                    f"Id:{id} Conf{conf:.2f} IsL1{isL1}",
                     (10, 30),
                     0,
                     1,
@@ -106,7 +107,7 @@ class LocalFrameProcessor:
 
         # id(unique),estimated x/y,conf,isrobot,features,
         relativeResults = self.estimator.estimateDetectionPositions(
-            frame, labledResults.copy(), camIntrinsics
+            frame, labledResults.copy(), camIntrinsics, self.inferenceMode
         )
         print(relativeResults)
 
@@ -136,6 +137,7 @@ class LocalFrameProcessor:
                 absoluteResults.append(result)
             else:
                 print("Iregular Detection!:")
+                print(f"{absx =} {absy =} {absz =}")
                 print(f"{relToRobotX =} {relToRobotY =} {relToRobotZ =}")
         # output is id,(absX,absY,absZ),conf,isRobot,features
 
@@ -152,12 +154,12 @@ class LocalFrameProcessor:
                 bbox = labledResult[1]
                 conf = labledResult[2]
                 estXYZ = relativeResult[1]
-                isRobot = labledResult[3]
+                isL1 = labledResult[3]
                 color = self.colors[id % len(self.colors)]
                 cv2.rectangle(frame, bbox[0:2], bbox[2:4], color)
                 cv2.putText(
                     frame,
-                    f"Id:{id} Conf{conf:.2f} IsRobot{isRobot}",
+                    f"Id:{id} Conf{conf:.2f} IsRobot{isL1}",
                     (10, 30),
                     0,
                     1,

@@ -2,12 +2,14 @@ import numpy as np
 from ultralytics import YOLO
 import cv2
 from abstract.inferencer import Inferencer
+from tools.Constants import Object
 class ultralyticsInferencer(Inferencer):
     def __init__(
         self,
         model_path
     ):
         self.model = YOLO(model_path)
+        self.labels = ("algae","coral")
 
 
     def inferenceFrame(self, frame, drawBox=True):
@@ -17,8 +19,7 @@ class ultralyticsInferencer(Inferencer):
             half = boxes[:,2:]/2
             boxes = np.hstack((boxes[:,:2]-half,boxes[:,:2]+half))
             confs = results[0].boxes.conf.cpu()
-            ids = results[0].boxes.cls.cpu()
-            labels = ["algae", "coral"]
+            ids = results[0].boxes.cls.cpu().numpy()
             if drawBox:
                 for (bbox, conf, class_id) in zip(boxes,confs,ids):
                     x1, y1, x2, y2 = tuple(map(int,bbox))
@@ -29,8 +30,10 @@ class ultralyticsInferencer(Inferencer):
                         color=(0, 255, 0),
                         thickness=2,
                     )
-                    cv2.putText(frame, f"{labels[int(class_id)]}", (x1,y1), 1, 2, (255, 255, 255), 1)
-        return results
+                    cv2.putText(frame, f"{self.labels[int(class_id)]}", (x1,y1), 1, 2, (255, 255, 255), 1)
+            return list(zip(boxes,confs,ids))
+        
+        return None
 
 
 def startDemo():

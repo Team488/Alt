@@ -1,7 +1,9 @@
+import math
+import cv2
 import numpy as np
 import heapq
+from tools.Constants import MapConstants
 
-# Define the Cell class
 class Cell:
     def __init__(self):
         self.parent_i = 0  # Parent cell's row index
@@ -11,156 +13,131 @@ class Cell:
         self.h = 0  # Heuristic cost from this cell to destination
 
 
-# Check if a cell is valid (within the grid)
-def is_valid(row, col, WIDTH, HEIGHT):
-    return (row >= 0) and (row < HEIGHT) and (col >= 0) and (col < WIDTH)
+class AStarPathfinder:
+    def __init__(self, grid, obstacleWidth, obstacleHeight, gridSizeCol,gridSizeRow):
+        self.original_grid = grid
+        self.grid = self.inflate_obstacles(grid, math.ceil(np.linalg.norm((obstacleWidth, obstacleHeight))))
+        self.grid = cv2.resize(self.grid,(gridSizeCol,gridSizeRow))
+        # now convert back to boolean
+        self.grid = self.grid >= 1
+        self.ROW_SIZE = gridSizeRow
+        self.COL_SIZE = gridSizeCol
 
+    def inflate_obstacles(self, grid, radius):
+        # Create a circular kernel
+        kernel_size = radius + 2 # small safety offset
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (kernel_size, kernel_size))
+        # Dilate the grid to inflate obstacles
+        inflated_grid = cv2.dilate(grid.astype(dtype=np.uint8), kernel, iterations=1)
+        return inflated_grid
 
-# Check if a cell is unblocked
-def is_unblocked(grid, row, col, minHeight):
-    return grid[row, col] >= minHeight
+    @staticmethod
+    def is_valid(col, row, ROW_SIZE, COL_SIZE):
+        return 0 <= row < ROW_SIZE and 0 <= col < COL_SIZE
 
+    def is_unblocked(self, col, row, grid):
+        return not grid[row, col] 
 
-# Check if a cell is the destination
-def is_destination(row, col, dest):
-    return row == dest[0] and col == dest[1]
+    @staticmethod
+    def is_destination(col, row, dest):
+        return col == dest[0] and row == dest[1]
 
+    @staticmethod
+    def calculate_h_value(col, row, dest):
+        return ((col - dest[0]) ** 2 + (row - dest[1]) ** 2) ** 0.5
 
-# Calculate the heuristic value of a cell (Euclidean distance to destination)
-def calculate_h_value(row, col, dest):
-    return ((row - dest[0]) ** 2 + (col - dest[1]) ** 2) ** 0.5
+    @staticmethod
+    def trace_path(cell_details, dest):
+        path = []
+        row, col = dest
+        while not (
+            cell_details[row][col].parent_i == row
+            and cell_details[row][col].parent_j == col
+        ):
+            path.append((row, col))
+            temp_row = cell_details[row][col].parent_i
+            temp_col = cell_details[row][col].parent_j
+            row, col = temp_row, temp_col
 
+        path.append((row, col))
+        path.reverse()
+        return np.array(path)
 
-# Trace the path from source to destination
-def trace_path(cell_details, dest):
-    # print("The Path is ")
-    path = []
-    row = dest[0]
-    col = dest[1]
+    def a_star_search(self, src, dest, extraObstacles = None):
+        grid = self.grid
+        print(self.grid.shape)
+        if extraObstacles is not None:
+            grid = np.bitwise_or(grid,extraObstacles)
 
-    # Trace the path from destination to source using parent cells
-    while not (
-        cell_details[row][col].parent_i == row
-        and cell_details[row][col].parent_j == col
-    ):
-        path.append((col, row))
-        temp_row = cell_details[row][col].parent_i
-        temp_col = cell_details[row][col].parent_j
-        row = temp_row
-        col = temp_col
+        print(f"{self.ROW_SIZE=} {self.COL_SIZE=}")
+        if not self.is_valid(src[0], src[1], self.ROW_SIZE, self.COL_SIZE) or not self.is_valid(
+            dest[0], dest[1], self.ROW_SIZE, self.COL_SIZE
+        ):
+            print(f"Source {src} or destination {dest} is invalid")
+            return None
 
-    # Add the source cell to the path
-    path.append((col, row))
-    # Reverse the path to get the path from source to destination
-    path.reverse()
+        if not self.is_unblocked(src[0], src[1], grid) or not self.is_unblocked(dest[0], dest[1], grid):
+            print("Source or the destination is blocked")
+            return None
 
-    return path
+        if self.is_destination(src[0], src[1], dest):
+            print("We are already at the destination")
+            return np.array([src])
 
+        closed_list = [[False for _ in range(self.ROW_SIZE)] for _ in range(self.COL_SIZE)]
+        cell_details = [[Cell() for _ in range(self.ROW_SIZE)] for _ in range(self.COL_SIZE)]
 
-# Implement the A* search algorithm
-def a_star_search(grid, src, dest, minHeight, WIDTH, HEIGHT):
+        i, j = src
+        cell_details[i][j].f = 0
+        cell_details[i][j].g = 0
+        cell_details[i][j].h = 0
+        cell_details[i][j].parent_i = i
+        cell_details[i][j].parent_j = j
 
-    # Check if the source and destination are valid
-    if not is_valid(src[0], src[1], WIDTH, HEIGHT) or not is_valid(
-        dest[0], dest[1], WIDTH, HEIGHT
-    ):
-        print(f"Source{src} or destination{dest} is invalid")
-        print(f"Width{WIDTH} Height {HEIGHT}")
-        return
-    # Check if the source and destination are unblocked
-    if not is_unblocked(grid, src[0], src[1], minHeight) or not is_unblocked(
-        grid, dest[0], dest[1], minHeight
-    ):
-        print("Source or the destination is blocked")
-        return
+        open_list = []
+        heapq.heappush(open_list, (0.0, i, j))
+        found_dest = False
 
-    # Check if we are already at the destination
-    if is_destination(src[0], src[1], dest):
-        print("We are already at the destination")
-        return
-
-    # Initialize the closed list (visited cells)
-    closed_list = [[False for _ in range(WIDTH)] for _ in range(HEIGHT)]
-    # Initialize the details of each cell
-    cell_details = [[Cell() for _ in range(WIDTH)] for _ in range(HEIGHT)]
-
-    # Initialize the start cell details
-
-    i = src[0]
-    j = src[1]
-    cell_details[i][j].f = 0
-    cell_details[i][j].g = 0
-    cell_details[i][j].h = 0
-    cell_details[i][j].parent_i = i
-    cell_details[i][j].parent_j = j
-
-    # Initialize the open list (cells to be visited) with the start cell
-    open_list = []
-    heapq.heappush(open_list, (0.0, i, j))
-
-    # Initialize the flag for whether destination is found
-    found_dest = False
-
-    # Main loop of A* search algorithm
-    while len(open_list) > 0:
-        # Pop the cell with the smallest f value from the open list
-        p = heapq.heappop(open_list)
-
-        # Mark the cell as visited
-        i = p[1]
-        j = p[2]
-        closed_list[i][j] = True
-
-        # For each direction, check the successors
         directions = [
-            (0, 1),
-            (0, -1),
-            (1, 0),
-            (-1, 0),
-            (1, 1),
-            (1, -1),
-            (-1, 1),
-            (-1, -1),
+            (0, 1), (0, -1), (1, 0), (-1, 0),
+            (1, 1), (1, -1), (-1, 1), (-1, -1)
         ]
-        for dir in directions:
-            new_i = i + dir[0]
-            new_j = j + dir[1]
 
-            # If the successor is valid, unblocked, and not visited
-            if (
-                is_valid(new_i, new_j, WIDTH, HEIGHT)
-                and is_unblocked(grid, new_i, new_j, minHeight)
-                and not closed_list[new_i][new_j]
-            ):
-                # If the successor is the destination
-                if is_destination(new_i, new_j, dest):
-                    # Set the parent of the destination cell
-                    cell_details[new_i][new_j].parent_i = i
-                    cell_details[new_i][new_j].parent_j = j
-                    print("The destination cell is found")
-                    # Trace and print the path from source to destination
-                    found_dest = True
-                    return trace_path(cell_details, dest)
-                else:
-                    # Calculate the new f, g, and h values
+        while open_list:
+            p = heapq.heappop(open_list)
+            i, j = p[1], p[2]
+            closed_list[i][j] = True
+
+            for dir in directions:
+                new_i, new_j = i + dir[0], j + dir[1]
+
+                if (
+                    self.is_valid(new_i, new_j, self.ROW_SIZE, self.COL_SIZE)
+                    and self.is_unblocked(new_i, new_j, grid)
+                    and not closed_list[new_i][new_j]
+                ):
+                    if self.is_destination(new_i, new_j, dest):
+                        cell_details[new_i][new_j].parent_i = i
+                        cell_details[new_i][new_j].parent_j = j
+                        print("The destination cell is found")
+                        found_dest = True
+                        return self.trace_path(cell_details, dest)
+
                     g_new = cell_details[i][j].g + 1.0
-                    h_new = calculate_h_value(new_i, new_j, dest)
+                    h_new = self.calculate_h_value(new_i, new_j, dest)
                     f_new = g_new + h_new
 
-                    # If the cell is not in the open list or the new f value is smaller
                     if (
                         cell_details[new_i][new_j].f == float("inf")
                         or cell_details[new_i][new_j].f > f_new
                     ):
-                        # Add the cell to the open list
                         heapq.heappush(open_list, (f_new, new_i, new_j))
-                        # Update the cell details
                         cell_details[new_i][new_j].f = f_new
                         cell_details[new_i][new_j].g = g_new
                         cell_details[new_i][new_j].h = h_new
                         cell_details[new_i][new_j].parent_i = i
                         cell_details[new_i][new_j].parent_j = j
 
-    # If the destination is not found after visiting all cells
-    if not found_dest:
-        print("Failed to find the destination cell")
+        if not found_dest:
+            print("Failed to find the destination cell")
+            return None

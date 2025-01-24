@@ -5,7 +5,7 @@ import numpy as np
 from rknnlite.api import RKNNLite
 from inference import utils
 from abstract.inferencer import Inferencer
-from tools.Constants import ConfigConstants
+from tools.Constants import ConfigConstants, Object
 
 
 class rknnInferencer(Inferencer):
@@ -22,6 +22,7 @@ class rknnInferencer(Inferencer):
 
         # load model
         self.model = self.load_rknn_model(model_path)
+        self.labels = ("robot","note")
 
     # Initialize the RKNN model
     def load_rknn_model(self, model_path):
@@ -57,7 +58,6 @@ class rknnInferencer(Inferencer):
         nmsResults = utils.non_max_suppression(adjusted,ConfigConstants.confThreshold)
         # do stuff here
         if drawBox:
-            # labels = ["robot", "note"]
             for (bbox, conf, class_id) in nmsResults:
                 p1 = tuple(map(int, bbox[:2]))  # Convert to integer tuple
                 p2 = tuple(map(int, bbox[2:4]))  # Convert to integer tuple

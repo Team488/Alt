@@ -3,17 +3,25 @@ import math
 import numpy as np
 
 class InferenceMode(Enum):
-    RKNN2024 = ("assets/bestV5.rknn","yolov5s-rknn")
-    ONNX2024 = ("assets/bestV5.onnx","yolov5s-onnx")
-    ULTRALYTICS2025 = ("assets/2025-best-151.pt","yolov11s-ultralytics")
+    RKNN2024 = ("assets/bestV5.rknn","yolov5s-rknn",2024)
+    ONNX2024 = ("assets/bestV5.onnx","yolov5s-onnx",2024)
+    ULTRALYTICS2025 = ("assets/2025-best-151.pt","yolov11s-ultralytics",2025)
     # TORCH todo!
 
     def getModelPath(self):
         return self.value[0]
     
     def getName(self):
-        return self.value[0]
+        return self.value[1]
+    
+    def getYear(self):
+        return self.value[2]
 
+class Object(Enum):
+    ALGAE = "a"
+    CORAL = "c"
+    NOTE = "n"
+    ROBOT = "r"
 
 class CameraExtrinsics(Enum):
     #   {PositionName} = ((offsetX(in),offsetY(in),offsetZ(in)),(yawOffset(deg),pitchOffset(deg)))
@@ -113,6 +121,7 @@ class CameraIntrinsics(Enum):
 class ObjectReferences(Enum):
     NOTE = (35.56, 14)  # cm , in
     BUMPERHEIGHT = (12.7, 5)  # cm, in
+    ALGAEDIAMETER = (40.64,16) # cm in
 
     def getMeasurementCm(self):
         return self.value[0]
@@ -159,7 +168,6 @@ class MapConstants(Enum):
     r_reef_center = (1234.44, 365.76) # cm
     reef_post_radius = 1.5875
 
-    algae_radius = 40.64 #cm
 
     coral_inner_diameter = 10.16 #cm
     coral_outer_diameter = 11.43 #cm
@@ -170,8 +178,6 @@ class MapConstants(Enum):
 
     def getCM(self):
         return self.value
-    def getIn(self):
-        return self.value / 2.54
         
 
 class LabelingConstants(Enum):

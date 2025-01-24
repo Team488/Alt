@@ -9,7 +9,7 @@ from networktables import NetworkTables
 from tools.NtUtils import getPose2dFromBytes
 from mapinternals.localFrameProcessor import LocalFrameProcessor
 from mapinternals.CentralProcessor import CentralProcessor
-from tools.Constants import CameraExtrinsics, CameraIntrinsics, CameraIdOffsets
+from tools.Constants import CameraExtrinsics, CameraIntrinsics, CameraIdOffsets, InferenceMode
 from tools.Units import UnitMode
 
 
@@ -70,7 +70,7 @@ frameProcessors = [
     LocalFrameProcessor(
         cameraIntrinsics=CameraIntrinsics.SIMULATIONCOLOR,
         cameraExtrinsics=extrinsics[i],
-        useRknn=False,
+        inferenceMode=InferenceMode.ONNX2024,
         tryOCR=True,
         isSimulationMode=True
     )
@@ -144,7 +144,6 @@ def async_frameprocess(imitatedProcIdx):
                 robotPosYCm=pos[1] * 100,
                 robotYawRad=pos[2],
                 drawBoxes=True,
-                maxDetections=1,
             )
             global updateMap
             lastidx = updateMap[imitatedProcName][2]

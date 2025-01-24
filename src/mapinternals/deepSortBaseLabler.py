@@ -4,8 +4,8 @@ from mapinternals.robotTracker import RobotTracker
 
 class DeepSortBaseLabler:
     def __init__(self) -> None:
-        self.trackerGameObjects = RobotTracker()
-        self.trackerRobots = RobotTracker()
+        self.trackerL1 = RobotTracker()
+        self.trackerL2 = RobotTracker()
 
     """ Returns list of tracked ids, with id, bbox, conf, isRobot,features"""
 
@@ -26,13 +26,13 @@ class DeepSortBaseLabler:
             y2 = int(y2)
             class_id = int(class_id)
             detection = [x1, y1, x2, y2, score]
-            if class_id == 0:  # robot
+            if class_id == 0:  # robot or algae
                 detectionsRobots.append(detection)
             else:
                 detectionsGameObjects.append(detection)
-        self.trackerGameObjects.update(frame, detectionsGameObjects)
-        self.trackerRobots.update(frame, detectionsRobots)
-        for track in self.trackerRobots.tracks:
+        self.trackerL1.update(frame, detectionsGameObjects)
+        self.trackerL2.update(frame, detectionsRobots)
+        for track in self.trackerL2.tracks:
             detection = track.currentDetection
             rawbbox = detection.to_tlbr()  # todo make this tlwh
             bbox = (
@@ -45,7 +45,7 @@ class DeepSortBaseLabler:
             features = detection.feature
             # x1, y1, x2, y2 = bbox
             trackedDetections.append((track.track_id, bbox, conf, True, features))
-        for track in self.trackerGameObjects.tracks:
+        for track in self.trackerL1.tracks:
             detection = track.currentDetection
             rawbbox = detection.to_tlbr()  # todo make this tlwh
             bbox = (

@@ -16,6 +16,8 @@ class onnxInferencer(Inferencer):
         self.session = ort.InferenceSession(
             model_path, sess_options=session_options,providers=providers
         )
+        self.labels = ("robot","note")
+
 
 
     def inferenceFrame(self, frame, drawBox=False):
@@ -36,7 +38,6 @@ class onnxInferencer(Inferencer):
 
         # do stuff here
         if drawBox:
-            # labels = ["robot", "note"]
             for (bbox, conf, class_id) in nmsResults:
                 p1 = tuple(map(int, bbox[:2]))  # Convert to integer tuple
                 p2 = tuple(map(int, bbox[2:4]))  # Convert to integer tuple

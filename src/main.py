@@ -1,3 +1,3 @@
-from inference import ultralyticsInferencer
+from pathplanning import obstacleMapGenerator
 
-ultralyticsInferencer.startDemo()
+obstacleMapGenerator.startGeneration()
