@@ -1,3 +1,3 @@
-from mapDemos import reefPointDemo
+from inference import ultralyticsInferencer
 
-reefPointDemo.startDemo()
+ultralyticsInferencer.startDemo()

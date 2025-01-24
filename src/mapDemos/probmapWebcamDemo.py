@@ -2,7 +2,7 @@ import numpy as np
 from mapinternals.probmap import ProbMap
 from mapinternals.localFrameProcessor import LocalFrameProcessor
 from tools.CsvParser import CsvParser
-from tools.Constants import CameraIntrinsics, CameraExtrinsics
+from tools.Constants import CameraIntrinsics, CameraExtrinsics, InferenceMode
 from inference.onnxInferencer import onnxInferencer
 import cv2
 import math
@@ -35,7 +35,7 @@ def startDemo():
     cameraIntr = CameraIntrinsics.OV9782COLOR
     cap = cv2.VideoCapture(0)
 
-    frameProcessor = LocalFrameProcessor(cameraIntr, cameraExtr)
+    frameProcessor = LocalFrameProcessor(cameraIntr, cameraExtr,inferenceMode=InferenceMode.ONNX2024)
     while cap.isOpened():
         ret, frame = cap.read()
         if ret:

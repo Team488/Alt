@@ -11,7 +11,7 @@ from networktables import NetworkTables
 from tools.NtUtils import getPose2dFromBytes
 from mapinternals.localFrameProcessor import LocalFrameProcessor
 from mapinternals.CentralProcessor import CentralProcessor
-from tools.Constants import CameraExtrinsics, CameraIntrinsics, CameraIdOffsets
+from tools.Constants import CameraExtrinsics, CameraIntrinsics, CameraIdOffsets, InferenceMode
 from tools.Units import UnitMode
 from pathplanning.PathGenerator import PathGenerator
 
@@ -74,7 +74,7 @@ frameProcessors = [
     LocalFrameProcessor(
         cameraIntrinsics=CameraIntrinsics.SIMULATIONCOLOR,
         cameraExtrinsics=extrinsics[i],
-        useRknn=False,
+        inferenceMode=InferenceMode.ONNX2024,
         tryOCR=True,
         isSimulationMode=True
     )

@@ -7,7 +7,7 @@ import time
 from enum import Enum
 from JXTABLES.XTablesClient import XTablesClient
 from coreinterface.DetectionPacket import DetectionPacket
-from tools.Constants import getCameraValues
+from tools.Constants import InferenceMode, getCameraValues
 from mapinternals.localFrameProcessor import LocalFrameProcessor
 from tools import calibration, NtUtils, configLoader
 from networktables import NetworkTables
@@ -40,8 +40,7 @@ def startProcess():
     processor = LocalFrameProcessor(
         cameraIntrinsics=cameraIntrinsics,
         cameraExtrinsics=cameraExtrinsics,
-         ,
-        useRknn=True,
+        inferenceMode=InferenceMode.RKNN2024
     )
     calib = configLoader.loadSavedCalibration()
     # frame undistortion maps

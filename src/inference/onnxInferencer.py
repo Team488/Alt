@@ -2,24 +2,23 @@ import cv2
 import numpy as np
 import onnxruntime as ort
 from inference import utils
+from abstract.inferencer import Inferencer
+from tools.Constants import ConfigConstants
 
-class onnxInferencer:
+class onnxInferencer(Inferencer):
     def __init__(
         self,
-        model_path="assets/bestV5.onnx",
-        setParallel = False
+        model_path
     ):
         providers = ort.get_available_providers()
         print(f"Using provider {providers[0]}")
         session_options = ort.SessionOptions()
-        if setParallel:
-            session_options.execution_mode = ort.ExecutionMode.ORT_PARALLEL
         self.session = ort.InferenceSession(
             model_path, sess_options=session_options,providers=providers
         )
 
 
-    def inferenceFrame(self, frame, conf_threshold=0.4, drawBox=True):
+    def inferenceFrame(self, frame, drawBox=False):
         # Preprocess the frame if needed (resize, normalize, etc.)
         input_frame = utils.letterbox_image(frame.copy())
         # Convert from HWC (height, width, channels) to CHW (channels, height, width)
@@ -32,24 +31,24 @@ class onnxInferencer:
         output_name = self.session.get_outputs()[0].name
 
         predictions = self.session.run([output_name], {input_name: input_frame})[0]
-        adjusted = utils.adjustBoxes(predictions, frame.shape, conf_threshold)
-        nmsResults = utils.non_max_suppression(adjusted, conf_threshold)
+        adjusted = utils.adjustBoxes(predictions, frame.shape, ConfigConstants.confThreshold)
+        nmsResults = utils.non_max_suppression(adjusted, ConfigConstants.confThreshold)
 
         # do stuff here
         if drawBox:
-            labels = ["robot", "note"]
+            # labels = ["robot", "note"]
             for (bbox, conf, class_id) in nmsResults:
                 p1 = tuple(map(int, bbox[:2]))  # Convert to integer tuple
                 p2 = tuple(map(int, bbox[2:4]))  # Convert to integer tuple
                 cv2.rectangle(frame, p1, p2, (0, 255, 0), 1)  # Drawing the rectangle
-                cv2.putText(frame, labels[class_id], p1, 1, 2, (0, 255, 0), 1)
+                cv2.putText(frame, f"{class_id=} {conf=}", p1, 1, 2, (0, 255, 0), 1)
         return nmsResults
 
 
 def startDemo():
-    video_path = "assets/video12qual25clipped.mp4"
+    video_path = "assets/reefscapevid.mp4"
     cap = cv2.VideoCapture(video_path)
-    inferencer = onnxInferencer()
+    inferencer = onnxInferencer(model_path="assets/2025-best-151.onnx")
     # Check if the video opened successfully
     if not cap.isOpened():
         print("Error: Could not open video.")

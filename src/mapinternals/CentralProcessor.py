@@ -44,6 +44,10 @@ class CentralProcessor:
         timeStepSeconds,
         positionOffset=(0, 0, 0),
     ):
+        # dissipate at start of iteration
+        self.map.disspateOverTime(timeStepSeconds)
+        
+        
         # first get real ids
 
         # go through each detection and do the magic
@@ -51,6 +55,7 @@ class CentralProcessor:
             if singleCamResult:
                 self.labler.updateRealIds(singleCamResult, idOffset, timeStepSeconds)
                 (id, coord, prob, isRobot, features) = singleCamResult[0]
+                # todo add feature deduping here
                 coord = tuple(np.add(coord, positionOffset))
                 (x, y, z) = coord
                 # first load in to ukf, (if completely new ukf will load in as new state)
@@ -60,14 +65,13 @@ class CentralProcessor:
                     self.kalmanCacheGameObjects.LoadInKalmanData(id, x, y, self.ukf)
 
                 newState = self.ukf.predict_and_update([x, y])
-                # newState = [x,y,0,0]
+                
                 # now we have filtered data, so lets store it. First thing we do is cache the new ukf data
 
                 if isRobot:
                     self.kalmanCacheRobots.saveKalmanData(id, self.ukf)
                 else:
                     self.kalmanCacheGameObjects.saveKalmanData(id, self.ukf)
-                print(tuple(newState))
                 # input new estimated state into the map
                 if isRobot:
                     self.map.addDetectedRobot(int(newState[0]), int(newState[1]), prob)
@@ -76,4 +80,3 @@ class CentralProcessor:
                         int(newState[0]), int(newState[1]), prob
                     )
 
-        self.map.disspateOverTime(timeStepSeconds)

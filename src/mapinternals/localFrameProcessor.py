@@ -1,7 +1,7 @@
 import random
 import time
 from mapinternals.deepSortBaseLabler import DeepSortBaseLabler
-from tools.Constants import CameraIntrinsics, CameraExtrinsics, MapConstants
+from tools.Constants import CameraIntrinsics, CameraExtrinsics, MapConstants, InferenceMode
 from tools.Units import UnitMode
 from tools.positionEstimator import PositionEstimator
 from tools.positionTranslations import CameraToRobotTranslator, transformWithYaw
@@ -18,17 +18,11 @@ class LocalFrameProcessor:
         self,
         cameraIntrinsics: CameraIntrinsics,
         cameraExtrinsics: CameraExtrinsics,
-        useRknn=False,
+        inferenceMode: InferenceMode,
         isSimulationMode = False,
         tryOCR = False
     ) -> None:
-        if useRknn:
-            from inference.rknnInferencer import rknnInferencer
-
-            self.inf = rknnInferencer()
-        else:
-            from inference.onnxInferencer import onnxInferencer
-            self.inf = onnxInferencer()
+        self.inf = self.createInferencer(inferenceMode)
         self.baseLabler: DeepSortBaseLabler = DeepSortBaseLabler()
         self.cameraIntrinsics: CameraIntrinsics = cameraIntrinsics
         self.cameraExtrinsics: CameraExtrinsics = cameraExtrinsics
@@ -39,6 +33,20 @@ class LocalFrameProcessor:
             for _ in range(15)
         ]
 
+    def createInferencer(self,inferenceMode : InferenceMode):
+        print("Creating inferencer: " + inferenceMode.getName())
+        if inferenceMode == InferenceMode.RKNN2024:
+            from inference.rknnInferencer import rknnInferencer
+            return rknnInferencer(inferenceMode.getModelPath())
+        elif inferenceMode == InferenceMode.ONNX2024:
+            from inference.onnxInferencer import onnxInferencer
+            return onnxInferencer(inferenceMode.getModelPath())
+        elif inferenceMode == InferenceMode.ULTRALYTICS2025:
+            from inference.ultralyticsInferencer import ultralyticsInferencer
+            return ultralyticsInferencer(inferenceMode.getModelPath())  
+        else:
+            print(f"WARNING: Inference mode provided is not defined in local frame processor! {inferenceMode}")
+    
     # output is list of id,(absX,absY,absZ),conf,isRobot,features
     def processFrame(
         self,

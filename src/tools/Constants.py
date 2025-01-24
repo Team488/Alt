@@ -2,7 +2,17 @@ from enum import Enum
 import math
 import numpy as np
 
+class InferenceMode(Enum):
+    RKNN2024 = ("assets/bestV5.rknn","yolov5s-rknn")
+    ONNX2024 = ("assets/bestV5.onnx","yolov5s-onnx")
+    ULTRALYTICS2025 = ("assets/2025-best-151.pt","yolov11s-ultralytics")
+    # TORCH todo!
 
+    def getModelPath(self):
+        return self.value[0]
+    
+    def getName(self):
+        return self.value[0]
 
 
 class CameraExtrinsics(Enum):
@@ -110,6 +120,8 @@ class ObjectReferences(Enum):
     def getMeasurementIn(self):
         return self.value[1]
 
+class ConfigConstants:
+    confThreshold = 0.7
 
 class KalmanConstants:
     Q = np.eye(4) * 0.01  # Process noise covariance

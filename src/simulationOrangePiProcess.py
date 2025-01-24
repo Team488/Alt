@@ -10,7 +10,7 @@ from JXTABLES.XTablesClient import XTablesClient
 from networktables import NetworkTables
 from tools.NtUtils import getPose2dFromBytes
 from coreinterface.DetectionPacket import DetectionPacket
-from tools.Constants import getCameraValues
+from tools.Constants import InferenceMode, getCameraValues
 from mapinternals.localFrameProcessor import LocalFrameProcessor
 from tools import calibration, NtUtils
 from tools.Units import UnitMode
@@ -46,7 +46,7 @@ def startProcess():
     processor = LocalFrameProcessor(
         cameraIntrinsics=cameraIntrinsics,
         cameraExtrinsics=cameraExtrinsics,
-        useRknn=False,
+        inferenceMode=InferenceMode.ONNX2024
     )
 
     logger.info(f"Starting process, device name: {name}")
