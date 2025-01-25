@@ -2,7 +2,7 @@ import numpy as np
 import cv2
 from singleton.singleton import Singleton
 from mapinternals.UKF import Ukf
-from tools.Constants import MapConstants, CameraIdOffsets, UnitMode
+from tools.Constants import MapConstants, CameraIdOffsets
 from mapinternals.probmap import ProbMap
 from mapinternals.KalmanLabeler import KalmanLabeler
 from mapinternals.KalmanCache import KalmanCache
@@ -18,18 +18,18 @@ class CentralProcessor:
         self.ukf = Ukf()
         self.labler = KalmanLabeler(self.kalmanCacheRobots, self.kalmanCacheGameObjects)
         # adapt to numpys row,col by transposing
-        self.obstacleMap = self.__tryLoadObstacleMap().transpose()
-        self.unitMode = UnitMode.CM
+        self.obstacleMap = self.__tryLoadObstacleMap()
 
     def __tryLoadObstacleMap(self):
-        defaultMap = np.ones(
-            (MapConstants.fieldHeight.value, MapConstants.fieldWidth.value)
+        defaultMap = np.zeros(
+            (MapConstants.fieldWidth.value, MapConstants.fieldHeight.value),dtype=bool
         )
         try:
             defaultMap = np.load("assets/obstacleMap.npy")
         except Exception as e:
             print("obstaclemap load failed, defaulting to empty map", e)
-        return cv2.resize(defaultMap, self.map.getInternalSize())
+        
+        return defaultMap
 
     # async map update per camera, probably want to syncronize this
     def processFrameUpdate(
@@ -45,6 +45,10 @@ class CentralProcessor:
         timeStepSeconds,
         positionOffset=(0, 0, 0),
     ):
+        # dissipate at start of iteration
+        self.map.disspateOverTime(timeStepSeconds)
+        
+        
         # first get real ids
 
         # go through each detection and do the magic
@@ -52,6 +56,7 @@ class CentralProcessor:
             if singleCamResult:
                 self.labler.updateRealIds(singleCamResult, idOffset, timeStepSeconds)
                 (id, coord, prob, isRobot, features) = singleCamResult[0]
+                # todo add feature deduping here
                 coord = tuple(np.add(coord, positionOffset))
                 (x, y, z) = coord
                 # first load in to ukf, (if completely new ukf will load in as new state)
@@ -61,14 +66,13 @@ class CentralProcessor:
                     self.kalmanCacheGameObjects.LoadInKalmanData(id, x, y, self.ukf)
 
                 newState = self.ukf.predict_and_update([x, y])
-                # newState = [x,y,0,0]
+                
                 # now we have filtered data, so lets store it. First thing we do is cache the new ukf data
 
                 if isRobot:
                     self.kalmanCacheRobots.saveKalmanData(id, self.ukf)
                 else:
                     self.kalmanCacheGameObjects.saveKalmanData(id, self.ukf)
-                print(tuple(newState))
                 # input new estimated state into the map
                 if isRobot:
                     self.map.addDetectedRobot(int(newState[0]), int(newState[1]), prob)
@@ -77,4 +81,3 @@ class CentralProcessor:
                         int(newState[0]), int(newState[1]), prob
                     )
 
-        self.map.disspateOverTime(timeStepSeconds)

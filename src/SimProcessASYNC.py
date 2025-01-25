@@ -9,7 +9,8 @@ from networktables import NetworkTables
 from tools.NtUtils import getPose2dFromBytes
 from mapinternals.localFrameProcessor import LocalFrameProcessor
 from mapinternals.CentralProcessor import CentralProcessor
-from tools.Constants import CameraExtrinsics, CameraIntrinsics, CameraIdOffsets, UnitMode
+from tools.Constants import CameraExtrinsics, CameraIntrinsics, CameraIdOffsets, InferenceMode
+from tools.Units import UnitMode
 
 
 processName = "Simulation_Process"
@@ -69,8 +70,7 @@ frameProcessors = [
     LocalFrameProcessor(
         cameraIntrinsics=CameraIntrinsics.SIMULATIONCOLOR,
         cameraExtrinsics=extrinsics[i],
-        unitMode=UnitMode.CM,
-        useRknn=False,
+        inferenceMode=InferenceMode.ONNX2024,
         tryOCR=True,
         isSimulationMode=True
     )
@@ -80,7 +80,7 @@ frameProcessors = [
 central = CentralProcessor.instance()
 
 # Initialize NetworkTables
-NetworkTables.initialize(server="10.4.88.2")
+NetworkTables.initialize(server="127.0.0.1")
 postable = NetworkTables.getTable("SmartDashboard/VisionSystemSim-main/Sim Field")
 table = NetworkTables.getTable("AdvantageKit/RealOutputs/Odometry")
 
@@ -144,7 +144,6 @@ def async_frameprocess(imitatedProcIdx):
                 robotPosYCm=pos[1] * 100,
                 robotYawRad=pos[2],
                 drawBoxes=True,
-                maxDetections=1,
             )
             global updateMap
             lastidx = updateMap[imitatedProcName][2]

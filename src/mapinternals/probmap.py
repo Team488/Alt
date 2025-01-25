@@ -62,8 +62,12 @@ class ProbMap:
             (self.__internalWidth, self.__internalHeight), dtype=np.float64
         )
 
-    def getInternalSize(self):
+    """ RC = row,col format | CR = col,row format"""
+    def getInternalSizeRC(self):
         return (self.__internalWidth, self.__internalHeight)
+    
+    def getInternalSizeCR(self):
+        return (self.__internalHeight, self.__internalWidth)
 
     """ Adding detections to the probability maps"""
 

@@ -91,3 +91,5 @@ wrapt==1.16.0
 zipp>=3.20.0
 pycapnp
 pytesseract
+XTablesClient
+pynetworktables

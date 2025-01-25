@@ -1,7 +1,8 @@
 import random
 import time
 from mapinternals.deepSortBaseLabler import DeepSortBaseLabler
-from tools.Constants import CameraIntrinsics, CameraExtrinsics, MapConstants, UnitMode
+from tools.Constants import CameraIntrinsics, CameraExtrinsics, MapConstants, InferenceMode
+from tools.Units import UnitMode
 from tools.positionEstimator import PositionEstimator
 from tools.positionTranslations import CameraToRobotTranslator, transformWithYaw
 import numpy as np
@@ -17,19 +18,12 @@ class LocalFrameProcessor:
         self,
         cameraIntrinsics: CameraIntrinsics,
         cameraExtrinsics: CameraExtrinsics,
-        unitMode: UnitMode,
-        useRknn=False,
+        inferenceMode: InferenceMode,
         isSimulationMode = False,
         tryOCR = False
     ) -> None:
-        self.unitMode = unitMode
-        if useRknn:
-            from inference.rknnInferencer import rknnInferencer
-
-            self.inf = rknnInferencer()
-        else:
-            from inference.onnxInferencer import onnxInferencer
-            self.inf = onnxInferencer()
+        self.inf = self.createInferencer(inferenceMode)
+        self.inferenceMode = inferenceMode
         self.baseLabler: DeepSortBaseLabler = DeepSortBaseLabler()
         self.cameraIntrinsics: CameraIntrinsics = cameraIntrinsics
         self.cameraExtrinsics: CameraExtrinsics = cameraExtrinsics
@@ -40,6 +34,20 @@ class LocalFrameProcessor:
             for _ in range(15)
         ]
 
+    def createInferencer(self,inferenceMode : InferenceMode):
+        print("Creating inferencer: " + inferenceMode.getName())
+        if inferenceMode == InferenceMode.RKNN2024:
+            from inference.rknnInferencer import rknnInferencer
+            return rknnInferencer(inferenceMode.getModelPath())
+        elif inferenceMode == InferenceMode.ONNX2024:
+            from inference.onnxInferencer import onnxInferencer
+            return onnxInferencer(inferenceMode.getModelPath())
+        elif inferenceMode == InferenceMode.ULTRALYTICS2025:
+            from inference.ultralyticsInferencer import ultralyticsInferencer
+            return ultralyticsInferencer(inferenceMode.getModelPath())  
+        else:
+            print(f"WARNING: Inference mode provided is not defined in local frame processor! {inferenceMode}")
+    
     # output is list of id,(absX,absY,absZ),conf,isRobot,features
     def processFrame(
         self,
@@ -84,12 +92,12 @@ class LocalFrameProcessor:
                 id = labledResult[0]
                 bbox = labledResult[1]
                 conf = labledResult[2]
-                isRobot = labledResult[3]
+                isL1 = labledResult[3]
                 color = self.colors[id % len(self.colors)]
                 cv2.rectangle(frame, bbox[0:2], bbox[2:4], color)
                 cv2.putText(
                     frame,
-                    f"Id:{id} Conf{conf:.2f} IsRobot{isRobot}",
+                    f"Id:{id} Conf{conf:.2f} IsL1{isL1}",
                     (10, 30),
                     0,
                     1,
@@ -99,8 +107,9 @@ class LocalFrameProcessor:
 
         # id(unique),estimated x/y,conf,isrobot,features,
         relativeResults = self.estimator.estimateDetectionPositions(
-            frame, labledResults.copy(), camIntrinsics
+            frame, labledResults.copy(), camIntrinsics, self.inferenceMode
         )
+        print(relativeResults)
 
         # print(f"{robotPosXCm=} {robotPosYCm=} {robotYawRad=}")
         absoluteResults = []
@@ -123,9 +132,13 @@ class LocalFrameProcessor:
             )
 
             # note at this point these values are expected to be absolute
-
-            if not self.isiregularDetection(relToRobotX,relToRobotY,relToRobotZ):
+            absx,absy,absz = result[1]
+            if not self.isiregularDetection(absx,absy,absz):
                 absoluteResults.append(result)
+            else:
+                print("Iregular Detection!:")
+                print(f"{absx =} {absy =} {absz =}")
+                print(f"{relToRobotX =} {relToRobotY =} {relToRobotZ =}")
         # output is id,(absX,absY,absZ),conf,isRobot,features
 
         endTime = time.time()
@@ -141,12 +154,12 @@ class LocalFrameProcessor:
                 bbox = labledResult[1]
                 conf = labledResult[2]
                 estXYZ = relativeResult[1]
-                isRobot = labledResult[3]
+                isL1 = labledResult[3]
                 color = self.colors[id % len(self.colors)]
                 cv2.rectangle(frame, bbox[0:2], bbox[2:4], color)
                 cv2.putText(
                     frame,
-                    f"Id:{id} Conf{conf:.2f} IsRobot{isRobot}",
+                    f"Id:{id} Conf{conf:.2f} IsRobot{isL1}",
                     (10, 30),
                     0,
                     1,

@@ -24,18 +24,15 @@ def startGeneration():
     
 
     windowName = "Map Generator"
-    heightTrackbarName = "Max Height in CM"
     brushTrackbarName = "Brush Size"
-    map = (
-        np.ones(
+    draw_map = np.zeros(
             (MapConstants.fieldHeight.value, MapConstants.fieldWidth.value),
-            dtype=np.uint8
+            dtype=bool
         )
-        * 255
-    )
+    
 
     try:
-        map = np.load(mapPath)
+        draw_map = np.load(mapPath)
     except Exception:
         print("failed to load any saved map")
 
@@ -45,28 +42,30 @@ def startGeneration():
     def n(x):
         pass
 
-    cv2.createTrackbar(heightTrackbarName, windowName, 50, 255, n)
     cv2.createTrackbar(brushTrackbarName, windowName, 6, 40, n)
 
     def displayCallback(event, x, y, flags, param):
         global isLButtonDown
+        nonlocal draw_map
         if event == cv2.EVENT_LBUTTONDOWN:
             isLButtonDown = True
             print("clicked!")
-            heightValue = cv2.getTrackbarPos(heightTrackbarName, windowName)
             radius = cv2.getTrackbarPos(brushTrackbarName, windowName)
-            cv2.circle(map, (x, y), radius, (heightValue), -1)
+            draw_map = draw_map.astype(dtype=np.uint8)
+            cv2.circle(draw_map, (x, y), radius, (1), -1)
+            draw_map = draw_map.astype(dtype=bool)
         elif event == cv2.EVENT_LBUTTONUP:
             isLButtonDown = False
         elif isLButtonDown:
-            heightValue = cv2.getTrackbarPos(heightTrackbarName, windowName)
             radius = cv2.getTrackbarPos(brushTrackbarName, windowName)
-            cv2.circle(map, (x, y), radius, (heightValue), -1)
+            draw_map = draw_map.astype(dtype=np.uint8)
+            cv2.circle(draw_map, (x, y), radius, (1), -1)
+            draw_map = draw_map.astype(dtype=bool)
 
     cv2.setMouseCallback(windowName, displayCallback)
 
     while True:
-        mapCopy = cv2.merge((~map.copy(), ~map.copy(), ~map.copy()))
+        mapCopy = cv2.merge((draw_map.copy().astype(dtype=np.uint8)*255, draw_map.copy().astype(dtype=np.uint8)*255, draw_map.copy().astype(dtype=np.uint8)*255))
         print(f"Map Shape: {mapCopy.shape} FieldMap Shape: {fieldMap.shape}")
         mapCopy = cv2.bitwise_or(mapCopy,fieldMap)
         cv2.putText(
@@ -77,16 +76,15 @@ def startGeneration():
         if key == ord("q"):
             break
         elif key == ord("r"):
-            map = (
-                np.ones(
+            draw_map = (
+                np.zeros(
                     (MapConstants.fieldHeight.value, MapConstants.fieldWidth.value),
-                    dtype=np.uint8
+                    dtype=bool
                 )
-                * 255
             )
         elif key == ord("s"):
             try:
-                np.save(mapPath, map)
+                np.save(mapPath, draw_map)
             except FileNotFoundError:
                 print("Not able to save map! Are you in the src directory?")
 

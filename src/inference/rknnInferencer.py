@@ -4,10 +4,12 @@ import cv2
 import numpy as np
 from rknnlite.api import RKNNLite
 from inference import utils
+from abstract.inferencer import Inferencer
+from tools.Constants import ConfigConstants, Object
 
 
-class rknnInferencer:
-    def __init__(self, model_path="assets/bestV5.rknn"):
+class rknnInferencer(Inferencer):
+    def __init__(self, model_path):
         # export needed rknpu .so
         so_path = os.getcwd() + "/assets/"
 
@@ -20,6 +22,7 @@ class rknnInferencer:
 
         # load model
         self.model = self.load_rknn_model(model_path)
+        self.labels = ("robot","note")
 
     # Initialize the RKNN model
     def load_rknn_model(self, model_path):
@@ -42,7 +45,7 @@ class rknnInferencer:
     # Run inference using the camera feed
     # Returns list[boxes,confidences,classIds]
     def inferenceFrame(
-        self, frame, conf_threshold=0.7
+        self, frame, drawBox = False
     ) -> list[tuple[tuple[int, int], tuple[int, int]], float, int]:
         # Preprocess the frame
 
@@ -50,11 +53,18 @@ class rknnInferencer:
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         img = np.expand_dims(img, axis=0)  # Now shape is (1, channels, height, width)
         # Run inference
-        outputs = self.model.inference(inputs=[img])
-        adjusted = utils.adjustBoxes(outputs[0], frame.shape, conf_threshold)
+        predictions = self.model.inference(inputs=[img])
+        adjusted = utils.adjustBoxes(predictions[0], frame.shape, ConfigConstants.confThreshold)
+        nmsResults = utils.non_max_suppression(adjusted,ConfigConstants.confThreshold)
+        # do stuff here
+        if drawBox:
+            for (bbox, conf, class_id) in nmsResults:
+                p1 = tuple(map(int, bbox[:2]))  # Convert to integer tuple
+                p2 = tuple(map(int, bbox[2:4]))  # Convert to integer tuple
+                cv2.rectangle(frame, p1, p2, (0, 255, 0), 1)  # Drawing the rectangle
+                cv2.putText(frame, f"{class_id=} {conf=}", p1, 1, 2, (0, 255, 0), 1)
 
-        nms = utils.non_max_suppression(adjusted)
-        return nms
+        return nmsResults
 
 
 if __name__ == "__main__":
@@ -66,17 +76,10 @@ if __name__ == "__main__":
         ret, frame = cap.read()
         if ret:
             startTime = time.time()
-            results = inf.getResults(frame)
+            results = inf.inferenceFrame(frame,drawBox=True)
             timePassed = time.time() - startTime
             fps = 1 / timePassed  # seconds
             cv2.putText(frame, f"Fps {fps}", (10, 50), 1, 2, (0, 255, 0), 1)
-            for result in results:
-                (box, score, class_id) = result
-                cv2.rectangle(
-                    frame, map(int, box[:2]), map(int, box[2:]), (0, 255, 0), 1
-                )
-                cv2.putText(frame, f"Class {classes[class_id]} Conf {score}")
-
             cv2.imshow("rknn", frame)
 
         if cv2.waitKey(1) & 0xFF == ord("q"):

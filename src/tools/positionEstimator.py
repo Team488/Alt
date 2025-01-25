@@ -3,7 +3,7 @@ import math
 import cv2
 import numpy as np
 from mapinternals.NumberMapper import NumberMapper
-from tools.Constants import CameraIntrinsics, ObjectReferences
+from tools.Constants import CameraIntrinsics, InferenceMode, Object, ObjectReferences
 
 
 class PositionEstimator:
@@ -213,9 +213,9 @@ class PositionEstimator:
                 backProjNumbers = self.__backProjWhite(bumperOnlyLab)
                 # partial cleanup #1 (this is so we keep try to do ocr before removing any sign of numbers with out next close op)
                 initalOpen = cv2.morphologyEx(
-                    backProjNumbers, cv2.MORPH_OPEN, kerneltwobytwo, iterations=1
+                    backProjNumbers, cv2.MORPH_OPEN, kerneltwobytwo, iterations=3
                 )
-                # cv2.imshow("initialOpen",initalOpen)
+                cv2.imshow("initialOpen",initalOpen)
                 nums = ""
                 if self.tryocr:
                     nums = self.pytesseract.image_to_string(backProjNumbers)
@@ -224,15 +224,15 @@ class PositionEstimator:
                 close = cv2.morphologyEx(
                     initalOpen, cv2.MORPH_CLOSE, kerneltwobytwo, iterations=1
                 )
-                # cv2.imshow("initialClose",close)
+                cv2.imshow("initialClose",close)
                 # one last opening to remove any noise on the edges of the numbers we extract
                 final_open = cv2.morphologyEx(
                     close, cv2.MORPH_OPEN, kerneltwobytwo, iterations=1
                 )
-                # cv2.imshow("finalOpen",final_open)
+                cv2.imshow("finalOpen",final_open)
                 # some cleanup dilation (small amount)
                 final_number_image = cv2.morphologyEx(
-                    final_open, cv2.MORPH_DILATE, kerneltwobytwo, iterations=4
+                    final_open, cv2.MORPH_DILATE, kerneltwobytwo, iterations=3
                 )
 
                 _, threshNumbers = cv2.threshold(
@@ -241,9 +241,9 @@ class PositionEstimator:
                 contoursNumbers, _ = cv2.findContours(
                     threshNumbers, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE
                 )
-                # cv2.imshow("Unprocessed Number image",backProjNumbers)
-                # cv2.imshow("Final morphed Number image",final_number_image)
-                # cv2.imshow("Bumper image",bumperOnly)
+                cv2.imshow("Unprocessed Number image",backProjNumbers)
+                cv2.imshow("Final morphed Number image",final_number_image)
+                cv2.imshow("Bumper image",bumperOnly)
                 contours_image = np.zeros_like(threshNumbers)
                 cv2.drawContours(contours_image,contoursNumbers,-1,(255),1)
                 # cv2.imshow("Options",contours_image)
@@ -301,9 +301,9 @@ class PositionEstimator:
                         targetheight = min(numberHeight, numberWidth)
                         heightframe = np.zeros((200,400),dtype=np.uint8)
                         cv2.putText(heightframe,f"H:{targetheight:.5f} Num:{self.numMapper.getRobotNumberEstimate(isBlue,nums)}",(10,30),0,1,(255),2)
-                        # cv2.imshow("Height estimate",heightframe)
+                        cv2.imshow("Height estimate",heightframe)
                         print(f"HEIGHT----------------------------{targetheight}----------------------------")
-                        # cv2.imshow("Number Contour image",contourimage)
+                        cv2.imshow("Number Contour image",contourimage)
                         # cv2.drawContours(bumperOnly,[largestAcceptable_contour],0,[0,0,255],2)
                         return (targetheight, isBlue, nums)
 
@@ -345,6 +345,12 @@ class PositionEstimator:
 
             return estCoords
         return None
+    
+    def __estimateRelativeCoralPosition(
+        self, frame, boundingBox, cameraIntrinsics: CameraIntrinsics
+    ) -> tuple[float, float]:
+        #TODO!
+        return None
 
     """ This current method estimates the position of a note, by using the same method as a robot. However it is slightly simplified, as we can take avantage of the circular nature of a note
         By taking the width of a note (or the max of w and h to cover the case when its vertical), we can find a pretty much exact value for the size of the note in pixels. Given we know the
@@ -352,7 +358,7 @@ class PositionEstimator:
 
     """
 
-    def __estimateRelativeGameObjectPosition(
+    def __estimateRelativeNotePosition(
         self, frame, boundingBox, cameraIntrinsics: CameraIntrinsics
     ) -> tuple[float, float]:
         x1, y1, x2, y2 = boundingBox
@@ -375,29 +381,66 @@ class PositionEstimator:
         print(f"{bearing=}")
         estCoords = self.componentizeHDistAndBearing(distance, bearing)
         return estCoords
+    
+    def __estimateRelativeAlgaePosition(
+        self, frame, boundingBox, cameraIntrinsics: CameraIntrinsics
+    ) -> tuple[float, float]:
+        x1, y1, x2, y2 = boundingBox
+        w = x2 - x1
+        h = y2 - y1
+        midW = int(w / 2)
+        # midH = int(h / 2)
+        centerX = x1 + midW
+        objectSize = max(w, h)
+        distance = self.__calculateDistance(
+            ObjectReferences.ALGAEDIAMETER.getMeasurementCm(),
+            objectSize,
+            cameraIntrinsics.getFx(),
+        )
+        bearing = self.__calcBearing(
+            cameraIntrinsics.getHFovRad(),
+            cameraIntrinsics.getHres(),
+            int(centerX - cameraIntrinsics.getCx()),
+        )
+        print(f"{bearing=}")
+        estCoords = self.componentizeHDistAndBearing(distance, bearing)
+        return estCoords
 
     def estimateDetectionPositions(
-        self, frame, labledResults, cameraIntrinsics: CameraIntrinsics
+        self, frame, labledResults, cameraIntrinsics: CameraIntrinsics, inferenceMode: InferenceMode
     ):
         estimatesOut = []
-
         # id 0 == robot 1 == note
         for result in labledResults:
-            isRobot = result[3]
+            isL1 = result[3]
             bbox = result[1]
             estimate = None
-            if isRobot:
-                estimate = self.__estimateRelativeRobotPosition(
-                    frame, bbox, cameraIntrinsics
-                )
+            if isL1:
+                if inferenceMode.getYear() == 2024:
+                    estimate = self.__estimateRelativeRobotPosition(
+                        frame, bbox, cameraIntrinsics
+                    )
+                else:
+                    estimate = self.__estimateRelativeAlgaePosition(
+                        frame, bbox, cameraIntrinsics
+                    )
 
             else:
-                estimate = self.__estimateRelativeGameObjectPosition(
-                    frame, bbox, cameraIntrinsics
-                )
+                if inferenceMode.getYear() == 2024:
+                    estimate = self.__estimateRelativeNotePosition(
+                        frame, bbox, cameraIntrinsics
+                    )
+                else:
+                    # not created yet!
+                    # estimate = self.__estimateRelativeCoralPosition(
+                    #     frame, bbox, cameraIntrinsics
+                    # )
+                    print("Coral Localization Not implemented yet!")
+                    pass
+                    
             if estimate is not None:
                 estimatesOut.append(
-                    [result[0], estimate, result[2], isRobot, result[4]]
+                    [result[0], estimate, result[2], isL1, result[4]]
                 )  # replace local bbox with estimated position
             # else we dont include this result
             # todo keep a metric of failed estimations

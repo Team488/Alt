@@ -2,10 +2,12 @@ import numpy as np
 from mapinternals.probmap import ProbMap
 from mapinternals.localFrameProcessor import LocalFrameProcessor
 from tools.CsvParser import CsvParser
-from tools.Constants import CameraIntrinsics, CameraExtrinsics, UnitMode
+from tools.Constants import CameraIntrinsics, CameraExtrinsics, InferenceMode
 from inference.onnxInferencer import onnxInferencer
 import cv2
 import math
+
+from tools.Units import UnitMode
 
 
 def startDemo():
@@ -48,7 +50,7 @@ def startDemo():
     cap = cv2.VideoCapture("assets/video12qual25clipped.mp4")
     firstRun = True
     # cap_outM = None
-    frameProcessor = LocalFrameProcessor(cameraIntr, cameraExtr,unitMode=UnitMode.CM,)
+    frameProcessor = LocalFrameProcessor(cameraIntr, cameraExtr,inferenceMode=InferenceMode.ONNX2024)
     fps = cap.get(cv2.CAP_PROP_FPS)
     timePassed = 0
     timePerFrame = 1 / fps

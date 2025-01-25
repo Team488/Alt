@@ -1,3 +1,3 @@
-from mapDemos import reefPointDemo
+from pathplanning import obstacleMapGenerator
 
-reefPointDemo.startDemo()
+obstacleMapGenerator.startGeneration()
