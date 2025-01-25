@@ -33,6 +33,7 @@ def startGeneration():
 
     try:
         draw_map = np.load(mapPath)
+        print(draw_map.shape)
     except Exception:
         print("failed to load any saved map")
 

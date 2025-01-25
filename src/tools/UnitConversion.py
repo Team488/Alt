@@ -1,4 +1,5 @@
 from collections.abc import Iterable 
+from tools.Constants import MapConstants
 
 def mtoin(m):
     return m*39.37
@@ -35,3 +36,9 @@ def toint(value):
         ret = value
     finally:
         return ret
+
+def invertY(yCM):
+    return MapConstants.fieldHeight.getCM()-yCM
+
+def invertX(xCM):
+    return MapConstants.fieldWidth.getCM()-xCM

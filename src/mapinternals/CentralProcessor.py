@@ -2,6 +2,7 @@ import numpy as np
 import cv2
 from singleton.singleton import Singleton
 from mapinternals.UKF import Ukf
+from tools import configLoader
 from tools.Constants import MapConstants, CameraIdOffsets
 from mapinternals.probmap import ProbMap
 from mapinternals.KalmanLabeler import KalmanLabeler
@@ -25,7 +26,7 @@ class CentralProcessor:
             (MapConstants.fieldWidth.value, MapConstants.fieldHeight.value),dtype=bool
         )
         try:
-            defaultMap = np.load("assets/obstacleMap.npy")
+            defaultMap = configLoader.loadNumpyConfig("obstacleMap.npy")
         except Exception as e:
             print("obstaclemap load failed, defaulting to empty map", e)
         

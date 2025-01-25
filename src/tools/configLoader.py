@@ -1,44 +1,58 @@
 import json
 import codecs
 
+import numpy as np
 CONFIG_PATH = "/xbot/config"
+DEFAULT_CONFIG_PATH = "assets"
+
+
+# config paths in order of priority    
+def loadJsonConfig(config_file,config_paths=[CONFIG_PATH,DEFAULT_CONFIG_PATH]):
+    for config_path in config_paths:
+        try:
+            savedCalib = json.load(
+                codecs.open(f"{config_path}/{config_file}", "r", encoding="utf-8")
+            )
+            print(f"Loaded config from {config_path}/{config_file}")
+            return savedCalib
+        except Exception as e:
+            pass
+    return None
+
+# config paths in order of priority    
+def loadNumpyConfig(numpy_file,config_paths=[CONFIG_PATH,DEFAULT_CONFIG_PATH]):
+    for config_path in config_paths:
+        try:
+            npObject = np.load(f"{config_path}/{numpy_file}")
+            print(f"Loaded config from {config_path}/{numpy_file}")
+            return npObject
+        except Exception as e:
+            pass
+    return None
 
 
 def loadSavedCalibration():
-    try:
-        savedCalib = json.load(
-            codecs.open(f"{CONFIG_PATH}/camera_calib.json", "r", encoding="utf-8")
-        )
+    savedCalib = loadJsonConfig("camera_calib.json")
+    if savedCalib is not None:
         return savedCalib
-    except Exception as e:
-        print("Error occured when loading calibration, defaulting to saved values", e)
-        return {
-            "CameraMatrix": [
-                [541.6373297834168, 0.0, 350.2246103229324],
-                [0.0, 542.5632693416148, 224.8432462256541],
-                [0.0, 0.0, 1.0],
-            ],
-            "DistortionCoeff": [
-                [
-                    0.03079145286029344,
-                    -0.0037492997547329213,
-                    -0.0009340163324388664,
-                    0.0012027838051384778,
-                    -0.07882030659375006,
-                ]
-            ],
-        }
+    print("Fatal! No backup config. Should never hit this as long as one stays in the assets dir")
 
-
+    
 def loadOpiConfig():
-    try:
-        savedCalib = json.load(
-            codecs.open(f"{CONFIG_PATH}/orangepi_config.json", "r", encoding="utf-8")
-        )
-        return savedCalib
-    except Exception as e:
-        print("Error occured when loading config, defaulting to saved values", e)
-        return {
-            "positionTable": "/AdvantageKit/RealOutputs/PoseSubsystem/RobotPose",
-            "useXTablesForPos": False,
-        }
+    opiConfig = loadJsonConfig("orangepi_config.json")
+    if opiConfig is not None:
+        return opiConfig
+    print("Fatal! No backup config. Should never hit this as long as one stays in the assets dir")
+    
+    
+def loadRedRobotHistogram():
+    redHist = loadNumpyConfig("redRobotHist.npy")
+    if redHist is not None:
+        return redHist
+    print("Fatal! No backup hist. Should never hit this as long as one stays in the assets dir")
+
+def loadBlueRobotHistogram():
+    blueHist = loadNumpyConfig("blueRobotHist.npy")
+    if blueHist is not None:
+        return blueHist
+    print("Fatal! No backup hist. Should never hit this as long as one stays in the assets dir")

@@ -17,9 +17,11 @@ from tools.Constants import (
     CameraIntrinsics,
     CameraIdOffsets,
     InferenceMode,
-    MapConstants
+    MapConstants,
+    Landmarks
 )
 from tools.Units import UnitMode
+from tools import UnitConversion
 from pathplanning.PathGenerator import PathGenerator
 
 
@@ -73,7 +75,7 @@ frameProcessors = [
     LocalFrameProcessor(
         cameraIntrinsics=CameraIntrinsics.SIMULATIONCOLOR,
         cameraExtrinsics=extrinsics[i],
-        inferenceMode=InferenceMode.ULTRALYTICS2025,
+        inferenceMode=InferenceMode.ONNX2024,
         tryOCR=True,
         isSimulationMode=True
     )
@@ -103,6 +105,7 @@ cv2.createTrackbar("TestRobotX",title,0,MapConstants.fieldWidth.getCM(), lambda 
 cv2.setTrackbarPos("TestRobotX",title,660)
 cv2.createTrackbar("TestRobotY",title,0,MapConstants.fieldHeight.getCM(), lambda x: None)
 cv2.setTrackbarPos("TestRobotY",title,535)
+cv2.createTrackbar("TestRobotRot",title,0,359, lambda x: None)
 clickpos = None
 currentPath = None
 
@@ -115,9 +118,7 @@ def getAndSetPath(clickpos):
     else:
         logger.warning("Cannot get robot location from network tables!")
 
-    path = pathGenerator.generate(
-        (MapConstants.fieldWidth.getCM()-pos[0] * 100, pos[1] * 100), clickpos, central.map.getRobotMap() > 0.1
-    )  # m to cm
+    path = pathGenerator.generateToPoint((pos[0]*100,pos[1]*100),clickpos)
     logger.debug(f"Generated Path: {path}")
     if path is None:
         logger.warning(f"No path found!")
@@ -171,11 +172,12 @@ def run_frameprocess(imitatedProcIdx):
     # put test robot pose
     x = cv2.getTrackbarPos("TestRobotX",title)
     y = cv2.getTrackbarPos("TestRobotY",title)
-    postable.getEntry("TestRobotPose").setDoubleArray([x/100,y/100,0])
+    r = cv2.getTrackbarPos("TestRobotRot",title)
+    postable.getEntry("TestRobotPose").setDoubleArray([x/100,y/100,math.radians(r)])
 
     highestRobot = central.map.getHighestRobot()
     postable.getEntry("VisionEstimatedRobotLocation").setDoubleArray([highestRobot[0]/100,highestRobot[1]/100,0])
-    cv2.circle(frame,(int(MapConstants.fieldWidth.getCM()-highestRobot[0]),int(highestRobot[1])),5,(255),-1)
+    cv2.circle(frame,(int(UnitConversion.invertX(highestRobot[0])),int(highestRobot[1])),5,(255),-1)
 
 
 
@@ -234,17 +236,26 @@ while True:
         results.append(result)
         print(results)
     central.processFrameUpdate(results, 2)
-    
-    frame = central.map.getRobotHeatMap().copy()
+    robotobstacles = central.map.getAllRobotsAboveThreshold(0.5)
+    frame = np.zeros_like(central.map.getRobotHeatMap(),dtype=np.uint8)
+    for obstacle in robotobstacles:
+        cv2.circle(frame,(int(UnitConversion.invertX(obstacle[0])),int(obstacle[1])),10,(255),-1)
+
     if currentPath is not None:
         for point in currentPath:
-            cv2.circle(frame,point,2,(255,255,255),-1)
+            cv2.circle(frame,point,2,(255),-1)
 
     cv2.imshow(title, frame)
 
     # Handle keyboard interrupt with cv2.waitKey()
-    if cv2.waitKey(1) & 0xFF == ord("q"):
+    key = cv2.waitKey(1) & 0xFF
+    if key == ord("q"):
         break
+    elif key == ord("l"):
+        getAndSetPath(Landmarks.BlueTopCoralStationMiddleLoad.get_cm())
+    elif key == ord("r"):
+        getAndSetPath(Landmarks.BlueCloseReefFace.get_cm())
+
 
 cv2.destroyAllWindows()
 logging.info("Released all resources and closed windows.")

@@ -4,6 +4,7 @@ import cv2
 import numpy as np
 from mapinternals.NumberMapper import NumberMapper
 from tools.Constants import CameraIntrinsics, InferenceMode, Object, ObjectReferences
+from tools import configLoader
 
 
 class PositionEstimator:
@@ -28,12 +29,12 @@ class PositionEstimator:
         self.__minPerc = 0.005  # minimum percentage of bounding box with bumper color
         # simulation currently only has blue robots
         if isSimulationMode:
-            self.__blueRobotHist = np.load("assets/simulationBlueRobotCinematicHist.npy")
+            self.__blueRobotHist = configLoader.loadNumpyConfig("simulationBlueRobotCinematicHist.npy")
         else:
-            self.__blueRobotHist = np.load("assets/blueRobotHist.npy")
+            self.__blueRobotHist = configLoader.loadBlueRobotHistogram()
 
-        self.__redRobotHist = np.load("assets/redRobotHist.npy")
-        self.__MAXRATIO = 4.5  # max ratio between number width/height or vice versa
+        self.__redRobotHist = configLoader.loadRedRobotHistogram()
+        self.__MAXRATIO = 3  # max ratio between number width/height or vice versa
 
     """ Extract a rectangular slice of the image, given a bounding box. This is axis aligned"""
 
@@ -167,151 +168,118 @@ class PositionEstimator:
     """
 
     def __estimateRobotBumperHeight(self, croppedframe) -> tuple[float, bool]:
-        y = croppedframe.shape[0]
-        x = croppedframe.shape[1]
+        y, x = croppedframe.shape[:2]
         if y < 2 or x < 2:
             print("Invalid bbox!")
             return None
-        # cutting the frame as for all the images i have the bumper is always in the bottom portion
-        croppedframe = self.__crop_image(croppedframe, (0, int(y/2)), (x, y))
-        # cv2.imshow("Cropped frame",croppedframe)
+        
+        # Cutting the frame: bumper is in the bottom portion
+        croppedframe = self.__crop_image(croppedframe, (0, int(y / 2)), (x, y))
+        
+        # Convert to LAB color space
         labFrame = cv2.cvtColor(croppedframe, cv2.COLOR_BGR2LAB)
         processed, isBlue = self.__backprojCheck(
             labFrame, self.__redRobotHist, self.__blueRobotHist
         )
-        if isBlue != None:
-            # cv2.imshow("processed",processed)
-            # a bumper with enough percentage was detected
-            bumperKernel = np.ones((2, 2), np.uint8)
-            bumper_closed = cv2.morphologyEx(
-                processed, cv2.MORPH_CLOSE, bumperKernel, iterations=2
-            )
-            # cv2.imshow("close bumper",bumper_closed)
-            bumper_opened = cv2.morphologyEx(
-                bumper_closed, cv2.MORPH_OPEN, bumperKernel, iterations=2
-            )
-            # cv2.imshow("open bumper",bumper_opened)
+        if isBlue is None:
+            return None
+        small_frame_threshold = 3000
+        # Adjust kernel size and iterations based on frame size
+        small_frame = (y * x) < small_frame_threshold 
+        bumperKernel = np.ones((1, 1) if small_frame else (2, 2), np.uint8)
+        iterations_close = 1 if small_frame else 2
+        iterations_open = 1 if small_frame else 2
 
-            # morphology_final = cv2.morphologyEx(thresh, cv2.MORPH_RECT, kernel, None, (-1, -1), 4)
-            contours, _ = cv2.findContours(
-                bumper_opened, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE
-            )
-            contour_image = np.zeros_like(bumper_opened)
-            cv2.drawContours(contour_image, contours, -1, (255), 1)
-            # cv2.imshow("Countour image",contour_image)
-            if contours:
-                # extracting the bumper
-                combined_contour = np.concatenate(contours)
-                convex_hull = cv2.convexHull(combined_contour)
-                # Get bumper estimated width and height
-                # cropping out only the bumper
-                bumperOnlyLab = self.__crop_contours(labFrame, convex_hull)
-                bumperOnly = self.__crop_contours(croppedframe, convex_hull)
-                # pulling out the numbers
-                kerneltwobytwo = np.ones((2, 2), np.uint8)
-                kernelthreebythree = np.ones((3, 3), np.uint8)
-                backProjNumbers = self.__backProjWhite(bumperOnlyLab)
-                # partial cleanup #1 (this is so we keep try to do ocr before removing any sign of numbers with out next close op)
-                initalOpen = cv2.morphologyEx(
-                    backProjNumbers, cv2.MORPH_OPEN, kerneltwobytwo, iterations=3
+        # Morphological operations for bumper
+        bumper_closed = cv2.morphologyEx(
+            processed, cv2.MORPH_CLOSE, bumperKernel, iterations=iterations_close
+        )
+        bumper_opened = cv2.morphologyEx(
+            bumper_closed, cv2.MORPH_OPEN, bumperKernel, iterations=iterations_open
+        )
+
+        # Find contours
+        contours, _ = cv2.findContours(
+            bumper_opened, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE
+        )
+        if not contours:
+            logging.warning("Failed to extract a bumper, not enough contour area!")
+            return None
+
+        combined_contour = np.concatenate(contours)
+        convex_hull = cv2.convexHull(combined_contour)
+
+        # Crop bumper region
+        bumperOnlyLab = self.__crop_contours(labFrame, convex_hull)
+        bumperOnly = self.__crop_contours(croppedframe, convex_hull)
+
+        # Number extraction
+        kerneltwobytwo = np.ones((1, 1) if small_frame else (2, 2), np.uint8)
+        backProjNumbers = self.__backProjWhite(bumperOnlyLab)
+
+        # Morphological operations for numbers
+        initalOpen = cv2.morphologyEx(
+            backProjNumbers, cv2.MORPH_OPEN, kerneltwobytwo, iterations=iterations_open
+        )
+        nums = ""
+        if self.tryocr:
+            nums = self.pytesseract.image_to_string(backProjNumbers)
+
+        close = cv2.morphologyEx(
+            initalOpen, cv2.MORPH_CLOSE, kerneltwobytwo, iterations=iterations_close
+        )
+        final_open = cv2.morphologyEx(
+            close, cv2.MORPH_OPEN, kerneltwobytwo, iterations=1
+        )
+
+        _, threshNumbers = cv2.threshold(
+            final_open, 50, 255, cv2.THRESH_BINARY
+        )
+        contoursNumbers, _ = cv2.findContours(
+            threshNumbers, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE
+        )
+
+        if contoursNumbers:
+            acceptableContours = []
+            for contour in contoursNumbers:
+                min_area_rect = cv2.minAreaRect(contour)
+                numberWidth, numberHeight = min_area_rect[1]
+                if numberHeight == 0 or numberWidth == 0:
+                    continue
+                ratio = max(numberWidth, numberHeight) / min(numberWidth, numberHeight)
+                if ratio < self.__MAXRATIO:
+                    acceptableContours.append(contour)
+
+            if acceptableContours:
+                sorted_contours = sorted(acceptableContours, key=cv2.contourArea, reverse=True)
+                drawn_final_contours = cv2.drawContours(
+                    np.zeros_like(final_open, dtype=np.uint8), sorted_contours, -1, (255), -1
                 )
-                cv2.imshow("initialOpen",initalOpen)
-                nums = ""
-                if self.tryocr:
-                    nums = self.pytesseract.image_to_string(backProjNumbers)
-                    # cv2.putText(backProjNumbers,nums,(10,25),0,1,(255,255,255),2)
-                # now merge any numbers into one
-                close = cv2.morphologyEx(
-                    initalOpen, cv2.MORPH_CLOSE, kerneltwobytwo, iterations=1
-                )
-                cv2.imshow("initialClose",close)
-                # one last opening to remove any noise on the edges of the numbers we extract
-                final_open = cv2.morphologyEx(
-                    close, cv2.MORPH_OPEN, kerneltwobytwo, iterations=1
-                )
-                cv2.imshow("finalOpen",final_open)
-                # some cleanup dilation (small amount)
                 final_number_image = cv2.morphologyEx(
-                    final_open, cv2.MORPH_DILATE, kerneltwobytwo, iterations=3
+                    drawn_final_contours, cv2.MORPH_DILATE, kerneltwobytwo, iterations=1
+                )
+                largest_acceptable_contour = max(
+                    cv2.findContours(final_number_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)[0],
+                    key=cv2.contourArea,
                 )
 
-                _, threshNumbers = cv2.threshold(
-                    final_number_image, 50, 255, cv2.THRESH_BINARY
-                )
-                contoursNumbers, _ = cv2.findContours(
-                    threshNumbers, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE
-                )
-                cv2.imshow("Unprocessed Number image",backProjNumbers)
-                cv2.imshow("Final morphed Number image",final_number_image)
-                cv2.imshow("Bumper image",bumperOnly)
-                contours_image = np.zeros_like(threshNumbers)
-                cv2.drawContours(contours_image,contoursNumbers,-1,(255),1)
-                # cv2.imshow("Options",contours_image)
-                # try to isolate bumper digits for their height
-                if contoursNumbers:
-                    # largestAcceptable_contour = np.concatenate(contoursNumbers)
-                    largestAcceptable_contour = None
-                    largest_size = -1
-                    for contour in contoursNumbers:
-                        #     # try to find digits
-                        min_area_rect = cv2.minAreaRect(contour)
-                        # Get the minimum area rectangle
-                        # Get width and height
-                        (numberWidth, numberHeight) = min_area_rect[1]
-                        if numberHeight == 0 or numberWidth == 0:
-                            continue
-                        ratio = max(numberWidth, numberHeight) / min(
-                            numberWidth, numberHeight
-                        )
-                        # print("Ratio", ratio)
-                        # Calculate the max of width and height
-                        size_Score = numberWidth * numberHeight
+                if largest_acceptable_contour is not None:
+                    min_area_rect = cv2.minAreaRect(largest_acceptable_contour)
+                    box = cv2.boxPoints(min_area_rect)
+                    box = np.int0(box)
+                    cv2.drawContours(final_open, [box], 0, (255), 2)
+                    numberWidth, numberHeight = min_area_rect[1]
+                    targetheight = min(numberHeight, numberWidth)
+                    print(f"HEIGHT----------------------------{targetheight}----------------------------")
+                    return targetheight, isBlue, nums
 
-                        if ratio < 13 and size_Score > largest_size:
-                            largest_size = size_Score
-                            largestAcceptable_contour = contour
-
-                    if largestAcceptable_contour is not None:
-                        # epsilon = cv2.getTrackbarPos("Epsillon","Simulation Window")/1000 * cv2.arcLength(largestAcceptable_contour, True)  # Adjust epsilon for accuracy
-                        # approx = cv2.approxPolyDP(largestAcceptable_contour, epsilon, True)
-                        # approximage = np.zeros_like(close)
-
-                        # # Check if the approximated contour is a rectangle
-                        #     # Draw the rectangle on the original image (for visualization)
-                        # cv2.drawContours(approximage, [approx], -1, (255, 255, 255), 2)
-                        # cv2.imshow("poly dp number approx", approximage)
-
-                        contourimage = np.zeros_like(close)
-                        cv2.drawContours(
-                            contourimage,
-                            [largestAcceptable_contour],
-                            0,
-                            (255, 255, 0),
-                            -1,
-                        )
-                        # last cleanup of edges
-                        min_area_rect = cv2.minAreaRect(largestAcceptable_contour)
-                        box = cv2.boxPoints(min_area_rect)
-                        box = np.int0(box)
-                        cv2.drawContours(contourimage, [box], 0, (255), 2)
-
-                        # Get width and height
-                        (numberWidth, numberHeight) = min_area_rect[1]
-                        # print(f"{numberWidth=}  {numberHeight=} ")
-                        targetheight = min(numberHeight, numberWidth)
-                        heightframe = np.zeros((200,400),dtype=np.uint8)
-                        cv2.putText(heightframe,f"H:{targetheight:.5f} Num:{self.numMapper.getRobotNumberEstimate(isBlue,nums)}",(10,30),0,1,(255),2)
-                        cv2.imshow("Height estimate",heightframe)
-                        print(f"HEIGHT----------------------------{targetheight}----------------------------")
-                        cv2.imshow("Number Contour image",contourimage)
-                        # cv2.drawContours(bumperOnly,[largestAcceptable_contour],0,[0,0,255],2)
-                        return (targetheight, isBlue, nums)
-
-                else:
-                    logging.warning("Failed to extract number from countour!")
             else:
-                logging.warning("Failed to extract a bumper, not enough contour area!")
+                logging.warning("Failed to find acceptable contours!")
+        else:
+            logging.warning("Failed to extract number from contour!")
+
         return None
+
 
     """ Method takes in a frame, where you have already run your model. It crops out bounding boxes for each robot detection and runs a height estimation.
         If it does not fail, it then takes that information, along with a calculated bearing to estimate a relative position

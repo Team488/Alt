@@ -150,12 +150,43 @@ class CameraIdOffsets(Enum):
         return self.value
 
 
+class Landmarks(Enum):
+    BlueTopCoralStationLeftLoad = (1.608, 7.26, -54)
+    BlueTopCoralStationMiddleLoad = (1.225, 7, -54)
+    BlueTopCoralStationRightLoad = (0.811, 6.7, -54)
+    BlueBottomCoralStationLeftLoad = (0.811, 1.35, 54)
+    BlueBottomCoralStationMiddleLoad = (1.225, 1.031, 54)
+    BlueBottomCoralStationRightLoad = (1.608, 0.764, 54)
+    BlueProcessorScoringLocation = (11.56, 7.51, -90)
+
+    BlueCloseReefFace = (3.158, 4.026, 0)
+    BlueCloseRightReefFace = (3.829, 2.880, 60)
+    BlueCloseLeftReefFace = (3.829, 5.180, -60)
+    BlueBackLeftReefFace = (5.150, 5.180, -120)
+    BlueBackReefFace = (5.821, 5.821, -180)
+    BlueBackRightReefFace = (5.150, 2.880, 120)
+
+    def get_cm(self):
+        """Convert the x and y coordinates from meters to centimeters."""
+        x_m, y_m, _ = self.value
+        return x_m * 100, y_m * 100
+    
+    def get_m(self):
+        """Convert the x and y coordinates from meters to centimeters."""
+        x_m, y_m, _ = self.value
+        return x_m, y_m
+
+    def get_angle(self):
+        """Retrieve the rotation angle in degrees."""
+        return self.value[2]
+
+
 class MapConstants(Enum):
     GameObjectAcceleration = 0  # probably?
     RobotMaxVelocity = 300  # cm/s
     RobotAcceleration = 150  # cm/s^2 this is probably inaccurate?
-    fieldWidth = 1653  # 54' 3" in cm
-    fieldHeight = 800  # 26' 3" in cm
+    fieldWidth = 1755  # 54' 3" in cm
+    fieldHeight = 805  # 26' 3" in cm
     res = 5  # cm
     robotWidth = 75  # cm
     robotHeight = 75  # cm assuming square robot with max frame perimiter of 300

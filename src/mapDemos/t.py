@@ -6,6 +6,7 @@ from filterpy.kalman import UnscentedKalmanFilter
 from filterpy.kalman import MerweScaledSigmaPoints
 from filterpy.kalman.unscented_transform import unscented_transform
 from tools.Constants import MapConstants
+from tools import configLoader
 
 
 class T:
@@ -22,7 +23,7 @@ class T:
         self.fixedRobotHeight = 35
 
         print("Loading precomputed nearest positions.... this may take a second")
-        self.obstacles = np.load("assets/obstacleMap.npy")
+        self.obstacles = configLoader.loadNumpyConfig("obstacleMap.npy")
         self.obstacles_nearest = self.get_nearest_valid_points(self.obstacles)
 
 

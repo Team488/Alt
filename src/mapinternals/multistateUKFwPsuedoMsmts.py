@@ -4,6 +4,7 @@ import cv2
 from filterpy.kalman import UnscentedKalmanFilter
 from filterpy.kalman import MerweScaledSigmaPoints
 from filterpy.kalman.unscented_transform import unscented_transform
+from tools import configLoader
 from tools.Constants import MapConstants
 
 
@@ -17,7 +18,7 @@ class MultistateUkf:
         fieldY=MapConstants.fieldHeight.value,
     ):
         # "Constants"
-        self.obstacles = np.load("assets/obstacleMap.npy")
+        self.obstacles = configLoader.loadNumpyConfig("obstacleMap.npy")
         self.NUMSIMULATEDSTATES = numStates
         self.SINGLESTATELEN = 4
         self.STATELEN = self.NUMSIMULATEDSTATES * self.SINGLESTATELEN

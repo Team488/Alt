@@ -2,8 +2,8 @@ import time
 import numpy as np
 import os
 import sys
+import cv2
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from mapinternals.CentralProcessor import CentralProcessor
 from mapinternals.KalmanCache import KalmanCache
 from mapinternals.KalmanEntry import KalmanEntry
@@ -12,6 +12,8 @@ from pathplanning.PathFind import PathFinder
 import pathplanning.utils as pathPlanningUtils
 from pathplanning import AStarGrid
 from pathplanning.AStarGrid import AStarPathfinder
+from tools import UnitConversion
+from tools.Constants import Landmarks
 
 
 class PathGenerator:
@@ -20,10 +22,32 @@ class PathGenerator:
         width = MapConstants.robotWidth.getCM()
         height = MapConstants.robotHeight.getCM()
         gridWidth,gridHeight = self.centralProcess.map.getInternalSizeCR()
-        self.pathFinder = AStarPathfinder(self.centralProcess.obstacleMap,width,height,gridWidth,gridHeight)
+        self.pathFinder = AStarPathfinder(self.centralProcess.obstacleMap,width,height,gridWidth,gridHeight,self.centralProcess.map.resolution)
 
+    def generateToPointWStaticRobotsL(self,currentPosition,target : Landmarks):
+        return self.generateWStaticRobots(currentPosition,target.get_cm())
+    
+    def generateToPointWStaticRobots(self,currentPosition,target):
+        return self.generateWStaticRobots(currentPosition,target)
+    
+    def generateWStaticRobots(self,start,goal,threshold = 0.5, invertStartX = True):
+        robotobstacles = self.centralProcess.map.getAllRobotsAboveThreshold(threshold)
+        robotObstacleMap = np.zeros_like(self.centralProcess.map.getRobotMap(),dtype=np.uint8)
+        for obstacle in robotobstacles:
+            cv2.circle(robotObstacleMap,(int(obstacle[0]/self.centralProcess.map.resolution),int(obstacle[1]/self.centralProcess.map.resolution)),10,(255),-1)
+        path = self.generate(
+            start, goal, np.fliplr(robotObstacleMap > 1),invertStartX
+        )  # m to cm
+        return path
+    
+    def generateToPointL(self,currentPosition,target : Landmarks):
+        return self.generate(currentPosition,target.get_cm())
+    
+    def generateToPoint(self,currentPosition,target):
+        return self.generate(currentPosition,target)
+    
     def generate(
-        self, start, goal, extraObstacles = None, reducePoints=True
+        self, start, goal, extraObstacles = None, reducePoints=True, invertStartX = True
     ):
         if len(start) > 2 or len(goal) > 2:
             print(f"{start=} {goal=}")
@@ -31,7 +55,11 @@ class PathGenerator:
             return None
         # flipping col,row into standard row,col
         start = np.array(start)
+        if invertStartX:
+            start[0] = UnitConversion.invertX(start[0])
         goal = np.array(goal)
+        
+        # grid based so need integers
         # reducing to internal scale
         start = tuple(map(int,start/self.centralProcess.map.resolution))
         goal = tuple(map(int,goal/self.centralProcess.map.resolution))

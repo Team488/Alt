@@ -2,7 +2,6 @@ import codecs
 import json
 import numpy as np
 import cv2
-from tools.configLoader import loadSavedCalibration
 
 def startCalibration(chessBoardDim = (7, 10)):
     windowName = "Calibration View"

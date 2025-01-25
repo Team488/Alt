@@ -7,12 +7,12 @@ import time
 from enum import Enum
 from JXTABLES.XTablesClient import XTablesClient
 from coreinterface.DetectionPacket import DetectionPacket
+from coreinterface.FramePacket import FramePacket
 from tools.Constants import InferenceMode, getCameraValues
 from mapinternals.localFrameProcessor import LocalFrameProcessor
 from tools import calibration, NtUtils, configLoader
 from networktables import NetworkTables
 
-from tools.Units import UnitMode
 
 processName = "Central_Orange_Pi_Process"
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -51,14 +51,15 @@ def startProcess():
     opiconfig = configLoader.loadOpiConfig() 
     pos_table : str = opiconfig["positionTable"]
     useXTablesForPos = opiconfig["useXTablesForPos"]
+    showFrame = opiconfig["showFrame"]
     logger.info(f"Starting process, device name: {device_name}")
-    xclient = XTablesClient(debug=True)
+    xclient = XTablesClient(ip="192.168.0.17",push_port=9999, debug=True)
     xclient.add_client_version_property("ALT-VISION")
     if useXTablesForPos: 
         pos_entry = pos_table # xtables dosent really have tables like network tables
         client = xclient # use xtables for pos aswell
     else:
-        NetworkTables.initialize(server="127.0.0.1")
+        NetworkTables.initialize(server="192.168.0.17")
         split_idx = pos_table.rfind("/")
         if split_idx == -1:
             logger.fatal(f"Invalid pos_table provided for network tables!: {pos_table}")
@@ -68,8 +69,8 @@ def startProcess():
         table = NetworkTables.getTable(pos_table)
         client = table
     cap = cv2.VideoCapture(
-        0
-    )  # guaranteed as we are passing /dev/color_camera symlink to docker image as /dev/video0
+        "/dev/color_camera"
+    )  # guaranteed as we are passing /dev/color_camera symlink to docker image
     try:
         while cap.isOpened():
             ret, frame = cap.read()
@@ -93,17 +94,28 @@ def startProcess():
                     robotPosXCm=loc[0] * 100, # m to cm
                     robotPosYCm=loc[1] * 100, # m to cm
                     robotYawRad=loc[2],
+                    drawBoxes=showFrame
                 )  # processing as absolute if a robot pose is found
                 detectionPacket = DetectionPacket.createPacket(
                     processedResults, device_name, timeStamp
                 )
+                if showFrame:
+                    framePacket = FramePacket.createPacket(timeStamp,device_name,undistortedFrame)
+                    xclient.putBytes(device_name + "_frame", framePacket.to_bytes())
+
                 # sending network packets
                 xclient.putBytes(device_name, detectionPacket.to_bytes())
             else:
+                logger.error("Opencv Cap ret is false!")
                 xclient.putBytes(device_name, defaultBytes)
             # cv2.imshow("frame", undistortedFrame)
             # if cv2.waitKey(1) & 0xFF == ord("q"):
             # break
+        else:
+            logger.error("Opencv cap no longer opened!")
+    except Exception as e:
+        logger.fatal(f"Exception Occured!: {e}")
+    
     finally:
         logger.info("process finished, releasing camera object")
         cap.release()

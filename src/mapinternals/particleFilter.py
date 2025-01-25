@@ -1,9 +1,10 @@
 import numpy as np
+from tools import configLoader
 from tools.Constants import MapConstants
 
 class ParticleFilter:
     def __init__(self, numParticles=1000):
-        self.obstacles = np.load("assets/obstacleMap.npy")
+        self.obstacles = configLoader.loadNumpyConfig("obstacleMap.npy")
         self.NUM_PARTICLES = numParticles
         self.STATE_DIM = 4  # [x, y, vx, vy]
         self.field_bounds = [0, MapConstants.fieldWidth.getCM(), 0, MapConstants.fieldHeight.getCM()]
