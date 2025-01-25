@@ -18,8 +18,7 @@ from tools import NtUtils
 processName = "Main__Process"
 logger = logging.getLogger(processName)
 
-interface = MainProcessBase(XTablesClient(push_port=9999))
-
+interface = MainProcessBase(XTablesClient())
 
 
 def mainLoop():
@@ -27,7 +26,7 @@ def mainLoop():
         while True:
             interface.central_update()
             # put code here....
-            
+
             # central.map.displayHeatMaps()
             # cv2.waitKey(1)
     except Exception as e:

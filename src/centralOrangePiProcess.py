@@ -13,9 +13,10 @@ from mapinternals.localFrameProcessor import LocalFrameProcessor
 from tools import calibration, NtUtils, configLoader
 from networktables import NetworkTables
 
-
 processName = "Central_Orange_Pi_Process"
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger(processName)
 
 
@@ -32,7 +33,6 @@ def getCameraName():
     return CameraName(name)
 
 
-
 def startProcess():
     device_name = getCameraName().name
     cameraIntrinsics, cameraExtrinsics, _ = getCameraValues(device_name)
@@ -40,7 +40,7 @@ def startProcess():
     processor = LocalFrameProcessor(
         cameraIntrinsics=cameraIntrinsics,
         cameraExtrinsics=cameraExtrinsics,
-        inferenceMode=InferenceMode.RKNN2024
+        inferenceMode=InferenceMode.RKNN2024,
     )
     calib = configLoader.loadSavedCalibration()
     # frame undistortion maps
@@ -48,23 +48,23 @@ def startProcess():
         cameraIntrinsics.getHres(), cameraIntrinsics.getVres(), calib
     )
 
-    opiconfig = configLoader.loadOpiConfig() 
+    opiconfig = configLoader.loadOpiConfig()
     logger.info(f"{opiconfig=}")
-    pos_table : str = opiconfig["positionTable"]
+    pos_table: str = opiconfig["positionTable"]
     useXTablesForPos = opiconfig["useXTablesForPos"]
     showFrame = opiconfig["showFrame"]
     logger.info(f"Starting process, device name: {device_name}")
-    xclient = XTablesClient(push_port=9999)
-    if useXTablesForPos: 
-        pos_entry = pos_table # xtables dosent really have tables like network tables
-        client = xclient # use xtables for pos aswell
+    xclient = XTablesClient()
+    if useXTablesForPos:
+        pos_entry = pos_table  # xtables dosent really have tables like network tables
+        client = xclient  # use xtables for pos aswell
     else:
         NetworkTables.initialize(server="10.4.88.2")
         split_idx = pos_table.rfind("/")
         if split_idx == -1:
             logger.fatal(f"Invalid pos_table provided for network tables!: {pos_table}")
             exit(1)
-        pos_entry = pos_table[split_idx+1:] # +1 to skip the "/"
+        pos_entry = pos_table[split_idx + 1 :]  # +1 to skip the "/"
         pos_table = pos_table[:split_idx]
         table = NetworkTables.getTable(pos_table)
         client = table
@@ -91,16 +91,18 @@ def startProcess():
                     logger.warning("Could not get robot pose!!")
                 processedResults = processor.processFrame(
                     undistortedFrame,
-                    robotPosXCm=loc[0] * 100, # m to cm
-                    robotPosYCm=loc[1] * 100, # m to cm
+                    robotPosXCm=loc[0] * 100,  # m to cm
+                    robotPosYCm=loc[1] * 100,  # m to cm
                     robotYawRad=loc[2],
-                    drawBoxes=showFrame
+                    drawBoxes=showFrame,
                 )  # processing as absolute if a robot pose is found
                 detectionPacket = DetectionPacket.createPacket(
                     processedResults, device_name, timeStamp
                 )
                 if showFrame:
-                    framePacket = FramePacket.createPacket(timeStamp,device_name,undistortedFrame)
+                    framePacket = FramePacket.createPacket(
+                        timeStamp, device_name, undistortedFrame
+                    )
                     xclient.putBytes(device_name + "_frame", framePacket.to_bytes())
 
                 # sending network packets
@@ -115,7 +117,7 @@ def startProcess():
             logger.error("Opencv cap no longer opened!")
     except Exception as e:
         logger.fatal(f"Exception Occured!: {e}")
-    
+
     finally:
         logger.info("process finished, releasing camera object")
         cap.release()

@@ -17,7 +17,7 @@ from tools.Constants import (
     CameraIntrinsics,
     CameraIdOffsets,
     InferenceMode,
-    MapConstants
+    MapConstants,
 )
 from tools.Units import UnitMode
 from pathplanning.PathGenerator import PathGenerator
@@ -27,7 +27,6 @@ processName = "Path_Test"
 logger = logging.getLogger(processName)
 
 
-
 central = CentralProcessor.instance()
 pathGenerator = PathGenerator(central)
 
@@ -35,7 +34,7 @@ pathGenerator = PathGenerator(central)
 NetworkTables.initialize(server="127.0.0.1")
 postable = NetworkTables.getTable("AdvantageKit/RealOutputs/PoseSubsystem")
 
-xclient = XTablesClient(ip="192.168.0.17", push_port=9999)
+xclient = XTablesClient()
 
 # exit(0)
 
@@ -46,6 +45,7 @@ camera_selector_name = "Camera Selection"
 cv2.namedWindow(title)
 clickpos = None
 currentPath = None
+
 
 def getAndSetPath(clickpos):
     global currentPath
@@ -62,7 +62,9 @@ def getAndSetPath(clickpos):
         logger.warning("Cannot get robot location from network tables!")
 
     path = pathGenerator.generate(
-        (MapConstants.fieldWidth.getCM()-pos[0] * 100, pos[1] * 100), clickpos, central.map.getRobotMap() > 0.1
+        (MapConstants.fieldWidth.getCM() - pos[0] * 100, pos[1] * 100),
+        clickpos,
+        central.map.getRobotMap() > 0.1,
     )  # m to cm
     logger.debug(f"Generated Path: {path}")
     if path is None:
@@ -77,6 +79,7 @@ def getAndSetPath(clickpos):
             )
             coordinates.append(element)
         xclient.putCoordinates("target_waypoints", coordinates)
+
 
 def clickCallback(event, x, y, flags, param):
     global clickpos
@@ -93,7 +96,7 @@ while True:
     frame = central.map.getRobotHeatMap().copy()
     if currentPath is not None:
         for point in currentPath:
-            cv2.circle(frame,point,2,(255,255,255),-1)
+            cv2.circle(frame, point, 2, (255, 255, 255), -1)
 
     cv2.imshow(title, frame)
 

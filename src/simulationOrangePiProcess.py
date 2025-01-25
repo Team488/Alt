@@ -17,12 +17,15 @@ from tools.Units import UnitMode
 
 
 processName = "Central_Orange_Pi_Process"
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger(processName)
 
 NetworkTables.initialize(server="127.0.0.1")
 postable = NetworkTables.getTable("SmartDashboard/VisionSystemSim-main/Sim Field")
 table = NetworkTables.getTable("AdvantageKit/RealOutputs/Odometry")
+
 
 class CameraName(Enum):
     REARRIGHT = "photonvisionrearright"
@@ -37,7 +40,6 @@ def getCameraName():
     return CameraName(name)
 
 
-
 def startProcess():
     name = "FRONTRIGHT"
     FRUrl = f"http://localhost:3000/Robot_{name[:1] + name[1:].lower()}%20Camera?dummy=param.mjpg"
@@ -46,14 +48,12 @@ def startProcess():
     processor = LocalFrameProcessor(
         cameraIntrinsics=cameraIntrinsics,
         cameraExtrinsics=cameraExtrinsics,
-        inferenceMode=InferenceMode.ONNX2024
+        inferenceMode=InferenceMode.ONNX2024,
     )
 
     logger.info(f"Starting process, device name: {name}")
-    xclient = XTablesClient(ip="192.168.0.17",push_port=9999)
-    cap = cv2.VideoCapture(
-        "assets/video12qual25clipped.mp4"
-    )  
+    xclient = XTablesClient()
+    cap = cv2.VideoCapture("assets/video12qual25clipped.mp4")
     while cap.isOpened():
         try:
             ret, frame = cap.read()
@@ -70,8 +70,8 @@ def startProcess():
                 #     logger.warning("Could not get robot pose!!")
                 processedResults = processor.processFrame(
                     frame,
-                    robotPosXCm=loc[0] * 100, # m to cm
-                    robotPosYCm=loc[1] * 100, # m to cm
+                    robotPosXCm=loc[0] * 100,  # m to cm
+                    robotPosYCm=loc[1] * 100,  # m to cm
                     robotYawRad=loc[2],
                     # drawBoxes=True
                 )  # processing as absolute if a robot pose is found
@@ -86,7 +86,7 @@ def startProcess():
             # if cv2.waitKey(1) & 0xFF == ord("q"):
             #     break
         except Exception as e:
-            print("ERRRORRR {e}") # use traceback
+            print("ERRRORRR {e}")  # use traceback
     logger.info("process finished, releasing camera object")
     cap.release()
     # cv2.destroyAllWindows()

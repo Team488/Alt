@@ -18,7 +18,7 @@ from tools.Constants import (
     CameraIdOffsets,
     InferenceMode,
     MapConstants,
-    Landmarks
+    Landmarks,
 )
 from tools.Units import UnitMode
 from tools import UnitConversion
@@ -77,7 +77,7 @@ frameProcessors = [
         cameraExtrinsics=extrinsics[i],
         inferenceMode=InferenceMode.ONNX2024,
         tryOCR=True,
-        isSimulationMode=True
+        isSimulationMode=True,
     )
     for i in range(len(offsets))
 ]
@@ -89,7 +89,7 @@ pathGenerator = PathGenerator(central)
 NetworkTables.initialize(server="127.0.0.1")
 postable = NetworkTables.getTable("AdvantageKit/RealOutputs/PoseSubsystem")
 
-xclient = XTablesClient(ip="192.168.0.17", push_port=9999)
+xclient = XTablesClient()
 
 # exit(0)
 
@@ -99,15 +99,20 @@ title = "Simulation_Window"
 camera_selector_name = "Camera Selection"
 cv2.namedWindow(title)
 camera_selector_name = "Camera Selection"
-cv2.createTrackbar(camera_selector_name,title,0,3, lambda x: None)
-cv2.setTrackbarPos(camera_selector_name,title,2)
-cv2.createTrackbar("TestRobotX",title,0,MapConstants.fieldWidth.getCM(), lambda x: None)
-cv2.setTrackbarPos("TestRobotX",title,660)
-cv2.createTrackbar("TestRobotY",title,0,MapConstants.fieldHeight.getCM(), lambda x: None)
-cv2.setTrackbarPos("TestRobotY",title,535)
-cv2.createTrackbar("TestRobotRot",title,0,359, lambda x: None)
+cv2.createTrackbar(camera_selector_name, title, 0, 3, lambda x: None)
+cv2.setTrackbarPos(camera_selector_name, title, 2)
+cv2.createTrackbar(
+    "TestRobotX", title, 0, MapConstants.fieldWidth.getCM(), lambda x: None
+)
+cv2.setTrackbarPos("TestRobotX", title, 660)
+cv2.createTrackbar(
+    "TestRobotY", title, 0, MapConstants.fieldHeight.getCM(), lambda x: None
+)
+cv2.setTrackbarPos("TestRobotY", title, 535)
+cv2.createTrackbar("TestRobotRot", title, 0, 359, lambda x: None)
 clickpos = None
 currentPath = None
+
 
 def getAndSetPath(clickpos):
     global currentPath
@@ -118,7 +123,7 @@ def getAndSetPath(clickpos):
     else:
         logger.warning("Cannot get robot location from network tables!")
 
-    path = pathGenerator.generateToPoint((pos[0]*100,pos[1]*100),clickpos)
+    path = pathGenerator.generateToPoint((pos[0] * 100, pos[1] * 100), clickpos)
     logger.debug(f"Generated Path: {path}")
     if path is None:
         logger.warning(f"No path found!")
@@ -132,6 +137,7 @@ def getAndSetPath(clickpos):
             )
             coordinates.append(element)
         xclient.putCoordinates("target_waypoints", coordinates)
+
 
 def clickCallback(event, x, y, flags, param):
     global clickpos
@@ -170,16 +176,24 @@ def run_frameprocess(imitatedProcIdx):
         exit(1)
 
     # put test robot pose
-    x = cv2.getTrackbarPos("TestRobotX",title)
-    y = cv2.getTrackbarPos("TestRobotY",title)
-    r = cv2.getTrackbarPos("TestRobotRot",title)
-    postable.getEntry("TestRobotPose").setDoubleArray([x/100,y/100,math.radians(r)])
+    x = cv2.getTrackbarPos("TestRobotX", title)
+    y = cv2.getTrackbarPos("TestRobotY", title)
+    r = cv2.getTrackbarPos("TestRobotRot", title)
+    postable.getEntry("TestRobotPose").setDoubleArray(
+        [x / 100, y / 100, math.radians(r)]
+    )
 
     highestRobot = central.map.getHighestRobot()
-    postable.getEntry("VisionEstimatedRobotLocation").setDoubleArray([highestRobot[0]/100,highestRobot[1]/100,0])
-    cv2.circle(frame,(int(UnitConversion.invertX(highestRobot[0])),int(highestRobot[1])),5,(255),-1)
-
-
+    postable.getEntry("VisionEstimatedRobotLocation").setDoubleArray(
+        [highestRobot[0] / 100, highestRobot[1] / 100, 0]
+    )
+    cv2.circle(
+        frame,
+        (int(UnitConversion.invertX(highestRobot[0])), int(highestRobot[1])),
+        5,
+        (255),
+        -1,
+    )
 
     # Fetch NetworkTables data
     pos = (0, 0, 0)
@@ -204,8 +218,7 @@ def run_frameprocess(imitatedProcIdx):
     lastidx += 1
     packet = (res, idoffset, lastidx)
     updateMap[imitatedProcName] = packet
-    cv2.imshow("Current Cam",frame)
-
+    cv2.imshow("Current Cam", frame)
 
 
 frame_queue = queue.Queue()
@@ -218,10 +231,10 @@ localUpdateMap = {
     "REARRIGHT": 0,
     "REARLEFT": 0,
 }
-        
+
 
 while True:
-    run_frameprocess(cv2.getTrackbarPos(camera_selector_name,title))
+    run_frameprocess(cv2.getTrackbarPos(camera_selector_name, title))
     stime = time.time()
     results = []
     for processName in names:
@@ -237,13 +250,19 @@ while True:
         print(results)
     central.processFrameUpdate(results, 2)
     robotobstacles = central.map.getAllRobotsAboveThreshold(0.5)
-    frame = np.zeros_like(central.map.getRobotHeatMap(),dtype=np.uint8)
+    frame = np.zeros_like(central.map.getRobotHeatMap(), dtype=np.uint8)
     for obstacle in robotobstacles:
-        cv2.circle(frame,(int(UnitConversion.invertX(obstacle[0])),int(obstacle[1])),10,(255),-1)
+        cv2.circle(
+            frame,
+            (int(UnitConversion.invertX(obstacle[0])), int(obstacle[1])),
+            10,
+            (255),
+            -1,
+        )
 
     if currentPath is not None:
         for point in currentPath:
-            cv2.circle(frame,point,2,(255),-1)
+            cv2.circle(frame, point, 2, (255), -1)
 
     cv2.imshow(title, frame)
 

@@ -11,10 +11,14 @@ from networktables import NetworkTables
 from tools.NtUtils import getPose2dFromBytes
 from mapinternals.localFrameProcessor import LocalFrameProcessor
 from mapinternals.CentralProcessor import CentralProcessor
-from tools.Constants import CameraExtrinsics, CameraIntrinsics, CameraIdOffsets, InferenceMode
+from tools.Constants import (
+    CameraExtrinsics,
+    CameraIntrinsics,
+    CameraIdOffsets,
+    InferenceMode,
+)
 from tools.Units import UnitMode
 from pathplanning.PathGenerator import PathGenerator
-
 
 
 processName = "Simulation_Process"
@@ -76,7 +80,7 @@ frameProcessors = [
         cameraExtrinsics=extrinsics[i],
         inferenceMode=InferenceMode.ONNX2024,
         tryOCR=True,
-        isSimulationMode=True
+        isSimulationMode=True,
     )
     for i in range(len(offsets))
 ]
@@ -88,7 +92,7 @@ pathGenerator = PathGenerator(central)
 NetworkTables.initialize(server="127.0.0.1")
 postable = NetworkTables.getTable("AdvantageKit/RealOutputs/PoseSubsystem")
 
-xclient = XTablesClient(ip="192.168.0.17",push_port=9999)
+xclient = XTablesClient()
 
 # exit(0)
 
@@ -97,11 +101,11 @@ xclient = XTablesClient(ip="192.168.0.17",push_port=9999)
 title = "Simulation_Window"
 camera_selector_name = "Camera Selection"
 cv2.namedWindow(title)
-cv2.createTrackbar(camera_selector_name,title,0,3, lambda x: None)
-cv2.setTrackbarPos(camera_selector_name,title,2)
+cv2.createTrackbar(camera_selector_name, title, 0, 3, lambda x: None)
+cv2.setTrackbarPos(camera_selector_name, title, 2)
 
-cv2.createTrackbar("a",title,0,640,lambda x : None)
-cv2.setTrackbarPos("a",title,320)
+cv2.createTrackbar("a", title, 0, 640, lambda x: None)
+cv2.setTrackbarPos("a", title, 320)
 
 updateMap = {
     "FRONTLEFT": ([], offsets[0], 0),
@@ -130,13 +134,16 @@ def run_frameprocess(imitatedProcIdx):
         logging.warning("Failed to retrieve a frame from stream.")
         exit(1)
 
-
     # Fetch NetworkTables data
     pos = (0, 0, 0)
     raw_data = postable.getEntry("RobotPose").get()
     if raw_data:
         pos = getPose2dFromBytes(raw_data)
-        pos = (pos[0],pos[1],math.radians(pos[2])) # this one gives degrees by default
+        pos = (
+            pos[0],
+            pos[1],
+            math.radians(pos[2]),
+        )  # this one gives degrees by default
     else:
         logger.warning("Cannot get robot location from network tables!")
 
@@ -155,8 +162,7 @@ def run_frameprocess(imitatedProcIdx):
     lastidx += 1
     packet = (res, idoffset, lastidx)
     updateMap[imitatedProcName] = packet
-    cv2.imshow("Current Cam",frame)
-
+    cv2.imshow("Current Cam", frame)
 
 
 frame_queue = queue.Queue()
@@ -173,8 +179,8 @@ localUpdateMap = {
 
 try:
     while running:
-        run_frameprocess(cv2.getTrackbarPos(camera_selector_name,title))
-        
+        run_frameprocess(cv2.getTrackbarPos(camera_selector_name, title))
+
         stime = time.time()
         results = []
         for processName in names:
@@ -189,17 +195,23 @@ try:
             results.append(result)
             print(results)
         central.processFrameUpdate(results, 2)
-        
+
         pos = (0, 0, 0)
         raw_data = postable.getEntry("RobotPose").get()
         if raw_data:
             pos = getPose2dFromBytes(raw_data)
-            pos = (pos[0],pos[1],math.radians(pos[2])) # this one gives degrees by default
+            pos = (
+                pos[0],
+                pos[1],
+                math.radians(pos[2]),
+            )  # this one gives degrees by default
         else:
             logger.warning("Cannot get robot location from network tables!")
-        
+
         target = central.map.getHighestGameObjectT(0.2)
-        path = pathGenerator.generate((pos[0]*100, pos[1]*100), target[:2], 0) # m to cm
+        path = pathGenerator.generate(
+            (pos[0] * 100, pos[1] * 100), target[:2], 0
+        )  # m to cm
         logger.debug(f"Generated Path: {path}")
         if path is None:
             logger.warning(f"No path found!")
@@ -207,10 +219,12 @@ try:
         else:
             coordinates = []
             for waypoint in path:
-                element = XTableValues_pb2.Coordinate(x = waypoint[0]/100,y = waypoint[1]/100)
+                element = XTableValues_pb2.Coordinate(
+                    x=waypoint[0] / 100, y=waypoint[1] / 100
+                )
                 coordinates.append(element)
             xclient.putCoordinates("target_waypoints", coordinates)
-        
+
         print(central.map.getHighestGameObject())
 
         etime = time.time()
