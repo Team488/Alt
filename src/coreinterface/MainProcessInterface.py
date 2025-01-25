@@ -11,12 +11,11 @@ from coreinterface.FramePacket import FramePacket
 from mapinternals.CentralProcessor import CentralProcessor
 from pathplanning.PathGenerator import PathGenerator
 from tools import NtUtils
-class MainProcessInterface:
-    def __init__(self,xclient,ntclient, keys = ["REARRIGHT", "REARLEFT", "FRONTLEFT", "FRONTRIGHT"]):
+class MainProcessBase:
+    def __init__(self,xclient, keys = ["REARRIGHT", "REARLEFT", "FRONTLEFT", "FRONTRIGHT"]):
         """ Process to run on orin """
         self.central = CentralProcessor.instance()
         self.xclient = xclient
-        self.ntclient = ntclient
         self.keys = keys
         self.updateMap = {
             key: ([], 0, 0) for key in self.keys
@@ -49,11 +48,10 @@ class MainProcessInterface:
     def central_update(self):
         currentTime = time.time()*1000
         if self.lastUpdateTimeMs == -1:
-            timePerLoop = 50 # some default value
+            timePerLoop = 50 # random default value
         else:
             timePerLoop = (currentTime-self.lastUpdateTimeMs)
         self.lastUpdateTimeMs = currentTime
-        TIMEPERLOOPMS = 50  # ms
         accumulatedResults = []
         for key in self.keys:
             localidx = self.localUpdateMap[key]
@@ -65,5 +63,5 @@ class MainProcessInterface:
             self.localUpdateMap[key] = packetidx
             accumulatedResults.append(res)
         self.central.processFrameUpdate(
-            cameraResults=accumulatedResults, timeStepSeconds=TIMEPERLOOPMS / 1000
+            cameraResults=accumulatedResults, timeStepSeconds=timePerLoop
         )
