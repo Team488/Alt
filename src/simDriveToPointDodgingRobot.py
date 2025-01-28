@@ -11,7 +11,7 @@ from networktables import NetworkTables
 import numpy as np
 from tools.NtUtils import getPose2dFromBytes
 from mapinternals.localFrameProcessor import LocalFrameProcessor
-from mapinternals.CentralProcessor import CentralProcessor
+from Core.Central import Central
 from tools.Constants import (
     CameraExtrinsics,
     CameraIntrinsics,
@@ -82,7 +82,7 @@ frameProcessors = [
     for i in range(len(offsets))
 ]
 
-central = CentralProcessor.instance()
+central = Central.instance()
 pathGenerator = PathGenerator(central)
 
 # Initialize NetworkTables

@@ -1,6 +1,5 @@
 import numpy as np
 import cv2
-from singleton.singleton import Singleton
 from mapinternals.UKF import Ukf
 from tools import configLoader
 from tools.Constants import MapConstants, CameraIdOffsets
@@ -10,8 +9,7 @@ from mapinternals.KalmanCache import KalmanCache
 
 
 
-@Singleton
-class CentralProcessor:
+class Central:
     def __init__(self):
         self.kalmanCacheRobots: KalmanCache = KalmanCache()
         self.kalmanCacheGameObjects: KalmanCache = KalmanCache()

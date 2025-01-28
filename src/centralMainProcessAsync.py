@@ -10,7 +10,7 @@ from JXTABLES.XTablesClient import XTablesClient
 from JXTABLES import XTableValues_pb2
 from coreinterface.DetectionPacket import DetectionPacket
 from coreinterface.FramePacket import FramePacket
-from mapinternals.CentralProcessor import CentralProcessor
+from Core.Central import Central
 from pathplanning.PathGenerator import PathGenerator
 from tools import NtUtils
 
@@ -25,7 +25,7 @@ formatter = logging.Formatter("-->%(asctime)s - %(name)s:%(levelname)s - %(messa
 fh.setFormatter(formatter)
 logger.addHandler(fh)
 logger.addHandler(ch)
-central = CentralProcessor.instance()
+central = Central.instance()
 client = XTablesClient()
 pathGenerator = PathGenerator(central)
 pathName = "target_waypoints"

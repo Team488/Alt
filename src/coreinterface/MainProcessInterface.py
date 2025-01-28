@@ -8,13 +8,13 @@ from JXTABLES.XTablesClient import XTablesClient
 from JXTABLES import XTableValues_pb2
 from coreinterface.DetectionPacket import DetectionPacket
 from coreinterface.FramePacket import FramePacket
-from mapinternals.CentralProcessor import CentralProcessor
+from Core.Central import Central
 from pathplanning.PathGenerator import PathGenerator
 from tools import NtUtils
 class MainProcessBase:
     def __init__(self,xclient, keys = ["REARRIGHT", "REARLEFT", "FRONTLEFT", "FRONTRIGHT"]):
         """ Process to run on orin """
-        self.central = CentralProcessor.instance()
+        self.central = Central.instance()
         self.xclient = xclient
         self.keys = keys
         self.updateMap = {

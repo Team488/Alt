@@ -8,7 +8,7 @@ from concurrent.futures import ThreadPoolExecutor
 from networktables import NetworkTables
 from tools.NtUtils import getPose2dFromBytes
 from mapinternals.localFrameProcessor import LocalFrameProcessor
-from mapinternals.CentralProcessor import CentralProcessor
+from Core.Central import Central
 from tools.Constants import CameraExtrinsics, CameraIntrinsics, CameraIdOffsets, InferenceMode
 from tools.Units import UnitMode
 
@@ -77,7 +77,7 @@ frameProcessors = [
     for i in range(len(offsets))
 ]
 
-central = CentralProcessor.instance()
+central = Central.instance()
 
 # Initialize NetworkTables
 NetworkTables.initialize(server="127.0.0.1")

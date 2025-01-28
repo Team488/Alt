@@ -9,7 +9,7 @@ from tools.Constants import MapConstants
 from tools import configLoader
 
 
-class T:
+class PrecomputeNearest:
     """Obstacles are expected to be in x,y format"""
 
     def __init__(
@@ -69,7 +69,7 @@ def mouse_callback(event, x, y, flags, param):
     if event == cv2.EVENT_MOUSEMOVE:
         mouse_position = np.array([x, y])
 
-t = T()    
+t = PrecomputeNearest()    
 cv2.namedWindow("test")
 cv2.setMouseCallback("test",mouse_callback)
 while True:

@@ -4,7 +4,7 @@ import os
 import sys
 import cv2
 
-from mapinternals.CentralProcessor import CentralProcessor
+from Core.Central import Central
 from mapinternals.KalmanCache import KalmanCache
 from mapinternals.KalmanEntry import KalmanEntry
 from tools.Constants import MapConstants
@@ -17,7 +17,7 @@ from tools.Constants import Landmarks
 
 
 class PathGenerator:
-    def __init__(self, centralProcess: CentralProcessor):
+    def __init__(self, centralProcess: Central):
         self.centralProcess = centralProcess        
         width = MapConstants.robotWidth.getCM()
         height = MapConstants.robotHeight.getCM()

@@ -11,7 +11,7 @@ from JXTABLES import XTableValues_pb2
 from coreinterface.DetectionPacket import DetectionPacket
 from coreinterface.FramePacket import FramePacket
 from coreinterface.MainProcessInterface import MainProcessBase
-from mapinternals.CentralProcessor import CentralProcessor
+from Core.Central import Central
 from pathplanning.PathGenerator import PathGenerator
 from tools import NtUtils
 

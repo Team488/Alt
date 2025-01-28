@@ -8,10 +8,10 @@ import numpy as np
 import mapDemos.utils as demoUtils
 from mapinternals.probmap import ProbMap
 import cv2
-from mapinternals.CentralProcessor import CentralProcessor
+from Core.Central import Central
 from pathplanning.PathGenerator import PathGenerator
 
-central = CentralProcessor.instance()
+central = Central.instance()
 mapSizeX = central.map.internalHeight
 mapSizeY = central.map.internalWidth
 print(f"mx{mapSizeX} my{mapSizeY} ")

@@ -1,7 +1,7 @@
 import numpy as np
 from mapinternals.probmap import ProbMap
 from mapinternals.localFrameProcessor import LocalFrameProcessor
-from mapinternals.CentralProcessor import CentralProcessor
+from Core.Central import Central
 from tools.CsvParser import CsvParser
 from tools.Constants import CameraIntrinsics, CameraExtrinsics, CameraIdOffsets, InferenceMode
 from inference.onnxInferencer import onnxInferencer
@@ -52,7 +52,7 @@ def startDemo():
     firstRun = True
     cap_outM = None
     frameProcessor = LocalFrameProcessor(cameraIntr, cameraExtr,inferenceMode=InferenceMode.ONNX2024)
-    centralProcessor = CentralProcessor.instance()
+    centralProcessor = Central.instance()
     fps = cap.get(cv2.CAP_PROP_FPS)
     timePassed = 0
     timePerFrame = 1 / fps
