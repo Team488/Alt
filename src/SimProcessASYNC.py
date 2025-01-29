@@ -9,7 +9,12 @@ from networktables import NetworkTables
 from tools.NtUtils import getPose2dFromBytes
 from mapinternals.localFrameProcessor import LocalFrameProcessor
 from Core.Central import Central
-from tools.Constants import CameraExtrinsics, CameraIntrinsics, CameraIdOffsets, InferenceMode
+from tools.Constants import (
+    CameraExtrinsics,
+    CameraIntrinsics,
+    CameraIdOffsets,
+    InferenceMode,
+)
 from tools.Units import UnitMode
 
 
@@ -72,12 +77,12 @@ frameProcessors = [
         cameraExtrinsics=extrinsics[i],
         inferenceMode=InferenceMode.ONNX2024,
         tryOCR=True,
-        isSimulationMode=True
+        isSimulationMode=True,
     )
     for i in range(len(offsets))
 ]
 
-central = Central.instance()
+central = Central()
 
 # Initialize NetworkTables
 NetworkTables.initialize(server="127.0.0.1")
@@ -98,8 +103,9 @@ updateMap = {
     "REARRIGHT": ([], offsets[2], 0),
     "REARLEFT": ([], offsets[3], 0),
 }
-ASYNCLOOPTIMEMS = 1000  # ms (onnx inference with 4 different "processors" on one device is slooow)
-
+ASYNCLOOPTIMEMS = (
+    1000  # ms (onnx inference with 4 different "processors" on one device is slooow)
+)
 
 
 def async_frameprocess(imitatedProcIdx):
@@ -125,13 +131,16 @@ def async_frameprocess(imitatedProcIdx):
                 logging.warning("Failed to retrieve a frame from stream.")
                 exit(1)
 
-
             # Fetch NetworkTables data
             pos = (0, 0, 0)
             raw_data = postable.getEntry("Robot").get()
             if raw_data:
                 # pos = getPose2dFromBytes(raw_data)
-                pos = (raw_data[0],raw_data[1],math.radians(raw_data[2])) # this one gives degrees by default
+                pos = (
+                    raw_data[0],
+                    raw_data[1],
+                    math.radians(raw_data[2]),
+                )  # this one gives degrees by default
 
             else:
                 logger.warning("Cannot get robot location from network tables!")

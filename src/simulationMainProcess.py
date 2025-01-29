@@ -25,7 +25,7 @@ formatter = logging.Formatter("-->%(asctime)s - %(name)s:%(levelname)s - %(messa
 fh.setFormatter(formatter)
 logger.addHandler(fh)
 logger.addHandler(ch)
-central = Central.instance()
+central = Central()
 client = XTablesClient()
 pathGenerator = PathGenerator(central)
 pathName = "target_waypoints"
@@ -103,7 +103,9 @@ def mainLoop():
                         f"Could not complete loop within {TIMEPERLOOPMS}ms! (Even without calculating a path!!)\n Time elapsed on loop: {deltaMS}ms"
                     )
                 continue
-            path = pathGenerator.generate((loc[0]*100, loc[1]*100), target[:2], 0) # m to cm
+            path = pathGenerator.generate(
+                (loc[0] * 100, loc[1] * 100), target[:2], 0
+            )  # m to cm
             logger.debug(f"Path Name: {pathName}")
             logger.debug(f"Generated Path: {path}")
             if path is None:
@@ -112,7 +114,9 @@ def mainLoop():
             else:
                 coordinates = []
                 for waypoint in path:
-                    element = XTableValues_pb2.Coordinate(x = waypoint[0]/100,y = waypoint[1]/100)
+                    element = XTableValues_pb2.Coordinate(
+                        x=waypoint[0] / 100, y=waypoint[1] / 100
+                    )
                     coordinates.append(element)
                 client.putCoordinates(pathName, coordinates)
             etime = time.time()

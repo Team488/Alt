@@ -11,7 +11,7 @@ import cv2
 from Core.Central import Central
 from pathplanning.PathGenerator import PathGenerator
 
-central = Central.instance()
+central = Central()
 mapSizeX = central.map.internalHeight
 mapSizeY = central.map.internalWidth
 print(f"mx{mapSizeX} my{mapSizeY} ")
@@ -103,9 +103,7 @@ def startDemo():
 
         robotMap = central.map.getRobotHeatMap()
         w, h = robotMap.shape
-        display_frame = cv2.merge(
-            (central.map.getGameObjectHeatMap(), robotMap)
-        )
+        display_frame = cv2.merge((central.map.getGameObjectHeatMap(), robotMap))
 
         cv2.circle(display_frame, our_location, 10, (0, 255, 0), -1)
         cv2.circle(display_frame, randomTarget, 10, (255, 0, 0), -1)
