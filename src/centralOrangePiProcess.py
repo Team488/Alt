@@ -54,7 +54,8 @@ def startProcess():
     useXTablesForPos = opiconfig["useXTablesForPos"]
     showFrame = opiconfig["showFrame"]
     logger.info(f"Starting process, device name: {device_name}")
-    xclient = XTablesClient()
+    xclient = XTablesClient(debug_mode=True)
+    xclient.add_client_version_property("ALT-VISION")
     if useXTablesForPos:
         pos_entry = pos_table  # xtables dosent really have tables like network tables
         client = xclient  # use xtables for pos aswell
