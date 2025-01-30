@@ -10,7 +10,7 @@ from coreinterface.DetectionPacket import DetectionPacket
 from coreinterface.FramePacket import FramePacket
 from tools.Constants import InferenceMode, getCameraValues
 from mapinternals.localFrameProcessor import LocalFrameProcessor
-from tools import calibration, NtUtils, configLoader, cameraFinder
+from tools import calibration, NtUtils, configLoader
 from networktables import NetworkTables
 
 processName = "Central_Orange_Pi_Process"
@@ -54,7 +54,7 @@ def startProcess():
     useXTablesForPos = opiconfig["useXTablesForPos"]
     showFrame = opiconfig["showFrame"]
     logger.info(f"Starting process, device name: {device_name}")
-    xclient = XTablesClient(debug_mode=True,ip="192.168.0.17")
+    xclient = XTablesClient(debug_mode=True)
     xclient.add_client_version_property("ALT-VISION")
     if useXTablesForPos:
         pos_entry = pos_table  # xtables dosent really have tables like network tables
@@ -69,7 +69,7 @@ def startProcess():
         pos_table = pos_table[:split_idx]
         table = NetworkTables.getTable(pos_table)
         client = table
-    cap = cv2.VideoCapture(0) # /dev/color_cam symlink
+    cap = cv2.VideoCapture(0)  # /dev/color_cam symlink
     try:
         while cap.isOpened():
             ret, frame = cap.read()
