@@ -5,17 +5,20 @@
 # For objects pertaining only to agent, create them in the create method
 
 from abc import ABC, abstractmethod
+from logging import Logger
 from JXTABLES.XTablesClient import XTablesClient
 from Core.Central import Central
 from Core.PropertyOperator import PropertyOperator
 from Core.ConfigOperator import ConfigOperator
 
+
 class Agent(ABC):
-    def __init__(self, central : Central, xclient : XTablesClient, propertyOperator : PropertyOperator, configOperator : ConfigOperator):
+    def __init__(self, central : Central, xclient : XTablesClient, propertyOperator : PropertyOperator, configOperator : ConfigOperator, logger : Logger):
         self.central = central
         self.xclient = xclient
         self.propertyOperator = propertyOperator
         self.configOperator = configOperator
+        self.Sentinel = logger
         # other than setting variables, nothing should go here
 
     

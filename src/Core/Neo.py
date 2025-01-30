@@ -35,9 +35,9 @@ class Neo:
         self.__central = Central(logger=Sentinel.getChild("Central_Processor"))
         
         self.__isShutdown = False # runnable
-        signal.signal(signal.SIGINT,handler=self.handleArchitectKill)
+        signal.signal(signal.SIGINT,handler=self.__handleArchitectKill)
 
-    def handleArchitectKill(self, sig, frame):
+    def __handleArchitectKill(self, sig, frame):
         Sentinel.info("The architect has caused our demise! Shutting down any agent")
         self.shutDown()
 
@@ -59,7 +59,7 @@ class Neo:
     
     def wakeAgent(self, agent : type[Agent]):
         if not self.isShutdown():
-            self.__agentOp.wakeAgent(agent(self.__central,self.__xclient,self.__propertyOp,self.__configOp))
+            self.__agentOp.wakeAgent(agent(self.__central,self.__xclient,self.__propertyOp,self.__configOp,Sentinel.getChild("Agent")))
         else:
             Sentinel.warning("Neo is already shutdown!")
     
