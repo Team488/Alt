@@ -28,7 +28,7 @@ class OrangePiAgent(Agent):
         self.CAMERA_INDEX = 0 # defined by symlink in docker compose file
         # camera config
         self.calib = self.configOperator.getContent("camera_calib.json")
-        self.device_name = CameraName.getCameraName()
+        self.device_name = CameraName.getCameraName().name
         self.Sentinel.info(f"Camera Name: {self.device_name}")
         # camera values
         self.cameraIntrinsics, self.cameraExtrinsics = getCameraValues(self.device_name)
