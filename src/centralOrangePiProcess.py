@@ -10,7 +10,7 @@ from coreinterface.DetectionPacket import DetectionPacket
 from coreinterface.FramePacket import FramePacket
 from tools.Constants import InferenceMode, getCameraValues
 from mapinternals.localFrameProcessor import LocalFrameProcessor
-from tools import calibration, NtUtils, configLoader
+from tools import calibration, NtUtils, configLoader, cameraFinder
 from networktables import NetworkTables
 
 processName = "Central_Orange_Pi_Process"
@@ -52,6 +52,7 @@ def startProcess():
     logger.info(f"{opiconfig=}")
     pos_table: str = opiconfig["positionTable"]
     useXTablesForPos = opiconfig["useXTablesForPos"]
+    cameraSerial = opiconfig["cameraSerial"]
     showFrame = opiconfig["showFrame"]
     logger.info(f"Starting process, device name: {device_name}")
     xclient = XTablesClient(debug_mode=True)
@@ -69,9 +70,13 @@ def startProcess():
         pos_table = pos_table[:split_idx]
         table = NetworkTables.getTable(pos_table)
         client = table
-    cap = cv2.VideoCapture(
-        0
-    )  # guaranteed as we are passing /dev/color_camera symlink to docker image
+    print("Searching for camera index with serial ID: " + cameraSerial)
+    cam_index = cameraFinder.get_camera_index_by_serial(cameraSerial)
+    if cam_index is None:
+        print("No camera found with serial ID: " + cameraSerial)
+        return
+    print("Camera found at index: " + cam_index)
+    cap = cv2.VideoCapture(cam_index)
     try:
         while cap.isOpened():
             ret, frame = cap.read()
