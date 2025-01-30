@@ -10,7 +10,7 @@ from coreinterface.DetectionPacket import DetectionPacket
 from coreinterface.FramePacket import FramePacket
 from tools.Constants import InferenceMode, getCameraValues
 from mapinternals.localFrameProcessor import LocalFrameProcessor
-from tools import calibration, NtUtils, configLoader, cameraFinder
+from tools import calibration, NtUtils, configLoader
 from networktables import NetworkTables
 
 processName = "Central_Orange_Pi_Process"
