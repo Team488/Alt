@@ -52,7 +52,6 @@ def startProcess():
     logger.info(f"{opiconfig=}")
     pos_table: str = opiconfig["positionTable"]
     useXTablesForPos = opiconfig["useXTablesForPos"]
-    cameraSerial = opiconfig["cameraSerial"]
     showFrame = opiconfig["showFrame"]
     logger.info(f"Starting process, device name: {device_name}")
     xclient = XTablesClient(debug_mode=True,ip="192.168.0.17")
@@ -70,13 +69,7 @@ def startProcess():
         pos_table = pos_table[:split_idx]
         table = NetworkTables.getTable(pos_table)
         client = table
-    print("Searching for camera index with serial ID: " + cameraSerial)
-    cam_index = cameraFinder.get_camera_index_by_serial(cameraSerial)
-    if cam_index is None:
-        print("No camera found with serial ID: " + cameraSerial)
-        return
-    print("Camera found at index: " + cam_index)
-    cap = cv2.VideoCapture(cam_index)
+    cap = cv2.VideoCapture(0) # /dev/color_cam symlink
     try:
         while cap.isOpened():
             ret, frame = cap.read()
