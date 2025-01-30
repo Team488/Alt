@@ -11,25 +11,26 @@ from coreinterface.FramePacket import FramePacket
 from Core.Central import Central
 from pathplanning.PathGenerator import PathGenerator
 from tools import NtUtils
+
+
 class MainProcessBase:
-    def __init__(self,xclient, keys = ["REARRIGHT", "REARLEFT", "FRONTLEFT", "FRONTRIGHT"]):
-        """ Process to run on orin """
-        self.central = Central.instance()
+    def __init__(
+        self, xclient, keys=["REARRIGHT", "REARLEFT", "FRONTLEFT", "FRONTRIGHT"]
+    ):
+        """Process to run on orin"""
+        self.central = Central()
         self.xclient = xclient
         self.keys = keys
-        self.updateMap = {
-            key: ([], 0, 0) for key in self.keys
-        }
-        self.localUpdateMap =  {key: 0 for key in self.keys}
+        self.updateMap = {key: ([], 0, 0) for key in self.keys}
+        self.localUpdateMap = {key: 0 for key in self.keys}
         self.lastUpdateTimeMs = -1
         self.registerCallBacks()
-
 
     def registerCallBacks(self):
         for key in self.keys:
             self.xclient.subscribe(key, consumer=self.__handle_update)
 
-    def __handle_update(self,ret):
+    def __handle_update(self, ret):
         key = ret.key
         val = ret.value
         idOffset = CameraIdOffsets[key]
@@ -46,11 +47,11 @@ class MainProcessBase:
         self.updateMap[key] = packet
 
     def central_update(self):
-        currentTime = time.time()*1000
+        currentTime = time.time() * 1000
         if self.lastUpdateTimeMs == -1:
-            timePerLoop = 50 # random default value
+            timePerLoop = 50  # random default value
         else:
-            timePerLoop = (currentTime-self.lastUpdateTimeMs)
+            timePerLoop = currentTime - self.lastUpdateTimeMs
         self.lastUpdateTimeMs = currentTime
         accumulatedResults = []
         for key in self.keys:

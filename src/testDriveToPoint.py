@@ -27,7 +27,7 @@ processName = "Path_Test"
 logger = logging.getLogger(processName)
 
 
-central = Central.instance()
+central = Central()
 pathGenerator = PathGenerator(central)
 
 # Initialize NetworkTables

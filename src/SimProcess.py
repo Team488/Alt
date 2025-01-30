@@ -85,7 +85,7 @@ frameProcessors = [
     for i in range(len(offsets))
 ]
 
-central = Central.instance()
+central = Central()
 pathGenerator = PathGenerator(central)
 
 # Initialize NetworkTables
