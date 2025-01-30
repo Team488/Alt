@@ -15,7 +15,7 @@ class AgentOperator:
         self.__stop = False # flag
         self.__runOnFinish = None # runnable
         self.__setStatus = lambda agentName, status : self.__xclient.putString(f"agents.{agentName}.Status",status)
-        self.__addToErrorLog = lambda agentName, error : self.__xclient.putString(f"agents.{agentName}.Errors",f"{self.__xclient.getString(f'agents.{agentName}.Errors')} | {error}")
+        self.__setErrorLog = lambda agentName, error : self.__xclient.putString(f"agents.{agentName}.Errors",error)
         self.__setDescription = lambda agentName, description : self.__xclient.putString(f"agents.{agentName}.Description",description)
 
     def stop(self):
@@ -28,7 +28,7 @@ class AgentOperator:
             self.Sentinel.warning("No agent thread to join!")
     
     def wakeAgent(self, agent : Agent):
-        self.__stop = False # reset stop flag (even if false)
+        self.__stop = False # reset stop flag (even if already false)
         
         if self.__agentThread is None:
             self.Sentinel.info(f"Waking agent! | Name: {agent.getName()} Description : {agent.getDescription()}")        
@@ -76,7 +76,7 @@ class AgentOperator:
                 progressStr = "shutDown"
                 self.__setStatus(agent.getName(),"shutdown")  
                 self.Sentinel.debug("Stopping agent")
-                agent.shutdownNow()
+                agent.forceShutdown()
             
             # cleanup 
             progressStr = "close"
@@ -86,13 +86,14 @@ class AgentOperator:
             if not forceStopped:
                 self.__setStatus(agent.getName(),f"agent finished normally")  
                 self.Sentinel.debug("Agent has finished normally")
+            
+            self.__setErrorLog(agent.getName(),"None...")
 
-        
         except Exception as e:
             message = f"Failed! | During {progressStr}: {e}"
             self.__setStatus(agent.getName(),message)  
             tb = traceback.format_exc()
-            self.__addToErrorLog(agent.getName(),tb)
+            self.__setErrorLog(agent.getName(),tb)
             self.Sentinel.error(tb)
 
         # potentially run a task on agent finish

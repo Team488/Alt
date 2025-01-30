@@ -43,7 +43,7 @@ class Agent(ABC):
         pass
 
     @abstractmethod
-    def shutdownNow(self):
+    def forceShutdown(self):
         # code to kill agent immediately here
         pass
 

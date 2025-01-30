@@ -9,6 +9,7 @@ class PropertyOperator:
         self.__propertyMap = {}
         self.__getPropertyTable = lambda propertyName : f"properties{self.prefix}.{propertyName}"
         self.__getReadOnlyPropertyTable = lambda propertyName : f"properties.READONLY{self.prefix}.{propertyName}"
+        self.__children = []
 
     def __updatePropertyCallback(self,ret):
         self.__propertyMap[ret.key] = ret.value
@@ -54,11 +55,18 @@ class PropertyOperator:
         return True
 
     def getChild(self, prefix) -> "PropertyOperator":
-        return PropertyOperator(self.__xclient, self.Sentinel, f"{self.prefix}.{prefix}")
+        child = PropertyOperator(self.__xclient, self.Sentinel, f"{self.prefix}.{prefix}")
+        self.__children.append(child)
+        return child
 
     
-    def deregister(self):
-        self.__xclient.unsubscribe_all(self.__updatePropertyCallback)
+    def deregisterAll(self):
+        wasAllRemoved = self.__xclient.unsubscribe_all(self.__updatePropertyCallback)
+        self.__propertyMap.clear()
+        for child in self.__children:
+            # "recursively" go through each child and deregister them too
+            wasAllRemoved &= child.deregisterAll()
+        return wasAllRemoved
 
 
 class Property:

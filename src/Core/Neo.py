@@ -104,8 +104,8 @@ class Neo:
 
     def __cleanup(self):
         # xtables operations. need to go before xclient shutdown
-        self.__propertyOp.deregister()
-        self.__orderOp.deregister()
+        Sentinel.info(f"Properties removed: {self.__propertyOp.deregisterAll()}")
+        Sentinel.info(f"Orders removed: {self.__orderOp.deregister()}")
 
         try:
             self.__xclient.shutdown()

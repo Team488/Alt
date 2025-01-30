@@ -127,7 +127,7 @@ class OrangePiAgent(Agent):
     def isRunning(self):
         return self.cap.isOpened()
 
-    def shutdownNow(self):
+    def forceShutdown(self):
         self.cap.release()
         print("Shutdown!")
 

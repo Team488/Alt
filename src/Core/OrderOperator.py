@@ -57,8 +57,9 @@ class OrderOperator:
         
     
     def deregister(self):
-        self.__xclient.unsubscribe_all(self.__runOrder)
+        wasRemoved = self.__xclient.unsubscribe_all(self.__runOrder)
         self.__orderMap.clear()
+        return wasRemoved
 
 
 
