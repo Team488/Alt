@@ -12,6 +12,7 @@ from tools.Constants import InferenceMode, getCameraValues
 from mapinternals.localFrameProcessor import LocalFrameProcessor
 from tools import calibration, NtUtils, configLoader
 from networktables import NetworkTables
+import traceback
 
 processName = "Central_Orange_Pi_Process"
 logging.basicConfig(
@@ -107,7 +108,9 @@ def startProcess():
                 # sending network packets
                 xclient.putBytes(device_name, detectionPacket.to_bytes())
             else:
-                logger.error("Opencv Cap ret is false!")
+                logger.error("Opencv Cap ret is false! Reopening!")
+                cap.release()
+                cap = cv2.VideoCapture(10)
                 xclient.putBytes(device_name, defaultBytes)
             # cv2.imshow("frame", undistortedFrame)
             # if cv2.waitKey(1) & 0xFF == ord("q"):
@@ -116,6 +119,7 @@ def startProcess():
             logger.error("Opencv cap no longer opened!")
     except Exception as e:
         logger.fatal(f"Exception Occured!: {e}")
+        traceback.print_exc()
 
     finally:
         logger.info("process finished, releasing camera object")
