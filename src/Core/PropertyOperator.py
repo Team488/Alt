@@ -1,43 +1,50 @@
-import logging
+from logging import Logger
 from JXTABLES.XTablesClient import XTablesClient
-Sentinel = logging.getLogger("Property_Operator")
 # creates network properties that can be set by xtables
 class PropertyOperator:
-    def __init__(self,xclient : XTablesClient):
+    def __init__(self,xclient : XTablesClient, logger : Logger):
+        self.Sentinel = logger
         self.__xclient : XTablesClient = xclient
         self.__propertyMap = {}
+        self.__getPropertyTable = lambda propertyName : f"properties.{propertyName}"
+        self.__getReadOnlyPropertyTable = lambda propertyName : f"properties.READONLY.{propertyName}"
 
     def __updatePropertyCallback(self,ret):
         self.__propertyMap[ret.key] = ret.value
-        Sentinel.debug(f"Property updated | Name: {ret.key} Value : {ret.value}")
+        self.Sentinel.debug(f"Property updated | Name: {ret.key} Value : {ret.value}")
 
     def createProperty(self, propertyName : str, propertyDefault):
-        if not self.__setNetworkDefault(propertyName,propertyDefault):
+        propertyTable = self.__getPropertyTable(propertyName) # store properties in known place
+        if not self.__setNetworkDefault(propertyTable,propertyDefault):
             return None
         
         # init default in map
-        self.__propertyMap[propertyName] = propertyDefault
+        self.__propertyMap[propertyTable] = propertyDefault
         # subscribe to updates
-        self.__xclient.subscribe(propertyName,self.__updatePropertyCallback)
-        Sentinel.info(f"Created property | Name: {propertyName} Default: {propertyDefault} Type {type(propertyDefault)}")
-        return Property(lambda : self.__propertyMap[propertyName])
+        self.__xclient.subscribe(propertyTable,self.__updatePropertyCallback)
+        self.Sentinel.info(f"Created property | Name: {propertyTable} Default: {propertyDefault} Type: {type(propertyDefault)}")
+        return Property(lambda : self.__propertyMap[propertyTable])
+    
+    def createReadOnlyProperty(self, propertyName, propertyValue):
+        propertyTable = self.__getReadOnlyPropertyTable(propertyName)
+        self.__setNetworkDefault(propertyTable, propertyValue)
         
-    def __setNetworkDefault(self, propertyName, propertyDefault) -> bool:
+    def __setNetworkDefault(self, propertyTable, propertyDefault) -> bool:
         # send out default to network (assuming it initially does not exist. It shoudnt)
         if isinstance(propertyDefault,str):
-            self.__xclient.putString(propertyName,propertyDefault)
+            self.__xclient.putString(propertyTable,propertyDefault)
         elif isinstance(propertyDefault, int):
-            self.__xclient.putInteger(propertyName,propertyDefault)
+            self.__xclient.putInteger(propertyTable,propertyDefault)
         elif isinstance(propertyDefault, float):
-            self.__xclient.putDouble(propertyName,propertyDefault)
+            self.__xclient.putDouble(propertyTable,propertyDefault)
         elif isinstance(propertyDefault, list):
-            self.__xclient.putArray(propertyName,propertyDefault)
+            self.__xclient.putArray(propertyTable,propertyDefault)
         elif isinstance(propertyDefault, bytes):
-            self.__xclient.putBytes(propertyName,propertyDefault)
+            self.__xclient.putBytes(propertyTable,propertyDefault)
         elif isinstance(propertyDefault, bool):
-            self.__xclient.putBoolean(propertyName,propertyDefault)
+            self.__xclient.putBoolean(propertyTable,propertyDefault)
         else:
-            Sentinel.error("Invalid property type!")
+            self.Sentinel.error("Invalid property type!")
             return False
 
         return True

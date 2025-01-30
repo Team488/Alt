@@ -23,7 +23,7 @@ class AgentExample(Agent):
     def isRunning(self):
         # condition to keep task running here
         # for example, i want to run only 50 times. Thus i will be running if the number of times i have run is less than 50
-        return self.timesRun < 50   
+        return self.timesRun < 1000   
 
     def shutdownNow(self):
         # code to kill task immediately here

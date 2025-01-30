@@ -31,3 +31,8 @@ class Order(ABC):
     def close(self):
         # order cleanup here
         pass
+    
+    @abstractmethod
+    def getDescription(self) -> str:
+        # return order name here
+        pass

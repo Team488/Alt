@@ -40,12 +40,25 @@ class Agent(ABC):
         pass
 
     @abstractmethod
-    def getIntervalMs(self):
-        # how long to wait between each run call
-        # can leave as None, will use default time
-        return None
-
-    @abstractmethod
     def shutdownNow(self):
         # code to kill agent immediately here
         pass
+
+    # ----- properties -----
+
+    @abstractmethod
+    def getName(self):
+        # agent name here
+        pass
+
+    @abstractmethod
+    def getDescription(self):
+        # agent description here
+        pass
+
+    # ----- optional values -----
+    
+    def getIntervalMs(self):
+        # how long to wait between each run call
+        # can leave as None, will use default time of 1 ms
+        return None

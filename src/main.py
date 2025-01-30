@@ -1,7 +1,8 @@
-import time
 from Core.Neo import Neo
-from Core.Agents.AgentExample import AgentExample
+from Core.Agents import AgentExample
+from Core.Orders import OrderExample
 n = Neo()
 n.wakeAgent(AgentExample)
+n.addOrderTrigger("trigger",OrderExample)
 n.shutDownOnAgentFinished()
-time.sleep(1000)
+n.waitForAgentFinished()

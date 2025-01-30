@@ -1,5 +1,6 @@
 import numpy as np
 import cv2
+from logging import Logger
 from mapinternals.UKF import Ukf
 from tools import configLoader
 from tools.Constants import MapConstants, CameraIdOffsets
@@ -10,7 +11,8 @@ from mapinternals.KalmanCache import KalmanCache
 
 
 class Central:
-    def __init__(self):
+    def __init__(self, logger : Logger):
+        self.Sentinel = logger
         self.kalmanCacheRobots: KalmanCache = KalmanCache()
         self.kalmanCacheGameObjects: KalmanCache = KalmanCache()
         self.map = ProbMap()
@@ -26,7 +28,7 @@ class Central:
         try:
             defaultMap = configLoader.loadNumpyConfig("obstacleMap.npy")
         except Exception as e:
-            print("obstaclemap load failed, defaulting to empty map", e)
+            self.Sentinel.warning("obstaclemap load failed, defaulting to empty map", e)
         
         return defaultMap
 

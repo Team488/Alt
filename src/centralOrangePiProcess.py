@@ -54,7 +54,7 @@ def startProcess():
     useXTablesForPos = opiconfig["useXTablesForPos"]
     showFrame = opiconfig["showFrame"]
     logger.info(f"Starting process, device name: {device_name}")
-    xclient = XTablesClient(debug_mode=True)
+    xclient = XTablesClient(debug_mode=True,ip="192.168.0.17")
     xclient.add_client_version_property("ALT-VISION")
     if useXTablesForPos:
         pos_entry = pos_table  # xtables dosent really have tables like network tables
@@ -70,7 +70,7 @@ def startProcess():
         table = NetworkTables.getTable(pos_table)
         client = table
     cap = cv2.VideoCapture(
-        0
+        "/dev/color_camera"
     )  # guaranteed as we are passing /dev/color_camera symlink to docker image
     try:
         while cap.isOpened():

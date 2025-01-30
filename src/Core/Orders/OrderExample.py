@@ -13,6 +13,10 @@ class OrderExample(Order):
 
     def run(self):
         print(f"Sigma is: {self.sigma}")
+        print("1" + 1)
     
     def close(self):
         print(f"Cleaning up!")
+
+    def getDescription(self):
+        return "agent_example"

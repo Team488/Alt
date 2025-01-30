@@ -1,11 +1,10 @@
 import os
 import json
 import codecs
-import logging
+from logging import Logger
 import numpy as np
 from enum import Enum
 
-Sentinel = logging.getLogger("Config_Operator")
 
 class ConfigType(Enum):
     NUMPY = "numpy"
@@ -30,10 +29,11 @@ class ConfigOperator:
     OVERRIDE_CONFIG_PATH = "/xbot/config" # if you want to override any json configs, put here
     DEFAULT_CONFIG_PATH = "assets" # default configs
     knownFileEndings = ((".npy", ConfigType.NUMPY), (".json", ConfigType.JSON))
-    def __init__(self):
-        self.configMap = {}
+    def __init__(self, logger : Logger):
+        self.Sentinel = logger 
         self.__loadFromPath(self.DEFAULT_CONFIG_PATH)
-        self.__loadFromPath(self.OVERRIDE_CONFIG_PATH) 
+        self.__loadFromPath(self.OVERRIDE_CONFIG_PATH)
+        self.configMap = {}
         # loading override second means that it will overwrite anything set by default. 
         # NOTE: if you only specify a subset of the .json file in the override, you will loose the default values.  
 
@@ -43,13 +43,13 @@ class ConfigOperator:
                 file_path = os.path.join(path, filename)
                 for (ending,filetype) in self.knownFileEndings:
                     if file_path.endswith(ending):
-                        Sentinel.info(f"Loaded config file from {file_path}")
+                        self.Sentinel.info(f"Loaded config file from {file_path}")
                         content = filetype.load(file_path)
-                        Sentinel.debug(f"File content: {content}")
+                        self.Sentinel.debug(f"File content: {content}")
                         self.configMap[filename] = content
         except Exception as agentSmith:
             # override config path dosent exist
-            Sentinel.debug(f"{path} does not exist. likely not critical")
+            self.Sentinel.debug(f"{path} does not exist. likely not critical")
 
     def getContent(self, filename):
         return self.configMap.get(filename, None)

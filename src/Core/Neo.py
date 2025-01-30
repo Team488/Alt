@@ -4,161 +4,94 @@ import os
 import signal
 import sys
 import time
-import threading
-from concurrent.futures import ThreadPoolExecutor
 from JXTABLES.XTablesClient import XTablesClient
 from Core.ConfigOperator import ConfigOperator
 from Core.PropertyOperator import PropertyOperator
+from Core.OrderOperator import OrderOperator
+from Core.AgentOperator import AgentOperator
 from Core.Central import Central
 from abstract.Agent import Agent
+from abstract.Order import Order
 
-logging.basicConfig(level=logging.DEBUG)
 Sentinel = logging.getLogger("Core")
+Sentinel.setLevel(level=logging.DEBUG)
 
 class Neo:
-    DEFAULT_LOOP_TIME = 0.001 # 1 ms
     def __init__(self):
         self.__printInit()
         Sentinel.info("Creating Config operator")
         Sentinel.info("Loading configs")
-        self.__configOp = ConfigOperator()
+        self.__configOp = ConfigOperator(logger = Sentinel.getChild("Config_Operator"))
         Sentinel.info("Creating XTables Client....")
         self.__xclient = XTablesClient()
         Sentinel.info("Client created")
         Sentinel.info("Creating Property operator")
-        self.__propertyOp = PropertyOperator(self.__xclient)
+        self.__propertyOp = PropertyOperator(self.__xclient, logger=Sentinel.getChild("Property_Operator"))
+        Sentinel.info("Creating Order operator")
+        self.__orderOp = OrderOperator(self.__xclient, logger=Sentinel.getChild("Order_Operator"))
+        Sentinel.info("Creating Agent operator")
+        self.__agentOp = AgentOperator(self.__xclient, logger=Sentinel.getChild("Agent_Operator"))
         Sentinel.info("Creating Central")
-        self.__central = Central()
-        Sentinel.info("Creating Merovingian (ThreadPool)")
-        self.__mero = ThreadPoolExecutor(max_workers=5)
-        self.__agentFinishEvent = threading.Event()  # Event to signal when the agent is done
-        self.__agentThread = None # thread to run it
-        self.__stop = False # flag
-        self.__runOnFinish = None # runnable
+        self.__central = Central(logger=Sentinel.getChild("Central_Processor"))
+        
         self.__isShutdown = False # runnable
         signal.signal(signal.SIGINT,handler=self.handleArchitectKill)
 
-    def handleArchitectKill(self, signal, frame):
-        Sentinel.info("The architect has caused our demise! Shutting down any agents")
-        self.__shutDownINT()
+    def handleArchitectKill(self, sig, frame):
+        Sentinel.info("The architect has caused our demise! Shutting down any agent")
+        self.shutDown()
 
-    def __shutDownINT(self):
-        self.__printFinish()
-        self.__cleanup()          
-        self.__stop = True
+    def shutDown(self):
+        if not self.__isShutdown:
+            self.__agentOp.stop()
+            self.__agentOp.join()
+            self.__printAndCleanup()
+            self.__isShutdown = True
+        else:
+            Sentinel.debug("Already shut down")
+        
+
+    def addOrderTrigger(self, orderTriggerName : str, orderToRun : type[Order]):
+        if not self.isShutdown():
+            self.__orderOp.createOrder(orderTriggerName, orderToRun(self.__central,self.__xclient,self.__propertyOp,self.__configOp))
+        else:
+            Sentinel.warning("Neo is already shutdown!")
     
     def wakeAgent(self, agent : type[Agent]):
         if not self.isShutdown():
-          agent = agent(self.__central,self.__xclient,self.__propertyOp,self.__configOp)
-          if self.__agentThread is None:
-            Sentinel.info("Waking agent!")          
-            self.__agentThread = threading.Thread(target=self.__startAgentLoop,args=[agent])
-            self.__agentThread.start()
-            # grace period for thread to start
-            while not self.__agentThread.is_alive():
-                time.sleep(0.001)
-            Sentinel.info("The agent is alive!")
-          else:
-            # agenthread already started 
-            Sentinel.warning("An agent has already been started!")
+            self.__agentOp.wakeAgent(agent(self.__central,self.__xclient,self.__propertyOp,self.__configOp))
         else:
-           Sentinel.warning("Cannot begin, Neo is shut down!")
+            Sentinel.warning("Neo is already shutdown!")
     
-    def __startAgentLoop(self, agent : Agent):
-        # create
-        agent.create()
-        
-        continue_condition = lambda : not self.__stop and agent.isRunning()
-        while continue_condition():              
-            agent.runPeriodic()
-
-            sleepTime = self.DEFAULT_LOOP_TIME
-            if agent.getIntervalMs() is not None:
-                sleepTime = agent.getIntervalMs()/1000 # seconds
-            else:
-                Sentinel.debug("Using default sleeptime")
-            
-            startTime = time.monotonic()
-            while time.monotonic() - startTime < sleepTime:
-                if self.__stop:
-                    break
-                time.sleep(0.001)  # Check every 1 ms
-
-        # if thread was shutdown abruptly (self.__stop flag), perform shutdown
-
-        if self.__stop:
-            Sentinel.debug("Stopping agent")
-            agent.shutdownNow()
-        
-        # cleanup 
-        agent.onClose() 
-        
-        if not self.__stop and self.__runOnFinish is not None:
-            # potentially run a task on agent finish
-            self.__runOnFinish()
-            # clear
-            self.__runOnFinish = None
-        
-        
-        # end agent thread
-        self.__agentThread = None
-        # reset stop flag (even if not stopped)
-        self.__stop = False
-        # let the world know the agent has finished
-        self.__agentFinishEvent.set()
-         
-
-    
-    def setOnAgentFinished(self,runOnFinish):
-        if not self.isShutdown():
-            if self.__agentThread is not None:
-                self.__runOnFinish = runOnFinish
-            else:
-                Sentinel.warning("Neo is not alive yet!")
-        else:
-            Sentinel.warning("Neo has already been shut down!")
-    
-    def shutDownOnAgentFinished(self):
-        self.setOnAgentFinished(self.shutDown)
+    def __printAndCleanup(self):
+        self.__printFinish()
+        self.__cleanup()
 
     def waitForAgentFinished(self):
+        """ Thread blocking method that waits for a running agent (if any is running)"""
         if not self.isShutdown():
-          if self.__agentThread is not None and self.__agentThread.is_alive():
-              Sentinel.info("Waiting for agent to finish...")
-              self.__agentFinishEvent.wait()  # Wait until the event is set
-              Sentinel.info("Agent has finished.")
-              # reset event
-              self.__agentFinishEvent.clear()
-          else:
-              Sentinel.info("No agent to to wait for!")
+            self.__agentOp.waitForAgentFinished()
         else:
-            Sentinel.warning("Neo has already been shut down!")
-      
+           self.Sentinel.warning("Neo has already been shut down!")
     
-    def shutDown(self):
-        if not self.__isShutdown:
-          if self.__agentThread is not None and self.__agentThread.is_alive():
-              self.__stop = True
-              self.__agentFinishEvent.wait()  # Wait until the event is set (should be instant)
-              # ------------ when isFromArchitect is true, process ends here ---------------
-              Sentinel.debug("Shut down agent")
-          else:
-              Sentinel.debug("No agent to shut down.")
-
-          self.__cleanup()          
-          
-          Sentinel.info("Neo has been shut down")
-          self.__printFinish()
-
-          self.__isShutdown = True
+    def setOnAgentFinished(self, runOnFinish):
+        if not self.isShutdown():
+            self.__agentOp.setOnAgentFinished(runOnFinish)
         else:
-            Sentinel.debug("Already shut down")
+           self.Sentinel.warning("Neo has already been shut down!")
+    
+    def shutDownOnAgentFinished(self):
+        self.setOnAgentFinished(self.__printAndCleanup)
 
     def __cleanup(self):
-        # shutdown objects
-        self.__propertyOp.deregister() # xtables operation. needs to go before xclient shutdown
-        self.__xclient.shutdown()
-        self.__mero.shutdown(wait=True,cancel_futures=True)
+        # xtables operations. need to go before xclient shutdown
+        self.__propertyOp.deregister() 
+        self.__orderOp.deregister()
+
+        try:
+            self.__xclient.shutdown()
+        except Exception as e:
+            Sentinel.debug(f"This happens sometimes: {e}")
     
     def isShutdown(self) -> bool:
         return self.__isShutdown
