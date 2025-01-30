@@ -69,7 +69,7 @@ def startProcess():
         pos_table = pos_table[:split_idx]
         table = NetworkTables.getTable(pos_table)
         client = table
-    cap = cv2.VideoCapture(0)  # /dev/color_cam symlink
+    cap = cv2.VideoCapture(10)  # /dev/color_cam symlink
     try:
         while cap.isOpened():
             ret, frame = cap.read()
