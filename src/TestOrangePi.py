@@ -41,7 +41,7 @@ def startProcess():
     name = getCameraName().name
 
     logger.info("Starting process, device name:", name)
-    xclient = XTablesClient(ip="192.168.0.17")
+    xclient = XTablesClient(debug_mode=True)
     cap = cv2.VideoCapture(0)
     cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*"MJPG"))
     print("FourCC:", cap.get(cv2.CAP_PROP_FOURCC))

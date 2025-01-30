@@ -13,6 +13,7 @@ from mapinternals.localFrameProcessor import LocalFrameProcessor
 from tools import calibration, NtUtils, configLoader
 from networktables import NetworkTables
 
+
 class CameraName(Enum):
     REARRIGHT = "photonvisionrearright"
     REARLEFT = "photonvisionrearleft"
@@ -23,15 +24,18 @@ class CameraName(Enum):
         name = socket.gethostname()
         return CameraName(name)
 
+
 class OrangePiAgent(Agent):
-    def create(self):        
-        self.CAMERA_INDEX = 0 # defined by symlink in docker compose file
+    def create(self):
+        self.CAMERA_INDEX = "/dev/color_camera"
         # camera config
         self.calib = self.configOperator.getContent("camera_calib.json")
         self.device_name = CameraName.getCameraName().name
         self.Sentinel.info(f"Camera Name: {self.device_name}")
         # camera values
-        self.cameraIntrinsics, self.cameraExtrinsics, _ = getCameraValues(self.device_name)
+        self.cameraIntrinsics, self.cameraExtrinsics, _ = getCameraValues(
+            self.device_name
+        )
 
         # frame undistortion maps
         self.mapx, self.mapy = calibration.createMapXYForUndistortion(
@@ -41,12 +45,24 @@ class OrangePiAgent(Agent):
         # properties
         self.propertyOperator = self.propertyOperator.getChild(self.device_name)
         # get new property operator with device name
-        self.xtablesPosTable = self.propertyOperator.createProperty(propertyName="xtablesPosTable",propertyDefault="robot_pose")
-        self.ntPosTable = self.propertyOperator.createProperty(propertyName="networkTablesPosTable",propertyDefault="/sss")
-        self.useXTables = self.propertyOperator.createProperty(propertyName="useXtablesForPosition",propertyDefault=False)
-        self.showFrame = self.propertyOperator.createProperty(propertyName="showFrame",propertyDefault=False)
-        self.detectionPacketTable = self.propertyOperator.createProperty(propertyName="table_for_detections",propertyDefault=False)
-        self.framePacketTable = self.propertyOperator.createProperty(propertyName="table_for_frames",propertyDefault=False)
+        self.xtablesPosTable = self.propertyOperator.createProperty(
+            propertyName="xtablesPosTable", propertyDefault="robot_pose"
+        )
+        self.ntPosTable = self.propertyOperator.createProperty(
+            propertyName="networkTablesPosTable", propertyDefault="/sss"
+        )
+        self.useXTables = self.propertyOperator.createProperty(
+            propertyName="useXtablesForPosition", propertyDefault=False
+        )
+        self.showFrame = self.propertyOperator.createProperty(
+            propertyName="showFrame", propertyDefault=False
+        )
+        self.detectionPacketTable = self.propertyOperator.createProperty(
+            propertyName="table_for_detections", propertyDefault=False
+        )
+        self.framePacketTable = self.propertyOperator.createProperty(
+            propertyName="table_for_frames", propertyDefault=False
+        )
 
         NetworkTables.initialize(server="10.4.88.2")
 
@@ -90,7 +106,9 @@ class OrangePiAgent(Agent):
                 framePacket = FramePacket.createPacket(
                     timeStamp, self.device_name, undistortedFrame
                 )
-                self.xclient.putBytes(f"{self.device_name}_Frame", framePacket.to_bytes())
+                self.xclient.putBytes(
+                    f"{self.device_name}_Frame", framePacket.to_bytes()
+                )
 
             # sending network packets
             self.xclient.putBytes(self.device_name, detectionPacket.to_bytes())
@@ -107,18 +125,17 @@ class OrangePiAgent(Agent):
             self.cap.release()
 
     def isRunning(self):
-        return self.cap.isOpened()   
+        return self.cap.isOpened()
 
     def shutdownNow(self):
         self.cap.release()
         print("Shutdown!")
-    
+
     def getName(self):
         return "Orange_Pi_Process"
-    
+
     def getDescription(self):
         return "Ingest_Camera_Run_Ai_Model_Return_Localized_Detections"
-    
+
     def getIntervalMs(self):
-        return 1 
-    
+        return 1

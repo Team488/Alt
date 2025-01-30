@@ -6,10 +6,10 @@ services:
     privileged: true  # Equivalent to --privileged flag
     network_mode: "host" # Expose the container to the network
     devices:
-      - "/dev/color_camera:/dev/video10" # passing in the symlink to the camera
       - "/dev/dri/renderD129:/dev/dri/renderD129" # rknpu device
     volumes:
       - "/proc/device-tree/compatible:/proc/device-tree/compatible:ro"
       - "/xbot/config:/xbot/config:ro"
       - "/xbot/container_tmp:/tmp"
+      - "/dev:/dev"
     command: ["python", "centralOrangePiProcess.py"]

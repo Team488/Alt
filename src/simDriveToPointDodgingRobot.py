@@ -89,7 +89,7 @@ pathGenerator = PathGenerator(central)
 NetworkTables.initialize(server="127.0.0.1")
 postable = NetworkTables.getTable("AdvantageKit/RealOutputs/PoseSubsystem")
 
-xclient = XTablesClient()
+xclient = XTablesClient(debug_mode=True)
 
 # exit(0)
 

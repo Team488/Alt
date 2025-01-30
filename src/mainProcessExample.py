@@ -18,7 +18,7 @@ from tools import NtUtils
 processName = "Main__Process"
 logger = logging.getLogger(processName)
 
-interface = MainProcessBase(XTablesClient())
+interface = MainProcessBase(XTablesClient(debug_mode=True))
 
 
 def mainLoop():

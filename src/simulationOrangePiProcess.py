@@ -52,7 +52,7 @@ def startProcess():
     )
 
     logger.info(f"Starting process, device name: {name}")
-    xclient = XTablesClient()
+    xclient = XTablesClient(debug_mode=True)
     cap = cv2.VideoCapture("assets/video12qual25clipped.mp4")
     while cap.isOpened():
         try:

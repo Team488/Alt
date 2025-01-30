@@ -26,7 +26,7 @@ fh.setFormatter(formatter)
 logger.addHandler(fh)
 logger.addHandler(ch)
 central = Central()
-client = XTablesClient()
+client = XTablesClient(debug_mode=True)
 pathGenerator = PathGenerator(central)
 pathName = "target_waypoints"
 updateMap = {
