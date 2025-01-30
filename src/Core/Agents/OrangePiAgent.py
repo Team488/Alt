@@ -31,7 +31,7 @@ class OrangePiAgent(Agent):
         self.device_name = CameraName.getCameraName().name
         self.Sentinel.info(f"Camera Name: {self.device_name}")
         # camera values
-        self.cameraIntrinsics, self.cameraExtrinsics = getCameraValues(self.device_name)
+        self.cameraIntrinsics, self.cameraExtrinsics, _ = getCameraValues(self.device_name)
 
         # frame undistortion maps
         self.mapx, self.mapy = calibration.createMapXYForUndistortion(
@@ -39,10 +39,14 @@ class OrangePiAgent(Agent):
         )
 
         # properties
+        self.propertyOperator = self.propertyOperator.getChild(self.device_name)
+        # get new property operator with device name
         self.xtablesPosTable = self.propertyOperator.createProperty(propertyName="xtablesPosTable",propertyDefault="robot_pose")
         self.ntPosTable = self.propertyOperator.createProperty(propertyName="networkTablesPosTable",propertyDefault="/sss")
         self.useXTables = self.propertyOperator.createProperty(propertyName="useXtablesForPosition",propertyDefault=False)
         self.showFrame = self.propertyOperator.createProperty(propertyName="showFrame",propertyDefault=False)
+        self.detectionPacketTable = self.propertyOperator.createProperty(propertyName="table_for_detections",propertyDefault=False)
+        self.framePacketTable = self.propertyOperator.createProperty(propertyName="table_for_frames",propertyDefault=False)
 
         NetworkTables.initialize(server="10.4.88.2")
 
@@ -117,3 +121,4 @@ class OrangePiAgent(Agent):
     
     def getIntervalMs(self):
         return 1 
+    

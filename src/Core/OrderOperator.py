@@ -1,6 +1,8 @@
+import traceback
 from logging import Logger
 from JXTABLES.XTablesClient import XTablesClient
 from abstract.Order import Order
+
 # subscribes to command request with xtables and then executes when requested
 class OrderOperator:
     def __init__(self,xclient : XTablesClient, logger : Logger):
@@ -39,6 +41,8 @@ class OrderOperator:
             self.__xclient.putString(self.__getTriggerStatus(orderTriggerName), f"sucessfully run!")
         except Exception as e:
             self.__xclient.putString(self.__getTriggerStatus(orderTriggerName), f"failed!\n On {progressStr}: {e}")
+            tb = traceback.format_exc()
+            self.Sentinel.error(tb)
 
     
     def createOrder(self, orderTriggerName : str, orderToRun : Order):

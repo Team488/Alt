@@ -1,4 +1,5 @@
 import threading
+import traceback
 import time
 from logging import Logger
 from JXTABLES.XTablesClient import XTablesClient
@@ -14,6 +15,7 @@ class AgentOperator:
         self.__stop = False # flag
         self.__runOnFinish = None # runnable
         self.__setStatus = lambda agentName, status : self.__xclient.putString(f"agents.{agentName}.Status",status)
+        self.__addToErrorLog = lambda agentName, error : self.__xclient.putString(f"agents.{agentName}.Errors",f"{self.__xclient.getString(f'agents.{agentName}.Errors')} | {error}")
         self.__setDescription = lambda agentName, description : self.__xclient.putString(f"agents.{agentName}.Description",description)
 
     def stop(self):
@@ -87,18 +89,20 @@ class AgentOperator:
 
         
         except Exception as e:
-            message = f"Failed!\nDuring {progressStr}: {e}"
+            message = f"Failed! | During {progressStr}: {e}"
             self.__setStatus(agent.getName(),message)  
-            self.Sentinel.error(message)
-
-        # end agent thread
-        self.__agentThread = None
+            tb = traceback.format_exc()
+            self.__addToErrorLog(agent.getName(),tb)
+            self.Sentinel.error(tb)
 
         # potentially run a task on agent finish
         if self.__runOnFinish is not None:
             self.__runOnFinish()
             # clear
             self.__runOnFinish = None
+
+        # end agent thread
+        self.__agentThread = None
     
 
     def setOnAgentFinished(self,runOnFinish):
@@ -109,13 +113,11 @@ class AgentOperator:
 
     def waitForAgentFinished(self):
         """ Thread blocking method that waits for a running agent (if any is running)"""
-        if self.__agentThread is not None and self.__agentThread.is_alive():
-            self.Sentinel.info("Waiting for agent to finish...")
-            while self.__agentThread.is_alive():
-                time.sleep(0.001)
-            self.Sentinel.info("Agent has finished.")
+        self.Sentinel.info("Waiting for agent to finish...")
+        while self.__agentThread is not None and self.__agentThread.is_alive():
+            time.sleep(0.001)
         else:
-            self.Sentinel.info("No agent to to wait for!")
+            self.Sentinel.info("Agent has finished.")
         
 
 

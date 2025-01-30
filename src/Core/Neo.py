@@ -23,7 +23,7 @@ class Neo:
         Sentinel.info("Loading configs")
         self.__configOp = ConfigOperator(logger = Sentinel.getChild("Config_Operator"))
         Sentinel.info("Creating XTables Client....")
-        self.__xclient = XTablesClient()
+        self.__xclient = XTablesClient(ip="192.168.0.17")
         Sentinel.info("Client created")
         Sentinel.info("Creating Property operator")
         self.__propertyOp = PropertyOperator(self.__xclient, logger=Sentinel.getChild("Property_Operator"))

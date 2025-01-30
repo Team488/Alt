@@ -4,14 +4,16 @@ from abstract.Agent import Agent
 class AgentExample(Agent):
     def create(self):        
         # for example here i can create a propery to configure what to call myself
-        self.nameProp = self.propertyOperator.createProperty(propertyName="agent_name",propertyDefault="bob")
+        self.nameProp = self.propertyOperator.getChild("subProperty").createProperty(propertyName="agent_name",propertyDefault="bob")
+        self.keys = self.configOperator.getAllFileNames()
+
         self.timesRun = 0
     
     def runPeriodic(self):
         # task periodic loop here
         # for example, i can tell the world what im called
-        print(self.nameProp.get())
         self.timesRun += 1
+        print(self.keys)
         pass
 
     def onClose(self):
@@ -23,7 +25,7 @@ class AgentExample(Agent):
     def isRunning(self):
         # condition to keep task running here
         # for example, i want to run only 50 times. Thus i will be running if the number of times i have run is less than 50
-        return self.timesRun < 50   
+        return self.timesRun < 100   
 
     def shutdownNow(self):
         # code to kill task immediately here
