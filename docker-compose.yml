@@ -6,7 +6,7 @@ services:
     privileged: true  # Equivalent to --privileged flag
     network_mode: "host" # Expose the container to the network
     devices:
-      - "/dev/color_camera:/dev/video0" # passing in the symlink to the camera
+      # - "/dev/color_camera:/dev/video0" # passing in the symlink to the camera
       - "/dev/dri/renderD129:/dev/dri/renderD129" # rknpu device
     volumes:
       - "/proc/device-tree/compatible:/proc/device-tree/compatible:ro"

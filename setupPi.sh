@@ -13,7 +13,7 @@ sudo apt-get update
 sudo apt-get install -y docker-ce docker-ce-cli containerd.io
 
 # Create udev rules for the color camera (ov9782)
-echo 'ATTRS{serial}=="00000000852",ATTRS{idVendor}=="0c45",SYMLINK+="color_camera",GROUP="docker", MODE="0660"' | sudo tee /etc/udev/rules.d/99-color-camera.rules
+echo 'SUBSYSTEM=="video4linux",ATTRS{serial}=="00000000852",ATTRS{idVendor}=="0c45",SYMLINK+="color_camera",GROUP="docker", MODE="0660"' | sudo tee /etc/udev/rules.d/99-color-camera.rules
 
 # Add docker group (if it doesn't already exist)
 getent group docker || sudo groupadd docker
@@ -33,6 +33,7 @@ fi
 sudo usermod -aG sudo pv
 
 echo 'ATTRS{serial}=="00000000844",ATTRS{idVendor}=="0c45",SYMLINK+="blackwhite_camera",GROUP="pv", MODE="0660"' | sudo tee /etc/udev/rules.d/99-BW-camera.rules
+sudo udevadm control --reload-rules && sudo udevadm trigger
 
 sudo systemctl restart udev
 
