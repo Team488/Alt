@@ -47,7 +47,7 @@ class Neo:
     def __handleArchitectKill(self, sig, frame):
         Sentinel.info("The architect has caused our demise! Shutting down any agent")
         self.shutDown()
-        sys.exit()
+        os._exit(1)
 
     def shutDown(self):
         if not self.__isShutdown:
@@ -108,10 +108,10 @@ class Neo:
         Sentinel.info(f"Properties removed: {self.__propertyOp.deregisterAll()}")
         Sentinel.info(f"Orders removed: {self.__orderOp.deregister()}")
 
-        try:
-            self.__xclient.shutdown()
-        except Exception as e:
-            Sentinel.debug(f"This happens sometimes: {e}")
+        # try:
+        #     self.__xclient.shutdown()
+        # except Exception as e:
+        #     Sentinel.debug(f"This happens sometimes: {e}")
 
     def isShutdown(self) -> bool:
         return self.__isShutdown

@@ -1,4 +1,5 @@
 import sys
+import os
 import threading
 import traceback
 import time
@@ -8,15 +9,21 @@ from abstract.Agent import Agent
 
 # subscribes to command request with xtables and then executes when requested
 class AgentOperator:
-    def __init__(self,xclient : XTablesClient, logger : Logger):
+    def __init__(self, xclient: XTablesClient, logger: Logger):
         self.Sentinel = logger
-        self.__xclient : XTablesClient = xclient
-        self.__agentThread = None # thread to run it
-        self.__stop = False # flag
-        self.__runOnFinish = None # runnable
-        self.__setStatus = lambda agentName, status : self.__xclient.putString(f"agents.{agentName}.Status",status)
-        self.__setErrorLog = lambda agentName, error : self.__xclient.putString(f"agents.{agentName}.Errors",error)
-        self.__setDescription = lambda agentName, description : self.__xclient.putString(f"agents.{agentName}.Description",description)
+        self.__xclient: XTablesClient = xclient
+        self.__agentThread = None  # thread to run it
+        self.__stop = False  # flag
+        self.__runOnFinish = None  # runnable
+        self.__setStatus = lambda agentName, status: self.__xclient.putString(
+            f"agents.{agentName}.Status", status
+        )
+        self.__setErrorLog = lambda agentName, error: self.__xclient.putString(
+            f"agents.{agentName}.Errors", error
+        )
+        self.__setDescription = lambda agentName, description: self.__xclient.putString(
+            f"agents.{agentName}.Description", description
+        )
 
     def stop(self):
         self.__stop = True
@@ -26,35 +33,38 @@ class AgentOperator:
             self.__agentThread.join()
         else:
             self.Sentinel.warning("No agent thread to join!")
-    
-    def wakeAgent(self, agent : Agent):
-        self.__stop = False # reset stop flag (even if already false)
-        
+
+    def wakeAgent(self, agent: Agent):
+        self.__stop = False  # reset stop flag (even if already false)
+
         if self.__agentThread is None:
-            self.Sentinel.info(f"Waking agent! | Name: {agent.getName()} Description : {agent.getDescription()}")        
-            self.__setDescription(agent.getName(),agent.getDescription())  
-            self.__setStatus(agent.getName(),"starting")
-            self.__agentThread = threading.Thread(target=self.__startAgentLoop,args=[agent])
+            self.Sentinel.info(
+                f"Waking agent! | Name: {agent.getName()} Description : {agent.getDescription()}"
+            )
+            self.__setDescription(agent.getName(), agent.getDescription())
+            self.__setStatus(agent.getName(), "starting")
+            self.__agentThread = threading.Thread(
+                target=self.__startAgentLoop, args=[agent]
+            )
             self.__agentThread.start()
             # grace period for thread to start
             while not self.__agentThread.is_alive():
                 time.sleep(0.001)
             self.Sentinel.info("The agent is alive!")
         else:
-            # agenthread already started 
+            # agenthread already started
             self.Sentinel.warning("An agent has already been started!")
-        
-    
-    def __startAgentLoop(self, agent : Agent):
+
+    def __startAgentLoop(self, agent: Agent):
         try:
             # create
             progressStr = "create"
-            self.__setStatus(agent.getName(),"creating")  
+            self.__setStatus(agent.getName(), "creating")
             agent.create()
-            
+
             progressStr = "runPeriodic"
-            self.__setStatus(agent.getName(),"running")  
-            while agent.isRunning():              
+            self.__setStatus(agent.getName(), "running")
+            while agent.isRunning():
                 if self.__stop:
                     break
                 agent.runPeriodic()
@@ -68,10 +78,9 @@ class AgentOperator:
                     self.__setErrorLog(agent.getName(), tb)
                     self.Sentinel.error(tb)
                     agent.forceShutdown()
-                    agent.onClose() 
-                    sys.exit()  # Explicitly stop the thread
+                    agent.onClose()
+                    os._exit(1)  # Explicitly stop the thread
 
-                
                 startTime = time.monotonic()
                 while time.monotonic() - startTime < sleepTime:
                     time.sleep(0.001)  # Check every 1 ms
@@ -81,55 +90,47 @@ class AgentOperator:
             forceStopped = self.__stop
             if forceStopped:
                 progressStr = "shutdown SIGINT"
-                self.__setStatus(agent.getName(),progressStr)  
+                self.__setStatus(agent.getName(), progressStr)
                 self.Sentinel.debug("Shutting down agent")
-                agent.forceShutdown()            
+                agent.forceShutdown()
             else:
                 progressStr = "close"
-                self.__setStatus(agent.getName(),f"closing")  
-            # cleanup 
-            agent.onClose() 
+                self.__setStatus(agent.getName(), f"closing")
+            # cleanup
+            agent.onClose()
 
             if not forceStopped:
-                self.__setStatus(agent.getName(),f"agent finished normally")  
+                self.__setStatus(agent.getName(), f"agent finished normally")
                 self.Sentinel.debug("Agent has finished normally")
-            
-            self.__setErrorLog(agent.getName(),"None...")
+
+            self.__setErrorLog(agent.getName(), "None...")
 
         except Exception as e:
             message = f"Failed! | During {progressStr}: {e}"
-            self.__setStatus(agent.getName(),message)  
+            self.__setStatus(agent.getName(), message)
             tb = traceback.format_exc()
-            self.__setErrorLog(agent.getName(),tb)
+            self.__setErrorLog(agent.getName(), tb)
             self.Sentinel.error(tb)
 
         # potentially run a task on agent finish
-        if self.__runOnFinish is not None:
+        if not self.__stop and self.__runOnFinish is not None:
             self.__runOnFinish()
             # clear
             self.__runOnFinish = None
 
         # end agent thread
         self.__agentThread = None
-        sys.exit()
-    
 
-    def setOnAgentFinished(self,runOnFinish):
+    def setOnAgentFinished(self, runOnFinish):
         if self.__agentThread is not None:
-                self.__runOnFinish = runOnFinish
+            self.__runOnFinish = runOnFinish
         else:
             self.Sentinel.warning("Neo is not alive yet!")
 
     def waitForAgentFinished(self):
-        """ Thread blocking method that waits for a running agent (if any is running)"""
+        """Thread blocking method that waits for a running agent (if any is running)"""
         self.Sentinel.info("Waiting for agent to finish...")
         while self.__agentThread is not None and self.__agentThread.is_alive():
             time.sleep(0.001)
         else:
             self.Sentinel.info("Agent has finished.")
-        
-
-
-
-
-
