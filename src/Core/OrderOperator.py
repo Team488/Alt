@@ -2,34 +2,36 @@ import traceback
 from logging import Logger
 from JXTABLES.XTablesClient import XTablesClient
 from abstract.Order import Order
+from Core.PropertyOperator import PropertyOperator
 
 # subscribes to command request with xtables and then executes when requested
 class OrderOperator:
-    def __init__(self, xclient: XTablesClient, logger: Logger):
+    def __init__(
+        self, xclient: XTablesClient, logger: Logger, propertyOp: PropertyOperator
+    ):
         self.Sentinel = logger
+        self.propertyOp = propertyOp
         self.__xclient: XTablesClient = xclient
         self.__orderMap = {}
-        self.__getTriggerDescription = (
-            lambda orderTriggerName: f"triggers.{orderTriggerName}.Description"
+        self.__setTriggerDescription = lambda orderTriggerName, description: self.propertyOp.createCustomReadOnlyProperty(
+            f"triggers.{orderTriggerName}.Description", description
         )
-        self.__getTriggerStatus = (
-            lambda orderTriggerName: f"triggers.{orderTriggerName}.Status"
+        self.__setTriggerStatus = lambda orderTriggerName, status: self.propertyOp.createCustomReadOnlyProperty(
+            f"triggers.{orderTriggerName}.Status", status
         )
 
     def __runOrder(self, ret):
         orderTriggerName = ret.key
         order: Order = self.__orderMap.get(orderTriggerName)
         if order == None:
-            self.__xclient.putString(
-                self.__getTriggerStatus(orderTriggerName), "invalid trigger!"
-            )
+            self.__setTriggerStatus(orderTriggerName, "invalid trigger!")
             # i dont see this ever happening (unless deregister is called then a run order)
             Sentinel.error(
                 "OrderMap does not contain the trigger name expected to run order!"
             )
             return
 
-        self.__xclient.putString(self.__getTriggerStatus(orderTriggerName), "running!")
+        self.__setTriggerStatus(orderTriggerName, "running!")
         self.Sentinel.info(f"Starting order that does: {order.getDescription()}")
 
         try:
@@ -45,25 +47,18 @@ class OrderOperator:
             progressStr = "close"
             order.close()
 
-            self.__xclient.putString(
-                self.__getTriggerStatus(orderTriggerName), f"sucessfully run!"
-            )
+            self.__setTriggerStatus(orderTriggerName, f"sucessfully run!")
         except Exception as e:
-            self.__xclient.putString(
-                self.__getTriggerStatus(orderTriggerName),
-                f"failed!\n On {progressStr}: {e}",
+            self.__setTriggerStatus(
+                orderTriggerName, f"failed!\n On {progressStr}: {e}"
             )
             tb = traceback.format_exc()
             self.Sentinel.error(tb)
 
     def createOrderTrigger(self, orderTriggerName: str, orderToRun: Order):
         # broadcast order and what it does
-        self.__xclient.putString(
-            self.__getTriggerDescription(orderTriggerName), orderToRun.getDescription()
-        )
-        self.__xclient.putString(
-            self.__getTriggerStatus(orderTriggerName), "waiting to run"
-        )
+        self.__setTriggerDescription(orderTriggerName, orderToRun.getDescription())
+        self.__setTriggerStatus(orderTriggerName, "waiting to run")
         # subscribing to trigger
         self.__xclient.subscribe(orderTriggerName, self.__runOrder)
         # assign the order order

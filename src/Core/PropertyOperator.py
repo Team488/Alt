@@ -11,6 +11,8 @@ class PropertyOperator:
         self.Sentinel = logger
         self.__xclient: XTablesClient = xclient
         self.__propertyMap = {}
+        self.__properties = {}
+        self.__readOnlyProperties = {}
         self.__getPropertyTable = (
             lambda propertyName: f"properties{self.prefix}.{propertyName}"
         )
@@ -27,6 +29,9 @@ class PropertyOperator:
         propertyTable = self.__getPropertyTable(
             propertyName
         )  # store properties in known place
+        if propertyTable in self.__properties:
+            return self.__properties.get(propertyTable)
+
         if not self.__setNetworkValue(propertyTable, propertyDefault):
             return None
 
@@ -37,15 +42,31 @@ class PropertyOperator:
         self.Sentinel.info(
             f"Created property | Name: {propertyTable} Default: {propertyDefault} Type: {type(propertyDefault)}"
         )
-        return Property(lambda: self.__propertyMap[propertyTable])
+        property = Property(lambda: self.__propertyMap[propertyTable])
+        self.__properties[propertyTable] = property
+        return property
 
     def createReadOnlyProperty(self, propertyName, propertyValue) -> "ReadonlyProperty":
         propertyTable = self.__getReadOnlyPropertyTable(propertyName)
+        return self.__createReadOnly(propertyTable, propertyValue)
+
+    def createCustomReadOnlyProperty(
+        self, propertyTable, propertyValue
+    ) -> "ReadonlyProperty":
+        prefixed = f"{self.prefix}.{propertyTable}"
+        return self.__createReadOnly(prefixed, propertyValue)
+
+    def __createReadOnly(self, propertyTable, propertyValue):
+        if propertyTable in self.__readOnlyProperties:
+            return self.__readOnlyProperties.get(propertyTable)
         if not self.__setNetworkValue(propertyTable, propertyValue):
             return None
-        return ReadonlyProperty(
+
+        readOnlyProp = ReadonlyProperty(
             lambda value: self.__setNetworkValue(propertyTable, value)
         )
+        self.__readOnlyProperties[propertyTable] = readOnlyProp
+        return readOnlyProp
 
     def __setNetworkValue(self, propertyTable, propertyValue) -> bool:
         # send out default to network (assuming it initially does not exist. It shoudnt)

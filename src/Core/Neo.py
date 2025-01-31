@@ -2,6 +2,7 @@
 import logging
 import os
 import signal
+import socket
 import sys
 import time
 from JXTABLES.XTablesClient import XTablesClient
@@ -13,7 +14,8 @@ from Core.Central import Central
 from abstract.Agent import Agent
 from abstract.Order import Order
 
-Sentinel = logging.getLogger("Core")
+UniqueId = socket.gethostname()
+Sentinel = logging.getLogger(f"Core[{UniqueId}]")
 Sentinel.setLevel(level=logging.DEBUG)
 
 
@@ -28,15 +30,21 @@ class Neo:
         Sentinel.info("Client created")
         Sentinel.info("Creating Property operator")
         self.__propertyOp = PropertyOperator(
-            self.__xclient, logger=Sentinel.getChild("Property_Operator")
+            self.__xclient,
+            logger=Sentinel.getChild("Property_Operator"),
+            prefix=UniqueId,
         )
         Sentinel.info("Creating Order operator")
         self.__orderOp = OrderOperator(
-            self.__xclient, logger=Sentinel.getChild("Order_Operator")
+            self.__xclient,
+            logger=Sentinel.getChild("Order_Operator"),
+            propertyOp=self.__propertyOp,
         )
         Sentinel.info("Creating Agent operator")
         self.__agentOp = AgentOperator(
-            self.__xclient, logger=Sentinel.getChild("Agent_Operator")
+            self.__xclient,
+            logger=Sentinel.getChild("Agent_Operator"),
+            propertyOp=self.__propertyOp,
         )
         Sentinel.info("Creating Central")
         self.__central = Central(logger=Sentinel.getChild("Central_Processor"))

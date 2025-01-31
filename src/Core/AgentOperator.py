@@ -6,23 +6,33 @@ import time
 from logging import Logger
 from JXTABLES.XTablesClient import XTablesClient
 from abstract.Agent import Agent
+from Core.PropertyOperator import PropertyOperator
 
 # subscribes to command request with xtables and then executes when requested
 class AgentOperator:
-    def __init__(self, xclient: XTablesClient, logger: Logger):
+    def __init__(
+        self, xclient: XTablesClient, logger: Logger, propertyOp: PropertyOperator
+    ):
         self.Sentinel = logger
+        self.propertyOp = propertyOp
         self.__xclient: XTablesClient = xclient
         self.__agentThread = None  # thread to run it
         self.__stop = False  # flag
         self.__runOnFinish = None  # runnable
-        self.__setStatus = lambda agentName, status: self.__xclient.putString(
-            f"agents.{agentName}.Status", status
+        self.__setStatus = (
+            lambda agentName, status: propertyOp.createCustomReadOnlyProperty(
+                f"agents.{agentName}.Status", status
+            )
         )
-        self.__setErrorLog = lambda agentName, error: self.__xclient.putString(
-            f"agents.{agentName}.Errors", error
+        self.__setErrorLog = (
+            lambda agentName, error: propertyOp.createCustomReadOnlyProperty(
+                f"agents.{agentName}.Errors", error
+            )
         )
-        self.__setDescription = lambda agentName, description: self.__xclient.putString(
-            f"agents.{agentName}.Description", description
+        self.__setDescription = (
+            lambda agentName, description: propertyOp.createCustomReadOnlyProperty(
+                f"agents.{agentName}.Description", description
+            )
         )
 
     def stop(self):
