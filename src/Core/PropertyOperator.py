@@ -61,8 +61,12 @@ class PropertyOperator:
 
     
     def deregisterAll(self):
-        wasAllRemoved = self.__xclient.unsubscribe_all(self.__updatePropertyCallback)
+        wasAllRemoved = True
+        
+        for propertyTable in self.__propertyMap.keys():
+            wasAllRemoved &= self.__xclient.unsubscribe(propertyTable,self.__updatePropertyCallback)
         self.__propertyMap.clear()
+        
         for child in self.__children:
             # "recursively" go through each child and deregister them too
             wasAllRemoved &= child.deregisterAll()

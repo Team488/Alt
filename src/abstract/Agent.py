@@ -13,6 +13,7 @@ from Core.ConfigOperator import ConfigOperator
 
 
 class Agent(ABC):
+    DEFAULT_LOOP_TIME = 1 # 1 ms
     def __init__(self, central : Central, xclient : XTablesClient, propertyOperator : PropertyOperator, configOperator : ConfigOperator, logger : Logger):
         self.central = central
         self.xclient = xclient
@@ -64,4 +65,4 @@ class Agent(ABC):
     def getIntervalMs(self):
         # how long to wait between each run call
         # can leave as None, will use default time of 1 ms
-        return None
+        return self.DEFAULT_LOOP_TIME

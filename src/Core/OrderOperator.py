@@ -45,7 +45,7 @@ class OrderOperator:
             self.Sentinel.error(tb)
 
     
-    def createOrder(self, orderTriggerName : str, orderToRun : Order):
+    def createOrderTrigger(self, orderTriggerName : str, orderToRun : Order):
         # broadcast order and what it does
         self.__xclient.putString(self.__getTriggerName(orderTriggerName), orderToRun.getDescription())
         self.__xclient.putString(self.__getTriggerStatus(orderTriggerName), "waiting to run")
@@ -57,9 +57,11 @@ class OrderOperator:
         
     
     def deregister(self):
-        wasRemoved = self.__xclient.unsubscribe_all(self.__runOrder)
+        wasAllRemoved = True
+        for orderTriggerName in self.__orderMap.keys():
+            wasAllRemoved &= self.__xclient.unsubscribe(orderTriggerName,self.__runOrder)
         self.__orderMap.clear()
-        return wasRemoved
+        return wasAllRemoved
 
 
 

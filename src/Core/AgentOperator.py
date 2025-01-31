@@ -7,7 +7,6 @@ from abstract.Agent import Agent
 
 # subscribes to command request with xtables and then executes when requested
 class AgentOperator:
-    DEFAULT_LOOP_TIME = 0.001 # 1 ms
     def __init__(self,xclient : XTablesClient, logger : Logger):
         self.Sentinel = logger
         self.__xclient : XTablesClient = xclient
@@ -59,11 +58,7 @@ class AgentOperator:
                     break
                 agent.runPeriodic()
 
-                sleepTime = self.DEFAULT_LOOP_TIME
-                if agent.getIntervalMs() is not None:
-                    sleepTime = agent.getIntervalMs()/1000 # seconds
-                else:
-                    self.Sentinel.debug("Using default sleeptime")
+                sleepTime = agent.getIntervalMs()/1000 # ms -> seconds
                 
                 startTime = time.monotonic()
                 while time.monotonic() - startTime < sleepTime:
