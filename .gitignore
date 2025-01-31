@@ -192,3 +192,5 @@ deep_sort/
 .idea
 
 pycapnp/
+
+src/assets/PROPERTIES/*

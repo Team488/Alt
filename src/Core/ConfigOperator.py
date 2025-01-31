@@ -28,31 +28,56 @@ class ConfigType(Enum):
 class ConfigOperator:
     OVERRIDE_CONFIG_PATH = "/xbot/config" # if you want to override any json configs, put here
     DEFAULT_CONFIG_PATH = "assets" # default configs
+    PROPERTY_OVERRIDE_CONFIG_PATH = "/xbot/config/PROPERTIES" # default configs
+    PROPERTY_DEFAULT_CONFIG_PATH = "assets/PROPERTIES" # default configs
+    PATHS = [OVERRIDE_CONFIG_PATH, DEFAULT_CONFIG_PATH, PROPERTY_OVERRIDE_CONFIG_PATH, PROPERTY_DEFAULT_CONFIG_PATH] # in order of priority
     knownFileEndings = ((".npy", ConfigType.NUMPY), (".json", ConfigType.JSON))
     def __init__(self, logger : Logger):
         self.Sentinel = logger 
         self.configMap = {}
-        self.__loadFromPath(self.DEFAULT_CONFIG_PATH)
-        self.__loadFromPath(self.OVERRIDE_CONFIG_PATH)
+        for path in self.PATHS:
+            self.__loadFromPath(path)
         # loading override second means that it will overwrite anything set by default. 
         # NOTE: if you only specify a subset of the .json file in the override, you will loose the default values.  
 
     def __loadFromPath(self, path):
         try:
             for filename in os.listdir(path):
-                file_path = os.path.join(path, filename)
+                filePath = os.path.join(path, filename)
                 for (ending,filetype) in self.knownFileEndings:
                     if filename.endswith(ending):
-                        self.Sentinel.info(f"Loaded config file from {file_path}")
-                        content = filetype.load(file_path)
+                        self.Sentinel.info(f"Loaded config file from {filePath}")
+                        content = filetype.load(filePath)
                         self.Sentinel.debug(f"File content: {content}")
                         self.configMap[filename] = content
         except Exception as agentSmith:
             # override config path dosent exist
             self.Sentinel.debug(f"{path} does not exist. likely not critical")
 
-    def getContent(self, filename):
-        return self.configMap.get(filename, None)
+    def saveToFileJSON(self, filename, content):
+        for path in self.PATHS:
+            filePath = os.path.join(path, filename)
+            self.__saveToFileJSON(filePath, content)
+
+    def savePropertyToFileJSON(self, filename, content):
+        for path in self.PATHS:
+            filePath = os.path.join(f"{path}/PROPERTIES", filename)
+            self.__saveToFileJSON(filePath, content)
+
+    def __saveToFileJSON(self, filepath : str, content) -> bool: # is success
+        try:        
+            directoryPath = filepath[:filepath.rfind("/")]
+            if not os.path.exists(directoryPath):
+                os.mkdir(directoryPath) # only one level
+            with open(filepath, "w") as file:
+                json.dump(content, file)
+            return True
+        except Exception as agentSmith:
+            self.Sentinel.debug(f"{filepath} does not exist. likely not critical")
+            return False
+
+    def getContent(self, filename, default = None):
+        return self.configMap.get(filename, default)
     
     def getAllFileNames(self):
         return list(self.configMap.keys())

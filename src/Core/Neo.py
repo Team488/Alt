@@ -31,8 +31,9 @@ class Neo:
         Sentinel.info("Creating Property operator")
         self.__propertyOp = PropertyOperator(
             self.__xclient,
+            configOp=self.__configOp,
             logger=Sentinel.getChild("Property_Operator"),
-            prefix=UniqueId,
+            basePrefix=UniqueId,
         )
         Sentinel.info("Creating Order operator")
         self.__orderOp = OrderOperator(

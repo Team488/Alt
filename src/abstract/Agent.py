@@ -17,7 +17,7 @@ class Agent(ABC):
     def __init__(self, central : Central, xclient : XTablesClient, propertyOperator : PropertyOperator, configOperator : ConfigOperator, logger : Logger):
         self.central = central
         self.xclient = xclient
-        self.propertyOperator = propertyOperator.getChild(self.getName()) # subproperty based on agents name
+        self.propertyOperator = propertyOperator.getChild(f"Properties_{self.getName()}") # subproperty based on agents name
         self.configOperator = configOperator
         self.Sentinel = logger
         # other than setting variables, nothing should go here

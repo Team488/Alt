@@ -21,18 +21,18 @@ class AgentOperator:
         self.__runOnFinish = None  # runnable
         self.__setStatus = (
             lambda agentName, status: propertyOp.createCustomReadOnlyProperty(
-                f"agents.{agentName}.Status", status
-            )
+                f"active_agents.{agentName}.Status", status
+            ).set(status)
         )
         self.__setErrorLog = (
             lambda agentName, error: propertyOp.createCustomReadOnlyProperty(
-                f"agents.{agentName}.Errors", error
-            )
+                f"active_agents.{agentName}.Errors", error
+            ).set(error)
         )
         self.__setDescription = (
             lambda agentName, description: propertyOp.createCustomReadOnlyProperty(
-                f"agents.{agentName}.Description", description
-            )
+                f"active_agents.{agentName}.Description", description
+            ).set(description)
         )
 
     def stop(self):
@@ -53,6 +53,7 @@ class AgentOperator:
             )
             self.__setDescription(agent.getName(), agent.getDescription())
             self.__setStatus(agent.getName(), "starting")
+            self.__setStatus(agent.getName(), "starting2")
             self.__agentThread = threading.Thread(
                 target=self.__startAgentLoop, args=[agent]
             )
