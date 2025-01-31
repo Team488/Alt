@@ -21,18 +21,18 @@ class AgentOperator:
         self.__runOnFinish = None  # runnable
         self.__setStatus = (
             lambda agentName, status: propertyOp.createCustomReadOnlyProperty(
-                f"agents.{agentName}.Status", status
-            )
+                f"active_agents.{agentName}.Status", status
+            ).set(status)
         )
         self.__setErrorLog = (
             lambda agentName, error: propertyOp.createCustomReadOnlyProperty(
-                f"agents.{agentName}.Errors", error
-            )
+                f"active_agents.{agentName}.Errors", error
+            ).set(error)
         )
         self.__setDescription = (
             lambda agentName, description: propertyOp.createCustomReadOnlyProperty(
-                f"agents.{agentName}.Description", description
-            )
+                f"active_agents.{agentName}.Description", description
+            ).set(description)
         )
 
     def stop(self):
@@ -53,6 +53,7 @@ class AgentOperator:
             )
             self.__setDescription(agent.getName(), agent.getDescription())
             self.__setStatus(agent.getName(), "starting")
+            self.__setStatus(agent.getName(), "starting2")
             self.__agentThread = threading.Thread(
                 target=self.__startAgentLoop, args=[agent]
             )
@@ -67,29 +68,22 @@ class AgentOperator:
 
     def __startAgentLoop(self, agent: Agent):
         try:
+            self.__setErrorLog(agent.getName(), "None...")
             # create
             progressStr = "create"
             self.__setStatus(agent.getName(), "creating")
             agent.create()
 
-            progressStr = "runPeriodic"
             self.__setStatus(agent.getName(), "running")
+            progressStr = "isRunning"
             while agent.isRunning():
                 if self.__stop:
                     break
+                progressStr = "runPeriodic"
                 agent.runPeriodic()
 
-                try:
-                    sleepTime = agent.getIntervalMs() / 1000  # ms -> seconds
-                except Exception as e:
-                    message = f"Failed! | During getIntervalMs(): {e}"
-                    self.__setStatus(agent.getName(), message)
-                    tb = traceback.format_exc()
-                    self.__setErrorLog(agent.getName(), tb)
-                    self.Sentinel.error(tb)
-                    agent.forceShutdown()
-                    agent.onClose()
-                    os._exit(1)  # Explicitly stop the thread
+                progressStr = "getIntervalMs"
+                sleepTime = agent.getIntervalMs() / 1000  # ms -> seconds
 
                 startTime = time.monotonic()
                 while time.monotonic() - startTime < sleepTime:
@@ -113,7 +107,6 @@ class AgentOperator:
                 self.__setStatus(agent.getName(), f"agent finished normally")
                 self.Sentinel.debug("Agent has finished normally")
 
-            self.__setErrorLog(agent.getName(), "None...")
 
         except Exception as e:
             message = f"Failed! | During {progressStr}: {e}"

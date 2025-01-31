@@ -14,11 +14,11 @@ class OrderOperator:
         self.__xclient: XTablesClient = xclient
         self.__orderMap = {}
         self.__setTriggerDescription = lambda orderTriggerName, description: self.propertyOp.createCustomReadOnlyProperty(
-            f"triggers.{orderTriggerName}.Description", description
-        )
+            f"active_triggers.{orderTriggerName}.Description", description
+        ).set(description)
         self.__setTriggerStatus = lambda orderTriggerName, status: self.propertyOp.createCustomReadOnlyProperty(
-            f"triggers.{orderTriggerName}.Status", status
-        )
+            f"active_triggers.{orderTriggerName}.Status", status
+        ).set(status)
 
     def __runOrder(self, ret):
         orderTriggerName = ret.key

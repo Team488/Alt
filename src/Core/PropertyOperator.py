@@ -3,46 +3,75 @@ from logging import Logger
 from JXTABLES.XTablesClient import XTablesClient
 from JXTABLES import XTableProto_pb2 as XTableProto
 from JXTABLES.XTablesByteUtils import XTablesByteUtils
+from Core.ConfigOperator import ConfigOperator
 
 # creates network properties that can be set by xtables
 class PropertyOperator:
-    def __init__(self, xclient: XTablesClient, logger: Logger, prefix=""):
-        self.prefix = prefix
-        self.Sentinel = logger
+    __OPERATORS = {}
+    def __init__(self, xclient: XTablesClient, configOp : ConfigOperator, logger: Logger, basePrefix = "", prefix=""):
         self.__xclient: XTablesClient = xclient
-        self.__propertyMap = {}
+        self.__configOp = configOp
+        self.Sentinel = logger
+        self.basePrefix = basePrefix
+        self.prefix = prefix
+
+        self.__addBasePrefix = (
+            lambda propertyTable: f"{self.basePrefix}{self.prefix}.{propertyTable}"
+        )
+        self.__getSaveFile = (
+            lambda : self.__addBasePrefix('saved_properties.json')
+        )
+
+        self.__propertyValueMap : dict = self.__configOp.getContent(self.__getSaveFile(), default={})
         self.__properties = {}
         self.__readOnlyProperties = {}
+        
         self.__getPropertyTable = (
-            lambda propertyName: f"properties{self.prefix}.{propertyName}"
+            lambda propertyName: self.__addBasePrefix(f"properties.EDITABLE.{propertyName}")
         )
         self.__getReadOnlyPropertyTable = (
-            lambda propertyName: f"properties{self.prefix}.READONLY.{propertyName}"
+            lambda propertyName: self.__addBasePrefix(f"properties.READONLY.{propertyName}")
         )
+        
         self.__children = []
 
     def __updatePropertyCallback(self, ret):
-        self.__propertyMap[ret.key] = self.__getRealType(ret.type, ret.value)
+        self.__propertyValueMap[ret.key] = self.__getRealType(ret.type, ret.value)
         self.Sentinel.debug(f"Property updated | Name: {ret.key} Value : {ret.value}")
 
     def createProperty(self, propertyName: str, propertyDefault) -> "Property":
         propertyTable = self.__getPropertyTable(
             propertyName
         )  # store properties in known place
+
+        # if this property already has been created, just give that one.
         if propertyTable in self.__properties:
             return self.__properties.get(propertyTable)
-
-        if not self.__setNetworkValue(propertyTable, propertyDefault):
-            return None
-
-        # init default in map
-        self.__propertyMap[propertyTable] = propertyDefault
-        # subscribe to updates
+        
+        # init default in map if not saved from previous run
+        if propertyTable not in self.__propertyValueMap:
+            # if its an invalid property type return immediately
+            if not self.__setNetworkValue(propertyTable, propertyDefault):
+                return None
+            # if dosent exist, put default
+            self.__propertyValueMap[propertyTable] = propertyDefault
+            self.Sentinel.info(
+                f"Created new property | Name: {propertyTable} Default: {propertyDefault} Type: {type(propertyDefault)}"
+            )
+        else:
+            # exists, so put the value that it is onto network
+            # NOTE: not checking to see if valid type, as for it to have been saved means it was already valid
+            propertyValue = self.__propertyValueMap.get(propertyTable)
+            self.__setNetworkValue(propertyTable, propertyValue)
+            self.Sentinel.info(
+                f"Attached to saved property | Name: {propertyTable} Saved value: {propertyValue}"
+            )
+        
+        # subscribe to any future updates
         self.__xclient.subscribe(propertyTable, self.__updatePropertyCallback)
-        self.Sentinel.info(
-            f"Created property | Name: {propertyTable} Default: {propertyDefault} Type: {type(propertyDefault)}"
-        )
-        property = Property(lambda: self.__propertyMap[propertyTable])
+        
+        # getter function in a wrapper
+        property = Property(lambda: self.__propertyValueMap[propertyTable])
         self.__properties[propertyTable] = property
         return property
 
@@ -53,7 +82,7 @@ class PropertyOperator:
     def createCustomReadOnlyProperty(
         self, propertyTable, propertyValue
     ) -> "ReadonlyProperty":
-        prefixed = f"{self.prefix}.{propertyTable}"
+        prefixed = self.__addBasePrefix(propertyTable)
         return self.__createReadOnly(prefixed, propertyValue)
 
     def __createReadOnly(self, propertyTable, propertyValue):
@@ -69,7 +98,7 @@ class PropertyOperator:
         return readOnlyProp
 
     def __setNetworkValue(self, propertyTable, propertyValue) -> bool:
-        # send out default to network (assuming it initially does not exist. It shoudnt)
+        # send out default to network (assuming it initially does not exist. It shoudn't)
         if type(propertyValue) is str:
             self.__xclient.putString(propertyTable, propertyValue)
         elif type(propertyValue) is int:
@@ -86,7 +115,7 @@ class PropertyOperator:
         return True
 
     def __getRealType(self, type, propertyValue) -> bool:
-        # send out default to network (assuming it initially does not exist. It shoudnt)
+        # get real type from xtable bytes
         if (
             type == XTableProto.XTableMessage.Type.UNKNOWN
             or type == XTableProto.XTableMessage.Type.BYTES
@@ -103,22 +132,36 @@ class PropertyOperator:
         else:
             self.Sentinel.error(f"Invalid property type!: {type(propertyValue)}")
             return None
-
+    
     def getChild(self, prefix) -> "PropertyOperator":
+        if not prefix:
+            self.Sentinel.warning("PropertyOperator getChild cannot take an empty string as a prefix!")
+            return None
+        
+        fullPrefix = f"{self.__getSaveFile()}.{prefix}"
+        # see if a property operator with same prefixes has been created. To avoid issues you never want to create more than 1
+        if fullPrefix in PropertyOperator.__OPERATORS:
+            return PropertyOperator.__OPERATORS.get(fullPrefix)
         child = PropertyOperator(
-            self.__xclient, self.Sentinel, f"{self.prefix}.{prefix}"
+            xclient=self.__xclient, logger=self.Sentinel, configOp=self.__configOp, basePrefix=self.basePrefix, prefix=f"{self.prefix}.{prefix}"
         )
         self.__children.append(child)
+        # also add to Operators if someone in the future also wants to get the same child
+        PropertyOperator.__OPERATORS[fullPrefix] = child
         return child
 
     def deregisterAll(self):
+        # unsubscribe from all callbacks
         wasAllRemoved = True
-
-        for propertyTable in self.__propertyMap.keys():
+        for propertyTable in self.__propertyValueMap.keys():
             wasAllRemoved &= self.__xclient.unsubscribe(
                 propertyTable, self.__updatePropertyCallback
             )
-        self.__propertyMap.clear()
+
+        # save property values
+        self.__configOp.savePropertyToFileJSON(self.__getSaveFile(),self.__propertyValueMap)
+        # now clear
+        self.__propertyValueMap.clear()
 
         for child in self.__children:
             # "recursively" go through each child and deregister them too
