@@ -10,6 +10,5 @@ services:
     volumes:
       - "/proc/device-tree/compatible:/proc/device-tree/compatible:ro"
       - "/xbot/config:/xbot/config:ro"
-      - "/xbot/container_tmp:/tmp"
       - "/dev:/dev"
     command: ["python", "centralOrangePiProcess.py"]
