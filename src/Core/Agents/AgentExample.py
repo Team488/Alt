@@ -5,25 +5,26 @@ class AgentExample(Agent):
     def create(self):        
         # for example here i can create a propery to configure what to call myself
         self.nameProp = self.propertyOperator.getChild("subProperty").createProperty(propertyName="agent_name",propertyDefault="bob")
+        self.projectNameProp = self.propertyOperator.getChild("subProperty").createReadOnlyProperty(propertyName="agent_name",propertyValue="bob")
         self.timesRun = 0
     
     def runPeriodic(self):
         # task periodic loop here
         # for example, i can tell the world what im called
         self.timesRun += 1
-        print(self.nameProp.get())
-        pass
+        name = self.nameProp.get()
+        self.projectNameProp.set(name)
+        self.Sentinel.info(f"My name is {name}")
 
     def onClose(self):
         # task cleanup here
         # for example, i can tell the world that my time has come
         print(f"My time has come. Never forget the name {self.nameProp.get()}!")
-        pass
 
     def isRunning(self):
         # condition to keep task running here
         # for example, i want to run only 50 times. Thus i will be running if the number of times i have run is less than 50
-        return self.timesRun < 50   
+        return self.timesRun < 1000   
 
     def forceShutdown(self):
         # code to kill task immediately here

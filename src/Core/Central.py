@@ -7,6 +7,7 @@ from tools.Constants import MapConstants, CameraIdOffsets
 from mapinternals.probmap import ProbMap
 from mapinternals.KalmanLabeler import KalmanLabeler
 from mapinternals.KalmanCache import KalmanCache
+from pathplanning.PathGenerator import PathGenerator
 
 
 
@@ -18,8 +19,8 @@ class Central:
         self.map = ProbMap()
         self.ukf = Ukf()
         self.labler = KalmanLabeler(self.kalmanCacheRobots, self.kalmanCacheGameObjects)
-        # adapt to numpys row,col by transposing
         self.obstacleMap = self.__tryLoadObstacleMap()
+        self.pathGenerator = PathGenerator(self.map,self.obstacleMap)
 
     def __tryLoadObstacleMap(self):
         defaultMap = np.zeros(

@@ -47,6 +47,7 @@ class Neo:
     def __handleArchitectKill(self, sig, frame):
         Sentinel.info("The architect has caused our demise! Shutting down any agent")
         self.shutDown()
+        sys.exit()
 
     def shutDown(self):
         if not self.__isShutdown:

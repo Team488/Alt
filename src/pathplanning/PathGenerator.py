@@ -4,9 +4,9 @@ import os
 import sys
 import cv2
 
-from Core.Central import Central
 from mapinternals.KalmanCache import KalmanCache
 from mapinternals.KalmanEntry import KalmanEntry
+from mapinternals.probmap import ProbMap
 from tools.Constants import MapConstants
 from pathplanning.PathFind import PathFinder
 import pathplanning.utils as pathPlanningUtils
@@ -17,12 +17,13 @@ from tools.Constants import Landmarks
 
 
 class PathGenerator:
-    def __init__(self, centralProcess: Central):
-        self.centralProcess = centralProcess        
+    def __init__(self, probmap : ProbMap, staticObstacleMap):
+        self.map = probmap
+        self.obstacleMap = staticObstacleMap        
         width = MapConstants.robotWidth.getCM()
         height = MapConstants.robotHeight.getCM()
-        gridWidth,gridHeight = self.centralProcess.map.getInternalSizeCR()
-        self.pathFinder = AStarPathfinder(self.centralProcess.obstacleMap,width,height,gridWidth,gridHeight,self.centralProcess.map.resolution)
+        gridWidth,gridHeight = self.map.getInternalSizeCR()
+        self.pathFinder = AStarPathfinder(self.obstacleMap,width,height,gridWidth,gridHeight,self.map.resolution)
 
     def generateToPointWStaticRobotsL(self,currentPosition,target : Landmarks):
         return self.generateWStaticRobots(currentPosition,target.get_cm())
@@ -31,10 +32,10 @@ class PathGenerator:
         return self.generateWStaticRobots(currentPosition,target)
     
     def generateWStaticRobots(self,start,goal,threshold = 0.5, invertStartX = True):
-        robotobstacles = self.centralProcess.map.getAllRobotsAboveThreshold(threshold)
-        robotObstacleMap = np.zeros_like(self.centralProcess.map.getRobotMap(),dtype=np.uint8)
+        robotobstacles = self.map.getAllRobotsAboveThreshold(threshold)
+        robotObstacleMap = np.zeros_like(self.map.getRobotMap(),dtype=np.uint8)
         for obstacle in robotobstacles:
-            cv2.circle(robotObstacleMap,(int(obstacle[0]/self.centralProcess.map.resolution),int(obstacle[1]/self.centralProcess.map.resolution)),10,(255),-1)
+            cv2.circle(robotObstacleMap,(int(obstacle[0]/self.map.resolution),int(obstacle[1]/self.map.resolution)),10,(255),-1)
         path = self.generate(
             start, goal, np.fliplr(robotObstacleMap > 1),invertStartX
         )  # m to cm
@@ -61,8 +62,8 @@ class PathGenerator:
         
         # grid based so need integers
         # reducing to internal scale
-        start = tuple(map(int,start/self.centralProcess.map.resolution))
-        goal = tuple(map(int,goal/self.centralProcess.map.resolution))
+        start = tuple(map(int,start/self.map.resolution))
+        goal = tuple(map(int,goal/self.map.resolution))
         
         stime = time.time()
         path = self.pathFinder.a_star_search(
@@ -75,7 +76,7 @@ class PathGenerator:
         if path is not None:
             if reducePoints:
                 path = self.greedy_simplify(path,0.4)
-            return [coord * self.centralProcess.map.resolution for coord in path]
+            return [coord * self.map.resolution for coord in path]
         return None
     def estimateTimeToPoint(
         self, cur, point, expectedMaxSpeed=MapConstants.RobotMaxVelocity.value

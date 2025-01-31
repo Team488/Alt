@@ -8,7 +8,7 @@ class PropertyOperator:
         self.__xclient : XTablesClient = xclient
         self.__propertyMap = {}
         self.__getPropertyTable = lambda propertyName : f"properties{self.prefix}.{propertyName}"
-        self.__getReadOnlyPropertyTable = lambda propertyName : f"properties.READONLY{self.prefix}.{propertyName}"
+        self.__getReadOnlyPropertyTable = lambda propertyName : f"properties{self.prefix}.READONLY.{propertyName}"
         self.__children = []
 
     def __updatePropertyCallback(self,ret):
@@ -66,7 +66,7 @@ class PropertyOperator:
         for propertyTable in self.__propertyMap.keys():
             wasAllRemoved &= self.__xclient.unsubscribe(propertyTable,self.__updatePropertyCallback)
         self.__propertyMap.clear()
-        
+
         for child in self.__children:
             # "recursively" go through each child and deregister them too
             wasAllRemoved &= child.deregisterAll()

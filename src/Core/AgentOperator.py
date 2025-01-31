@@ -1,3 +1,4 @@
+import sys
 import threading
 import traceback
 import time
@@ -58,7 +59,18 @@ class AgentOperator:
                     break
                 agent.runPeriodic()
 
-                sleepTime = agent.getIntervalMs()/1000 # ms -> seconds
+                try:
+                    sleepTime = agent.getIntervalMs() / 1000  # ms -> seconds
+                except Exception as e:
+                    message = f"Failed! | During getIntervalMs(): {e}"
+                    self.__setStatus(agent.getName(), message)
+                    tb = traceback.format_exc()
+                    self.__setErrorLog(agent.getName(), tb)
+                    self.Sentinel.error(tb)
+                    agent.forceShutdown()
+                    agent.onClose() 
+                    sys.exit()  # Explicitly stop the thread
+
                 
                 startTime = time.monotonic()
                 while time.monotonic() - startTime < sleepTime:
@@ -68,14 +80,14 @@ class AgentOperator:
             # shutdown before onclose
             forceStopped = self.__stop
             if forceStopped:
-                progressStr = "shutDown"
-                self.__setStatus(agent.getName(),"shutdown")  
-                self.Sentinel.debug("Stopping agent")
-                agent.forceShutdown()
-            
+                progressStr = "shutdown SIGINT"
+                self.__setStatus(agent.getName(),progressStr)  
+                self.Sentinel.debug("Shutting down agent")
+                agent.forceShutdown()            
+            else:
+                progressStr = "close"
+                self.__setStatus(agent.getName(),f"closing")  
             # cleanup 
-            progressStr = "close"
-            self.__setStatus(agent.getName(),f"closing")  
             agent.onClose() 
 
             if not forceStopped:
@@ -99,6 +111,7 @@ class AgentOperator:
 
         # end agent thread
         self.__agentThread = None
+        sys.exit()
     
 
     def setOnAgentFinished(self,runOnFinish):

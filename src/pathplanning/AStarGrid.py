@@ -20,7 +20,7 @@ class AStarPathfinder:
         self.obstacle_radius_small = math.ceil(np.linalg.norm((obstacleWidth/mapResolution, obstacleHeight/mapResolution)))
         self.grid = self.inflate_obstacles(grid, self.obstacle_radius)
         self.grid = cv2.resize(self.grid,(gridSizeCol,gridSizeRow))
-        cv2.imshow("grid",self.grid*255)
+        # cv2.imshow("grid",self.grid*255)
         # now convert back to boolean
         self.grid = self.grid >= 1
         self.ROW_SIZE = gridSizeRow
