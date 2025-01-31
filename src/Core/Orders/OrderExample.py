@@ -5,16 +5,16 @@
 
 from abstract.Order import Order
 
+
 class OrderExample(Order):
     # this example will print information
-    def create(self):        
+    def create(self):
         # here i will get my info
         self.sigma = self.central.map.sigma
 
     def run(self):
         print(f"Sigma is: {self.sigma}")
-        print("1" + 1)
-    
+
     def close(self):
         print(f"Cleaning up!")
 
