@@ -1,8 +1,8 @@
 from Core.Neo import Neo
-from Core.Agents import AgentExample
+from Core.Agents import OrangePiAgent
 if __name__ == "__main__":
     n = Neo()
-    n.wakeAgent(AgentExample)
+    n.wakeAgent(OrangePiAgent)
     n.shutDownOnAgentFinished()
     n.waitForAgentFinished()
 
