@@ -83,7 +83,10 @@ class AgentOperator:
                 agent.runPeriodic()
 
                 progressStr = "getIntervalMs"
-                sleepTime = agent.getIntervalMs() / 1000  # ms -> seconds
+                intervalMs = agent.getIntervalMs()
+                if intervalMs <= 0:
+                    continue
+                sleepTime = intervalMs / 1000  # ms -> seconds
 
                 startTime = time.monotonic()
                 while time.monotonic() - startTime < sleepTime:
@@ -106,7 +109,6 @@ class AgentOperator:
             if not forceStopped:
                 self.__setStatus(agent.getName(), f"agent finished normally")
                 self.Sentinel.debug("Agent has finished normally")
-
 
         except Exception as e:
             message = f"Failed! | During {progressStr}: {e}"
