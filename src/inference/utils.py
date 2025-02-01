@@ -137,7 +137,6 @@ def softmaxx(values):
 
 def adjustBoxes(outputs, imgShape, minConf=0.7, printDebug=False):
     predictions = outputs[0]  # Model's predictions = 1 x 25200 x 7
-    
     objectness_scores = predictions[:, 4]
     class_scores = predictions[:, 5:]
     class_ids = np.argmax(class_scores, axis=1)

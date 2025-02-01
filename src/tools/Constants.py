@@ -2,10 +2,17 @@ from enum import Enum
 import math
 import numpy as np
 
+class InferenceType(Enum):
+    RKNN = "rknn"
+    ONNX = "onnx"
+    ULTRALYTICS = "ultralytics"
+
 class InferenceMode(Enum):
-    RKNN2024 = ("assets/bestV5.rknn","yolov5s-rknn",2024)
-    ONNX2024 = ("assets/bestV5.onnx","yolov5s-onnx",2024)
-    ULTRALYTICS2025 = ("assets/2025-best-151.pt","yolov11s-ultralytics",2025)
+    RKNN2024 = ("assets/bestV5.rknn","yolov5s-rknn",2024,InferenceType.RKNN)
+    ONNX2024 = ("assets/bestV5.onnx","yolov5s-onnx",2024,InferenceType.ONNX)
+    RKNN2025 = ("assets/yoloV11sBest.rknn","yolov11s-rknn",2025,InferenceType.RKNN)
+    ULTRALYTICSSMALL2025 = ("assets/yoloV11sBest.pt","yolov11s-pytorch",2025,InferenceType.ULTRALYTICS)
+    ULTRALYTICSMED2025 = ("assets/2025-best-151.pt","yolov11s-pytorch",2025,InferenceType.ULTRALYTICS)
     # TORCH todo!
 
     def getModelPath(self):
@@ -16,6 +23,9 @@ class InferenceMode(Enum):
     
     def getYear(self):
         return self.value[2]
+    
+    def getType(self):
+        return self.value[3]
 
 class Object(Enum):
     ALGAE = "a"

@@ -10,6 +10,7 @@ from JXTABLES.XTablesClient import XTablesClient
 from Core.Central import Central
 from Core.PropertyOperator import PropertyOperator
 from Core.ConfigOperator import ConfigOperator
+from Core.PropertyOperator import ReadonlyProperty
 
 
 class Agent(ABC):
@@ -17,12 +18,11 @@ class Agent(ABC):
     def __init__(self, central : Central, xclient : XTablesClient, propertyOperator : PropertyOperator, configOperator : ConfigOperator, logger : Logger):
         self.central = central
         self.xclient = xclient
-        self.propertyOperator = propertyOperator.getChild(f"Properties_{self.getName()}") # subproperty based on agents name
+        self.propertyOperator = propertyOperator
         self.configOperator = configOperator
         self.Sentinel = logger
         # other than setting variables, nothing should go here
 
-    
     @abstractmethod
     def create(self):        
         # perform agent init here (eg open camera or whatnot)
@@ -50,13 +50,15 @@ class Agent(ABC):
 
     # ----- properties -----
 
+    @staticmethod
     @abstractmethod
-    def getName(self):
+    def getName():
         # agent name here
         pass
 
+    @staticmethod
     @abstractmethod
-    def getDescription(self):
+    def getDescription():
         # agent description here
         pass
 

@@ -125,16 +125,21 @@ class OrangePiAgent(Agent):
             self.cap.release()
 
     def isRunning(self):
-        return self.cap.isOpened()
+        if not self.cap.isOpened():
+            self.Sentinel.fatal("Camera cant be opened!")
+            return False
+        return True
 
     def forceShutdown(self):
         self.cap.release()
         print("Shutdown!")
 
-    def getName(self):
+    @staticmethod
+    def getName():
         return "Orange_Pi_Process"
 
-    def getDescription(self):
+    @staticmethod
+    def getDescription():
         return "Ingest_Camera_Run_Ai_Model_Return_Localized_Detections"
 
     def getIntervalMs(self):

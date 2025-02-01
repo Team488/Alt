@@ -27,7 +27,7 @@ class AgentExample(Agent):
     def isRunning(self):
         # condition to keep task running here
         # for example, i want to run only 50 times. Thus i will be running if the number of times i have run is less than 50
-        return self.timesRun < 50
+        return self.timesRun < 10000
 
     def forceShutdown(self):
         # code to kill task immediately here
@@ -35,10 +35,12 @@ class AgentExample(Agent):
         # in real code, this is where you could handle things like closing a camera abruptly anything that would normally be done in the tasks lifespan
         print("Shutdown!")
 
-    def getName(self):
+    @staticmethod
+    def getName():
         return "Agent_Example"
-
-    def getDescription(self):
+    
+    @staticmethod
+    def getDescription():
         return "Agent_Example_Process"
 
     def getIntervalMs(self):

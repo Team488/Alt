@@ -104,8 +104,8 @@ class AgentOperator:
             agent.onClose()
 
             if not forceStopped:
-                self.__setStatus(agent.getName(), f"agent finished normally")
-                self.Sentinel.debug("Agent has finished normally")
+                self.__setStatus(agent.getName(), f"agent isRunning returned false (Not an error)")
+                self.Sentinel.debug(f"agent isRunning returned false (Not an error)")
 
 
         except Exception as e:

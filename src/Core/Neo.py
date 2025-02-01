@@ -7,7 +7,7 @@ import sys
 import time
 from JXTABLES.XTablesClient import XTablesClient
 from Core.ConfigOperator import ConfigOperator
-from Core.PropertyOperator import PropertyOperator
+from Core.PropertyOperator import PropertyOperator, LambdaHandler, ReadonlyProperty
 from Core.OrderOperator import OrderOperator
 from Core.AgentOperator import AgentOperator
 from Core.Central import Central
@@ -52,6 +52,10 @@ class Neo:
 
         self.__isShutdown = False  # runnable
         signal.signal(signal.SIGINT, handler=self.__handleArchitectKill)
+        signal.signal(signal.SIGTERM, handler=self.__handleArchitectKill)
+
+        self.__logMap = {}
+        self.__getBasePrefix = lambda agentName : f"active_agents.{agentName}"
 
     def __handleArchitectKill(self, sig, frame):
         Sentinel.info("The architect has caused our demise! Shutting down any agent")
@@ -78,15 +82,41 @@ class Neo:
         else:
             Sentinel.warning("Neo is already shutdown!")
 
+    def __handleLog(self, logProperty: ReadonlyProperty, newLog: str, maxLogLength: int = 1):
+        table = logProperty.getTable()
+        lastlogs = self.__logMap.get(table, []) 
+
+        lastlogs.append(newLog)
+        lastlogs = lastlogs[-maxLogLength:] 
+
+        msg = " ".join(lastlogs)
+        logProperty.set(msg) 
+        self.__logMap[table] = lastlogs  
+
+
+
+
     def wakeAgent(self, agent: type[Agent]):
         if not self.isShutdown():
+            childPropertyOp = self.__propertyOp.getChild(f"{self.__getBasePrefix(agent.getName())}")
+            childLogger = Sentinel.getChild(f"{agent.getName()}")
+            
+            logTable = f"{self.__getBasePrefix(agent.getName())}.log"
+            logProperty = self.__propertyOp.createCustomReadOnlyProperty(logTable,"None...")
+            
+            logLambda = lambda entry : self.__handleLog(logProperty, entry)
+            lambda_handler = LambdaHandler(logLambda)
+            formatter = logging.Formatter("%(levelname)s-%(name)s: %(message)s")
+            lambda_handler.setFormatter(formatter)
+            childLogger.addHandler(lambda_handler)
+
             self.__agentOp.wakeAgent(
                 agent(
-                    self.__central,
-                    self.__xclient,
-                    self.__propertyOp,
-                    self.__configOp,
-                    Sentinel.getChild("Agent"),
+                    central=self.__central,
+                    xclient=self.__xclient,
+                    propertyOperator=childPropertyOp,
+                    configOperator=self.__configOp,
+                    logger=childLogger,
                 )
             )
         else:

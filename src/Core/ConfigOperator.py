@@ -1,6 +1,7 @@
 import os
 import json
 import codecs
+import platform
 from logging import Logger
 import numpy as np
 from enum import Enum
@@ -27,15 +28,16 @@ class ConfigType(Enum):
 
 class ConfigOperator:
     OVERRIDE_CONFIG_PATH = "/xbot/config" # if you want to override any json configs, put here
+    OVERRIDE_PROPERTY_CONFIG_PATH = "/xbot/config/PROPERTIES"
     DEFAULT_CONFIG_PATH = "assets" # default configs
-    PROPERTY_OVERRIDE_CONFIG_PATH = "/xbot/config/PROPERTIES" # default configs
-    PROPERTY_DEFAULT_CONFIG_PATH = "assets/PROPERTIES" # default configs
-    PATHS = [OVERRIDE_CONFIG_PATH, DEFAULT_CONFIG_PATH, PROPERTY_OVERRIDE_CONFIG_PATH, PROPERTY_DEFAULT_CONFIG_PATH] # in order of priority
+    DEFAULT_PROPERTY_CONFIG_PATH = "assets/PROPERTIES" 
+    PATHS = [OVERRIDE_CONFIG_PATH, DEFAULT_CONFIG_PATH]
+    READPATHS = [OVERRIDE_CONFIG_PATH, DEFAULT_CONFIG_PATH,OVERRIDE_PROPERTY_CONFIG_PATH,DEFAULT_PROPERTY_CONFIG_PATH]
     knownFileEndings = ((".npy", ConfigType.NUMPY), (".json", ConfigType.JSON))
     def __init__(self, logger : Logger):
         self.Sentinel = logger 
         self.configMap = {}
-        for path in self.PATHS:
+        for path in self.READPATHS:
             self.__loadFromPath(path)
         # loading override second means that it will overwrite anything set by default. 
         # NOTE: if you only specify a subset of the .json file in the override, you will loose the default values.  
@@ -52,7 +54,8 @@ class ConfigOperator:
                         self.configMap[filename] = content
         except Exception as agentSmith:
             # override config path dosent exist
-            self.Sentinel.debug(f"{path} does not exist. likely not critical")
+            self.Sentinel.debug(agentSmith)
+            self.Sentinel.info(f"{path} does not exist. likely not critical")
 
     def saveToFileJSON(self, filename, content):
         for path in self.PATHS:
@@ -68,12 +71,13 @@ class ConfigOperator:
         try:        
             directoryPath = filepath[:filepath.rfind("/")]
             if not os.path.exists(directoryPath):
-                os.mkdir(directoryPath) # only one level
+                os.mkdir(directoryPath)  # only one level
             with open(filepath, "w") as file:
                 json.dump(content, file)
             return True
         except Exception as agentSmith:
-            self.Sentinel.debug(f"{filepath} does not exist. likely not critical")
+            self.Sentinel.debug(agentSmith)
+            self.Sentinel.info(f"{filepath} does not exist. likely not critical")
             return False
 
     def getContent(self, filename, default = None):

@@ -1,3 +1,4 @@
+import logging
 import os
 from logging import Logger
 from JXTABLES.XTablesClient import XTablesClient
@@ -71,7 +72,7 @@ class PropertyOperator:
         self.__xclient.subscribe(propertyTable, self.__updatePropertyCallback)
         
         # getter function in a wrapper
-        property = Property(lambda: self.__propertyValueMap[propertyTable])
+        property = Property(lambda: self.__propertyValueMap[propertyTable], propertyTable=propertyTable)
         self.__properties[propertyTable] = property
         return property
 
@@ -82,6 +83,9 @@ class PropertyOperator:
     def createCustomReadOnlyProperty(
         self, propertyTable, propertyValue
     ) -> "ReadonlyProperty":
+        """ Overrides any extra prefixes that might have been added by getting child loggers
+            NOTE: will not override baseprefix
+        """
         prefixed = self.__addBasePrefix(propertyTable)
         return self.__createReadOnly(prefixed, propertyValue)
 
@@ -92,7 +96,7 @@ class PropertyOperator:
             return None
 
         readOnlyProp = ReadonlyProperty(
-            lambda value: self.__setNetworkValue(propertyTable, value)
+            lambda value: self.__setNetworkValue(propertyTable, value), propertyTable=propertyTable
         )
         self.__readOnlyProperties[propertyTable] = readOnlyProp
         return readOnlyProp
@@ -170,16 +174,33 @@ class PropertyOperator:
 
 
 class Property:
-    def __init__(self, getFunc):  # lambda to get the property
-        self.getFunc = getFunc
+    def __init__(self, getFunc, propertyTable):  # lambda to get the property
+        self.__getFunc = getFunc
+        self.__propertyTable = propertyTable
 
     def get(self):
-        return self.getFunc()
+        return self.__getFunc()
 
+    def getTable(self):
+        return self.__propertyTable
 
 class ReadonlyProperty:
-    def __init__(self, setFunc):  # lambda to set the read only property
-        self.setFunc = setFunc
+    def __init__(self, setFunc, propertyTable):  # lambda to set the read only property
+        self.__setFunc = setFunc
+        self.__propertyTable = propertyTable
 
     def set(self, value):
-        return self.setFunc(value)
+        return self.__setFunc(value)
+    
+    def getTable(self):
+        return self.__propertyTable
+
+
+class LambdaHandler(logging.Handler):
+    def __init__(self, func):
+        super().__init__()
+        self.func = func  # This function will be executed on each log message
+
+    def emit(self, record):
+        log_entry = self.format(record)  # Format log message
+        self.func(log_entry)  # Call the lambda with the log entry
