@@ -21,6 +21,7 @@ class CameraName(Enum):
     FRONTRIGHT = "photonvisionfrontright"
     FRONTLEFT = "photonvisionfrontleft"
 
+    @staticmethod
     def getCameraName():
         name = socket.gethostname()
         return CameraName(name)

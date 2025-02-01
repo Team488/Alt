@@ -8,6 +8,7 @@ from JXTABLES.XTablesClient import XTablesClient
 from abstract.Agent import Agent
 from Core.PropertyOperator import PropertyOperator
 
+
 # subscribes to command request with xtables and then executes when requested
 class AgentOperator:
     def __init__(
@@ -107,7 +108,9 @@ class AgentOperator:
             agent.onClose()
 
             if not forceStopped:
-                self.__setStatus(agent.getName(), f"agent isRunning returned false (Not an error)")
+                self.__setStatus(
+                    agent.getName(), f"agent isRunning returned false (Not an error)"
+                )
                 self.Sentinel.debug(f"agent isRunning returned false (Not an error)")
 
         except Exception as e:
