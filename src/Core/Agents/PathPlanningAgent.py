@@ -21,7 +21,8 @@ class DriveToTargetAgent(CentralAgent):
             propertyName="xtablesPosTable", propertyDefault="robot_pose"
         )
         self.ntPosTable = self.propertyOperator.createProperty(
-            propertyName="networkTablesPosTable", propertyDefault="/sss"
+            propertyName="networkTablesPosTable",
+            propertyDefault="AdvantageKit/RealOutputs/PoseSubsystem/RobotPose",
         )
         self.useXTables = self.propertyOperator.createProperty(
             propertyName="useXtablesForPosition", propertyDefault=False
@@ -33,6 +34,13 @@ class DriveToTargetAgent(CentralAgent):
         self.bestConf = self.propertyOperator.createReadOnlyProperty(
             "currentTargetBestConf", 0
         )
+        NetworkTables.initialize(server="10.4.88.2")
+        posePath: str = self.ntPosTable.get()
+        entryIdx = posePath.rfind("/")
+        self.poseTable = posePath[:entryIdx]
+        self.poseEntry = posePath[entryIdx + 1 :]
+        self.table = NetworkTables.getTable(self.poseTable)
+        self.ntpos = self.table.getEntry(self.poseEntry)
 
     def runPeriodic(self):
         super().runPeriodic()
@@ -41,7 +49,7 @@ class DriveToTargetAgent(CentralAgent):
         if self.useXTables.get():
             posebytes = self.xclient.getBytes(self.xtablesPosTable.get())
         else:
-            posebytes = NetworkTables.getEntry(self.ntPosTable.get()).get()
+            posebytes = self.ntpos.get()
         if posebytes:
             loc = NtUtils.getPose2dFromBytes(posebytes)
         else:
@@ -52,7 +60,7 @@ class DriveToTargetAgent(CentralAgent):
         self.bestConf.set(float(conf))
         if conf > self.targetConf.get():
             path = self.central.pathGenerator.generate(
-                (loc[0] * 100, loc[1] * 100), target[:2], 0
+                (loc[0] * 100, loc[1] * 100), target[:2]
             )
             coordinates = []
             for waypoint in path:
@@ -65,6 +73,89 @@ class DriveToTargetAgent(CentralAgent):
         else:
             self.xclient.putCoordinates(self.pathTable.get(), [])
             self.Sentinel.info("Failed to generate path")
+
+    def onClose(self):
+        super().onClose()
+
+    def isRunning(self):
+        return True
+
+    def forceShutdown(self):
+        print("Shutdown!")
+
+    @staticmethod
+    def getName():
+        return "PathPlanning_Agent"
+
+    @staticmethod
+    def getDescription():
+        return "Ingest_Detections_Give_Path"
+
+    def getIntervalMs(self):
+        return 1
+
+
+class DriveToFixedPointAgent(CentralAgent):
+    def create(self):
+        super().create()
+        self.xtablesPosTable = self.propertyOperator.createProperty(
+            propertyName="xtablesPosTable", propertyDefault="robot_pose"
+        )
+        self.ntPosTable = self.propertyOperator.createProperty(
+            propertyName="networkTablesPosTable",
+            propertyDefault="AdvantageKit/RealOutputs/PoseSubsystem/RobotPose",
+        )
+        self.useXTables = self.propertyOperator.createProperty(
+            propertyName="useXtablesForPosition", propertyDefault=False
+        )
+        self.targetX = self.propertyOperator.createProperty(
+            propertyName="targetX", propertyDefault=0
+        )
+        self.targetY = self.propertyOperator.createProperty(
+            propertyName="targetY", propertyDefault=0
+        )
+        self.pathTable = self.propertyOperator.createProperty(
+            "Path_Location", "target_waypoints"
+        )
+        NetworkTables.initialize(server="10.4.88.2")
+        posePath: str = self.ntPosTable.get()
+        entryIdx = posePath.rfind("/")
+        self.poseTable = posePath[:entryIdx]
+        self.poseEntry = posePath[entryIdx + 1 :]
+        self.table = NetworkTables.getTable(self.poseTable)
+        self.ntpos = self.table.getEntry(self.poseEntry)
+
+    def runPeriodic(self):
+        super().runPeriodic()
+
+        loc = (0, 0, 0)  # default position x(m),y(m),rotation(rad)
+        if self.useXTables.get():
+            posebytes = self.xclient.getBytes(self.xtablesPosTable.get())
+        else:
+            posebytes = self.ntpos.get()
+        if posebytes:
+            loc = NtUtils.getPose2dFromBytes(posebytes)
+        else:
+            self.Sentinel.warning("Could not get robot pose!!")
+
+        target = (self.targetX.get() * 100, self.targetY.get() * 100)
+        path = self.central.pathGenerator.generate(
+            (loc[0] * 100, loc[1] * 100), target, invertStartX=False
+        )
+        if path:
+            coordinates = []
+            for waypoint in path:
+                element = XTableValues_pb2.Coordinate(
+                    x=waypoint[0] / 100, y=waypoint[1] / 100
+                )
+            coordinates.append(element)
+            self.xclient.putCoordinates(self.pathTable.get(), coordinates)
+            self.Sentinel.info("Generated path")
+        else:
+            self.Sentinel.info("No path!")
+            self.xclient.putCoordinates(self.pathTable.get(), [])
+
+        self.Sentinel.info(f"{target=}")
 
     def onClose(self):
         super().onClose()

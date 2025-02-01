@@ -5,7 +5,7 @@ from coreinterface.FramePacket import FramePacket
 client = XTablesClient(debug_mode=True)
 
 while True:
-    framepkt = client.getBytes("test_Frame")
+    framepkt = client.getBytes("REARLEFT_Frame")
     if framepkt is not None:
         framepkt = FramePacket.fromBytes(framepkt)
         cv2.imshow("frame", FramePacket.getFrame(framepkt))

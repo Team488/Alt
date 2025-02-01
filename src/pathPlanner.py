@@ -1,5 +1,5 @@
 from Core.Neo import Neo
-from Core.Agents import DriveToTargetAgent
+from Core.Agents import DriveToFixedPointAgent, DriveToTargetAgent
 
 if __name__ == "__main__":
     n = Neo()

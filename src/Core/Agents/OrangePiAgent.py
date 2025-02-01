@@ -50,7 +50,8 @@ class OrangePiAgent(Agent):
             propertyName="xtablesPosTable", propertyDefault="robot_pose"
         )
         self.ntPosTable = self.propertyOperator.createProperty(
-            propertyName="networkTablesPosTable", propertyDefault="/sss"
+            propertyName="networkTablesPosTable",
+            propertyDefault="AdvantageKit/RealOutputs/PoseSubsystem/RobotPose",
         )
         self.useXTables = self.propertyOperator.createProperty(
             propertyName="useXtablesForPosition", propertyDefault=False
@@ -66,6 +67,12 @@ class OrangePiAgent(Agent):
         )
 
         NetworkTables.initialize(server="10.4.88.2")
+        posePath: str = self.ntPosTable.get()
+        entryIdx = posePath.rfind("/")
+        self.poseTable = posePath[:entryIdx]
+        self.poseEntry = posePath[entryIdx + 1 :]
+        self.table = NetworkTables.getTable(self.poseTable)
+        self.ntpos = self.table.getEntry(self.poseEntry)
 
         self.cap = cv2.VideoCapture(self.CAMERA_INDEX)
 
@@ -103,7 +110,7 @@ class OrangePiAgent(Agent):
                 processedResults, self.device_name, timeStamp
             )
             # optionally send frame
-            if self.showFrame.get:
+            if self.showFrame.get():
                 framePacket = FramePacket.createPacket(
                     timeStamp, self.device_name, undistortedFrame
                 )

@@ -10,9 +10,8 @@ from mapinternals.KalmanCache import KalmanCache
 from pathplanning.PathGenerator import PathGenerator
 
 
-
 class Central:
-    def __init__(self, logger : Logger):
+    def __init__(self, logger: Logger):
         self.Sentinel = logger
         self.kalmanCacheRobots: KalmanCache = KalmanCache()
         self.kalmanCacheGameObjects: KalmanCache = KalmanCache()
@@ -20,17 +19,17 @@ class Central:
         self.ukf = Ukf()
         self.labler = KalmanLabeler(self.kalmanCacheRobots, self.kalmanCacheGameObjects)
         self.obstacleMap = self.__tryLoadObstacleMap()
-        self.pathGenerator = PathGenerator(self.map,self.obstacleMap)
+        self.pathGenerator = PathGenerator(self.map, self.obstacleMap)
 
     def __tryLoadObstacleMap(self):
         defaultMap = np.zeros(
-            (MapConstants.fieldWidth.value, MapConstants.fieldHeight.value),dtype=bool
+            (MapConstants.fieldWidth.value, MapConstants.fieldHeight.value), dtype=bool
         )
-        try:
-            defaultMap = configLoader.loadNumpyConfig("obstacleMap.npy")
-        except Exception as e:
-            self.Sentinel.warning("obstaclemap load failed, defaulting to empty map", e)
-        
+        # try:
+        #     defaultMap = configLoader.loadNumpyConfig("obstacleMap.npy")
+        # except Exception as e:
+        #     self.Sentinel.warning("obstaclemap load failed, defaulting to empty map", e)
+
         return defaultMap
 
     # async map update per camera, probably want to syncronize this
@@ -49,8 +48,7 @@ class Central:
     ):
         # dissipate at start of iteration
         self.map.disspateOverTime(timeStepSeconds)
-        
-        
+
         # first get real ids
 
         # go through each detection and do the magic
@@ -68,7 +66,7 @@ class Central:
                     self.kalmanCacheGameObjects.LoadInKalmanData(id, x, y, self.ukf)
 
                 newState = self.ukf.predict_and_update([x, y])
-                
+
                 # now we have filtered data, so lets store it. First thing we do is cache the new ukf data
 
                 if isRobot:
@@ -82,4 +80,3 @@ class Central:
                     self.map.addDetectedGameObject(
                         int(newState[0]), int(newState[1]), prob
                     )
-
