@@ -27,6 +27,7 @@ class Neo:
         self.__configOp = ConfigOperator(logger=Sentinel.getChild("Config_Operator"))
         Sentinel.info("Creating XTables Client....")
         self.__xclient = XTablesClient(debug_mode=True)
+        self.__xclient.add_client_version_property("MATRIX-ALT-VISION")
         Sentinel.info("Client created")
         Sentinel.info("Creating Property operator")
         self.__propertyOp = PropertyOperator(
