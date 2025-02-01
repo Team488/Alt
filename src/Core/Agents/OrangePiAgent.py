@@ -1,4 +1,5 @@
 import logging
+import os
 import cv2
 import socket
 import time
@@ -114,10 +115,7 @@ class OrangePiAgent(Agent):
             self.xclient.putBytes(self.device_name, detectionPacket.to_bytes())
         else:
             self.Sentinel.error("Opencv Cap ret is false!")
-            self.Sentinel.info("Trying to reopen camera")
-            if self.cap.isOpened():
-                self.cap.release()
-            self.cap = cv2.VideoCapture(self.CAMERA_INDEX)
+            os._exit(1)
             self.xclient.putBytes(self.device_name, defaultBytes)
 
     def onClose(self):

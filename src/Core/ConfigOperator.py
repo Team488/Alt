@@ -1,7 +1,7 @@
 import os
 import json
 import codecs
-import platform
+from pathlib import Path
 from logging import Logger
 import numpy as np
 from enum import Enum
@@ -27,26 +27,34 @@ class ConfigType(Enum):
 
 
 class ConfigOperator:
-    OVERRIDE_CONFIG_PATH = "/xbot/config" # if you want to override any json configs, put here
+    OVERRIDE_CONFIG_PATH = (
+        "/xbot/config"  # if you want to override any json configs, put here
+    )
     OVERRIDE_PROPERTY_CONFIG_PATH = "/xbot/config/PROPERTIES"
-    DEFAULT_CONFIG_PATH = "assets" # default configs
-    DEFAULT_PROPERTY_CONFIG_PATH = "assets/PROPERTIES" 
-    PATHS = [OVERRIDE_CONFIG_PATH, DEFAULT_CONFIG_PATH]
-    READPATHS = [OVERRIDE_CONFIG_PATH, DEFAULT_CONFIG_PATH,OVERRIDE_PROPERTY_CONFIG_PATH,DEFAULT_PROPERTY_CONFIG_PATH]
+    DEFAULT_CONFIG_PATH = "assets"  # default configs
+    DEFAULT_PROPERTY_CONFIG_PATH = "assets/PROPERTIES"
+    SAVEPATHS = [OVERRIDE_CONFIG_PATH, DEFAULT_CONFIG_PATH]
+    READPATHS = [
+        OVERRIDE_CONFIG_PATH,
+        DEFAULT_CONFIG_PATH,
+        OVERRIDE_PROPERTY_CONFIG_PATH,
+        DEFAULT_PROPERTY_CONFIG_PATH,
+    ]
     knownFileEndings = ((".npy", ConfigType.NUMPY), (".json", ConfigType.JSON))
-    def __init__(self, logger : Logger):
-        self.Sentinel = logger 
+
+    def __init__(self, logger: Logger):
+        self.Sentinel = logger
         self.configMap = {}
         for path in self.READPATHS:
             self.__loadFromPath(path)
-        # loading override second means that it will overwrite anything set by default. 
-        # NOTE: if you only specify a subset of the .json file in the override, you will loose the default values.  
+        # loading override second means that it will overwrite anything set by default.
+        # NOTE: if you only specify a subset of the .json file in the override, you will loose the default values.
 
     def __loadFromPath(self, path):
         try:
             for filename in os.listdir(path):
                 filePath = os.path.join(path, filename)
-                for (ending,filetype) in self.knownFileEndings:
+                for (ending, filetype) in self.knownFileEndings:
                     if filename.endswith(ending):
                         self.Sentinel.info(f"Loaded config file from {filePath}")
                         content = filetype.load(filePath)
@@ -58,20 +66,23 @@ class ConfigOperator:
             self.Sentinel.info(f"{path} does not exist. likely not critical")
 
     def saveToFileJSON(self, filename, content):
-        for path in self.PATHS:
+        for path in self.SAVEPATHS:
             filePath = os.path.join(path, filename)
             self.__saveToFileJSON(filePath, content)
 
     def savePropertyToFileJSON(self, filename, content):
-        for path in self.PATHS:
+        for path in self.SAVEPATHS:
             filePath = os.path.join(f"{path}/PROPERTIES", filename)
             self.__saveToFileJSON(filePath, content)
 
-    def __saveToFileJSON(self, filepath : str, content) -> bool: # is success
-        try:        
-            directoryPath = filepath[:filepath.rfind("/")]
+    def __saveToFileJSON(self, filepath: str, content) -> bool:  # is success
+        try:
+            path = Path(filepath)
+            directoryPath = path.parent.as_posix()
+
             if not os.path.exists(directoryPath):
                 os.mkdir(directoryPath)  # only one level
+                self.Sentinel.debug(f"Created PROPERTIES path in {directoryPath}")
             with open(filepath, "w") as file:
                 json.dump(content, file)
             return True
@@ -80,13 +91,8 @@ class ConfigOperator:
             self.Sentinel.info(f"{filepath} does not exist. likely not critical")
             return False
 
-    def getContent(self, filename, default = None):
+    def getContent(self, filename, default=None):
         return self.configMap.get(filename, default)
-    
+
     def getAllFileNames(self):
         return list(self.configMap.keys())
-
-    
-
-
-
