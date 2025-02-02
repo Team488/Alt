@@ -149,7 +149,7 @@ class DriveToFixedPointAgent(CentralAgent):
                 element = XTableValues_pb2.Coordinate(
                     x=waypoint[0] / 100, y=waypoint[1] / 100
                 )
-            coordinates.append(element)
+                coordinates.append(element)
             self.xclient.putCoordinates(self.pathTable.get(), coordinates)
             self.Sentinel.info(path)
             self.Sentinel.info("Generated path")
