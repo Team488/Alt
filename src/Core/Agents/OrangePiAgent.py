@@ -94,7 +94,8 @@ class OrangePiAgent(Agent):
             if self.useXTables.get():
                 posebytes = self.xclient.getBytes(self.xtablesPosTable.get())
             else:
-                posebytes = NetworkTables.getEntry(self.ntPosTable.get()).get()
+                posebytes = self.ntpos.get()
+
             if posebytes:
                 loc = NtUtils.getPose2dFromBytes(posebytes)
             else:

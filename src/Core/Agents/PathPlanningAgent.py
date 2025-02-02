@@ -109,10 +109,10 @@ class DriveToFixedPointAgent(CentralAgent):
             propertyName="useXtablesForPosition", propertyDefault=False
         )
         self.targetX = self.propertyOperator.createProperty(
-            propertyName="targetX", propertyDefault=0
+            propertyName="targetX", propertyDefault=2
         )
         self.targetY = self.propertyOperator.createProperty(
-            propertyName="targetY", propertyDefault=0
+            propertyName="targetY", propertyDefault=2
         )
         self.pathTable = self.propertyOperator.createProperty(
             "Path_Location", "target_waypoints"
@@ -139,6 +139,7 @@ class DriveToFixedPointAgent(CentralAgent):
             self.Sentinel.warning("Could not get robot pose!!")
 
         target = (self.targetX.get() * 100, self.targetY.get() * 100)
+        self.Sentinel.info(f"{loc=} {target=}")
         path = self.central.pathGenerator.generate(
             (loc[0] * 100, loc[1] * 100), target, invertStartX=False
         )
@@ -150,6 +151,7 @@ class DriveToFixedPointAgent(CentralAgent):
                 )
             coordinates.append(element)
             self.xclient.putCoordinates(self.pathTable.get(), coordinates)
+            self.Sentinel.info(path)
             self.Sentinel.info("Generated path")
         else:
             self.Sentinel.info("No path!")
