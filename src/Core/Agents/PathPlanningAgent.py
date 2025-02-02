@@ -10,7 +10,7 @@ from coreinterface.DetectionPacket import DetectionPacket
 from coreinterface.FramePacket import FramePacket
 from tools.Constants import InferenceMode, getCameraValues
 from mapinternals.localFrameProcessor import LocalFrameProcessor
-from tools import calibration, NtUtils, configLoader
+from tools import calibration, NtUtils, configLoader, UnitConversion
 from networktables import NetworkTables
 
 
@@ -140,9 +140,7 @@ class DriveToFixedPointAgent(CentralAgent):
 
         target = (self.targetX.get() * 100, self.targetY.get() * 100)
         self.Sentinel.info(f"{loc=} {target=}")
-        path = self.central.pathGenerator.generate(
-            (loc[0] * 100, loc[1] * 100), target, invertStartX=False
-        )
+        path = self.central.pathGenerator.generate((loc[0] * 100, loc[1] * 100), target)
         if path:
             coordinates = []
             for waypoint in path:
