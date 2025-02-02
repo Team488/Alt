@@ -8,7 +8,9 @@ class AgentExample(Agent):
         self.nameProp = self.propertyOperator.createProperty(
             propertyName="agent_name", propertyDefault="Bob"
         )
-        self.projectNameProp = self.propertyOperator.createReadOnlyProperty(propertyName="agent_name_readonly", propertyValue="bob")
+        self.projectNameProp = self.propertyOperator.createReadOnlyProperty(
+            propertyName="agent_name_readonly", propertyValue="bob"
+        )
         self.timesRun = 0
 
     def runPeriodic(self):
@@ -38,7 +40,7 @@ class AgentExample(Agent):
     @staticmethod
     def getName():
         return "Agent_Example"
-    
+
     @staticmethod
     def getDescription():
         return "Agent_Example_Process"
@@ -46,4 +48,4 @@ class AgentExample(Agent):
     def getIntervalMs(self):
         # how long to wait between each run call
         # for example, i want people to be able to read what i print. So i will wait alot
-        return 100  # ms
+        return 1000  # ms
