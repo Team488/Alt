@@ -1,2 +1,1 @@
 # put new requirements here:
-pyudev==0.24.3
