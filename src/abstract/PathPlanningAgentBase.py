@@ -38,6 +38,10 @@ class PathPlanningAgentBase(CentralAgentBase):
 
 
     def __getCoordinatesAXCoords(self, path):
+        """ Returns coordinates in xtables format with 2 major assumptions:\n
+            #1 Path units are in cm\n
+            #2 coordinates out are in m
+        """
         coordinates = []
         for waypoint in path:
             element = XTableValues_pb2.Coordinate(
