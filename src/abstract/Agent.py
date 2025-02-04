@@ -10,61 +10,70 @@ from JXTABLES.XTablesClient import XTablesClient
 from Core.Central import Central
 from Core.PropertyOperator import PropertyOperator
 from Core.ConfigOperator import ConfigOperator
-from Core.PropertyOperator import ReadonlyProperty
+from Core.ShareOperator import ShareOperator
 
 
 class Agent(ABC):
     DEFAULT_LOOP_TIME = 1 # 1 ms
-    def __init__(self, central : Central, xclient : XTablesClient, propertyOperator : PropertyOperator, configOperator : ConfigOperator, logger : Logger):
+    def __init__(self, central : Central, xclient : XTablesClient, propertyOperator : PropertyOperator, configOperator : ConfigOperator, shareOperator : ShareOperator, logger : Logger):
         self.central = central
         self.xclient = xclient
         self.propertyOperator = propertyOperator
         self.configOperator = configOperator
+        self.shareOp = shareOperator
         self.Sentinel = logger
         # other than setting variables, nothing should go here
 
     @abstractmethod
     def create(self):        
+        """ Runs once when the agent is created"""
         # perform agent init here (eg open camera or whatnot)
         pass
 
     @abstractmethod
     def runPeriodic(self):
+        """ Runs continously until the agent ends"""
         # agent periodic loop here
         pass
 
     @abstractmethod
     def onClose(self):
+        """ Runs once when the agent is finished"""
         # agent cleanup here
         pass
 
     @abstractmethod
-    def isRunning(self):
+    def isRunning(self) -> bool:
+        """ Return a boolean value denoting whether the agent should still be running"""
         # condition to keep agent running here
         pass
 
-    @abstractmethod
-    def forceShutdown(self):
-        # code to kill agent immediately here
-        pass
+    
 
     # ----- properties -----
 
     @staticmethod
     @abstractmethod
     def getName():
+        """ Please tell me your name"""
         # agent name here
         pass
 
     @staticmethod
     @abstractmethod
     def getDescription():
+        """ Sooo, what do you do for a "living" """
         # agent description here
         pass
 
-    # ----- optional values -----
+    # ----- optional methods -----
     
     def getIntervalMs(self):
-        # how long to wait between each run call
+        """ how long to wait between each run call """
         # can leave as None, will use default time of 1 ms
         return self.DEFAULT_LOOP_TIME
+    
+    def forceShutdown(self):
+        """ Handle any abrupt shutdown tasks here"""
+        # optional code to kill agent immediately here
+        pass

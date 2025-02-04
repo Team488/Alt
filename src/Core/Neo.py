@@ -10,6 +10,7 @@ from Core.ConfigOperator import ConfigOperator
 from Core.PropertyOperator import PropertyOperator, LambdaHandler, ReadonlyProperty
 from Core.OrderOperator import OrderOperator
 from Core.AgentOperator import AgentOperator
+from Core.ShareOperator import ShareOperator
 from Core.Central import Central
 from abstract.Agent import Agent
 from abstract.Order import Order
@@ -35,6 +36,10 @@ class Neo:
             configOp=self.__configOp,
             logger=Sentinel.getChild("Property_Operator"),
             basePrefix=UniqueId,
+        )
+        Sentinel.info("Creating Share operator")
+        self.__shareOp = ShareOperator(
+            logger=Sentinel.getChild("Share_Operator"),
         )
         Sentinel.info("Creating Order operator")
         self.__orderOp = OrderOperator(
@@ -117,6 +122,7 @@ class Neo:
                     xclient=self.__xclient,
                     propertyOperator=childPropertyOp,
                     configOperator=self.__configOp,
+                    shareOperator=self.__shareOp,
                     logger=childLogger,
                 )
             )

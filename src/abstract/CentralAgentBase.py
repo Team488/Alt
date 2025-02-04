@@ -9,11 +9,16 @@ from coreinterface.DetectionPacket import DetectionPacket
 from coreinterface.FramePacket import FramePacket
 from Core.Central import Central
 from pathplanning.PathGenerator import PathGenerator
-from abstract.Agent import Agent
+from abstract.LocalizingAgentBase import LocalizingAgentBase
 
 
-class CentralAgent(Agent):
+class CentralAgentBase(LocalizingAgentBase):
+    """ Agent -> LocalizingAgentBase -> CentralAgentBase
+
+        Adds automatic ingestion of detection packets into the central process
+    """
     def create(self):        
+        super().create()
         # perform agent init here (eg open camera or whatnot)
         self.keys=["REARRIGHT", "REARLEFT", "FRONTLEFT", "FRONTRIGHT"]
         self.updateMap = {key: ([], 0, 0) for key in self.keys}
@@ -61,8 +66,10 @@ class CentralAgent(Agent):
         )
 
     def runPeriodic(self):
+        super().runPeriodic()
         self.__centralUpdate()
 
     def onClose(self):
+        super().onClose()
         for key in self.keys:
             self.xclient.unsubscribe(key, consumer=self.__handleUpdate)

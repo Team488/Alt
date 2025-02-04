@@ -81,13 +81,14 @@ class PropertyOperator:
         return self.__createReadOnly(propertyTable, propertyValue)
 
     def createCustomReadOnlyProperty(
-        self, propertyTable, propertyValue
+        self, propertyTable, propertyValue, addBasePrefix : bool = True
     ) -> "ReadonlyProperty":
         """ Overrides any extra prefixes that might have been added by getting child loggers
-            NOTE: will not override baseprefix
+            NOTE: by default addBasePrefix is True, and will add a prefix to this property
         """
-        prefixed = self.__addBasePrefix(propertyTable)
-        return self.__createReadOnly(prefixed, propertyValue)
+        if addBasePrefix:
+            propertyTable = self.__addBasePrefix(propertyTable)
+        return self.__createReadOnly(propertyTable, propertyValue)
 
     def __createReadOnly(self, propertyTable, propertyValue):
         if propertyTable in self.__readOnlyProperties:
