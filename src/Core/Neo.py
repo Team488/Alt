@@ -83,7 +83,7 @@ class Neo:
         else:
             Sentinel.warning("Neo is already shutdown!")
 
-    def __handleLog(self, logProperty: ReadonlyProperty, newLog: str, maxLogLength: int = 1):
+    def __handleLog(self, logProperty: ReadonlyProperty, newLog: str, maxLogLength: int = 3):
         table = logProperty.getTable()
         lastlogs = self.__logMap.get(table, []) 
 

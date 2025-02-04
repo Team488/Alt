@@ -68,6 +68,10 @@ class ProbMap:
     
     def getInternalSizeCR(self):
         return (self.__internalHeight, self.__internalWidth)
+    
+    def __isOutOfMap(self, x, y, obj_x, obj_y):
+        # independently check if the added detection is completely out of bounds in any way
+        return x+obj_x/2 < 0 or x-obj_x/2 >= self.__internalWidth or y+obj_y/2 < 0 or y-obj_y >= self.__internalHeight
 
     """ Adding detections to the probability maps"""
 
@@ -84,6 +88,10 @@ class ProbMap:
         tmpX = obj_x
         obj_x = obj_y // self.resolution
         obj_y = tmpX // self.resolution
+
+        if self.__isOutOfMap(x,y,obj_x,obj_y):
+            print("Error! Detection completely out of map!")
+            return
 
         # print(f"internal values :  {x},{y} with size {obj_x},{obj_y}")
         if x >= self.__internalWidth:
@@ -118,7 +126,7 @@ class ProbMap:
 
         # print("gauss_x", gauss_x, "gauss_y", gauss_y)
         gaussian_blob = prob * np.exp(-0.5 * (gauss_x**2 + gauss_y**2) / sigma**2)
-
+        gaussian_blob *= prob
         # print('\n' + 'gaussian_bQlob before: ')
         # print(gaussian_blob.dtype)
         # print(gaussian_blob.shape)
@@ -126,11 +134,12 @@ class ProbMap:
         # print('max = ' + str(np.max(gaussian_blob)) + ' (s/b 1.0)')
         # print(gaussian_blob)
 
-        threshold = 0.2
+        threshold = prob/10
         mask = gaussian_blob >= threshold
 
         # Step 2: Get the coordinates of the values that satisfy the threshold
         coords = np.argwhere(mask)
+        print(len(coords))
 
         if coords.size == 0:
             print("Failed to extract smaller mask!")
@@ -203,7 +212,7 @@ class ProbMap:
 
         gaussian_blob = gaussian_blob.astype(np.float64)
 
-        # gaussian_blob *= prob
+        
         # blob_height, blob_width = gaussian_blob.shape[0:2]
         # print("\n" + "gaussian size: " + str(blob_height) + ", " + str(blob_width))
 
@@ -217,6 +226,17 @@ class ProbMap:
 
         adjusted_coords = coords + np.array([blob_left_edge_loc, blob_top_edge_loc])
         
+        valid = (adjusted_coords[:, 0] >= 0) & (adjusted_coords[:, 0] < probmap.shape[0]) & \
+                (adjusted_coords[:, 1] >= 0) & (adjusted_coords[:, 1] < probmap.shape[1])
+        adjusted_coords = adjusted_coords[valid]
+        valid_coords = coords[valid]
+        valid_coords[:, 0] = np.clip(valid_coords[:, 0], 0, gaussian_blob.shape[0] - 1)
+        valid_coords[:, 1] = np.clip(valid_coords[:, 1], 0, gaussian_blob.shape[1] - 1)
+
+        if adjusted_coords.size == 0 or valid_coords.size == 0:
+            print("No valid coordinates")
+            return 
+        
         probmap[
             adjusted_coords[:,0],
             adjusted_coords[:,1],
@@ -227,16 +247,13 @@ class ProbMap:
         # Adjusted coordinates for the Gaussian blob
 
         # # Optional: Bounds checking, likely not needed
-        # valid = (adjusted_coords[:, 0] >= 0) & (adjusted_coords[:, 0] < probmap.shape[0]) & \
-        #         (adjusted_coords[:, 1] >= 0) & (adjusted_coords[:, 1] < probmap.shape[1])
-        # adjusted_coords = adjusted_coords[valid]
-        # valid_coords = coords[valid]
+        
 
         # Apply the Gaussian blob using the valid coordinates
         probmap[
             adjusted_coords[:, 0],
             adjusted_coords[:, 1]
-        ] += gaussian_blob[coords[:, 0], coords[:, 1]] * self.alpha
+        ] += gaussian_blob[valid_coords[:, 0], valid_coords[:, 1]] * self.alpha
 
 
     """ Exposed methods for adding detections """

@@ -47,7 +47,7 @@ class DriveToTargetAgent(CentralAgent):
 
         loc = (0, 0, 0)  # default position x(m),y(m),rotation(rad)
         if self.useXTables.get():
-            posebytes = self.xclient.getBytes(self.xtablesPosTable.get())
+            posebytes = self.xclient.getUnknownBytes(self.xtablesPosTable.get())
         else:
             posebytes = self.ntpos.get()
         if posebytes:
@@ -130,7 +130,7 @@ class DriveToFixedPointAgent(CentralAgent):
 
         loc = (0, 0, 0)  # default position x(m),y(m),rotation(rad)
         if self.useXTables.get():
-            posebytes = self.xclient.getBytes(self.xtablesPosTable.get())
+            posebytes = self.xclient.getUnknownBytes(self.xtablesPosTable.get())
         else:
             posebytes = self.ntpos.get()
         if posebytes:

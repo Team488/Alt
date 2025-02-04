@@ -29,10 +29,12 @@ class CameraName(Enum):
 
 class OrangePiAgent(Agent):
     def create(self):
-        self.CAMERA_INDEX = "/dev/color_camera"
+        # self.CAMERA_INDEX = "/dev/color_camera" ---
+        self.CAMERA_INDEX = "assets/video12qual25clipped.mp4"
         # camera config
         self.calib = self.configOperator.getContent("camera_calib.json")
-        self.device_name = CameraName.getCameraName().name
+        # self.device_name = CameraName.getCameraName().name ---
+        self.device_name = "FRONTRIGHT"
         self.Sentinel.info(f"Camera Name: {self.device_name}")
         # camera values
         self.cameraIntrinsics, self.cameraExtrinsics, _ = getCameraValues(
@@ -44,8 +46,6 @@ class OrangePiAgent(Agent):
             self.cameraIntrinsics.getHres(), self.cameraIntrinsics.getVres(), self.calib
         )
 
-        # properties
-        self.propertyOperator = self.propertyOperator.getChild(self.device_name)
         # get new property operator with device name
         self.xtablesPosTable = self.propertyOperator.createProperty(
             propertyName="xtablesPosTable", propertyDefault="robot_pose"
@@ -67,13 +67,14 @@ class OrangePiAgent(Agent):
             propertyName="table_for_frames", propertyDefault=False
         )
 
-        NetworkTables.initialize(server="10.4.88.2")
-        posePath: str = self.ntPosTable.get()
-        entryIdx = posePath.rfind("/")
-        self.poseTable = posePath[:entryIdx]
-        self.poseEntry = posePath[entryIdx + 1 :]
-        self.table = NetworkTables.getTable(self.poseTable)
-        self.ntpos = self.table.getEntry(self.poseEntry)
+        # NetworkTables.initialize(server="10.4.88.2") --- 
+        # NetworkTables.initialize(server="127.0.0.1")
+        # posePath: str = self.ntPosTable.get()
+        # entryIdx = posePath.rfind("/")
+        # self.poseTable = posePath[:entryIdx]
+        # self.poseEntry = posePath[entryIdx + 1 :]
+        # self.table = NetworkTables.getTable(self.poseTable)
+        # self.ntpos = self.table.getEntry(self.poseEntry)
 
         self.cap = cv2.VideoCapture(self.CAMERA_INDEX)
 
@@ -81,7 +82,8 @@ class OrangePiAgent(Agent):
         self.frameProcessor = LocalFrameProcessor(
             cameraIntrinsics=self.cameraIntrinsics,
             cameraExtrinsics=self.cameraExtrinsics,
-            inferenceMode=InferenceMode.RKNN2024,
+            # inferenceMode=InferenceMode.RKNN2024, --- 
+            inferenceMode=InferenceMode.ONNX2024,
         )
 
     def runPeriodic(self):
@@ -93,7 +95,7 @@ class OrangePiAgent(Agent):
             undistortedFrame = calibration.undistortFrame(frame, self.mapx, self.mapy)
             loc = (0, 0, 0)  # default position x(m),y(m),rotation(rad)
             if self.useXTables.get():
-                posebytes = self.xclient.getBytes(self.xtablesPosTable.get())
+                posebytes = self.xclient.getUnknownBytes(self.xtablesPosTable.get())
             else:
                 posebytes = self.ntpos.get()
 
