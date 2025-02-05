@@ -24,9 +24,9 @@ class LocalizingAgentBase(Agent):
     def __updateLocation(self, ret):
         try:
             self.robotLocation = NtUtils.getPose2dFromBytes(ret.value)
-            self.Sentinel.info("Updated robot pose!!")
+            self.Sentinel.debug("Updated robot pose!!")
         except Exception as e:
             self.Sentinel.debug(e)
-            self.Sentinel.warning("Could not get robot pose!!")
+            self.Sentinel.debug("Could not get robot pose!!")
 
 

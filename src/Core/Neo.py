@@ -50,7 +50,6 @@ class Neo:
         )
         Sentinel.info("Creating Agent operator")
         self.__agentOp = AgentOperator(
-            self.__xclient,
             propertyOp=self.__propertyOp,
             logger=Sentinel.getChild("Agent_Operator"),
         )
@@ -81,8 +80,7 @@ class Neo:
 
     def shutDown(self):
         if not self.__isShutdown:
-            self.__agentOp.stop()
-            self.__agentOp.join()
+            self.__agentOp.stopAndWait()
             self.__printAndCleanup()
             self.__isShutdown = True
         else:
@@ -111,14 +109,21 @@ class Neo:
         self.__logMap[table] = lastlogs  
 
 
-
-
     def wakeAgent(self, agent: type[Agent]):
+        try:
+            agent.getName()
+        except AttributeError as e:
+            Sentinel.debug(e)
+            Sentinel.fatal("If this agent is a partial agent, please use wakeAgentPartial!")
+            return
+        self.wakeAgentPartial(agent, agent.getName())
+
+    def wakeAgentPartial(self, agent: type[Agent], agentName):
         if not self.isShutdown():
-            childPropertyOp = self.__propertyOp.getChild(f"{self.__getBasePrefix(agent.getName())}")
-            childLogger = Sentinel.getChild(f"{agent.getName()}")
+            childPropertyOp = self.__propertyOp.getChild(f"{self.__getBasePrefix(agentName)}")
+            childLogger = Sentinel.getChild(f"{agentName}")
             
-            logTable = f"{self.__getBasePrefix(agent.getName())}.log"
+            logTable = f"{self.__getBasePrefix(agentName)}.log"
             logProperty = self.__propertyOp.createCustomReadOnlyProperty(logTable,"None...")
             
             logLambda = lambda entry : self.__handleLog(logProperty, entry)
@@ -150,10 +155,10 @@ class Neo:
         self.__printFinish()
         self.__cleanup()
 
-    def waitForAgentFinished(self):
+    def waitForAgentsFinished(self):
         """Thread blocking method that waits for a running agent (if any is running)"""
         if not self.isShutdown():
-            self.__agentOp.waitForAgentFinished()
+            self.__agentOp.waitForAgentsToFinish()
         else:
             self.Sentinel.warning("Neo has already been shut down!")
 
@@ -163,7 +168,7 @@ class Neo:
         else:
             self.Sentinel.warning("Neo has already been shut down!")
 
-    def shutDownOnAgentFinished(self):
+    def shutDownOnAgentsFinished(self):
         self.setOnAgentFinished(self.__printAndCleanup)
 
     def __cleanup(self):

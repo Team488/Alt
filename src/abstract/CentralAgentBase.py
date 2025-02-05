@@ -2,6 +2,7 @@ import time
 from tools.Constants import CameraIdOffsets
 from coreinterface.DetectionPacket import DetectionPacket
 from abstract.Agent import Agent
+from abstract.FrameProcessingAgentBase import FrameProcessingAgent
 
 
 class CentralAgentBase(Agent):
@@ -17,7 +18,8 @@ class CentralAgentBase(Agent):
         self.localUpdateMap = {key: 0 for key in self.keys}
         self.lastUpdateTimeMs = -1
         for key in self.keys:
-            self.xclient.subscribe(key, consumer=self.__handleUpdate)
+            # subscribe to detection packet
+            self.xclient.subscribe(f"{key}.{FrameProcessingAgent.DETECTIONPOSTFIX}", consumer=self.__handleUpdate)
 
     # handles a subscriber update from one of the cameras
     def __handleUpdate(self, ret):

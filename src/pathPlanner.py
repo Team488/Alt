@@ -3,6 +3,6 @@ from Core.Agents import DriveToFixedPointAgent, DriveToTargetAgent
 
 if __name__ == "__main__":
     n = Neo()
-    n.wakeAgent(DriveToTargetAgent)
-    n.shutDownOnAgentFinished()
-    n.waitForAgentFinished()
+    n.wakeAgent(DriveToFixedPointAgent)
+    n.shutDownOnAgentsFinished()
+    n.waitForAgentsFinished()

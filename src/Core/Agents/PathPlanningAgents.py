@@ -25,7 +25,7 @@ class DriveToTargetAgent(CentralAgentBase,PathPlanningAgentBase):
 
     @staticmethod
     def getName():
-        return "PathPlanning_Agent"
+        return "Drive_To_Target_Pathplanning"
 
     @staticmethod
     def getDescription():
@@ -54,8 +54,8 @@ class DriveToFixedPointAgent(PathPlanningAgentBase):
 
     @staticmethod
     def getName():
-        return "PathPlanning_Agent"
+        return "Drive_To_FixedPoint_Pathplanning"
 
     @staticmethod
     def getDescription():
-        return "Ingest_Detections_Give_Path"
+        return "Get_Target_Give_Path"

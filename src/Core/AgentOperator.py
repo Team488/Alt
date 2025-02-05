@@ -4,7 +4,10 @@ import threading
 import traceback
 import time
 from logging import Logger
+from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import Future
 from JXTABLES.XTablesClient import XTablesClient
+import concurrent
 from abstract.Agent import Agent
 from Core.PropertyOperator import PropertyOperator
 
@@ -12,12 +15,14 @@ from Core.PropertyOperator import PropertyOperator
 # subscribes to command request with xtables and then executes when requested
 class AgentOperator:
     def __init__(
-        self, xclient: XTablesClient, propertyOp: PropertyOperator, logger: Logger
+        self, propertyOp: PropertyOperator, logger: Logger
     ):
         self.Sentinel = logger
         self.propertyOp = propertyOp
-        self.__xclient: XTablesClient = xclient
-        self.__agentThread = None  # thread to run it
+        self.__executor = ThreadPoolExecutor()
+        self.__futures = {}
+        self.__futPtr = 0
+        self.__futureLock = threading.Lock()
         self.__stop = False  # flag
         self.__runOnFinish = None  # runnable
         self.__setStatus = (
@@ -36,38 +41,27 @@ class AgentOperator:
             ).set(description)
         )
 
-    def stop(self):
+    def stopAndWait(self):
         self.__stop = True
-
-    def join(self):
-        if self.__agentThread is not None:
-            self.__agentThread.join()
-        else:
-            self.Sentinel.warning("No agent thread to join!")
+        self.waitForAgentsToFinish()
+        self.__stop = False
 
     def wakeAgent(self, agent: Agent):
-        self.__stop = False  # reset stop flag (even if already false)
+        self.Sentinel.info(
+            f"Waking agent! | Name: {agent.getName()} Description : {agent.getDescription()}"
+        )
+        self.__setDescription(agent.getName(), agent.getDescription())
+        self.__setStatus(agent.getName(), "starting")
+        future = self.__executor.submit(
+            self.__startAgentLoop, agent, self.__futPtr
+        )
+        with self.__futureLock:
+            self.__futures[self.__futPtr] = future
+        self.__futPtr+=1
+        # grace period for thread to start
+        self.Sentinel.info("The agent is alive!")
 
-        if self.__agentThread is None:
-            self.Sentinel.info(
-                f"Waking agent! | Name: {agent.getName()} Description : {agent.getDescription()}"
-            )
-            self.__setDescription(agent.getName(), agent.getDescription())
-            self.__setStatus(agent.getName(), "starting")
-            self.__setStatus(agent.getName(), "starting2")
-            self.__agentThread = threading.Thread(
-                target=self.__startAgentLoop, args=[agent]
-            )
-            self.__agentThread.start()
-            # grace period for thread to start
-            while not self.__agentThread.is_alive():
-                time.sleep(0.001)
-            self.Sentinel.info("The agent is alive!")
-        else:
-            # agenthread already started
-            self.Sentinel.warning("An agent has already been started!")
-
-    def __startAgentLoop(self, agent: Agent):
+    def __startAgentLoop(self, agent: Agent, futurePtr : int):
         try:
             self.__setErrorLog(agent.getName(), "None...")
             # create
@@ -97,7 +91,7 @@ class AgentOperator:
             # shutdown before onclose
             forceStopped = self.__stop
             if forceStopped:
-                progressStr = "shutdown SIGINT"
+                progressStr = "shutdown interrupt"
                 self.__setStatus(agent.getName(), progressStr)
                 self.Sentinel.debug("Shutting down agent")
                 agent.forceShutdown()
@@ -127,18 +121,24 @@ class AgentOperator:
             self.__runOnFinish = None
 
         # end agent thread
-        self.__agentThread = None
+        with self.__futureLock:
+            self.__futures.pop(futurePtr)
 
     def setOnAgentFinished(self, runOnFinish):
-        if self.__agentThread is not None:
+        if self.__futures:
             self.__runOnFinish = runOnFinish
         else:
-            self.Sentinel.warning("Neo is not alive yet!")
+            self.Sentinel.warning("Neo has no agents yet!")
 
-    def waitForAgentFinished(self):
-        """Thread blocking method that waits for a running agent (if any is running)"""
-        self.Sentinel.info("Waiting for agent to finish...")
-        while self.__agentThread is not None and self.__agentThread.is_alive():
-            time.sleep(0.001)
+    def waitForAgentsToFinish(self):
+        """Thread blocking method that waits for any running agents"""
+        if self.__futures:
+            self.Sentinel.info("Waiting for agent to finish...")
+            while True:
+                with self.__futureLock:
+                    if not self.__futures:
+                        break
+                time.sleep(0.001)  
+            self.Sentinel.info("Agents have all finished.")
         else:
-            self.Sentinel.info("Agent has finished.")
+            self.Sentinel.warning("No agents to wait for!")

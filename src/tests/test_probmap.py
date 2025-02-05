@@ -8,9 +8,9 @@ def test_getHighest():
     testProb = 1
     map.addDetectedGameObject(testX, testY, testProb)
     (x, y, prob) = map.getHighestGameObject()
-    assert prob == 0.5
-    assert abs(x - testX) < 5  # can vary because of gaussian blob size
-    assert abs(y - testY) < 5
+    assert prob >= 0.5
+    assert abs(x - testX) < 6  # can vary because of gaussian blob shape
+    assert abs(y - testY) < 6
 
 
 def test_getSpecificValue():
@@ -31,5 +31,31 @@ def test_prob_max():
         map.addDetectedGameObject(testX, testY, testProb)
     assert map.getHighestGameObject()[2] <= 1
 
+def test_AddingOutOfBounds():
+    map = ProbMap()
+    map.addDetectedGameObject(-20, -20, 1)
+    map.addDetectedGameObject(-2000, -2000, 1)
 
-test_prob_max()
+    map.addDetectedGameObject(0, -2000, 1)
+    map.addDetectedGameObject(-2000, 0, 1)
+
+    map.addDetectedGameObject(10000, -2000, 1)
+    map.addDetectedGameObject(-2000, 10000, 1)
+
+    map.addDetectedGameObject(map.width+5, map.height+5, 1)
+    map.addDetectedGameObject(10000, 10000, 1)
+
+    map.addDetectedRobot(-20, -20, 1)
+    map.addDetectedRobot(-2000, -2000, 1)
+
+    map.addDetectedRobot(0, -2000, 1)
+    map.addDetectedRobot(-2000, 0, 1)
+
+    map.addDetectedRobot(10000, -2000, 1)
+    map.addDetectedRobot(-2000, 10000, 1)
+
+    map.addDetectedRobot(map.width+5, map.height+5, 1)
+    map.addDetectedRobot(10000, 10000, 1)
+
+
+

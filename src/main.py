@@ -8,5 +8,5 @@ tcm.invalidate()
 
 n = Neo()
 n.wakeAgent(DriveToTargetAgent)
-n.shutDownOnAgentFinished()
-n.waitForAgentFinished()
+n.shutDownOnAgentsFinished()
+n.waitForAgentsFinished()

@@ -25,9 +25,12 @@ class PropertyOperator:
         self.prefix = prefix
 
         self.__addBasePrefix = (
+            lambda propertyTable: f"{self.basePrefix}.{propertyTable}"
+        )
+        self.__addFullPrefix = (
             lambda propertyTable: f"{self.basePrefix}{self.prefix}.{propertyTable}"
         )
-        self.__getSaveFile = lambda: self.__addBasePrefix("saved_properties.json")
+        self.__getSaveFile = lambda: self.__addFullPrefix("saved_properties.json")
 
         self.__propertyValueMap: dict = self.__configOp.getContent(
             self.__getSaveFile(), default={}
@@ -35,10 +38,10 @@ class PropertyOperator:
         self.__properties = {}
         self.__readOnlyProperties = {}
 
-        self.__getPropertyTable = lambda propertyName: self.__addBasePrefix(
+        self.__getPropertyTable = lambda propertyName: self.__addFullPrefix(
             f"properties.EDITABLE.{propertyName}"
         )
-        self.__getReadOnlyPropertyTable = lambda propertyName: self.__addBasePrefix(
+        self.__getReadOnlyPropertyTable = lambda propertyName: self.__addFullPrefix(
             f"properties.READONLY.{propertyName}"
         )
 
@@ -93,8 +96,10 @@ class PropertyOperator:
     def createCustomReadOnlyProperty(
         self, propertyTable, propertyValue, addBasePrefix: bool = True
     ) -> "ReadonlyProperty":
-        """Overrides any extra prefixes that might have been added by getting child loggers
-        NOTE: by default addBasePrefix is True, and will add a prefix to this property
+        """Overrides any extra prefixes that might have been added by getting child property operators
+        NOTE: by default addBasePrefix is True, and will add a base prefix to this property\n
+        If you choose to remove the base prefix, be aware that separate devices/processes might write to the same tables
+
         """
         if addBasePrefix:
             propertyTable = self.__addBasePrefix(propertyTable)

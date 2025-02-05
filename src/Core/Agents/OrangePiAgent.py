@@ -1,17 +1,8 @@
-import logging
-import os
-import cv2
 import socket
-import time
-from abc import ABC, abstractmethod
-from abstract.LocalizingAgentBase import LocalizingAgentBase
+from abstract.FrameProcessingAgentBase import FrameProcessingAgent
 from enum import Enum
-from JXTABLES.XTablesClient import XTablesClient
-from coreinterface.DetectionPacket import DetectionPacket
-from coreinterface.FramePacket import FramePacket
 from tools.Constants import InferenceMode, getCameraValues
-from mapinternals.localFrameProcessor import LocalFrameProcessor
-from tools import calibration, NtUtils, configLoader
+from tools import calibration
 
 
 class CameraName(Enum):
@@ -26,85 +17,37 @@ class CameraName(Enum):
         return CameraName(name)
 
 
-class OrangePiAgent(LocalizingAgentBase):
-    def create(self):
-        super().create()
-
-        self.CAMERA_INDEX = "/dev/color_camera"
-        # camera config
-        self.calib = self.configOperator.getContent("camera_calib.json")
+class OrangePiAgent(FrameProcessingAgent):
+    """ Agent -> LocalizingAgentBase -> FrameProcessingAgentBase -> OrangePiAgent
+        
+        Agent to be run on the orange pis"""
+    def __init__(self, central, xclient, propertyOperator, configOperator, shareOperator, logger):
         self.device_name = CameraName.getCameraName().name
         self.Sentinel.info(f"Camera Name: {self.device_name}")
         # camera values
-        self.cameraIntrinsics, self.cameraExtrinsics, _ = getCameraValues(
+        cameraIntrinsics, cameraExtrinsics, _ = getCameraValues(
             self.device_name
         )
+        
+        super().__init__(central,xclient,propertyOperator,configOperator,shareOperator,logger,
+                         cameraPath="/dev/color_camera",cameraIntrinsics=cameraIntrinsics,
+                         cameraExtrinsics=cameraExtrinsics,inferenceMode=InferenceMode.RKNN2024) # heres where we add our constants
+    
+    
+    def create(self):
+        super().create()
 
-        # frame undistortion maps
+        # camera config
+        self.calib = self.configOperator.getContent("camera_calib.json")
+
+        # frame undistortion maps from calibration
         self.mapx, self.mapy = calibration.createMapXYForUndistortion(
             self.cameraIntrinsics.getHres(), self.cameraIntrinsics.getVres(), self.calib
         )
 
-        self.showFrame = self.propertyOperator.createProperty(
-            propertyName="showFrame", propertyDefault=False
-        )
+    def preprocessFrame(self, frame):
+        return calibration.undistortFrame(frame, self.mapx, self.mapy)
 
-        self.cap = cv2.VideoCapture(self.CAMERA_INDEX)
-
-        self.Sentinel.info("Creating Frame Processor...")
-        self.frameProcessor = LocalFrameProcessor(
-            cameraIntrinsics=self.cameraIntrinsics,
-            cameraExtrinsics=self.cameraExtrinsics,
-            inferenceMode=InferenceMode.RKNN2024,
-        )
-
-    def runPeriodic(self):
-        super().runPeriodic()
-        ret, frame = self.cap.read()
-        defaultBytes = b""
-        if ret:
-            self.Sentinel.debug(f"sending to key{self.device_name}")
-            timeStamp = time.time()
-            undistortedFrame = calibration.undistortFrame(frame, self.mapx, self.mapy)
-            processedResults = self.frameProcessor.processFrame(
-                undistortedFrame,
-                robotPosXCm=self.robotLocation[0] * 100,  # m to cm
-                robotPosYCm=self.robotLocation[1] * 100,  # m to cm
-                robotYawRad=self.robotLocation[2],
-                drawBoxes=self.showFrame.get(),
-            )  # processing as absolute if a robot pose is found
-            detectionPacket = DetectionPacket.createPacket(
-                processedResults, self.device_name, timeStamp
-            )
-            # optionally send frame
-            if self.showFrame.get():
-                framePacket = FramePacket.createPacket(
-                    timeStamp, self.device_name, undistortedFrame
-                )
-                self.xclient.putBytes(
-                    f"{self.device_name}_Frame", framePacket.to_bytes()
-                )
-
-            # sending network packets
-            self.xclient.putBytes(self.device_name, detectionPacket.to_bytes())
-        else:
-            self.Sentinel.error("Opencv Cap ret is false!")
-            self.xclient.putBytes(self.device_name, defaultBytes)
-            os._exit(1)
-
-    def onClose(self):
-        if self.cap.isOpened():
-            self.cap.release()
-
-    def isRunning(self):
-        if not self.cap.isOpened():
-            self.Sentinel.fatal("Camera cant be opened!")
-            return False
-        return True
-
-    def forceShutdown(self):
-        self.cap.release()
-        print("Shutdown!")
 
     @staticmethod
     def getName():
