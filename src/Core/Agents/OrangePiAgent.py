@@ -12,7 +12,6 @@ from coreinterface.FramePacket import FramePacket
 from tools.Constants import InferenceMode, getCameraValues
 from mapinternals.localFrameProcessor import LocalFrameProcessor
 from tools import calibration, NtUtils, configLoader
-from networktables import NetworkTables
 
 
 class CameraName(Enum):
@@ -29,6 +28,8 @@ class CameraName(Enum):
 
 class OrangePiAgent(LocalizingAgentBase):
     def create(self):
+        super().create()
+
         self.CAMERA_INDEX = "/dev/color_camera"
         # camera config
         self.calib = self.configOperator.getContent("camera_calib.json")
@@ -47,20 +48,6 @@ class OrangePiAgent(LocalizingAgentBase):
         self.showFrame = self.propertyOperator.createProperty(
             propertyName="showFrame", propertyDefault=False
         )
-        self.detectionPacketTable = self.propertyOperator.createProperty(
-            propertyName="table_for_detections", propertyDefault=False
-        )
-        self.framePacketTable = self.propertyOperator.createProperty(
-            propertyName="table_for_frames", propertyDefault=False
-        )
-
-        NetworkTables.initialize(server="10.4.88.2")
-        posePath: str = self.ntPosTable.get()
-        entryIdx = posePath.rfind("/")
-        self.poseTable = posePath[:entryIdx]
-        self.poseEntry = posePath[entryIdx + 1 :]
-        self.table = NetworkTables.getTable(self.poseTable)
-        self.ntpos = self.table.getEntry(self.poseEntry)
 
         self.cap = cv2.VideoCapture(self.CAMERA_INDEX)
 
@@ -72,6 +59,7 @@ class OrangePiAgent(LocalizingAgentBase):
         )
 
     def runPeriodic(self):
+        super().runPeriodic()
         ret, frame = self.cap.read()
         defaultBytes = b""
         if ret:
@@ -101,8 +89,8 @@ class OrangePiAgent(LocalizingAgentBase):
             self.xclient.putBytes(self.device_name, detectionPacket.to_bytes())
         else:
             self.Sentinel.error("Opencv Cap ret is false!")
-            os._exit(1)
             self.xclient.putBytes(self.device_name, defaultBytes)
+            os._exit(1)
 
     def onClose(self):
         if self.cap.isOpened():
