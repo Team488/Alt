@@ -9,7 +9,15 @@ from Core.ConfigOperator import ConfigOperator
 # creates network properties that can be set by xtables
 class PropertyOperator:
     __OPERATORS = {}
-    def __init__(self, xclient: XTablesClient, configOp : ConfigOperator, logger: Logger, basePrefix = "", prefix=""):
+
+    def __init__(
+        self,
+        xclient: XTablesClient,
+        configOp: ConfigOperator,
+        logger: Logger,
+        basePrefix="",
+        prefix="",
+    ):
         self.__xclient: XTablesClient = xclient
         self.__configOp = configOp
         self.Sentinel = logger
@@ -19,21 +27,21 @@ class PropertyOperator:
         self.__addBasePrefix = (
             lambda propertyTable: f"{self.basePrefix}{self.prefix}.{propertyTable}"
         )
-        self.__getSaveFile = (
-            lambda : self.__addBasePrefix('saved_properties.json')
-        )
+        self.__getSaveFile = lambda: self.__addBasePrefix("saved_properties.json")
 
-        self.__propertyValueMap : dict = self.__configOp.getContent(self.__getSaveFile(), default={})
+        self.__propertyValueMap: dict = self.__configOp.getContent(
+            self.__getSaveFile(), default={}
+        )
         self.__properties = {}
         self.__readOnlyProperties = {}
-        
-        self.__getPropertyTable = (
-            lambda propertyName: self.__addBasePrefix(f"properties.EDITABLE.{propertyName}")
+
+        self.__getPropertyTable = lambda propertyName: self.__addBasePrefix(
+            f"properties.EDITABLE.{propertyName}"
         )
-        self.__getReadOnlyPropertyTable = (
-            lambda propertyName: self.__addBasePrefix(f"properties.READONLY.{propertyName}")
+        self.__getReadOnlyPropertyTable = lambda propertyName: self.__addBasePrefix(
+            f"properties.READONLY.{propertyName}"
         )
-        
+
         self.__children = []
 
     def __updatePropertyCallback(self, ret):
@@ -48,7 +56,7 @@ class PropertyOperator:
         # if this property already has been created, just give that one.
         if propertyTable in self.__properties:
             return self.__properties.get(propertyTable)
-        
+
         # init default in map if not saved from previous run
         if propertyTable not in self.__propertyValueMap:
             # if its an invalid property type return immediately
@@ -67,12 +75,14 @@ class PropertyOperator:
             self.Sentinel.info(
                 f"Attached to saved property | Name: {propertyTable} Saved value: {propertyValue}"
             )
-        
+
         # subscribe to any future updates
         self.__xclient.subscribe(propertyTable, self.__updatePropertyCallback)
-        
+
         # getter function in a wrapper
-        property = Property(lambda: self.__propertyValueMap[propertyTable], propertyTable=propertyTable)
+        property = Property(
+            lambda: self.__propertyValueMap[propertyTable], propertyTable=propertyTable
+        )
         self.__properties[propertyTable] = property
         return property
 
@@ -81,14 +91,14 @@ class PropertyOperator:
         return self.__createReadOnly(propertyTable, propertyValue)
 
     def createCustomReadOnlyProperty(
-        self, propertyTable, propertyValue, addBasePrefix : bool = True
+        self, propertyTable, propertyValue, addBasePrefix: bool = True
     ) -> "ReadonlyProperty":
-        """ Overrides any extra prefixes that might have been added by getting child loggers
-            NOTE: by default addBasePrefix is True, and will add a prefix to this property
+        """Overrides any extra prefixes that might have been added by getting child loggers
+        NOTE: by default addBasePrefix is True, and will add a prefix to this property
         """
         if addBasePrefix:
             propertyTable = self.__addBasePrefix(propertyTable)
-        return self.__createReadOnxzly(propertyTable, propertyValue)
+        return self.__createReadOnly(propertyTable, propertyValue)
 
     def __createReadOnly(self, propertyTable, propertyValue):
         if propertyTable in self.__readOnlyProperties:
@@ -97,7 +107,8 @@ class PropertyOperator:
             return None
 
         readOnlyProp = ReadonlyProperty(
-            lambda value: self.__setNetworkValue(propertyTable, value), propertyTable=propertyTable
+            lambda value: self.__setNetworkValue(propertyTable, value),
+            propertyTable=propertyTable,
         )
         self.__readOnlyProperties[propertyTable] = readOnlyProp
         return readOnlyProp
@@ -120,32 +131,32 @@ class PropertyOperator:
             self.Sentinel.error(f"Invalid property type!: {type(propertyValue)}")
             return False
         return True
-    
-    def __setNetworkIterable(self, propertyTable, propertyIterable : Iterable):
+
+    def __setNetworkIterable(self, propertyTable, propertyIterable: Iterable):
         if propertyIterable is None:
             return False
-        
+
         if not propertyIterable:
             # eg empty so can use any put method
-            self.__xclient.putIntegerList(propertyTable,[])
+            self.__xclient.putIntegerList(propertyTable, [])
             return True
 
         firstType = type(propertyIterable[0])
-        
+
         putMethod = self.__getListTypeMethod(firstType)
         if not putMethod:
             self.Sentinel.debug(f"Invalid list type: {firstType}")
             return False
-        
+
         for value in propertyIterable[1:]:
             if type(value) is not firstType:
                 self.Sentinel.debug("List is not all same type!")
-                return False 
-        
+                return False
+
         putMethod(propertyTable, propertyIterable)
         return True
-          
-    def __getListTypeMethod(self, listType : type):
+
+    def __getListTypeMethod(self, listType: type):
         if listType == float:
             return self.__xclient.putFloatList
         if listType == bytes:
@@ -171,24 +182,30 @@ class PropertyOperator:
             return XTablesByteUtils.to_boolean(propertyValue)
         elif type == XTableProto.XTableMessage.Type.STRING:
             return XTablesByteUtils.to_string(propertyValue)
-        
+
         # TODO add list methods here -----------------
 
         else:
             self.Sentinel.error(f"Invalid property type!: {type(propertyValue)}")
             return None
-    
+
     def getChild(self, prefix) -> "PropertyOperator":
         if not prefix:
-            self.Sentinel.warning("PropertyOperator getChild cannot take an empty string as a prefix!")
+            self.Sentinel.warning(
+                "PropertyOperator getChild cannot take an empty string as a prefix!"
+            )
             return None
-        
+
         fullPrefix = f"{self.__getSaveFile()}.{prefix}"
         # see if a property operator with same prefixes has been created. To avoid issues you never want to create more than 1
         if fullPrefix in PropertyOperator.__OPERATORS:
             return PropertyOperator.__OPERATORS.get(fullPrefix)
         child = PropertyOperator(
-            xclient=self.__xclient, logger=self.Sentinel, configOp=self.__configOp, basePrefix=self.basePrefix, prefix=f"{self.prefix}.{prefix}"
+            xclient=self.__xclient,
+            logger=self.Sentinel,
+            configOp=self.__configOp,
+            basePrefix=self.basePrefix,
+            prefix=f"{self.prefix}.{prefix}",
         )
         self.__children.append(child)
         # also add to Operators if someone in the future also wants to get the same child
@@ -204,7 +221,9 @@ class PropertyOperator:
             )
 
         # save property values
-        self.__configOp.savePropertyToFileJSON(self.__getSaveFile(),self.__propertyValueMap)
+        self.__configOp.savePropertyToFileJSON(
+            self.__getSaveFile(), self.__propertyValueMap
+        )
         # now clear
         self.__propertyValueMap.clear()
 
@@ -225,6 +244,7 @@ class Property:
     def getTable(self):
         return self.__propertyTable
 
+
 class ReadonlyProperty:
     def __init__(self, setFunc, propertyTable):  # lambda to set the read only property
         self.__setFunc = setFunc
@@ -232,7 +252,7 @@ class ReadonlyProperty:
 
     def set(self, value):
         return self.__setFunc(value)
-    
+
     def getTable(self):
         return self.__propertyTable
 
