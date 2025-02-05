@@ -1,12 +1,12 @@
 from abc import abstractmethod
 from networktables import NetworkTables
 from JXTABLES import XTableValues_pb2
-from abstract.CentralAgentBase import CentralAgentBase
+from abstract.LocalizingAgentBase import LocalizingAgentBase
 from tools import NtUtils
 
 
-class PathPlanningAgentBase(CentralAgentBase):
-    """ Agent -> LocalizingAgentBase -> CentralAgentBase -> PathPlanningAgentBase
+class PathPlanningAgentBase(LocalizingAgentBase):
+    """ Agent -> LocalizingAgentBase -> PathPlanningAgentBase
 
         Adds path planning functionality to an agent
         NOTE: you must implement the getPath function

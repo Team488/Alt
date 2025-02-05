@@ -1,5 +1,5 @@
 import logging
-import os
+from collections.abc import Iterable
 from logging import Logger
 from JXTABLES.XTablesClient import XTablesClient
 from JXTABLES import XTableProto_pb2 as XTableProto
@@ -88,7 +88,7 @@ class PropertyOperator:
         """
         if addBasePrefix:
             propertyTable = self.__addBasePrefix(propertyTable)
-        return self.__createReadOnly(propertyTable, propertyValue)
+        return self.__createReadOnxzly(propertyTable, propertyValue)
 
     def __createReadOnly(self, propertyTable, propertyValue):
         if propertyTable in self.__readOnlyProperties:
@@ -114,10 +114,47 @@ class PropertyOperator:
             self.__xclient.putBytes(propertyTable, propertyValue)
         elif type(propertyValue) is bool:
             self.__xclient.putBoolean(propertyTable, propertyValue)
+        elif type(propertyValue) is Iterable:
+            return self.__setNetworkIterable(propertyTable, propertyValue)
         else:
             self.Sentinel.error(f"Invalid property type!: {type(propertyValue)}")
             return False
         return True
+    
+    def __setNetworkIterable(self, propertyTable, propertyIterable : Iterable):
+        if propertyIterable is None:
+            return False
+        
+        if not propertyIterable:
+            # eg empty so can use any put method
+            self.__xclient.putIntegerList(propertyTable,[])
+            return True
+
+        firstType = type(propertyIterable[0])
+        
+        putMethod = self.__getListTypeMethod(firstType)
+        if not putMethod:
+            self.Sentinel.debug(f"Invalid list type: {firstType}")
+            return False
+        
+        for value in propertyIterable[1:]:
+            if type(value) is not firstType:
+                self.Sentinel.debug("List is not all same type!")
+                return False 
+        
+        putMethod(propertyTable, propertyIterable)
+        return True
+          
+    def __getListTypeMethod(self, listType : type):
+        if listType == float:
+            return self.__xclient.putFloatList
+        if listType == bytes:
+            return self.__xclient.putBytesList
+        if listType == bool:
+            return self.__xclient.putBooleanList
+        if listType == str:
+            return self.__xclient.putStringList
+        return None
 
     def __getRealType(self, type, propertyValue) -> bool:
         # get real type from xtable bytes
@@ -134,6 +171,9 @@ class PropertyOperator:
             return XTablesByteUtils.to_boolean(propertyValue)
         elif type == XTableProto.XTableMessage.Type.STRING:
             return XTablesByteUtils.to_string(propertyValue)
+        
+        # TODO add list methods here -----------------
+
         else:
             self.Sentinel.error(f"Invalid property type!: {type(propertyValue)}")
             return None

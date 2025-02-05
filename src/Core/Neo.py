@@ -11,6 +11,7 @@ from Core.PropertyOperator import PropertyOperator, LambdaHandler, ReadonlyPrope
 from Core.OrderOperator import OrderOperator
 from Core.AgentOperator import AgentOperator
 from Core.ShareOperator import ShareOperator
+from Core.XDashOperator import XDashOperator
 from Core.Central import Central
 from abstract.Agent import Agent
 from abstract.Order import Order
@@ -44,17 +45,27 @@ class Neo:
         Sentinel.info("Creating Order operator")
         self.__orderOp = OrderOperator(
             self.__xclient,
-            logger=Sentinel.getChild("Order_Operator"),
             propertyOp=self.__propertyOp,
+            logger=Sentinel.getChild("Order_Operator"),
         )
         Sentinel.info("Creating Agent operator")
         self.__agentOp = AgentOperator(
             self.__xclient,
-            logger=Sentinel.getChild("Agent_Operator"),
             propertyOp=self.__propertyOp,
+            logger=Sentinel.getChild("Agent_Operator"),
         )
         Sentinel.info("Creating Central")
         self.__central = Central(logger=Sentinel.getChild("Central_Processor"))
+        Sentinel.info("Creating XDASH operator")
+        self.__xdOp = XDashOperator(
+            central=self.__central,
+            xclient=self.__xclient,
+            propertyOperator=self.__propertyOp,
+            configOperator=self.__configOp,
+            shareOperator=self.__shareOp,
+            logger=Sentinel.getChild("XDASH_Operator"),
+        )
+
 
         self.__isShutdown = False  # runnable
         signal.signal(signal.SIGINT, handler=self.__handleArchitectKill)
@@ -128,6 +139,12 @@ class Neo:
             )
         else:
             Sentinel.warning("Neo is already shutdown!")
+
+    def startXDashLoop(self):
+        while True:
+            self.__xdOp.run()
+            time.sleep(0.001) # 1ms
+
 
     def __printAndCleanup(self):
         self.__printFinish()

@@ -7,7 +7,7 @@ from Core.PropertyOperator import PropertyOperator
 # subscribes to command request with xtables and then executes when requested
 class OrderOperator:
     def __init__(
-        self, xclient: XTablesClient, logger: Logger, propertyOp: PropertyOperator
+        self, xclient: XTablesClient, propertyOp: PropertyOperator, logger: Logger
     ):
         self.Sentinel = logger
         self.propertyOp = propertyOp

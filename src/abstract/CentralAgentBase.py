@@ -1,19 +1,11 @@
-# this partially completed agent interface will automatically subscribe to detection packets and ingest them into the map
-
-
 import time
-import numpy as np
 from tools.Constants import CameraIdOffsets
-from JXTABLES.XTablesClient import XTablesClient
 from coreinterface.DetectionPacket import DetectionPacket
-from coreinterface.FramePacket import FramePacket
-from Core.Central import Central
-from pathplanning.PathGenerator import PathGenerator
-from abstract.LocalizingAgentBase import LocalizingAgentBase
+from abstract.Agent import Agent
 
 
-class CentralAgentBase(LocalizingAgentBase):
-    """ Agent -> LocalizingAgentBase -> CentralAgentBase
+class CentralAgentBase(Agent):
+    """ Agent -> CentralAgentBase
 
         Adds automatic ingestion of detection packets into the central process
     """

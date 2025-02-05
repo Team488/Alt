@@ -1,6 +1,7 @@
 from abstract.PathPlanningAgentBase import PathPlanningAgentBase
+from abstract.CentralAgentBase import CentralAgentBase
 
-class DriveToTargetAgent(PathPlanningAgentBase):
+class DriveToTargetAgent(CentralAgentBase,PathPlanningAgentBase):
     def create(self):
         super().create()
         self.targetConf = self.propertyOperator.createProperty("targetMinConf", 0.3)

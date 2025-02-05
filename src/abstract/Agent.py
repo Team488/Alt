@@ -24,6 +24,8 @@ class Agent(ABC):
         self.Sentinel = logger
         # other than setting variables, nothing should go here
 
+    # ----- Required Implementations -----
+    
     @abstractmethod
     def create(self):        
         """ Runs once when the agent is created"""
@@ -37,18 +39,10 @@ class Agent(ABC):
         pass
 
     @abstractmethod
-    def onClose(self):
-        """ Runs once when the agent is finished"""
-        # agent cleanup here
-        pass
-
-    @abstractmethod
     def isRunning(self) -> bool:
         """ Return a boolean value denoting whether the agent should still be running"""
         # condition to keep agent running here
         pass
-
-    
 
     # ----- properties -----
 
@@ -76,4 +70,9 @@ class Agent(ABC):
     def forceShutdown(self):
         """ Handle any abrupt shutdown tasks here"""
         # optional code to kill agent immediately here
+        pass
+
+    def onClose(self):
+        """ Runs once when the agent is finished"""
+        # optional agent cleanup here
         pass
