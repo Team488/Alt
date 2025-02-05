@@ -4,7 +4,7 @@ import cv2
 import socket
 import time
 from abc import ABC, abstractmethod
-from abstract.Agent import Agent
+from abstract.LocalizingAgentBase import LocalizingAgentBase
 from enum import Enum
 from JXTABLES.XTablesClient import XTablesClient
 from coreinterface.DetectionPacket import DetectionPacket
@@ -27,7 +27,7 @@ class CameraName(Enum):
         return CameraName(name)
 
 
-class OrangePiAgent(Agent):
+class OrangePiAgent(LocalizingAgentBase):
     def create(self):
         self.CAMERA_INDEX = "/dev/color_camera"
         # camera config
@@ -44,17 +44,6 @@ class OrangePiAgent(Agent):
             self.cameraIntrinsics.getHres(), self.cameraIntrinsics.getVres(), self.calib
         )
 
-        # get new property operator with device name
-        self.xtablesPosTable = self.propertyOperator.createProperty(
-            propertyName="xtablesPosTable", propertyDefault="robot_pose"
-        )
-        self.ntPosTable = self.propertyOperator.createProperty(
-            propertyName="networkTablesPosTable",
-            propertyDefault="AdvantageKit/RealOutputs/PoseSubsystem/RobotPose",
-        )
-        self.useXTables = self.propertyOperator.createProperty(
-            propertyName="useXtablesForPosition", propertyDefault=False
-        )
         self.showFrame = self.propertyOperator.createProperty(
             propertyName="showFrame", propertyDefault=False
         )
@@ -79,7 +68,7 @@ class OrangePiAgent(Agent):
         self.frameProcessor = LocalFrameProcessor(
             cameraIntrinsics=self.cameraIntrinsics,
             cameraExtrinsics=self.cameraExtrinsics,
-            inferenceMode=InferenceMode.RKNN2024 
+            inferenceMode=InferenceMode.RKNN2024,
         )
 
     def runPeriodic(self):
@@ -89,21 +78,11 @@ class OrangePiAgent(Agent):
             self.Sentinel.debug(f"sending to key{self.device_name}")
             timeStamp = time.time()
             undistortedFrame = calibration.undistortFrame(frame, self.mapx, self.mapy)
-            loc = (0, 0, 0)  # default position x(m),y(m),rotation(rad)
-            if self.useXTables.get():
-                posebytes = self.xclient.getUnknownBytes(self.xtablesPosTable.get())
-            else:
-                posebytes = self.ntpos.get()
-
-            if posebytes:
-                loc = NtUtils.getPose2dFromBytes(posebytes)
-            else:
-                self.Sentinel.warning("Could not get robot pose!!")
             processedResults = self.frameProcessor.processFrame(
                 undistortedFrame,
-                robotPosXCm=loc[0] * 100,  # m to cm
-                robotPosYCm=loc[1] * 100,  # m to cm
-                robotYawRad=loc[2],
+                robotPosXCm=self.robotLocation[0] * 100,  # m to cm
+                robotPosYCm=self.robotLocation[1] * 100,  # m to cm
+                robotYawRad=self.robotLocation[2],
                 drawBoxes=self.showFrame.get(),
             )  # processing as absolute if a robot pose is found
             detectionPacket = DetectionPacket.createPacket(
