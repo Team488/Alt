@@ -31,13 +31,13 @@ class PathGenerator:
     def generateToPointWStaticRobots(self,currentPosition,target):
         return self.generateWStaticRobots(currentPosition,target)
     
-    def generateWStaticRobots(self,start,goal,threshold = 0.5, invertStartX = True):
+    def generateWStaticRobots(self,start,goal,threshold = 0.5):
         robotobstacles = self.map.getAllRobotsAboveThreshold(threshold)
         robotObstacleMap = np.zeros_like(self.map.getRobotMap(),dtype=np.uint8)
         for obstacle in robotobstacles:
             cv2.circle(robotObstacleMap,(int(obstacle[0]/self.map.resolution),int(obstacle[1]/self.map.resolution)),10,(255),-1)
         path = self.generate(
-            start, goal, np.fliplr(robotObstacleMap > 1),invertStartX
+            start, goal, np.fliplr(robotObstacleMap > 1)
         )  # m to cm
         return path
     
@@ -48,7 +48,7 @@ class PathGenerator:
         return self.generate(currentPosition,target)
     
     def generate(
-        self, start, goal, extraObstacles = None, reducePoints=True, invertStartX = True
+        self, start, goal, extraObstacles = None, reducePoints=True
     ):
         if len(start) > 2 or len(goal) > 2:
             print(f"{start=} {goal=}")
@@ -56,8 +56,6 @@ class PathGenerator:
             return None
         # flipping col,row into standard row,col
         start = np.array(start)
-        if invertStartX:
-            start[0] = UnitConversion.invertX(start[0])
         goal = np.array(goal)
         
         # grid based so need integers

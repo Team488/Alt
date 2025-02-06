@@ -54,7 +54,10 @@ class Neo:
             logger=Sentinel.getChild("Agent_Operator"),
         )
         Sentinel.info("Creating Central")
-        self.__central = Central(logger=Sentinel.getChild("Central_Processor"))
+        self.__central = Central(
+            logger=Sentinel.getChild("Central_Processor"),
+            configOp=self.__configOp,
+            propertyOp=self.__propertyOp)
         Sentinel.info("Creating XDASH operator")
         self.__xdOp = XDashOperator(
             central=self.__central,

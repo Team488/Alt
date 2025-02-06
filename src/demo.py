@@ -1,2 +1,2 @@
-from mapDemos import probmapClickDemo
-probmapClickDemo.startDemo()
+from pathplanning import obstacleMapGenerator
+obstacleMapGenerator.startGeneration()

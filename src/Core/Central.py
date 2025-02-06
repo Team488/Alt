@@ -8,11 +8,18 @@ from mapinternals.probmap import ProbMap
 from mapinternals.KalmanLabeler import KalmanLabeler
 from mapinternals.KalmanCache import KalmanCache
 from pathplanning.PathGenerator import PathGenerator
+from Core.ConfigOperator import ConfigOperator
+from Core.PropertyOperator import PropertyOperator
 
 
 class Central:
-    def __init__(self, logger: Logger):
+    def __init__(self, logger: Logger, configOp : ConfigOperator, propertyOp : PropertyOperator):
         self.Sentinel = logger
+        self.configOp = configOp
+        self.propertyOp = propertyOp
+
+        self.useObstacles = self.propertyOp.createProperty("Use_Obstacles",True)
+        
         self.kalmanCacheRobots: KalmanCache = KalmanCache()
         self.kalmanCacheGameObjects: KalmanCache = KalmanCache()
         self.map = ProbMap()
@@ -20,19 +27,22 @@ class Central:
         self.labler = KalmanLabeler(self.kalmanCacheRobots, self.kalmanCacheGameObjects)
         self.obstacleMap = self.__tryLoadObstacleMap()
         self.pathGenerator = PathGenerator(self.map, self.obstacleMap)
+        
 
     def __tryLoadObstacleMap(self):
         defaultMap = np.zeros(
             (MapConstants.fieldWidth.value, MapConstants.fieldHeight.value), dtype=bool
         )
-        # try:
-        #     defaultMap = configLoader.loadNumpyConfig("obstacleMap.npy")
-        # except Exception as e:
-        #     self.Sentinel.warning("obstaclemap load failed, defaulting to empty map", e)
+        if self.useObstacles.get():
+            obstacleMap = self.configOp.getContent("obstacleMap.npy")
+            if obstacleMap is not None:
+                return obstacleMap
+            else:
+                # this will never happen, as we have the obstaclemap in assets too
+                self.Sentinel.warning("Failed to load obstacles, defaulting to empty map")
 
         return defaultMap
 
-    # async map update per camera, probably want to syncronize this
     def processFrameUpdate(
         self,
         cameraResults: list[

@@ -55,7 +55,7 @@ class DriveToFixedPointAgent(PathPlanningAgentBase):
         self.Sentinel.info(f"{target=}")
         self.Sentinel.info(f"{self.robotLocation=} {target=}")
         return self.central.pathGenerator.generate(
-            (self.robotLocation[0] * 100, self.robotLocation[1] * 100), target
+            (self.robotLocation[0] * 100, self.robotLocation[1] * 100), target, reducePoints=True
         )
 
     def isRunning(self):
