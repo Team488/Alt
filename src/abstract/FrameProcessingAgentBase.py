@@ -2,6 +2,8 @@ import os
 import cv2
 import time
 from functools import partial
+
+import numpy as np
 from abstract.LocalizingAgentBase import LocalizingAgentBase
 from coreinterface.DetectionPacket import DetectionPacket
 from coreinterface.FramePacket import FramePacket
@@ -77,6 +79,16 @@ class FrameProcessingAgent(LocalizingAgentBase):
                 drawBoxes=sendFrame,  # if you are sending frames, you likely want to see bounding boxes aswell
             )
 
+            # add highest detection telemetry
+            if processedResults:
+                best_idx = max(range(len(processedResults)), key=lambda i: processedResults[i][2])
+                best_result = processedResults[best_idx]
+                x,y,z = best_result[1]
+                self.propertyOperator.createReadOnlyProperty("BestResult.BestX","").set(float(x))
+                self.propertyOperator.createReadOnlyProperty("BestResult.BestY","").set(float(y))
+                self.propertyOperator.createReadOnlyProperty("BestResult.BestZ","").set(float(z))
+            
+
             timestamp = time.monotonic()
 
             detectionPacket = DetectionPacket.createPacket(
@@ -99,9 +111,8 @@ class FrameProcessingAgent(LocalizingAgentBase):
             self.Sentinel.error("Opencv Cap ret is false!")
             if self.cap.isOpened():
                 self.cap.release()
+                # will close cap
 
-            self.Sentinel.error("Exiting for now!")
-            os._exit(1)
 
     def onClose(self):
         super().onClose()

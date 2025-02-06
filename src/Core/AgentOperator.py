@@ -130,10 +130,13 @@ class AgentOperator:
             # clear
             self.__runOnFinish = None
 
+        
         # close agent future if exists
-        if futurePtr:
+        if futurePtr is not None:
             with self.__futureLock:
                 self.__futures.pop(futurePtr)
+
+
 
     def setOnAgentFinished(self, runOnFinish):
         if self.__futures:

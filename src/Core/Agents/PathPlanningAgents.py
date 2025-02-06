@@ -8,25 +8,34 @@ class DriveToTargetAgent(CentralAgentBase, PathPlanningAgentBase):
         super().create()
         self.targetConf = self.propertyOperator.createProperty("targetMinConf", 0.3)
         self.bestConf = self.propertyOperator.createReadOnlyProperty(
-            "currentTargetBestConf", 0
+            "bestTarget.bestConf", 0
         )
+        self.bestX = self.propertyOperator.createReadOnlyProperty(
+            "bestTarget.bestX", 0
+        )
+        self.bestY = self.propertyOperator.createReadOnlyProperty(
+            "bestTarget.bestY", 0
+        )
+
 
     def getPath(self):
         target = self.central.map.getHighestGameObject()
         conf = target[2]
+        
+        self.bestX.set(float(target[0]))
+        self.bestY.set(float(target[1]))
         self.bestConf.set(float(conf))
+
         path = None
         if conf > self.targetConf.get():
             path = self.central.pathGenerator.generate(
-                (self.robotLocation[0] * 100 + 1, self.robotLocation[1] * 100 + 1),
+                (self.robotLocation[0] * 100, self.robotLocation[1] * 100),
                 target[:2],
             )
         return path
 
     def runPeriodic(self):
         super().runPeriodic()
-        cv2.imshow("map", self.central.map.getGameObjectHeatMap())
-        cv2.waitKey(1)
 
     def isRunning(self):
         return True

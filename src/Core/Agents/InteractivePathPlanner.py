@@ -30,20 +30,9 @@ class InteractivePathPlanner(CentralAgentBase, PathPlanningAgentBase):
     
     def getPath(self):
         return self.central.pathGenerator.generate(
-            (self.robotLocation[0] * 100 + 1, self.robotLocation[1] * 100 + 1),
+            (self.robotLocation[0] * 100, self.robotLocation[1] * 100),
             self.target[:2],
         )
-
-    def runPeriodic(self):
-        super().runPeriodic()
-        frame = cv2.merge((self.central.map.getGameObjectHeatMap(),np.zeros_like(self.central.map.getGameObjectHeatMap()),self.central.map.getRobotHeatMap()))
-        cv2.putText(frame,"Game Objects: Blue | Robots : Red | Path : White",(10,20),0,1,(255,255,255),2)
-        if self.path:
-            for point in self.path:
-                cv2.circle(frame, tuple(map(int,point)), 5, (255,255,255), -1)
-        cv2.imshow("pathplanner", frame)
-        if cv2.waitKey(1) & 0xFF == ord("q"):
-            self.runFlag = False
 
     def isRunning(self):
         return self.runFlag

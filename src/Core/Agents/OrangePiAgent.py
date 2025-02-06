@@ -23,7 +23,6 @@ class OrangePiAgent(FrameProcessingAgent):
         Agent to be run on the orange pis"""
     def __init__(self, central, xclient, propertyOperator, configOperator, shareOperator, logger):
         self.device_name = CameraName.getCameraName().name
-        self.Sentinel.info(f"Camera Name: {self.device_name}")
         # camera values
         cameraIntrinsics, cameraExtrinsics, _ = getCameraValues(
             self.device_name
@@ -32,6 +31,9 @@ class OrangePiAgent(FrameProcessingAgent):
         super().__init__(central,xclient,propertyOperator,configOperator,shareOperator,logger,
                          cameraPath="/dev/color_camera",cameraIntrinsics=cameraIntrinsics,
                          cameraExtrinsics=cameraExtrinsics,inferenceMode=InferenceMode.RKNN2024) # heres where we add our constants
+        
+        self.Sentinel.info(f"Camera Name: {self.device_name}")
+        
     
     
     def create(self):

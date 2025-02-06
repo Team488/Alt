@@ -7,6 +7,6 @@ tcm.invalidate()
 if __name__ == "__main__":
     n = Neo()
     n.wakeAgent(OrangePiAgent)
-    n.shutDownOnAgentsFinished()
     n.waitForAgentsFinished()
+    n.shutDown()
 

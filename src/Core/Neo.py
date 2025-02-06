@@ -228,9 +228,6 @@ class Neo:
         else:
             self.Sentinel.warning("Neo has already been shut down!")
 
-    def shutDownOnAgentsFinished(self):
-        self.setOnAgentFinished(self.__printAndCleanup)
-
     def __cleanup(self):
         # xtables operations. need to go before xclient shutdown
         Sentinel.info(f"Properties removed: {self.__propertyOp.deregisterAll()}")

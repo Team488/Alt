@@ -1,4 +1,6 @@
 from abc import abstractmethod
+import cv2
+import numpy as np
 from networktables import NetworkTables
 from JXTABLES import XTableValues_pb2
 from abstract.LocalizingAgentBase import LocalizingAgentBase
@@ -17,6 +19,7 @@ class PathPlanningAgentBase(LocalizingAgentBase):
         self.pathTable = self.propertyOperator.createProperty(
             "Path_Name", "target_waypoints"
         )
+        
 
     @abstractmethod
     def getPath(self):
@@ -53,6 +56,16 @@ class PathPlanningAgentBase(LocalizingAgentBase):
     def runPeriodic(self):
         super().runPeriodic()
         self.path = self.getPath()
+
+        frame = cv2.merge((self.central.map.getGameObjectHeatMap(),np.zeros_like(self.central.map.getGameObjectHeatMap()),self.central.map.getRobotHeatMap()))
+        cv2.putText(frame,"Game Objects: Blue | Robots : Red | Path : White",(10,20),0,1,(255,255,255),2)
+        if self.path:
+            for point in self.path:
+                cv2.circle(frame, tuple(map(int,point)), 5, (255,255,255), -1)
+        cv2.imshow("pathplanner", frame)
+        if cv2.waitKey(1) & 0xFF == ord("q"):
+            self.runFlag = False
+
         # emit the path to shared mem and network
         self.__emitPath(self.path)
 

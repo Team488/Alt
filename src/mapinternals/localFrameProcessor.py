@@ -48,7 +48,6 @@ class LocalFrameProcessor:
         else:
             print(f"WARNING: Inference mode provided is not defined in local frame processor! {inferenceMode}")
     
-    # output is list of id,(absX,absY,absZ),conf,isRobot,features
     def processFrame(
         self,
         frame,
@@ -61,6 +60,7 @@ class LocalFrameProcessor:
         customCameraIntrinsics=None,
         maxDetections=None,
     ) -> list[list[int, tuple[int, int, int], float, bool, np.ndarray]]:
+        """ output is list of id,(absX,absY,absZ),conf,isRobot,features """
         camIntrinsics = (
             customCameraIntrinsics
             if customCameraIntrinsics is not None
@@ -133,12 +133,12 @@ class LocalFrameProcessor:
 
             # note at this point these values are expected to be absolute
             absx,absy,absz = result[1]
-            if not self.isiregularDetection(absx,absy,absz):
-                absoluteResults.append(result)
-            else:
-                print("Iregular Detection!:")
-                print(f"{absx =} {absy =} {absz =}")
-                print(f"{relToRobotX =} {relToRobotY =} {relToRobotZ =}")
+            # if not self.isiregularDetection(absx,absy,absz):
+            absoluteResults.append(result)
+            # else:
+            #     print("Iregular Detection!:")
+            #     print(f"{absx =} {absy =} {absz =}")
+            #     print(f"{relToRobotX =} {relToRobotY =} {relToRobotZ =}")
         # output is id,(absX,absY,absZ),conf,isRobot,features
 
         endTime = time.time()
@@ -178,12 +178,12 @@ class LocalFrameProcessor:
 
         return absoluteResults
 
-    def isiregularDetection(self, x, y, z, maxDelta=50): #cm
+    def isiregularDetection(self, x, y, z): #cm
         return (
-            x < -maxDelta
-            or x > MapConstants.fieldWidth.value + maxDelta
-            or y < -maxDelta
-            or y > MapConstants.fieldHeight.value + maxDelta
+            x < 0
+            or x >= MapConstants.fieldWidth.value
+            or y < 0
+            or y >= MapConstants.fieldHeight.value
             # or z < -maxDelta
             # or z > maxDelta
         )

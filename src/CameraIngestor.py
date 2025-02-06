@@ -3,3 +3,4 @@ from Core.Agents import FrameDisplayer
 
 n = Neo()
 n.wakeAgentMain(FrameDisplayer)
+n.shutDown()
