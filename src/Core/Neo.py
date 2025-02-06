@@ -65,13 +65,12 @@ class Neo:
             logger=Sentinel.getChild("XDASH_Operator"),
         )
 
-
         self.__isShutdown = False  # runnable
         signal.signal(signal.SIGINT, handler=self.__handleArchitectKill)
         signal.signal(signal.SIGTERM, handler=self.__handleArchitectKill)
 
         self.__logMap = {}
-        self.__getBasePrefix = lambda agentName : f"active_agents.{agentName}"
+        self.__getBasePrefix = lambda agentName: f"active_agents.{agentName}"
 
     def __handleArchitectKill(self, sig, frame):
         Sentinel.info("The architect has caused our demise! Shutting down any agent")
@@ -80,7 +79,7 @@ class Neo:
 
     def shutDown(self):
         if not self.__isShutdown:
-            self.__agentOp.stopAndWait()
+            self.__agentOp.stopPermanent()
             self.__printAndCleanup()
             self.__isShutdown = True
         else:
@@ -97,36 +96,95 @@ class Neo:
         else:
             Sentinel.warning("Neo is already shutdown!")
 
-    def __handleLog(self, logProperty: ReadonlyProperty, newLog: str, maxLogLength: int = 3):
+    def __handleLog(
+        self, logProperty: ReadonlyProperty, newLog: str, maxLogLength: int = 3
+    ):
         table = logProperty.getTable()
-        lastlogs = self.__logMap.get(table, []) 
+        lastlogs = self.__logMap.get(table, [])
 
         lastlogs.append(newLog)
-        lastlogs = lastlogs[-maxLogLength:] 
+        lastlogs = lastlogs[-maxLogLength:]
 
         msg = " ".join(lastlogs)
-        logProperty.set(msg) 
-        self.__logMap[table] = lastlogs  
+        logProperty.set(msg)
+        self.__logMap[table] = lastlogs
 
+    def wakeAgentMain(self, agent: type[Agent], agentName=None):
+        """NOTE: This will threadblock"""
+        if not self.isShutdown():
+            try:
+                agentName = agent.getName()
+            except Exception as e:
+                Sentinel.debug(f"Error: {e}")
+
+            if (
+                agentName is None
+            ):  # eg no backup name provided and cannot use agent.getName()
+                Sentinel.warning(
+                    "Since you are likely using a partial agent, you must provide an agent name separately!"
+                )
+
+            childPropertyOp = self.__propertyOp.getChild(
+                f"{self.__getBasePrefix(agentName)}"
+            )
+            childLogger = Sentinel.getChild(f"{agentName}")
+
+            logTable = f"{self.__getBasePrefix(agentName)}.log"
+            logProperty = self.__propertyOp.createCustomReadOnlyProperty(
+                logTable, "None..."
+            )
+
+            logLambda = lambda entry: self.__handleLog(logProperty, entry)
+            lambda_handler = LambdaHandler(logLambda)
+            formatter = logging.Formatter("%(levelname)s-%(name)s: %(message)s")
+            lambda_handler.setFormatter(formatter)
+            childLogger.addHandler(lambda_handler)
+
+            self.__agentOp.wakeAgentMain(
+                agent(
+                    central=self.__central,
+                    xclient=self.__xclient,
+                    propertyOperator=childPropertyOp,
+                    configOperator=self.__configOp,
+                    shareOperator=self.__shareOp,
+                    logger=childLogger,
+                )
+            )
+        else:
+            Sentinel.warning("Neo is already shutdown!")
 
     def wakeAgent(self, agent: type[Agent]):
-        try:
-            agent.getName()
-        except AttributeError as e:
-            Sentinel.debug(e)
-            Sentinel.fatal("If this agent is a partial agent, please use wakeAgentPartial!")
-            return
-        self.wakeAgentPartial(agent, agent.getName())
+        if not self.isShutdown():
+            try:
+                agent.getName()
+            except AttributeError as e:
+                Sentinel.debug(e)
+                Sentinel.fatal(
+                    "If this agent is a partial agent, please use wakeAgentPartial!"
+                )
+                return
+            self.wakeAgentPartial(agent, agent.getName())
+        else:
+            Sentinel.warning("Neo is already shutdown!")
 
     def wakeAgentPartial(self, agent: type[Agent], agentName):
+        """This method is for agents that are created using functools partial\n
+        For example the FrameProcessingAgentBase.PartialFrameProcessingAgent()\n
+        NOTE: you must provide an agent name due to the how the functools partial works
+
+        """
         if not self.isShutdown():
-            childPropertyOp = self.__propertyOp.getChild(f"{self.__getBasePrefix(agentName)}")
+            childPropertyOp = self.__propertyOp.getChild(
+                f"{self.__getBasePrefix(agentName)}"
+            )
             childLogger = Sentinel.getChild(f"{agentName}")
-            
+
             logTable = f"{self.__getBasePrefix(agentName)}.log"
-            logProperty = self.__propertyOp.createCustomReadOnlyProperty(logTable,"None...")
-            
-            logLambda = lambda entry : self.__handleLog(logProperty, entry)
+            logProperty = self.__propertyOp.createCustomReadOnlyProperty(
+                logTable, "None..."
+            )
+
+            logLambda = lambda entry: self.__handleLog(logProperty, entry)
             lambda_handler = LambdaHandler(logLambda)
             formatter = logging.Formatter("%(levelname)s-%(name)s: %(message)s")
             lambda_handler.setFormatter(formatter)
@@ -148,8 +206,7 @@ class Neo:
     def startXDashLoop(self):
         while True:
             self.__xdOp.run()
-            time.sleep(0.001) # 1ms
-
+            time.sleep(0.001)  # 1ms
 
     def __printAndCleanup(self):
         self.__printFinish()
@@ -175,7 +232,10 @@ class Neo:
         # xtables operations. need to go before xclient shutdown
         Sentinel.info(f"Properties removed: {self.__propertyOp.deregisterAll()}")
         Sentinel.info(f"Orders removed: {self.__orderOp.deregister()}")
+        self.__agentOp.stopPermanent()
+        self.__agentOp.shutDownNow()
 
+        """ Xclient shutdown is not necessary <- from kobe"""
         # try:
         #     self.__xclient.shutdown()
         # except Exception as e:

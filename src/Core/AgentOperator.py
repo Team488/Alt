@@ -14,9 +14,7 @@ from Core.PropertyOperator import PropertyOperator
 
 # subscribes to command request with xtables and then executes when requested
 class AgentOperator:
-    def __init__(
-        self, propertyOp: PropertyOperator, logger: Logger
-    ):
+    def __init__(self, propertyOp: PropertyOperator, logger: Logger):
         self.Sentinel = logger
         self.propertyOp = propertyOp
         self.__executor = ThreadPoolExecutor()
@@ -46,22 +44,34 @@ class AgentOperator:
         self.waitForAgentsToFinish()
         self.__stop = False
 
+    def stopPermanent(self):
+        self.__stop = True
+
+    def wakeAgentMain(self, agent: Agent):
+        """Starts agent on whatever thread this is called from. Eg Likely Main"""
+        self.Sentinel.info(
+            f"Waking agent! | Name: {agent.getName()} Description : {agent.getDescription()}"
+        )
+        self.__setDescription(agent.getName(), agent.getDescription())
+        self.__setStatus(agent.getName(), "starting")
+        self.Sentinel.info("The agent is alive!")
+
+        self.__startAgentLoop(agent, futurePtr=None)
+
     def wakeAgent(self, agent: Agent):
         self.Sentinel.info(
             f"Waking agent! | Name: {agent.getName()} Description : {agent.getDescription()}"
         )
         self.__setDescription(agent.getName(), agent.getDescription())
         self.__setStatus(agent.getName(), "starting")
-        future = self.__executor.submit(
-            self.__startAgentLoop, agent, self.__futPtr
-        )
+        future = self.__executor.submit(self.__startAgentLoop, agent, self.__futPtr)
         with self.__futureLock:
             self.__futures[self.__futPtr] = future
-        self.__futPtr+=1
+        self.__futPtr += 1
         # grace period for thread to start
         self.Sentinel.info("The agent is alive!")
 
-    def __startAgentLoop(self, agent: Agent, futurePtr : int):
+    def __startAgentLoop(self, agent: Agent, futurePtr: int):
         try:
             self.__setErrorLog(agent.getName(), "None...")
             # create
@@ -120,9 +130,10 @@ class AgentOperator:
             # clear
             self.__runOnFinish = None
 
-        # end agent thread
-        with self.__futureLock:
-            self.__futures.pop(futurePtr)
+        # close agent future if exists
+        if futurePtr:
+            with self.__futureLock:
+                self.__futures.pop(futurePtr)
 
     def setOnAgentFinished(self, runOnFinish):
         if self.__futures:
@@ -138,7 +149,11 @@ class AgentOperator:
                 with self.__futureLock:
                     if not self.__futures:
                         break
-                time.sleep(0.001)  
+                time.sleep(0.001)
             self.Sentinel.info("Agents have all finished.")
         else:
             self.Sentinel.warning("No agents to wait for!")
+
+    def shutDownNow(self):
+        """Threadblocks until executor is finished"""
+        self.__executor.shutdown(wait=True, cancel_futures=True)

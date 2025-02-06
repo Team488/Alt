@@ -8,25 +8,42 @@ from coreinterface.FramePacket import FramePacket
 from tools.Constants import InferenceMode, CameraExtrinsics, CameraIntrinsics
 from mapinternals.localFrameProcessor import LocalFrameProcessor
 
-class FrameProcessingAgent(LocalizingAgentBase):
-    """ Agent -> LocalizingAgentBase -> FrameProcessingAgentBase
 
-        Adds inference capabilites to an agent, processing frames and sending detections
-        NOTE: Requires extra arguments passed in somehow, for example using Functools partial """
+class FrameProcessingAgent(LocalizingAgentBase):
+    """Agent -> LocalizingAgentBase -> FrameProcessingAgentBase
+
+    Adds inference capabilites to an agent, processing frames and sending detections
+    NOTE: Requires extra arguments passed in somehow, for example using Functools partial"""
+
     DETECTIONPOSTFIX = "Detections"
     FRAMEPOSTFIX = "Frame"
-    def __init__(self, central, xclient, propertyOperator, configOperator, shareOperator, logger,
-                 cameraPath : str, cameraIntrinsics : CameraIntrinsics,
-                 cameraExtrinsics : CameraExtrinsics, inferenceMode : InferenceMode):
-        super().__init__(central,xclient,propertyOperator,configOperator,shareOperator,logger)
+
+    def __init__(
+        self,
+        central,
+        xclient,
+        propertyOperator,
+        configOperator,
+        shareOperator,
+        logger,
+        cameraPath: str,
+        cameraIntrinsics: CameraIntrinsics,
+        cameraExtrinsics: CameraExtrinsics,
+        inferenceMode: InferenceMode,
+    ):
+        super().__init__(
+            central, xclient, propertyOperator, configOperator, shareOperator, logger
+        )
         self.cameraPath = cameraPath
         self.cameraIntrinsics = cameraIntrinsics
         self.cameraExtrinsics = cameraExtrinsics
         self.inferenceMode = inferenceMode
-    
+
     def create(self):
         super().create()
         self.cap = cv2.VideoCapture(self.cameraPath)
+        if not self.cap.isOpened():
+            raise BrokenPipeError("Failed to open camera!")
 
         self.Sentinel.info("Creating Frame Processor...")
         self.frameProcessor = LocalFrameProcessor(
@@ -34,30 +51,34 @@ class FrameProcessingAgent(LocalizingAgentBase):
             cameraExtrinsics=self.cameraExtrinsics,
             inferenceMode=self.inferenceMode,
         )
-        self.frameProp = self.propertyOperator.createCustomReadOnlyProperty(self.FRAMEPOSTFIX, b"")
-        self.detectionProp = self.propertyOperator.createCustomReadOnlyProperty(self.DETECTIONPOSTFIX, b"")
-        self.sendFrame = self.propertyOperator.createProperty("Send-Frame",False)
+        self.frameProp = self.propertyOperator.createCustomReadOnlyProperty(
+            self.FRAMEPOSTFIX, b""
+        )
+        self.detectionProp = self.propertyOperator.createCustomReadOnlyProperty(
+            self.DETECTIONPOSTFIX, b""
+        )
+        self.sendFrame = self.propertyOperator.createProperty("Send-Frame", False)
 
     def preprocessFrame(self, frame):
-        """ Optional method you can implement to add preprocessing to a frame"""
-        return frame 
+        """Optional method you can implement to add preprocessing to a frame"""
+        return frame
 
     def runPeriodic(self):
         super().runPeriodic()
         ret, frame = self.cap.read()
-        if ret:    
+        if ret:
             sendFrame = self.sendFrame.get()
-            processedFrame = self.preprocessFrame(frame)        
+            processedFrame = self.preprocessFrame(frame)
             processedResults = self.frameProcessor.processFrame(
                 processedFrame,
                 robotPosXCm=self.robotLocation[0] * 100,  # m to cm
                 robotPosYCm=self.robotLocation[1] * 100,  # m to cm
                 robotYawRad=self.robotLocation[2],
-                drawBoxes=sendFrame, # if you are sending frames, you likely want to see bounding boxes aswell
-            )  
-            
+                drawBoxes=sendFrame,  # if you are sending frames, you likely want to see bounding boxes aswell
+            )
+
             timestamp = time.monotonic()
-            
+
             detectionPacket = DetectionPacket.createPacket(
                 processedResults, "Detection", timestamp
             )
@@ -73,15 +94,14 @@ class FrameProcessingAgent(LocalizingAgentBase):
             self.Sentinel.info("Processed frame!")
 
         else:
-            self.detectionProp.set(b"") # mark as empty
+            self.detectionProp.set(b"")  # mark as empty
 
             self.Sentinel.error("Opencv Cap ret is false!")
             if self.cap.isOpened():
                 self.cap.release()
-            
+
             self.Sentinel.error("Exiting for now!")
             os._exit(1)
-
 
     def onClose(self):
         super().onClose()
@@ -110,7 +130,14 @@ class FrameProcessingAgent(LocalizingAgentBase):
         return 1
 
 
-
-def PartialFrameProcessingAgent(cameraPath, cameraIntrinsics, cameraExtrinsics, inferenceMode):
-    """ Returns a partially completed frame processing agent. All you have to do is pass it into neo"""
-    return partial(FrameProcessingAgent,cameraPath=cameraPath,cameraIntrinsics=cameraIntrinsics,cameraExtrinsics=cameraExtrinsics,inferenceMode=inferenceMode)
+def PartialFrameProcessingAgent(
+    cameraPath, cameraIntrinsics, cameraExtrinsics, inferenceMode
+):
+    """Returns a partially completed frame processing agent. All you have to do is pass it into neo"""
+    return partial(
+        FrameProcessingAgent,
+        cameraPath=cameraPath,
+        cameraIntrinsics=cameraIntrinsics,
+        cameraExtrinsics=cameraExtrinsics,
+        inferenceMode=inferenceMode,
+    )

@@ -1,7 +1,9 @@
+import cv2
 from abstract.PathPlanningAgentBase import PathPlanningAgentBase
 from abstract.CentralAgentBase import CentralAgentBase
 
-class DriveToTargetAgent(CentralAgentBase,PathPlanningAgentBase):
+
+class DriveToTargetAgent(CentralAgentBase, PathPlanningAgentBase):
     def create(self):
         super().create()
         self.targetConf = self.propertyOperator.createProperty("targetMinConf", 0.3)
@@ -16,9 +18,15 @@ class DriveToTargetAgent(CentralAgentBase,PathPlanningAgentBase):
         path = None
         if conf > self.targetConf.get():
             path = self.central.pathGenerator.generate(
-                (self.robotLocation[0] * 100, self.robotLocation[1] * 100), target[:2]
+                (self.robotLocation[0] * 100 + 1, self.robotLocation[1] * 100 + 1),
+                target[:2],
             )
         return path
+
+    def runPeriodic(self):
+        super().runPeriodic()
+        cv2.imshow("map", self.central.map.getGameObjectHeatMap())
+        cv2.waitKey(1)
 
     def isRunning(self):
         return True
@@ -30,7 +38,6 @@ class DriveToTargetAgent(CentralAgentBase,PathPlanningAgentBase):
     @staticmethod
     def getDescription():
         return "Ingest_Detections_Give_Path"
-
 
 
 class DriveToFixedPointAgent(PathPlanningAgentBase):
@@ -47,7 +54,9 @@ class DriveToFixedPointAgent(PathPlanningAgentBase):
         target = (self.targetX.get() * 100, self.targetY.get() * 100)
         self.Sentinel.info(f"{target=}")
         self.Sentinel.info(f"{self.robotLocation=} {target=}")
-        return self.central.pathGenerator.generate((self.robotLocation[0] * 100, self.robotLocation[1] * 100), target)
+        return self.central.pathGenerator.generate(
+            (self.robotLocation[0] * 100, self.robotLocation[1] * 100), target
+        )
 
     def isRunning(self):
         return True
