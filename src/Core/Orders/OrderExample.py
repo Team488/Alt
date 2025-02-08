@@ -10,13 +10,14 @@ class OrderExample(Order):
     # this example will print information
     def create(self):
         # here i will get my info
-        self.sigma = self.central.map.sigma
+        self.projectInput = self.propertyOperator.createReadOnlyProperty("input","")
 
-    def run(self):
-        print(f"Sigma is: {self.sigma}")
+    def run(self, input):
+        print(f"Order input is: {input}")
+        self.projectInput.set(input)
 
     def close(self):
         print(f"Cleaning up!")
 
     def getDescription(self):
-        return "agent_example"
+        return "displays_input"

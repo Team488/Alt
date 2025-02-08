@@ -59,7 +59,7 @@ class FrameProcessingAgent(LocalizingAgentBase):
         self.detectionProp = self.propertyOperator.createCustomReadOnlyProperty(
             self.DETECTIONPOSTFIX, b""
         )
-        self.sendFrame = self.propertyOperator.createProperty("Send-Frame", False)
+        self.sendFrame = self.propertyOperator.createProperty("Send-Frame", False, loadIfSaved=False) # this is one of those properties that should always be opt-in and keep that after a restart
 
     def preprocessFrame(self, frame):
         """Optional method you can implement to add preprocessing to a frame"""

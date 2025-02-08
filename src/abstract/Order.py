@@ -8,13 +8,15 @@ from JXTABLES.XTablesClient import XTablesClient
 from Core.Central import Central
 from Core.PropertyOperator import PropertyOperator
 from Core.ConfigOperator import ConfigOperator
+from Core.ShareOperator import ShareOperator
 
 class Order(ABC):
-    def __init__(self, central : Central, xclient : XTablesClient, propertyOperator : PropertyOperator, configOperator : ConfigOperator):
+    def __init__(self, central : Central, xclient : XTablesClient, propertyOperator : PropertyOperator, configOperator : ConfigOperator, shareOperator : ShareOperator):
         self.central = central
         self.xclient = xclient
         self.propertyOperator = propertyOperator
         self.configOperator = configOperator
+        self.shareOperator = shareOperator
         # other than setting variables, nothing should go here
 
     @abstractmethod
@@ -23,7 +25,7 @@ class Order(ABC):
         pass
 
     @abstractmethod
-    def run(self):
+    def run(self, input):
         # order run here
         pass
     

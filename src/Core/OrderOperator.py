@@ -41,7 +41,7 @@ class OrderOperator:
 
             self.Sentinel.debug(f"Running order...")
             progressStr = "run"
-            order.run()
+            order.run(input=ret.value)
 
             self.Sentinel.debug(f"Closing order...")
             progressStr = "close"

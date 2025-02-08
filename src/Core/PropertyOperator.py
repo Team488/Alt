@@ -51,7 +51,7 @@ class PropertyOperator:
         self.__propertyValueMap[ret.key] = self.__getRealType(ret.type, ret.value)
         self.Sentinel.debug(f"Property updated | Name: {ret.key} Value : {ret.value}")
 
-    def createProperty(self, propertyName: str, propertyDefault) -> "Property":
+    def createProperty(self, propertyName: str, propertyDefault, loadIfSaved=True) -> "Property":
         propertyTable = self.__getPropertyTable(
             propertyName
         )  # store properties in known place
@@ -60,8 +60,8 @@ class PropertyOperator:
         if propertyTable in self.__properties:
             return self.__properties.get(propertyTable)
 
-        # init default in map if not saved from previous run
-        if propertyTable not in self.__propertyValueMap:
+        # init default in map if not saved from previous run, or if you dont want to use a saved value
+        if propertyTable not in self.__propertyValueMap or not loadIfSaved:
             # if its an invalid property type return immediately
             if not self.__setNetworkValue(propertyTable, propertyDefault):
                 return None

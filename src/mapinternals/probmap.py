@@ -139,7 +139,6 @@ class ProbMap:
 
         # Step 2: Get the coordinates of the values that satisfy the threshold
         coords = np.argwhere(mask)
-        print(len(coords))
 
         if coords.size == 0:
             print("Failed to extract smaller mask!")
@@ -224,19 +223,23 @@ class ProbMap:
         # print("prob map x", probmap[blob_top_edge_loc:blob_bottom_edge_loc].shape)
         # print("prob map y", probmap[blob_left_edge_loc:blob_right_edge_loc].shape)
 
-        adjusted_coords = coords + np.array([blob_left_edge_loc, blob_top_edge_loc])
+        adjusted_coords = coords + np.array([blob_left_edge_loc, blob_top_edge_loc]) # adjust coords to go from relative in the meshgrid to absolute relative to the probmap
         
+        # some bounds checks
         valid = (adjusted_coords[:, 0] >= 0) & (adjusted_coords[:, 0] < probmap.shape[0]) & \
                 (adjusted_coords[:, 1] >= 0) & (adjusted_coords[:, 1] < probmap.shape[1])
+        
+    
         adjusted_coords = adjusted_coords[valid]
         valid_coords = coords[valid]
+        # blob bounds check
         valid_coords[:, 0] = np.clip(valid_coords[:, 0], 0, gaussian_blob.shape[0] - 1)
         valid_coords[:, 1] = np.clip(valid_coords[:, 1], 0, gaussian_blob.shape[1] - 1)
 
         if adjusted_coords.size == 0 or valid_coords.size == 0:
             print("No valid coordinates")
             return 
-        
+        # averaging out step
         probmap[
             adjusted_coords[:,0],
             adjusted_coords[:,1],
@@ -257,7 +260,6 @@ class ProbMap:
 
 
     """ Exposed methods for adding detections """
-    """ Time parameter used in object tracking, to calculate velocity as distance/time """
 
     """ Regular detection methods use sizes provided in constructor """
 

@@ -90,10 +90,11 @@ class Neo:
 
     def addOrderTrigger(self, orderTriggerName: str, orderToRun: type[Order]):
         if not self.isShutdown():
+            childPropOp = self.__propertyOp.getChild(orderToRun.__name__)
             self.__orderOp.createOrderTrigger(
                 orderTriggerName,
                 orderToRun(
-                    self.__central, self.__xclient, self.__propertyOp, self.__configOp
+                    self.__central, self.__xclient, childPropOp, self.__configOp, self.__shareOp
                 ),
             )
         else:
