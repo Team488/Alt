@@ -4,6 +4,8 @@ import time
 from functools import partial
 
 import numpy as np
+from JXTABLES.XDashDebugger import XDashDebugger
+
 from abstract.LocalizingAgentBase import LocalizingAgentBase
 from coreinterface.DetectionPacket import DetectionPacket
 from coreinterface.FramePacket import FramePacket
@@ -43,6 +45,7 @@ class FrameProcessingAgent(LocalizingAgentBase):
 
     def create(self):
         super().create()
+        self.xdashDebugger = XDashDebugger()
         self.cap = cv2.VideoCapture(self.cameraPath)
         if not self.cap.isOpened():
             raise BrokenPipeError("Failed to open camera!")
@@ -59,7 +62,9 @@ class FrameProcessingAgent(LocalizingAgentBase):
         self.detectionProp = self.propertyOperator.createCustomReadOnlyProperty(
             self.DETECTIONPOSTFIX, b""
         )
-        self.sendFrame = self.propertyOperator.createProperty("Send-Frame", False, loadIfSaved=False) # this is one of those properties that should always be opt-in and keep that after a restart
+        self.sendFrame = self.propertyOperator.createProperty(
+            "Send-Frame", False, loadIfSaved=False
+        )  # this is one of those properties that should always be opt-in and keep that after a restart
 
     def preprocessFrame(self, frame):
         """Optional method you can implement to add preprocessing to a frame"""
@@ -81,13 +86,20 @@ class FrameProcessingAgent(LocalizingAgentBase):
 
             # add highest detection telemetry
             if processedResults:
-                best_idx = max(range(len(processedResults)), key=lambda i: processedResults[i][2])
+                best_idx = max(
+                    range(len(processedResults)), key=lambda i: processedResults[i][2]
+                )
                 best_result = processedResults[best_idx]
-                x,y,z = best_result[1]
-                self.propertyOperator.createReadOnlyProperty("BestResult.BestX","").set(float(x))
-                self.propertyOperator.createReadOnlyProperty("BestResult.BestY","").set(float(y))
-                self.propertyOperator.createReadOnlyProperty("BestResult.BestZ","").set(float(z))
-            
+                x, y, z = best_result[1]
+                self.propertyOperator.createReadOnlyProperty(
+                    "BestResult.BestX", ""
+                ).set(float(x))
+                self.propertyOperator.createReadOnlyProperty(
+                    "BestResult.BestY", ""
+                ).set(float(y))
+                self.propertyOperator.createReadOnlyProperty(
+                    "BestResult.BestZ", ""
+                ).set(float(z))
 
             timestamp = time.monotonic()
 
@@ -98,10 +110,14 @@ class FrameProcessingAgent(LocalizingAgentBase):
 
             # optionally send frame
             if sendFrame:
-                framePacket = FramePacket.createPacket(
-                    timestamp, "Frame", processedFrame
+                # framePacket = FramePacket.createPacket(
+                #     timestamp, "Frame", processedFrame
+                # )
+                self.xdashDebugger.send_frame(
+                    key=self.sendFrame.getTable(),
+                    timestamp=timestamp,
+                    frame=processedFrame,
                 )
-                self.frameProp.set(framePacket.to_bytes())
 
             self.Sentinel.info("Processed frame!")
 
@@ -112,7 +128,6 @@ class FrameProcessingAgent(LocalizingAgentBase):
             if self.cap.isOpened():
                 self.cap.release()
                 # will close cap
-
 
     def onClose(self):
         super().onClose()
