@@ -122,11 +122,11 @@ class FrameProcessingAgent(LocalizingAgentBase):
                 # framePacket = FramePacket.createPacket(
                 #     timestamp, "Frame", processedFrame
                 # )
-                # self.xdashDebugger.send_frame(
-                #     key=self.sendFrame.getTable(),
-                #     timestamp=timestamp,
-                #     frame=processedFrame,
-                # )
+                self.xdashDebugger.send_frame(
+                    key=self.sendFrame.getTable(),
+                    timestamp=timestamp,
+                    frame=processedFrame,
+                )
             else:
                 self.checkSend.set(False)
 
