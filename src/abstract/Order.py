@@ -10,8 +10,16 @@ from Core.PropertyOperator import PropertyOperator
 from Core.ConfigOperator import ConfigOperator
 from Core.ShareOperator import ShareOperator
 
+
 class Order(ABC):
-    def __init__(self, central : Central, xclient : XTablesClient, propertyOperator : PropertyOperator, configOperator : ConfigOperator, shareOperator : ShareOperator):
+    def __init__(
+        self,
+        central: Central,
+        xclient: XTablesClient,
+        propertyOperator: PropertyOperator,
+        configOperator: ConfigOperator,
+        shareOperator: ShareOperator,
+    ):
         self.central = central
         self.xclient = xclient
         self.propertyOperator = propertyOperator
@@ -20,7 +28,7 @@ class Order(ABC):
         # other than setting variables, nothing should go here
 
     @abstractmethod
-    def create(self):        
+    def create(self):
         # perform order init here
         pass
 
@@ -28,13 +36,12 @@ class Order(ABC):
     def run(self, input):
         # order run here
         pass
-    
-    @abstractmethod
-    def close(self):
-        # order cleanup here
-        pass
-    
+
     @abstractmethod
     def getDescription(self) -> str:
         # return order name here
+        pass
+
+    def close(self):
+        # optional order cleanup here
         pass

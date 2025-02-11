@@ -4,6 +4,8 @@ import time
 from functools import partial
 
 import numpy as np
+from JXTABLES.XDashDebugger import XDashDebugger
+
 from abstract.LocalizingAgentBase import LocalizingAgentBase
 from coreinterface.DetectionPacket import DetectionPacket
 from coreinterface.FramePacket import FramePacket
@@ -43,8 +45,13 @@ class FrameProcessingAgent(LocalizingAgentBase):
 
     def create(self):
         super().create()
+        self.xdashDebugger = XDashDebugger()
         self.cap = cv2.VideoCapture(self.cameraPath)
-        if not self.cap.isOpened():
+        retTest = True
+        if self.cap.isOpened():
+            retTest, _ = self.cap.read()
+
+        if not self.cap.isOpened() or not retTest:
             raise BrokenPipeError("Failed to open camera!")
 
         self.Sentinel.info("Creating Frame Processor...")
@@ -59,7 +66,13 @@ class FrameProcessingAgent(LocalizingAgentBase):
         self.detectionProp = self.propertyOperator.createCustomReadOnlyProperty(
             self.DETECTIONPOSTFIX, b""
         )
-        self.sendFrame = self.propertyOperator.createProperty("Send-Frame", False, loadIfSaved=False) # this is one of those properties that should always be opt-in and keep that after a restart
+        self.sendFrame = self.propertyOperator.createProperty(
+            "Send-Frame", False, loadIfSaved=False
+        )  # this is one of those properties that should always be opt-in and keep that after a restart
+        self.checkSend = self.propertyOperator.createReadOnlyProperty(
+            "Send-Frame-Value", False
+        )
+        self.exit = False
 
     def preprocessFrame(self, frame):
         """Optional method you can implement to add preprocessing to a frame"""
@@ -81,13 +94,20 @@ class FrameProcessingAgent(LocalizingAgentBase):
 
             # add highest detection telemetry
             if processedResults:
-                best_idx = max(range(len(processedResults)), key=lambda i: processedResults[i][2])
+                best_idx = max(
+                    range(len(processedResults)), key=lambda i: processedResults[i][2]
+                )
                 best_result = processedResults[best_idx]
-                x,y,z = best_result[1]
-                self.propertyOperator.createReadOnlyProperty("BestResult.BestX","").set(float(x))
-                self.propertyOperator.createReadOnlyProperty("BestResult.BestY","").set(float(y))
-                self.propertyOperator.createReadOnlyProperty("BestResult.BestZ","").set(float(z))
-            
+                x, y, z = best_result[1]
+                self.propertyOperator.createReadOnlyProperty(
+                    "BestResult.BestX", ""
+                ).set(float(x))
+                self.propertyOperator.createReadOnlyProperty(
+                    "BestResult.BestY", ""
+                ).set(float(y))
+                self.propertyOperator.createReadOnlyProperty(
+                    "BestResult.BestZ", ""
+                ).set(float(z))
 
             timestamp = time.monotonic()
 
@@ -98,10 +118,17 @@ class FrameProcessingAgent(LocalizingAgentBase):
 
             # optionally send frame
             if sendFrame:
-                framePacket = FramePacket.createPacket(
-                    timestamp, "Frame", processedFrame
+                self.checkSend.set(True)
+                # framePacket = FramePacket.createPacket(
+                #     timestamp, "Frame", processedFrame
+                # )
+                self.xdashDebugger.send_frame(
+                    key=self.sendFrame.getTable(),
+                    timestamp=timestamp,
+                    frame=processedFrame,
                 )
-                self.frameProp.set(framePacket.to_bytes())
+            else:
+                self.checkSend.set(False)
 
             self.Sentinel.info("Processed frame!")
 
@@ -111,8 +138,9 @@ class FrameProcessingAgent(LocalizingAgentBase):
             self.Sentinel.error("Opencv Cap ret is false!")
             if self.cap.isOpened():
                 self.cap.release()
-                # will close cap
 
+            self.exit = True
+            # will close cap
 
     def onClose(self):
         super().onClose()
@@ -120,6 +148,9 @@ class FrameProcessingAgent(LocalizingAgentBase):
             self.cap.release()
 
     def isRunning(self):
+        if self.exit:
+            return False
+
         if not self.cap.isOpened():
             self.Sentinel.fatal("Camera cant be opened!")
             return False

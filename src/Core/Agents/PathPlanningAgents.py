@@ -1,6 +1,7 @@
 import cv2
 from abstract.PathPlanningAgentBase import PathPlanningAgentBase
 from abstract.CentralAgentBase import CentralAgentBase
+from Core.Orders import TargetUpdatingOrder
 
 
 class DriveToTargetAgent(CentralAgentBase, PathPlanningAgentBase):
@@ -10,18 +11,13 @@ class DriveToTargetAgent(CentralAgentBase, PathPlanningAgentBase):
         self.bestConf = self.propertyOperator.createReadOnlyProperty(
             "bestTarget.bestConf", 0
         )
-        self.bestX = self.propertyOperator.createReadOnlyProperty(
-            "bestTarget.bestX", 0
-        )
-        self.bestY = self.propertyOperator.createReadOnlyProperty(
-            "bestTarget.bestY", 0
-        )
-
+        self.bestX = self.propertyOperator.createReadOnlyProperty("bestTarget.bestX", 0)
+        self.bestY = self.propertyOperator.createReadOnlyProperty("bestTarget.bestY", 0)
 
     def getPath(self):
         target = self.central.map.getHighestGameObject()
         conf = target[2]
-        
+
         self.bestX.set(float(target[0]))
         self.bestY.set(float(target[1]))
         self.bestConf.set(float(conf))
@@ -61,10 +57,11 @@ class DriveToFixedPointAgent(PathPlanningAgentBase):
 
     def getPath(self):
         target = (self.targetX.get() * 100, self.targetY.get() * 100)
-        self.Sentinel.info(f"{target=}")
         self.Sentinel.info(f"{self.robotLocation=} {target=}")
         return self.central.pathGenerator.generate(
-            (self.robotLocation[0] * 100, self.robotLocation[1] * 100), target, reducePoints=True
+            (self.robotLocation[0] * 100, self.robotLocation[1] * 100),
+            target,
+            reducePoints=True,
         )
 
     def isRunning(self):
@@ -73,6 +70,42 @@ class DriveToFixedPointAgent(PathPlanningAgentBase):
     @staticmethod
     def getName():
         return "Drive_To_FixedPoint_Pathplanning"
+
+    @staticmethod
+    def getDescription():
+        return "Get_Target_Give_Path"
+
+
+class DriveToNetworkTargetAgent(PathPlanningAgentBase):
+    def create(self):
+        super().create()
+        self.hasTarget = self.propertyOperator.createReadOnlyProperty(
+            propertyName="hasTarget", propertyDefault=False
+        )
+
+    def getPath(self):
+        target = self.shareOp.get(TargetUpdatingOrder.TARGETKEY)
+        if target == None:
+            self.hasTarget.set(False)
+            return None
+        else:
+            self.hasTarget.set(True)
+
+        self.Sentinel.info(f"in meters: {self.robotLocation=} {target=}")
+
+        # from meters into cm
+        return self.central.pathGenerator.generate(
+            (self.robotLocation[0] * 100, self.robotLocation[1] * 100),
+            (target[0] * 100, target[1] * 100),
+            reducePoints=True,
+        )
+
+    def isRunning(self):
+        return True
+
+    @staticmethod
+    def getName():
+        return "Drive_To_NetworkTarget_Pathplanning"
 
     @staticmethod
     def getDescription():

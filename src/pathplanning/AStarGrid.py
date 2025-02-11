@@ -4,6 +4,7 @@ import numpy as np
 import heapq
 from tools.Constants import MapConstants
 
+
 class Cell:
     def __init__(self):
         self.parent_i = 0  # Parent cell's row index
@@ -14,12 +15,26 @@ class Cell:
 
 
 class AStarPathfinder:
-    def __init__(self, grid, obstacleWidth, obstacleHeight, gridSizeCol,gridSizeRow, mapResolution):
+    def __init__(
+        self,
+        grid,
+        obstacleWidth,
+        obstacleHeight,
+        gridSizeCol,
+        gridSizeRow,
+        mapResolution,
+    ):
         self.original_grid = grid
-        self.obstacle_radius = math.ceil(np.linalg.norm((obstacleWidth, obstacleHeight)))
-        self.obstacle_radius_small = math.ceil(np.linalg.norm((obstacleWidth/mapResolution, obstacleHeight/mapResolution)))
+        self.obstacle_radius = math.ceil(
+            np.linalg.norm((obstacleWidth, obstacleHeight))
+        )
+        self.obstacle_radius_small = math.ceil(
+            np.linalg.norm(
+                (obstacleWidth / mapResolution, obstacleHeight / mapResolution)
+            )
+        )
         self.grid = self.inflate_obstacles(grid, self.obstacle_radius)
-        self.grid = cv2.resize(self.grid,(gridSizeCol,gridSizeRow))
+        self.grid = cv2.resize(self.grid, (gridSizeCol, gridSizeRow))
         # cv2.imshow("grid",self.grid*255)
         # now convert back to boolean
         self.grid = self.grid >= 1
@@ -28,8 +43,10 @@ class AStarPathfinder:
 
     def inflate_obstacles(self, grid, radius):
         # Create a circular kernel
-        kernel_size = radius + 2 # small safety offset
-        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (kernel_size, kernel_size))
+        kernel_size = 2 * radius  # small safety offset
+        kernel = cv2.getStructuringElement(
+            cv2.MORPH_ELLIPSE, (kernel_size, kernel_size)
+        )
         # Dilate the grid to inflate obstacles
         inflated_grid = cv2.dilate(grid.astype(dtype=np.uint8), kernel, iterations=1)
         return inflated_grid
@@ -39,7 +56,7 @@ class AStarPathfinder:
         return 0 <= row < ROW_SIZE and 0 <= col < COL_SIZE
 
     def is_unblocked(self, col, row, grid):
-        return not grid[row, col] 
+        return not grid[row, col]
 
     @staticmethod
     def is_destination(col, row, dest):
@@ -66,22 +83,26 @@ class AStarPathfinder:
         path.reverse()
         return np.array(path)
 
-    def a_star_search(self, src, dest, extraObstacles = None):
+    def a_star_search(self, src, dest, extraObstacles=None):
         grid = self.grid
         print(self.grid.shape)
         if extraObstacles is not None:
-            extraObstacles = self.inflate_obstacles(extraObstacles,self.obstacle_radius_small) >= 1
-            grid = np.bitwise_or(grid,extraObstacles)
+            extraObstacles = (
+                self.inflate_obstacles(extraObstacles, self.obstacle_radius_small) >= 1
+            )
+            grid = np.bitwise_or(grid, extraObstacles)
 
         print(f"{self.ROW_SIZE=} {self.COL_SIZE=}")
         print(f"{src=} {dest=}")
-        if not self.is_valid(src[0], src[1], self.ROW_SIZE, self.COL_SIZE) or not self.is_valid(
-            dest[0], dest[1], self.ROW_SIZE, self.COL_SIZE
-        ):
+        if not self.is_valid(
+            src[0], src[1], self.ROW_SIZE, self.COL_SIZE
+        ) or not self.is_valid(dest[0], dest[1], self.ROW_SIZE, self.COL_SIZE):
             print(f"Source {src} or destination {dest} is invalid")
             return None
 
-        if not self.is_unblocked(src[0], src[1], grid) or not self.is_unblocked(dest[0], dest[1], grid):
+        if not self.is_unblocked(src[0], src[1], grid) or not self.is_unblocked(
+            dest[0], dest[1], grid
+        ):
             print("Source or the destination is blocked")
             return None
 
@@ -89,8 +110,12 @@ class AStarPathfinder:
             print("We are already at the destination")
             return np.array([src])
 
-        closed_list = [[False for _ in range(self.ROW_SIZE)] for _ in range(self.COL_SIZE)]
-        cell_details = [[Cell() for _ in range(self.ROW_SIZE)] for _ in range(self.COL_SIZE)]
+        closed_list = [
+            [False for _ in range(self.ROW_SIZE)] for _ in range(self.COL_SIZE)
+        ]
+        cell_details = [
+            [Cell() for _ in range(self.ROW_SIZE)] for _ in range(self.COL_SIZE)
+        ]
 
         i, j = src
         cell_details[i][j].f = 0
@@ -104,8 +129,14 @@ class AStarPathfinder:
         found_dest = False
 
         directions = [
-            (0, 1), (0, -1), (1, 0), (-1, 0),
-            (1, 1), (1, -1), (-1, 1), (-1, -1)
+            (0, 1),
+            (0, -1),
+            (1, 0),
+            (-1, 0),
+            (1, 1),
+            (1, -1),
+            (-1, 1),
+            (-1, -1),
         ]
 
         while open_list:
