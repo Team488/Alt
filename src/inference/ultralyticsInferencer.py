@@ -1,40 +1,29 @@
 import numpy as np
 from ultralytics import YOLO
 import cv2
-from abstract.inferencer import Inferencer
-from tools.Constants import Object
-class ultralyticsInferencer(Inferencer):
-    def __init__(
-        self,
-        model_path
-    ):
-        self.model = YOLO(model_path)
-        self.labels = ("algae","coral")
+from abstract.inferencerBackend import InferencerBackend
+class ultralyticsInferencer(InferencerBackend):
+    
+    def initialize(self):
+        self.model = YOLO(self.mode.getModelPath())
 
-
-    def inferenceFrame(self, frame, drawBox=True):
-        results = self.model(frame)
+    def preprocessFrame(self, frame):
+        return frame
+    
+    def runInference(self, inputTensor):
+        return self.model(inputTensor)
+    
+    def postProcess(self, results, frame, minConf):
         if results != None and results[0] != None:
             boxes = results[0].boxes.xywh.cpu().numpy()
             half = boxes[:,2:]/2
             boxes = np.hstack((boxes[:,:2]-half,boxes[:,:2]+half))
             confs = results[0].boxes.conf.cpu()
-            ids = results[0].boxes.cls.cpu().numpy()
-            if drawBox:
-                for (bbox, conf, class_id) in zip(boxes,confs,ids):
-                    x1, y1, x2, y2 = tuple(map(int,bbox))
-                    cv2.rectangle(
-                        img=frame,
-                        pt1=(x1,y1),
-                        pt2=(x2,y2),
-                        color=(0, 255, 0),
-                        thickness=2,
-                    )
-                    cv2.putText(frame, f"{self.labels[int(class_id)]}", (x1,y1), 1, 2, (255, 255, 255), 1)
+            ids = results[0].boxes.cls.cpu().numpy().astype(int)
+            # TODO add minconf here
             return list(zip(boxes,confs,ids))
         
-        return None
-
+        return []
 
 def startDemo():
     video_path = "assets/reefscapevid.mp4"

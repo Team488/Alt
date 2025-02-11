@@ -1,7 +1,7 @@
 import random
 import time
 from mapinternals.deepSortBaseLabler import DeepSortBaseLabler
-from tools.Constants import CameraIntrinsics, CameraExtrinsics, MapConstants, InferenceMode, InferenceType
+from tools.Constants import CameraIntrinsics, CameraExtrinsics, MapConstants, InferenceMode, Backend
 from tools.Units import UnitMode
 from tools.positionEstimator import PositionEstimator
 from tools.positionTranslations import CameraToRobotTranslator, transformWithYaw
@@ -36,13 +36,13 @@ class LocalFrameProcessor:
 
     def createInferencer(self,inferenceMode : InferenceMode):
         print("Creating inferencer: " + inferenceMode.getName())
-        if inferenceMode.getType() == InferenceType.RKNN:
+        if inferenceMode.getBackend() == Backend.RKNN:
             from inference.rknnInferencer import rknnInferencer
             return rknnInferencer(inferenceMode.getModelPath())
-        elif inferenceMode.getType() == InferenceType.ONNX:
+        elif inferenceMode.getBackend() == Backend.ONNX:
             from inference.onnxInferencer import onnxInferencer
             return onnxInferencer(inferenceMode.getModelPath())
-        elif inferenceMode.getType() == InferenceType.ULTRALYTICS:
+        elif inferenceMode.getBackend() == Backend.ULTRALYTICS:
             from inference.ultralyticsInferencer import ultralyticsInferencer
             return ultralyticsInferencer(inferenceMode.getModelPath())  
         else:

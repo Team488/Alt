@@ -1,14 +1,20 @@
 import numpy as np
 import cv2
 import time
+from Core import Neo
+from tools.Constants import YOLOTYPE
 
-strides = np.array([8, 16, 32])
-maxSizes = np.array([24000, 19200, 0])  # reversed
+Sentinel = Neo.getLogger("Inference_Utils")
 
 
 def letterbox_image(image, target_size=(640, 640)):
+    # dont do if not needed
+    if image.shape[:2] == target_size:
+        return image
+    
     # Get original dimensions
     h, w = image.shape[:2]
+    
     target_width, target_height = target_size
 
     # Calculate the scaling factor and new size
@@ -66,16 +72,6 @@ def rescaleBox(box, img_shape, target_size=(640, 640)):
     return [x_min, y_min, x_max, y_max]
 
 
-def loadAnchors(anchorLocation):
-    with open(anchorLocation, "r") as al:
-        for line in al:
-            anchors = [float(x) for x in line.split(",")]
-            anchors = np.reshape(anchors, (3, 3, 2))
-            return anchors
-    print("Anchor loading failed!")
-    return None
-
-
 def non_max_suppression(predictions, conf_threshold=0.6, iou_threshold=0.4):
     # Filter out predictions with low confidence
     predictions = [x for x in predictions if x[1] >= conf_threshold]
@@ -101,29 +97,6 @@ def non_max_suppression(predictions, conf_threshold=0.6, iou_threshold=0.4):
     return [(boxes[i], scores[i], class_ids[i]) for i in indices]
 
 
-def processFlattenedIndex(idx, imageSize=640):
-    rawId, scale_idx = getRawIdOffset(idx)
-    stride = strides[scale_idx]
-
-    dimLen = imageSize // stride
-    scaleSize = dimLen * dimLen
-    anchor_idx = rawId // scaleSize
-    gridLen = rawId % scaleSize
-    gridX = gridLen % dimLen
-    gridY = gridLen // dimLen
-
-    return stride, anchor_idx, scale_idx, gridX, gridY
-
-
-def getRawIdOffset(idx):
-    maxSizeLen = len(maxSizes) - 1
-    for i in range(maxSizeLen + 1):
-        if idx >= maxSizes[i]:
-            return (
-                idx - maxSizes[i],
-                maxSizeLen - i,
-            )  # since we are iterating reversed, we need to invert
-
 
 def sigmoid(x):
     return 1 / (1 + np.exp(x))
@@ -135,8 +108,8 @@ def softmaxx(values):
     return exps
 
 
-def adjustBoxes(outputs, imgShape, minConf=0.7, printDebug=False):
-    predictions = outputs[0]  # Model's predictions = 1 x 25200 x 7
+def adjustBoxesV5(outputs, imgShape, minConf=0.7, printDebug=False):
+    predictions = outputs[0]  # Model's predictions = 1 x 25200 x 7 (x,y,w,h + objectness score + 2 classes)
     objectness_scores = predictions[:, 4]
     class_scores = predictions[:, 5:]
     class_ids = np.argmax(class_scores, axis=1)
@@ -158,6 +131,45 @@ def adjustBoxes(outputs, imgShape, minConf=0.7, printDebug=False):
         scaledBox = rescaleBox([x1, y1, x2, y2], imgShape)
         if printDebug:
             print(f"X {x} Y {y} w {width} h {height} classid {class_id}")
+            time.sleep(1)
+    adjusted_boxes.append([scaledBox, score, class_id])
+    
+    return adjusted_boxes
+
+def adjustBoxesV11(outputs, imgShape, minConf=0.7, printDebug=False):
+    #  Model's predictions = 1 x 6 x 8400
+    predictions = outputs[0] # extract 6 x 8400
+    predictions = np.transpose(predictions, (1,0)) # transpose to 8400 x 6 (x,y,w,h + 2 classes)
+    class_scores = predictions[:, 4:]
+    class_ids = np.argmax(class_scores, axis=1)
+    confidences = class_scores[np.arange(class_scores.shape[0]), class_ids]
+
+    # Filter out predictions below the confidence threshold
+    high_score_indices = np.where(confidences >= minConf)[0]
+    filtered_predictions = predictions[high_score_indices]
+    filtered_scores = confidences[high_score_indices]
+    filtered_class_ids = class_ids[high_score_indices]
+
+    adjusted_boxes = []
+    for pred, score, class_id in zip(filtered_predictions, filtered_scores, filtered_class_ids):
+        x, y, width, height = pred[:4]
+        x1, x2 = x - width / 2, x + width / 2
+        y1, y2 = y - height / 2, y + height / 2
+
+        scaledBox = rescaleBox([x1, y1, x2, y2], imgShape)
+        if printDebug:
+            print(f"X {x} Y {y} w {width} h {height} classid {class_id}")
+            time.sleep(1)
         adjusted_boxes.append([scaledBox, score, class_id])
     
     return adjusted_boxes
+
+
+def getAdjustBoxesMethod(yoloType):
+    if yoloType == YOLOTYPE.V5:
+        return adjustBoxesV5
+    elif yoloType == YOLOTYPE.V11:
+        return adjustBoxesV11
+    else:
+        Sentinel.fatal(f"Invalid Yolotype not supported yet!: {yoloType}")
+        return None

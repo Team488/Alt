@@ -282,7 +282,7 @@ class PositionEstimator:
 
 
     """ Method takes in a frame, where you have already run your model. It crops out bounding boxes for each robot detection and runs a height estimation.
-        If it does not fail, it then takes that information, along with a calculated bearing to estimate a relative position
+        If it does not fail to estimate a height, it then takes that information, along with a calculated bearing to estimate a relative position
        """
 
     def __estimateRelativeRobotPosition(
@@ -378,12 +378,11 @@ class PositionEstimator:
         self, frame, labledResults, cameraIntrinsics: CameraIntrinsics, inferenceMode: InferenceMode
     ):
         estimatesOut = []
-        # id 0 == robot 1 == note
         for result in labledResults:
-            isL1 = result[3]
+            isClass1 = result[3]
             bbox = result[1]
             estimate = None
-            if isL1:
+            if isClass1:
                 if inferenceMode.getYear() == 2024:
                     estimate = self.__estimateRelativeRobotPosition(
                         frame, bbox, cameraIntrinsics
@@ -408,7 +407,7 @@ class PositionEstimator:
                     
             if estimate is not None:
                 estimatesOut.append(
-                    [result[0], estimate, result[2], isL1, result[4]]
+                    [result[0], estimate, result[2], isClass1, result[4]]
                 )  # replace local bbox with estimated position
             # else we dont include this result
             # todo keep a metric of failed estimations

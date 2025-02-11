@@ -2,17 +2,27 @@ from enum import Enum
 import math
 import numpy as np
 
-class InferenceType(Enum):
+class YOLOTYPE(Enum):
+    V11 = "v11"
+    V8 = "v8"
+    V5 = "v5"
+
+class Backend(Enum):
     RKNN = "rknn"
     ONNX = "onnx"
     ULTRALYTICS = "ultralytics"
 
 class InferenceMode(Enum):
-    RKNN2024 = ("assets/bestV5.rknn","yolov5s-rknn",2024,InferenceType.RKNN)
-    ONNX2024 = ("assets/bestV5.onnx","yolov5s-onnx",2024,InferenceType.ONNX)
-    RKNN2025 = ("assets/yoloV11sBest.rknn","yolov11s-rknn",2025,InferenceType.RKNN)
-    ULTRALYTICSSMALL2025 = ("assets/yoloV11sBest.pt","yolov11s-pytorch",2025,InferenceType.ULTRALYTICS)
-    ULTRALYTICSMED2025 = ("assets/2025-best-151.pt","yolov11s-pytorch",2025,InferenceType.ULTRALYTICS)
+    ONNX2024 = ("assets/yolov5s_fp32.onnx","yolov5s-onnx-fp32",("Robot", "Note"),2024,Backend.ONNX, YOLOTYPE.V5)
+    ONNXSMALL2025 = ("assets/yolov11s_fp32.onnx","yolov11s-onnx-fp32",("Algae", "Coral"),2025,Backend.ONNX, YOLOTYPE.V11)
+    ONNXMEDIUM2025 = ("assets/yolov11m_fp32.onnx","yolov11m-onnx-fp32",("Algae", "Coral"),2025,Backend.ONNX, YOLOTYPE.V11)
+
+    RKNN2024 = ("assets/yolov5s_fp32.rknn","yolov5s-rknn-fp32",("Robot", "Note"), 2024,Backend.RKNN, YOLOTYPE.V5)
+    RKNN2025 = ("assets/yolov11s_int8.rknn","yolov11s-rknn-int8",("Algae", "Coral"),2025,Backend.RKNN, YOLOTYPE.V11)
+
+    ULTRALYTICSSMALL2025 = ("assets/yolov11s_fp32.pt","yolov11s-pytorch-fp32",("Algae", "Coral"),2025,Backend.ULTRALYTICS, YOLOTYPE.V11)
+    ULTRALYTICSMED2025 = ("assets/yolov11m_fp32.pt","yolov11s-pytorch-fp32",("Algae", "Coral"),2025,Backend.ULTRALYTICS, YOLOTYPE.V11)
+    
     # TORCH todo!
 
     def getModelPath(self):
@@ -21,11 +31,18 @@ class InferenceMode(Enum):
     def getName(self):
         return self.value[1]
     
-    def getYear(self):
+    def getLabels(self):
         return self.value[2]
     
-    def getType(self):
+    def getYear(self):
         return self.value[3]
+    
+    def getBackend(self):
+        return self.value[4]
+    
+    def getYoloType(self):
+        return self.value[5]
+    
 
 class Object(Enum):
     ALGAE = "a"

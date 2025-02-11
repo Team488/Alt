@@ -2,49 +2,41 @@ import cv2
 import numpy as np
 import onnxruntime as ort
 from inference import utils
-from abstract.inferencer import Inferencer
-from tools.Constants import ConfigConstants
+from abstract.inferencerBackend import InferencerBackend
+from tools.Constants import ConfigConstants, InferenceMode
+from Core import Neo
 
-class onnxInferencer(Inferencer):
-    def __init__(
-        self,
-        model_path
-    ):
+Sentinel = Neo.getLogger("onnx_inferencer")
+class onnxInferencer(InferencerBackend):
+
+    def initialize(self):
         providers = ort.get_available_providers()
-        print(f"Using provider {providers[0]}")
+        Sentinel.info(f"Using provider {providers[0]}")
         session_options = ort.SessionOptions()
         self.session = ort.InferenceSession(
-            model_path, sess_options=session_options,providers=providers
+            self.mode.getModelPath(), sess_options=session_options,providers=providers
         )
-        self.labels = ("robot","note")
+        # Get input/output names from the ONNX model
+        self.inputName = self.session.get_inputs()[0].name
+        self.outputName = self.session.get_outputs()[0].name
 
-
-
-    def inferenceFrame(self, frame, drawBox=False):
-        # Preprocess the frame if needed (resize, normalize, etc.)
+    def preprocessFrame(self, frame):
         input_frame = utils.letterbox_image(frame.copy())
         # Convert from HWC (height, width, channels) to CHW (channels, height, width)
         input_frame = np.transpose(input_frame, (2, 0, 1))
         input_frame = np.expand_dims(input_frame, axis=0)  # Add batch dimension
         input_frame = input_frame.astype(np.float32)  # Ensure correct data type
         input_frame /= 255
-        # Get input/output names from the ONNX model
-        input_name = self.session.get_inputs()[0].name
-        output_name = self.session.get_outputs()[0].name
+        return input_frame
+    
+    def runInference(self, inputTensor):
+        return self.session.run([self.outputName], {self.inputName: inputTensor})
 
-        predictions = self.session.run([output_name], {input_name: input_frame})[0]
-        adjusted = utils.adjustBoxes(predictions, frame.shape, ConfigConstants.confThreshold)
-        nmsResults = utils.non_max_suppression(adjusted, ConfigConstants.confThreshold)
-
-        # do stuff here
-        if drawBox:
-            for (bbox, conf, class_id) in nmsResults:
-                p1 = tuple(map(int, bbox[:2]))  # Convert to integer tuple
-                p2 = tuple(map(int, bbox[2:4]))  # Convert to integer tuple
-                cv2.rectangle(frame, p1, p2, (0, 255, 0), 1)  # Drawing the rectangle
-                cv2.putText(frame, f"{class_id=} {conf=}", p1, 1, 2, (0, 255, 0), 1)
+    def postProcess(self, results, frame, minConf):
+        adjusted = self.adjustBoxes(results[0], frame.shape, minConf)
+        nmsResults = utils.non_max_suppression(adjusted, minConf)
         return nmsResults
-
+        
 
 def startDemo():
     video_path = "assets/reefscapevid.mp4"

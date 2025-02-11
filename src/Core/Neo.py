@@ -22,6 +22,15 @@ Sentinel.setLevel(level=logging.DEBUG)
 
 
 class Neo:
+    @staticmethod
+    def setLogLevel(level):
+        Sentinel.setLevel(level)
+    
+    @staticmethod
+    def getLogger(name):
+        return Sentinel.getChild(name)
+    
+    
     def __init__(self):
         self.__printInit()
         Sentinel.info("Creating Config operator")
