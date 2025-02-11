@@ -37,12 +37,10 @@ class AgentExample(Agent):
         # in real code, this is where you could handle things like closing a camera abruptly anything that would normally be done in the tasks lifespan
         print("Shutdown!")
 
-    @staticmethod
-    def getName():
+    def getName(self):
         return "Agent_Example"
 
-    @staticmethod
-    def getDescription():
+    def getDescription(self):
         return "Agent_Example_Process"
 
     def getIntervalMs(self):

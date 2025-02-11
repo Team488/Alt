@@ -6,30 +6,21 @@ import socket
 import sys
 import time
 from JXTABLES.XTablesClient import XTablesClient
+from Core.TimeOperator import TimeOperator
 from Core.ConfigOperator import ConfigOperator
 from Core.PropertyOperator import PropertyOperator, LambdaHandler, ReadonlyProperty
 from Core.OrderOperator import OrderOperator
 from Core.AgentOperator import AgentOperator
 from Core.ShareOperator import ShareOperator
 from Core.XDashOperator import XDashOperator
+from Core import LogManager 
 from Core.Central import Central
 from abstract.Agent import Agent
 from abstract.Order import Order
 
-UniqueId = socket.gethostname()
-Sentinel = logging.getLogger(f"Core[{UniqueId}]")
-Sentinel.setLevel(level=logging.DEBUG)
 
-
+Sentinel = LogManager.Sentinel
 class Neo:
-    @staticmethod
-    def setLogLevel(level):
-        Sentinel.setLevel(level)
-    
-    @staticmethod
-    def getLogger(name):
-        return Sentinel.getChild(name)
-    
     
     def __init__(self):
         self.__printInit()
@@ -45,7 +36,12 @@ class Neo:
             self.__xclient,
             configOp=self.__configOp,
             logger=Sentinel.getChild("Property_Operator"),
-            basePrefix=UniqueId,
+            basePrefix=LogManager.UniqueId,
+        )
+        Sentinel.info("Creating Time operator")
+        self.__timeOp = TimeOperator(
+            propertyOp=self.__propertyOp,
+            logger=Sentinel.getChild("Time_Operator"),
         )
         Sentinel.info("Creating Share operator")
         self.__shareOp = ShareOperator(
@@ -60,6 +56,7 @@ class Neo:
         Sentinel.info("Creating Agent operator")
         self.__agentOp = AgentOperator(
             propertyOp=self.__propertyOp,
+            timeOp=self.__timeOp,
             logger=Sentinel.getChild("Agent_Operator"),
         )
         Sentinel.info("Creating Central")
@@ -122,71 +119,18 @@ class Neo:
         logProperty.set(msg)
         self.__logMap[table] = lastlogs
 
-    def wakeAgentMain(self, agent: type[Agent], agentName=None):
-        """NOTE: This will threadblock"""
-        if not self.isShutdown():
-            try:
-                agentName = agent.getName()
-            except Exception as e:
-                Sentinel.debug(f"Error: {e}")
 
-            if (
-                agentName is None
-            ):  # eg no backup name provided and cannot use agent.getName()
-                Sentinel.warning(
-                    "Since you are likely using a partial agent, you must provide an agent name separately!"
-                )
-
-            childPropertyOp = self.__propertyOp.getChild(
-                f"{self.__getBasePrefix(agentName)}"
-            )
-            childLogger = Sentinel.getChild(f"{agentName}")
-
-            logTable = f"{self.__getBasePrefix(agentName)}.log"
-            logProperty = self.__propertyOp.createCustomReadOnlyProperty(
-                logTable, "None..."
-            )
-
-            logLambda = lambda entry: self.__handleLog(logProperty, entry)
-            lambda_handler = LambdaHandler(logLambda)
-            formatter = logging.Formatter("%(levelname)s-%(name)s: %(message)s")
-            lambda_handler.setFormatter(formatter)
-            childLogger.addHandler(lambda_handler)
-
-            self.__agentOp.wakeAgentMain(
-                agent(
-                    central=self.__central,
-                    xclient=self.__xclient,
-                    propertyOperator=childPropertyOp,
-                    configOperator=self.__configOp,
-                    shareOperator=self.__shareOp,
-                    logger=childLogger,
-                )
-            )
-        else:
-            Sentinel.warning("Neo is already shutdown!")
-
-    def wakeAgent(self, agent: type[Agent]):
-        if not self.isShutdown():
-            try:
-                agent.getName()
-            except AttributeError as e:
-                Sentinel.debug(e)
-                Sentinel.fatal(
-                    "If this agent is a partial agent, please use wakeAgentPartial!"
-                )
-                return
-            self.wakeAgentPartial(agent, agent.getName())
-        else:
-            Sentinel.warning("Neo is already shutdown!")
-
-    def wakeAgentPartial(self, agent: type[Agent], agentName):
+    def wakeAgent(self, agent: type[Agent], isMainThread=False):
         """This method is for agents that are created using functools partial\n
         For example the FrameProcessingAgentBase.PartialFrameProcessingAgent()\n
         NOTE: you must provide an agent name due to the how the functools partial works
+        NOTE: if isMainThread=True, this will threadblock indefinitely
 
         """
         if not self.isShutdown():
+            agent = agent()
+            agentName = agent.getName()
+            
             childPropertyOp = self.__propertyOp.getChild(
                 f"{self.__getBasePrefix(agentName)}"
             )
@@ -203,16 +147,25 @@ class Neo:
             lambda_handler.setFormatter(formatter)
             childLogger.addHandler(lambda_handler)
 
-            self.__agentOp.wakeAgent(
-                agent(
-                    central=self.__central,
-                    xclient=self.__xclient,
-                    propertyOperator=childPropertyOp,
-                    configOperator=self.__configOp,
-                    shareOperator=self.__shareOp,
-                    logger=childLogger,
-                )
+            timer = self.__timeOp.getTimer(agent.getName())
+
+            agent.setValues(
+                central=self.__central,
+                xclient=self.__xclient,
+                propertyOperator=childPropertyOp,
+                configOperator=self.__configOp,
+                shareOperator=self.__shareOp,
+                logger=childLogger,
+                timer=timer
             )
+            if isMainThread:
+                self.__agentOp.wakeAgent(
+                    agent
+                )
+            else:
+                self.__agentOp.wakeAgentMain(
+                    agent
+                )
         else:
             Sentinel.warning("Neo is already shutdown!")
 

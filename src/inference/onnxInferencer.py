@@ -4,9 +4,9 @@ import onnxruntime as ort
 from inference import utils
 from abstract.inferencerBackend import InferencerBackend
 from tools.Constants import ConfigConstants, InferenceMode
-from Core import Neo
+from Core.LogManager import getLogger
 
-Sentinel = Neo.getLogger("onnx_inferencer")
+Sentinel = getLogger("onnx_inferencer")
 class onnxInferencer(InferencerBackend):
 
     def initialize(self):

@@ -1,10 +1,10 @@
 import numpy as np
 import cv2
 import time
-from Core import Neo
+from Core.LogManager import getLogger
 from tools.Constants import YOLOTYPE
 
-Sentinel = Neo.getLogger("Inference_Utils")
+Sentinel = getLogger("Inference_Utils")
 
 
 def letterbox_image(image, target_size=(640, 640)):

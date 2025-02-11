@@ -11,18 +11,29 @@ from Core.Central import Central
 from Core.PropertyOperator import PropertyOperator
 from Core.ConfigOperator import ConfigOperator
 from Core.ShareOperator import ShareOperator
+from Core.TimeOperator import Timer
 
 
 class Agent(ABC):
     DEFAULT_LOOP_TIME = 1 # 1 ms
-    def __init__(self, central : Central, xclient : XTablesClient, propertyOperator : PropertyOperator, configOperator : ConfigOperator, shareOperator : ShareOperator, logger : Logger):
+    def __init__(self):
+        # nothing should go here
+        pass
+
+    def setValues(self, central : Central, xclient : XTablesClient, propertyOperator : PropertyOperator,
+                        configOperator : ConfigOperator, shareOperator : ShareOperator, logger : Logger, timer : Timer):
         self.central = central
         self.xclient = xclient
         self.propertyOperator = propertyOperator
         self.configOperator = configOperator
         self.shareOp = shareOperator
         self.Sentinel = logger
+        self.timer = timer
         # other than setting variables, nothing should go here
+    
+    def getTimer(self):
+        """ Use only when needed, and only when associated with agent"""
+        return self.timer
 
     # ----- Required Implementations -----
     
@@ -46,16 +57,14 @@ class Agent(ABC):
 
     # ----- properties -----
 
-    @staticmethod
     @abstractmethod
-    def getName():
+    def getName(self):
         """ Please tell me your name"""
         # agent name here
         pass
 
-    @staticmethod
     @abstractmethod
-    def getDescription():
+    def getDescription(self):
         """ Sooo, what do you do for a "living" """
         # agent description here
         pass

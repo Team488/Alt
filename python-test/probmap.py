@@ -107,7 +107,6 @@ class ProbMap:
         heatmap = np.rint(heatmap).astype(np.uint8)
         heatmap = np.where(heatmap > 255, 255, heatmap).astype(np.uint8)
         cv2.imshow("heatmap", heatmap)
-        cv2.waitKey(10)
 
     def clear_map(self):
         self.probmap = np.zeros((self.size_x, self.size_y), dtype=np.float64)

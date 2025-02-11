@@ -36,12 +36,10 @@ class DriveToTargetAgent(CentralAgentBase, PathPlanningAgentBase):
     def isRunning(self):
         return True
 
-    @staticmethod
-    def getName():
+    def getName(self):
         return "Drive_To_Target_Pathplanning"
 
-    @staticmethod
-    def getDescription():
+    def getDescription(self):
         return "Ingest_Detections_Give_Path"
 
 
@@ -67,12 +65,10 @@ class DriveToFixedPointAgent(PathPlanningAgentBase):
     def isRunning(self):
         return True
 
-    @staticmethod
-    def getName():
+    def getName(self):
         return "Drive_To_FixedPoint_Pathplanning"
 
-    @staticmethod
-    def getDescription():
+    def getDescription(self):
         return "Get_Target_Give_Path"
 
 
@@ -103,10 +99,8 @@ class DriveToNetworkTargetAgent(PathPlanningAgentBase):
     def isRunning(self):
         return True
 
-    @staticmethod
-    def getName():
+    def getName(self):
         return "Drive_To_NetworkTarget_Pathplanning"
 
-    @staticmethod
-    def getDescription():
+    def getDescription(self):
         return "Get_Target_Give_Path"

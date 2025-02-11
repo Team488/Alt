@@ -8,15 +8,17 @@ from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import Future
 from JXTABLES.XTablesClient import XTablesClient
 import concurrent
+from Core.TimeOperator import TimeOperator
 from abstract.Agent import Agent
 from Core.PropertyOperator import PropertyOperator
 
 
 # subscribes to command request with xtables and then executes when requested
 class AgentOperator:
-    def __init__(self, propertyOp: PropertyOperator, logger: Logger):
+    def __init__(self, propertyOp: PropertyOperator, timeOp : TimeOperator, logger: Logger):
         self.Sentinel = logger
         self.propertyOp = propertyOp
+        self.timeOp = timeOp
         self.__executor = ThreadPoolExecutor()
         self.__futures = {}
         self.__futPtr = 0
@@ -73,15 +75,19 @@ class AgentOperator:
 
     def __startAgentLoop(self, agent: Agent, futurePtr: int):
         try:
+            timer = agent.getTimer()
             self.__setErrorLog(agent.getName(), "None...")
             # create
             progressStr = "create"
             self.__setStatus(agent.getName(), "creating")
+            timer.resetMeasurement("init")
             agent.create()
+            timer.measureAndUpdate("init")
 
             self.__setStatus(agent.getName(), "running")
             progressStr = "isRunning"
             while agent.isRunning():
+                timer.resetMeasurement()
                 if self.__stop:
                     break
                 progressStr = "runPeriodic"
@@ -89,13 +95,11 @@ class AgentOperator:
 
                 progressStr = "getIntervalMs"
                 intervalMs = agent.getIntervalMs()
-                if intervalMs <= 0:
-                    continue
-                sleepTime = intervalMs / 1000  # ms -> seconds
+                if intervalMs > 0:
+                    sleepTime = intervalMs / 1000  # ms -> seconds
+                    time.sleep(sleepTime)
 
-                startTime = time.monotonic()
-                while time.monotonic() - startTime < sleepTime:
-                    time.sleep(0.001)  # Check every 1 ms
+                timer.measureAndUpdate()
 
             # if thread was shutdown abruptly (self.__stop flag), perform shutdown
             # shutdown before onclose
@@ -108,8 +112,11 @@ class AgentOperator:
             else:
                 progressStr = "close"
                 self.__setStatus(agent.getName(), f"closing")
+            
             # cleanup
+            timer.resetMeasurement("cleanup")
             agent.onClose()
+            timer.measureAndUpdate("cleanup")
 
             if not forceStopped:
                 self.__setStatus(

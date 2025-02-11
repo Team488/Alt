@@ -1,10 +1,11 @@
 import random
 import time
 from mapinternals.deepSortBaseLabler import DeepSortBaseLabler
-from tools.Constants import CameraIntrinsics, CameraExtrinsics, MapConstants, InferenceMode, Backend
+from tools.Constants import CameraIntrinsics, CameraExtrinsics, MapConstants, InferenceMode, ConfigConstants
 from tools.Units import UnitMode
 from tools.positionEstimator import PositionEstimator
 from tools.positionTranslations import CameraToRobotTranslator, transformWithYaw
+from inference.MultiInferencer import MultiInferencer
 import numpy as np
 import cv2
 
@@ -36,17 +37,7 @@ class LocalFrameProcessor:
 
     def createInferencer(self,inferenceMode : InferenceMode):
         print("Creating inferencer: " + inferenceMode.getName())
-        if inferenceMode.getBackend() == Backend.RKNN:
-            from inference.rknnInferencer import rknnInferencer
-            return rknnInferencer(inferenceMode.getModelPath())
-        elif inferenceMode.getBackend() == Backend.ONNX:
-            from inference.onnxInferencer import onnxInferencer
-            return onnxInferencer(inferenceMode.getModelPath())
-        elif inferenceMode.getBackend() == Backend.ULTRALYTICS:
-            from inference.ultralyticsInferencer import ultralyticsInferencer
-            return ultralyticsInferencer(inferenceMode.getModelPath())  
-        else:
-            print(f"WARNING: Inference mode provided is not defined in local frame processor! {inferenceMode}")
+        return MultiInferencer(inferenceMode)
     
     def processFrame(
         self,
@@ -72,7 +63,7 @@ class LocalFrameProcessor:
             else self.cameraExtrinsics
         )
         startTime = time.time()
-        yoloResults = self.inf.inferenceFrame(frame)
+        yoloResults = self.inf.run(frame, minConf=ConfigConstants.confThreshold)
         if maxDetections != None:
             yoloResults = yoloResults[:maxDetections]
 
@@ -133,12 +124,12 @@ class LocalFrameProcessor:
 
             # note at this point these values are expected to be absolute
             absx,absy,absz = result[1]
-            # if not self.isiregularDetection(absx,absy,absz):
-            absoluteResults.append(result)
-            # else:
-            #     print("Iregular Detection!:")
-            #     print(f"{absx =} {absy =} {absz =}")
-            #     print(f"{relToRobotX =} {relToRobotY =} {relToRobotZ =}")
+            if not self.isiregularDetection(absx,absy,absz):
+                absoluteResults.append(result)
+            else:
+                print("Iregular Detection!:")
+                print(f"{absx =} {absy =} {absz =}")
+                print(f"{relToRobotX =} {relToRobotY =} {relToRobotZ =}")
         # output is id,(absX,absY,absZ),conf,isRobot,features
 
         endTime = time.time()

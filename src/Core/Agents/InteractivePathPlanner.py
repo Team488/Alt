@@ -37,10 +37,8 @@ class InteractivePathPlanner(CentralAgentBase, PathPlanningAgentBase):
     def isRunning(self):
         return self.runFlag
 
-    @staticmethod
-    def getName():
+    def getName(self):
         return "Click_To_Target_Pathplanning"
 
-    @staticmethod
-    def getDescription():
+    def getDescription(self):
         return "Click_Where_To_Go"

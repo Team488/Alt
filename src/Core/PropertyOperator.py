@@ -89,27 +89,31 @@ class PropertyOperator:
         self.__properties[propertyTable] = property
         return property
 
-    def createReadOnlyProperty(self, propertyName, propertyValue) -> "ReadonlyProperty":
+    def createReadOnlyProperty(self, propertyName, propertyValue=None) -> "ReadonlyProperty":
         propertyTable = self.__getReadOnlyPropertyTable(propertyName)
         return self.__createReadOnly(propertyTable, propertyValue)
 
     def createCustomReadOnlyProperty(
-        self, propertyTable, propertyValue, addBasePrefix: bool = True
+        self, propertyTable, propertyValue=None, addBasePrefix: bool = True, addOperatorPrefix: bool = False
     ) -> "ReadonlyProperty":
         """Overrides any extra prefixes that might have been added by getting child property operators
         NOTE: by default addBasePrefix is True, and will add a base prefix to this property\n
         If you choose to remove the base prefix, be aware that separate devices/processes might write to the same tables
 
         """
-        if addBasePrefix:
+        if addBasePrefix and addOperatorPrefix:
+            propertyTable = self.__addFullPrefix(propertyTable)
+        elif addBasePrefix:
             propertyTable = self.__addBasePrefix(propertyTable)
+            
         return self.__createReadOnly(propertyTable, propertyValue)
 
-    def __createReadOnly(self, propertyTable, propertyValue):
+    def __createReadOnly(self, propertyTable, propertyValue=None):
         if propertyTable in self.__readOnlyProperties:
             return self.__readOnlyProperties.get(propertyTable)
-        if not self.__setNetworkValue(propertyTable, propertyValue):
-            return None
+        
+        if not self.__setNetworkValue(propertyTable, propertyValue, mute=True):
+            self.Sentinel.debug(f"Initial network value cannot be set: {propertyValue}")
 
         readOnlyProp = ReadonlyProperty(
             lambda value: self.__setNetworkValue(propertyTable, value),
@@ -118,7 +122,7 @@ class PropertyOperator:
         self.__readOnlyProperties[propertyTable] = readOnlyProp
         return readOnlyProp
 
-    def __setNetworkValue(self, propertyTable, propertyValue) -> bool:
+    def __setNetworkValue(self, propertyTable, propertyValue, mute=False) -> bool:
         # send out default to network (assuming it initially does not exist. It shoudn't)
         if type(propertyValue) is str:
             self.__xclient.putString(propertyTable, propertyValue)
@@ -130,10 +134,13 @@ class PropertyOperator:
             self.__xclient.putBytes(propertyTable, propertyValue)
         elif type(propertyValue) is bool:
             self.__xclient.putBoolean(propertyTable, propertyValue)
+        elif propertyValue is None:
+            self.__xclient.putString(propertyTable, "null")
         elif type(propertyValue) is Iterable:
             return self.__setNetworkIterable(propertyTable, propertyValue)
         else:
-            self.Sentinel.error(f"Invalid property type!: {type(propertyValue)}")
+            if mute:
+                self.Sentinel.error(f"Invalid property type!: {type(propertyValue)}")
             return False
         return True
 

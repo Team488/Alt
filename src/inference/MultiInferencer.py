@@ -5,8 +5,8 @@ from abstract.inferencerBackend import InferencerBackend
 from inference.ultralyticsInferencer import ultralyticsInferencer
 from inference.onnxInferencer import onnxInferencer
 from tools.Constants import ConfigConstants, InferenceMode, Backend
-from Core import Neo
-Sentinel = Neo.getLogger("Multi_Inferencer")
+from Core.LogManager import getLogger
+Sentinel = getLogger("Multi_Inferencer")
 class MultiInferencer:
     def __init__(self, inferenceMode : InferenceMode):
         self.inferenceMode = inferenceMode
@@ -61,7 +61,7 @@ class MultiInferencer:
         postns = (post-inf)
         
         totalTimeElapsedNs = prens + infns + postns
-        print(f"{totalTimeElapsedNs=} {prens=} {infns=} {postns}")
+        Sentinel.debug(f"{totalTimeElapsedNs=} {prens=} {infns=} {postns}")
         cumulativeFps = 1e9/totalTimeElapsedNs 
         
         # do stuff here

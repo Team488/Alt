@@ -24,20 +24,11 @@ class FrameProcessingAgent(LocalizingAgentBase):
 
     def __init__(
         self,
-        central,
-        xclient,
-        propertyOperator,
-        configOperator,
-        shareOperator,
-        logger,
         cameraPath: str,
         cameraIntrinsics: CameraIntrinsics,
         cameraExtrinsics: CameraExtrinsics,
         inferenceMode: InferenceMode,
     ):
-        super().__init__(
-            central, xclient, propertyOperator, configOperator, shareOperator, logger
-        )
         self.cameraPath = cameraPath
         self.cameraIntrinsics = cameraIntrinsics
         self.cameraExtrinsics = cameraExtrinsics
@@ -79,11 +70,18 @@ class FrameProcessingAgent(LocalizingAgentBase):
         return frame
 
     def runPeriodic(self):
+        self.timer.resetMeasurement("complete-run-periodic")
         super().runPeriodic()
+        
+        self.timer.resetMeasurement("cap_read")
         ret, frame = self.cap.read()
+        self.timer.measureAndUpdate("cap_read")
         if ret:
+            self.timer.resetMeasurement("get-value")
             sendFrame = self.sendFrame.get()
+            self.timer.measureAndUpdate("get-value")
             processedFrame = self.preprocessFrame(frame)
+            self.timer.resetMeasurement("frame-processing")
             processedResults = self.frameProcessor.processFrame(
                 processedFrame,
                 robotPosXCm=self.robotLocation[0] * 100,  # m to cm
@@ -91,23 +89,24 @@ class FrameProcessingAgent(LocalizingAgentBase):
                 robotYawRad=self.robotLocation[2],
                 drawBoxes=sendFrame,  # if you are sending frames, you likely want to see bounding boxes aswell
             )
+            self.timer.measureAndUpdate("frame-processing")
 
             # add highest detection telemetry
-            if processedResults:
-                best_idx = max(
-                    range(len(processedResults)), key=lambda i: processedResults[i][2]
-                )
-                best_result = processedResults[best_idx]
-                x, y, z = best_result[1]
-                self.propertyOperator.createReadOnlyProperty(
-                    "BestResult.BestX", ""
-                ).set(float(x))
-                self.propertyOperator.createReadOnlyProperty(
-                    "BestResult.BestY", ""
-                ).set(float(y))
-                self.propertyOperator.createReadOnlyProperty(
-                    "BestResult.BestZ", ""
-                ).set(float(z))
+            # if processedResults:
+            #     best_idx = max(
+            #         range(len(processedResults)), key=lambda i: processedResults[i][2]
+            #     )
+            #     best_result = processedResults[best_idx]
+            #     x, y, z = best_result[1]
+            #     self.propertyOperator.createReadOnlyProperty(
+            #         "BestResult.BestX", ""
+            #     ).set(float(x))
+            #     self.propertyOperator.createReadOnlyProperty(
+            #         "BestResult.BestY", ""
+            #     ).set(float(y))
+            #     self.propertyOperator.createReadOnlyProperty(
+            #         "BestResult.BestZ", ""
+            #     ).set(float(z))
 
             timestamp = time.monotonic()
 
@@ -141,6 +140,7 @@ class FrameProcessingAgent(LocalizingAgentBase):
 
             self.exit = True
             # will close cap
+        self.timer.measureAndUpdate("complete-run-periodic")
 
     def onClose(self):
         super().onClose()
@@ -160,16 +160,14 @@ class FrameProcessingAgent(LocalizingAgentBase):
         super().forceShutdown()
         self.cap.release()
 
-    @staticmethod
-    def getName():
+    def getName(self):
         return "Inference_Agent_Process"
 
-    @staticmethod
-    def getDescription():
+    def getDescription(self):
         return "Ingest_Camera_Run_Ai_Model"
 
     def getIntervalMs(self):
-        return 1
+        return 0
 
 
 def PartialFrameProcessingAgent(

@@ -176,6 +176,8 @@ cython_debug/
 out.mp4
 # *.csv
 
+*.prof
+
 
 # *.pb
 

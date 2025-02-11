@@ -74,10 +74,8 @@ class FrameDisplayer(Agent):
     def isRunning(self):
         return self.runFlag
 
-    @staticmethod
-    def getName():
+    def getName(self):
         return "Frame_Displaying_Agent"
 
-    @staticmethod
-    def getDescription():
+    def getDescription(self):
         return "Ingest_Frames_Show_Them"

@@ -6,9 +6,9 @@ from rknnlite.api import RKNNLite
 from inference import utils
 from abstract.inferencerBackend import InferencerBackend
 from tools.Constants import ConfigConstants, InferenceMode, YOLOTYPE
-from Core import Neo
+from Core.LogManager import getLogger
 
-Sentinel = Neo.getLogger("rknn_inferencer")
+Sentinel = getLogger("rknn_inferencer")
 class rknnInferencer(InferencerBackend):
     
     def initialize(self):
