@@ -17,6 +17,7 @@ from Core import LogManager
 from Core.Central import Central
 from abstract.Agent import Agent
 from abstract.Order import Order
+from JXTABLES.TempConnectionManager import TempConnectionManager as tcm
 
 
 Sentinel = LogManager.Sentinel
@@ -29,6 +30,7 @@ class Neo:
         Sentinel.info("Loading configs")
         self.__configOp = ConfigOperator(logger=Sentinel.getChild("Config_Operator"))
         Sentinel.info("Creating XTables Client....")
+        tcm.invalidate()
         self.__xclient = XTablesClient(debug_mode=True)
         self.__xclient.add_client_version_property("MATRIX-ALT-VISION")
         Sentinel.info("Client created")
