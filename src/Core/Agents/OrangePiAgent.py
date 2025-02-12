@@ -31,7 +31,7 @@ class OrangePiAgent(FrameProcessingAgent):
             cameraPath="/dev/color_camera",
             cameraIntrinsics=cameraIntrinsics,
             cameraExtrinsics=cameraExtrinsics,
-            inferenceMode=InferenceMode.RKNN2025,
+            inferenceMode=InferenceMode.RKNN2025INT8,
         )  # heres where we add our constants
 
     def create(self):

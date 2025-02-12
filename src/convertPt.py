@@ -18,7 +18,7 @@ print('done')
 modelPrefix = "yolov11s"
 
 print('--> Loading ONNX model')
-ret = rknn.load_onnx(model=f'{modelPrefix}.onnx')
+ret = rknn.load_onnx(model=f'{modelPrefix}_fp32.onnx')
 if ret != 0:
     print('Load ONNX model failed!')
     exit(ret)
@@ -27,14 +27,15 @@ print('done')
 
 print('--> Building model')
 dataset = './dataset.txt'  
-ret = rknn.build(do_quantization=True, dataset=dataset)
+# ret = rknn.build(do_quantization=True, dataset=dataset)
+ret = rknn.build(do_quantization=False)
 if ret != 0:
     print('Build model failed!')
     exit(ret)
 print('done')
 
 print('--> Exporting RKNN model')
-rknn.export_rknn(f'./{modelPrefix}_int8.rknn')
+rknn.export_rknn(f'./{modelPrefix}_fp32.rknn')
 print('done')
 
 rknn.release()
