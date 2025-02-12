@@ -93,21 +93,21 @@ class FrameProcessingAgent(LocalizingAgentBase):
             self.timer.measureAndUpdate("frame-processing")
 
             # add highest detection telemetry
-            # if processedResults:
-            #     best_idx = max(
-            #         range(len(processedResults)), key=lambda i: processedResults[i][2]
-            #     )
-            #     best_result = processedResults[best_idx]
-            #     x, y, z = best_result[1]
-            #     self.propertyOperator.createReadOnlyProperty(
-            #         "BestResult.BestX", ""
-            #     ).set(float(x))
-            #     self.propertyOperator.createReadOnlyProperty(
-            #         "BestResult.BestY", ""
-            #     ).set(float(y))
-            #     self.propertyOperator.createReadOnlyProperty(
-            #         "BestResult.BestZ", ""
-            #     ).set(float(z))
+            if processedResults:
+                best_idx = max(
+                    range(len(processedResults)), key=lambda i: processedResults[i][2]
+                )
+                best_result = processedResults[best_idx]
+                x, y, z = best_result[1]
+                self.propertyOperator.createReadOnlyProperty(
+                    "BestResult.BestX", ""
+                ).set(float(x))
+                self.propertyOperator.createReadOnlyProperty(
+                    "BestResult.BestY", ""
+                ).set(float(y))
+                self.propertyOperator.createReadOnlyProperty(
+                    "BestResult.BestZ", ""
+                ).set(float(z))
 
             timestamp = time.monotonic()
 

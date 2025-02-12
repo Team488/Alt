@@ -12,7 +12,6 @@ class FrameDisplayer(Agent):
 
     Agent that will automatically ingest frames and display them\n
     NOTE: Due to openCVs nature this agent must be run in the main thread\n
-    SEE: Neo.wakeAgentMain()
     """
 
     def create(self):

@@ -7,6 +7,6 @@ from Core.Orders import OrderExample
 tcm.invalidate()
 
 n = Neo()
-n.wakeAgent(DriveToTargetAgent)
+n.wakeAgent(DriveToTargetAgent, isMainThread=True)
 n.waitForAgentsFinished()
 n.shutDown()

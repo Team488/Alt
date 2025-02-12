@@ -43,7 +43,7 @@ class AStarPathfinder:
 
     def inflate_obstacles(self, grid, radius):
         # Create a circular kernel
-        kernel_size = 2 * radius  # small safety offset
+        kernel_size = int(2 * radius)  # small safety offset
         kernel = cv2.getStructuringElement(
             cv2.MORPH_ELLIPSE, (kernel_size, kernel_size)
         )

@@ -13,15 +13,16 @@ from Core.OrderOperator import OrderOperator
 from Core.AgentOperator import AgentOperator
 from Core.ShareOperator import ShareOperator
 from Core.XDashOperator import XDashOperator
-from Core import LogManager 
+from Core import LogManager
 from Core.Central import Central
 from abstract.Agent import Agent
 from abstract.Order import Order
 
 
 Sentinel = LogManager.Sentinel
+
+
 class Neo:
-    
     def __init__(self):
         self.__printInit()
         Sentinel.info("Creating Config operator")
@@ -63,7 +64,8 @@ class Neo:
         self.__central = Central(
             logger=Sentinel.getChild("Central_Processor"),
             configOp=self.__configOp,
-            propertyOp=self.__propertyOp)
+            propertyOp=self.__propertyOp,
+        )
         Sentinel.info("Creating XDASH operator")
         self.__xdOp = XDashOperator(
             central=self.__central,
@@ -100,7 +102,11 @@ class Neo:
             self.__orderOp.createOrderTrigger(
                 orderTriggerName,
                 orderToRun(
-                    self.__central, self.__xclient, childPropOp, self.__configOp, self.__shareOp
+                    self.__central,
+                    self.__xclient,
+                    childPropOp,
+                    self.__configOp,
+                    self.__shareOp,
                 ),
             )
         else:
@@ -119,18 +125,12 @@ class Neo:
         logProperty.set(msg)
         self.__logMap[table] = lastlogs
 
-
     def wakeAgent(self, agent: type[Agent], isMainThread=False):
-        """This method is for agents that are created using functools partial\n
-        For example the FrameProcessingAgentBase.PartialFrameProcessingAgent()\n
-        NOTE: you must provide an agent name due to the how the functools partial works
-        NOTE: if isMainThread=True, this will threadblock indefinitely
-
-        """
+        """NOTE: if isMainThread=True, this will threadblock indefinitely"""
         if not self.isShutdown():
             agent = agent()
             agentName = agent.getName()
-            
+
             childPropertyOp = self.__propertyOp.getChild(
                 f"{self.__getBasePrefix(agentName)}"
             )
@@ -156,16 +156,12 @@ class Neo:
                 configOperator=self.__configOp,
                 shareOperator=self.__shareOp,
                 logger=childLogger,
-                timer=timer
+                timer=timer,
             )
-            if isMainThread:
-                self.__agentOp.wakeAgent(
-                    agent
-                )
+            if not isMainThread:
+                self.__agentOp.wakeAgent(agent)
             else:
-                self.__agentOp.wakeAgentMain(
-                    agent
-                )
+                self.__agentOp.wakeAgentMain(agent)
         else:
             Sentinel.warning("Neo is already shutdown!")
 
