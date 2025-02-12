@@ -9,8 +9,9 @@ from tools.Constants import ConfigConstants, InferenceMode, YOLOTYPE
 from Core.LogManager import getLogger
 
 Sentinel = getLogger("rknn_inferencer")
+
+
 class rknnInferencer(InferencerBackend):
-    
     def initialize(self):
         # # export needed rknpu .so
         # so_path = os.getcwd() + "/assets/"
@@ -24,7 +25,7 @@ class rknnInferencer(InferencerBackend):
 
         # load model
         self.model = self.load_rknn_model(self.mode.getModelPath())
-        
+
     # Initialize the RKNN model
     def load_rknn_model(self, model_path):
         rknn = RKNNLite()
@@ -42,17 +43,18 @@ class rknnInferencer(InferencerBackend):
             print("Failed to initialize RKNN runtime")
             return None
         return rknn
-        
+
     def preprocessFrame(self, frame):
         # Preprocess the frame by letterboxing, then changing to rgb format and NHWC layout
         img = utils.letterbox_image(frame.copy())
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        img = np.expand_dims(img, axis=0)  # Now shape is NHWC (Batch Size, height, width, channels)
-        return [img] # return as list of input tensors for rknn (one in this case)
+        img = np.expand_dims(
+            img, axis=0
+        )  # Now shape is NHWC (Batch Size, height, width, channels)
+        return [img]  # return as list of input tensors for rknn (one in this case)
 
-    
     # Returns list[boxes,confidences,classIds]
-    def inferenceFrame(self, inputTensor):
+    def runInference(self, inputTensor):
         return self.model.inference(inputs=inputTensor)
 
     def postProcess(self, results, frame, minConf):
@@ -70,7 +72,7 @@ if __name__ == "__main__":
         ret, frame = cap.read()
         if ret:
             startTime = time.time()
-            results = inf.inferenceFrame(frame,drawBox=True)
+            results = inf.inferenceFrame(frame, drawBox=True)
             timePassed = time.time() - startTime
             fps = 1 / timePassed  # seconds
             cv2.putText(frame, f"Fps {fps}", (10, 50), 1, 2, (0, 255, 0), 1)
