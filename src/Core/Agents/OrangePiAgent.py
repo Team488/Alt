@@ -34,10 +34,9 @@ class OrangePiAgent(FrameProcessingAgent):
             inferenceMode=InferenceMode.RKNN2025,
         )  # heres where we add our constants
 
-        self.Sentinel.info(f"Camera Name: {self.device_name}")
-
     def create(self):
         super().create()
+        self.Sentinel.info(f"Camera Name: {self.device_name}")
 
         # camera config
         self.calib = self.configOperator.getContent("camera_calib.json")
