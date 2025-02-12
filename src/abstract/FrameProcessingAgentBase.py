@@ -4,7 +4,8 @@ import time
 from functools import partial
 
 import numpy as np
-from JXTABLES.XDashDebugger import XDashDebugger
+
+# from JXTABLES.XDashDebugger import XDashDebugger
 
 from abstract.LocalizingAgentBase import LocalizingAgentBase
 from coreinterface.DetectionPacket import DetectionPacket
@@ -36,7 +37,7 @@ class FrameProcessingAgent(LocalizingAgentBase):
 
     def create(self):
         super().create()
-        self.xdashDebugger = XDashDebugger()
+        # self.xdashDebugger = XDashDebugger()
         self.cap = cv2.VideoCapture(self.cameraPath)
         retTest = True
         if self.cap.isOpened():
@@ -72,7 +73,7 @@ class FrameProcessingAgent(LocalizingAgentBase):
     def runPeriodic(self):
         self.timer.resetMeasurement("complete-run-periodic")
         super().runPeriodic()
-        
+
         self.timer.resetMeasurement("cap_read")
         ret, frame = self.cap.read()
         self.timer.measureAndUpdate("cap_read")
@@ -118,14 +119,16 @@ class FrameProcessingAgent(LocalizingAgentBase):
             # optionally send frame
             if sendFrame:
                 self.checkSend.set(True)
-                # framePacket = FramePacket.createPacket(
-                #     timestamp, "Frame", processedFrame
-                # )
-                self.xdashDebugger.send_frame(
-                    key=self.sendFrame.getTable(),
-                    timestamp=timestamp,
-                    frame=processedFrame,
+                framePacket = FramePacket.createPacket(
+                    timestamp, "Frame", processedFrame
                 )
+                self.frameProp.set(framePacket.to_bytes())
+
+                # self.xdashDebugger.send_frame(
+                #     key=self.sendFrame.getTable(),
+                #     timestamp=timestamp,
+                #     frame=processedFrame,
+                # )
             else:
                 self.checkSend.set(False)
 
