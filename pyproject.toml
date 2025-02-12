@@ -7,3 +7,12 @@ name = "alt"
 version = "0.0.1"
 description = "Project for the matrix team."
 requires-python = ">= 3.9"
+
+[tool.mypy]
+files = "src"
+disallow_untyped_calls = true
+disallow_untyped_defs = true
+
+[[tool.mypy.overrides]]
+module = ["cv2.*", "numpy.*", "JXTABLES.*", "deep_sort.*", "networktables.*", "capnp.*", "onnxruntime.*", "rknn.*", "rknnlite.*", "ultralytics.*", "filterpy.*"]
+ignore_missing_imports = true
