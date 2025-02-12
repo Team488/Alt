@@ -18,23 +18,24 @@ class CameraName(Enum):
 
 
 class OrangePiAgent(FrameProcessingAgent):
-    """ Agent -> LocalizingAgentBase -> FrameProcessingAgentBase -> OrangePiAgent
-        
-        Agent to be run on the orange pis"""
+    """Agent -> LocalizingAgentBase -> FrameProcessingAgentBase -> OrangePiAgent
+
+    Agent to be run on the orange pis"""
+
     def __init__(self):
         self.device_name = CameraName.getCameraName().name
         # camera values
-        cameraIntrinsics, cameraExtrinsics, _ = getCameraValues(
-            self.device_name
-        )
-        
-        super().__init__(cameraPath="/dev/color_camera",cameraIntrinsics=cameraIntrinsics,
-                         cameraExtrinsics=cameraExtrinsics,inferenceMode=InferenceMode.RKNN2024) # heres where we add our constants
-        
+        cameraIntrinsics, cameraExtrinsics, _ = getCameraValues(self.device_name)
+
+        super().__init__(
+            cameraPath="/dev/color_camera",
+            cameraIntrinsics=cameraIntrinsics,
+            cameraExtrinsics=cameraExtrinsics,
+            inferenceMode=InferenceMode.RKNN2025,
+        )  # heres where we add our constants
+
         self.Sentinel.info(f"Camera Name: {self.device_name}")
-        
-    
-    
+
     def create(self):
         super().create()
 
@@ -49,7 +50,6 @@ class OrangePiAgent(FrameProcessingAgent):
     def preprocessFrame(self, frame):
         return calibration.undistortFrame(frame, self.mapx, self.mapy)
 
-
     def getName(self):
         return "Orange_Pi_Process"
 
@@ -57,4 +57,4 @@ class OrangePiAgent(FrameProcessingAgent):
         return "Ingest_Camera_Run_Ai_Model_Return_Localized_Detections"
 
     def getIntervalMs(self):
-        return 1
+        return 0
