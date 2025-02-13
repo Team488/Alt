@@ -3,7 +3,7 @@ import time
 import cv2
 import numpy as np
 from rknnlite.api import RKNNLite
-from inference import utils
+from inference import utils, yolo11RknnUtils
 from abstract.inferencerBackend import InferencerBackend
 from tools.Constants import ConfigConstants, InferenceMode, YOLOTYPE
 from Core.LogManager import getLogger
@@ -58,9 +58,15 @@ class rknnInferencer(InferencerBackend):
         return self.model.inference(inputs=inputTensor)
 
     def postProcess(self, results, frame, minConf):
-        adjusted = self.adjustBoxes(results[0], frame.shape, minConf)
-        nmsResults = utils.non_max_suppression(adjusted, conf_threshold=minConf)
-        return nmsResults
+        if self.mode.getYoloType() == YOLOTYPE.V5:
+            adjusted = self.adjustBoxes(results[0], frame.shape, minConf)
+            nmsResults = utils.non_max_suppression(adjusted, conf_threshold=minConf)
+            return nmsResults
+        else:
+            boxes, classes, scores = yolo11RknnUtils.post_process(results)
+            return [(boxes[i], scores[i], classes[i]) for i in range(boxes)]
+
+
 
 
 if __name__ == "__main__":

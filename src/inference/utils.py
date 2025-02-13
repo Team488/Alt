@@ -136,7 +136,7 @@ def adjustBoxesV5(outputs, imgShape, minConf=0.7, printDebug=False):
     
     return adjusted_boxes
 
-def adjustBoxesV11(outputs, imgShape, minConf=0.7, printDebug=False):
+def adjustBoxesV11ONNX(outputs, imgShape, minConf=0.7, printDebug=False):
     #  Model's predictions = 1 x 6 x 8400
     predictions = outputs[0] # extract 6 x 8400
     predictions = np.transpose(predictions, (1,0)) # transpose to 8400 x 6 (x,y,w,h + 2 classes)
@@ -169,7 +169,7 @@ def getAdjustBoxesMethod(yoloType):
     if yoloType == YOLOTYPE.V5:
         return adjustBoxesV5
     elif yoloType == YOLOTYPE.V11:
-        return adjustBoxesV11
+        return adjustBoxesV11ONNX
     else:
         Sentinel.fatal(f"Invalid Yolotype not supported yet!: {yoloType}")
         return None
