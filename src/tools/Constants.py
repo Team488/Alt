@@ -18,7 +18,7 @@ class InferenceMode(Enum):
     ONNXMEDIUM2025 = ("assets/yolov11m_fp32.onnx","yolov11m-onnx-fp32",("Algae", "Coral"),2025,Backend.ONNX, YOLOTYPE.V11)
 
     RKNN2024FP32 = ("assets/yolov5s_fp32.rknn","yolov5s-rknn-fp32",("Robot", "Note"), 2024,Backend.RKNN, YOLOTYPE.V5)
-    RKNN2025INT8 = ("assets/yoloV11s_int8.rknn","yolov11s-rknn-int8",("Algae", "Coral"),2025,Backend.RKNN, YOLOTYPE.V11)
+    RKNN2025INT8 = ("assets/yolov11s_int8.rknn","yolov11s-rknn-int8",("Algae", "Coral"),2025,Backend.RKNN, YOLOTYPE.V11)
 
     ULTRALYTICSSMALL2025 = ("assets/yolov11s_fp32.pt","yolov11s-pytorch-fp32",("Algae", "Coral"),2025,Backend.ULTRALYTICS, YOLOTYPE.V11)
     ULTRALYTICSMED2025 = ("assets/yolov11m_fp32.pt","yolov11s-pytorch-fp32",("Algae", "Coral"),2025,Backend.ULTRALYTICS, YOLOTYPE.V11)
