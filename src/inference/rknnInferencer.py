@@ -63,7 +63,7 @@ class rknnInferencer(InferencerBackend):
             nmsResults = utils.non_max_suppression(adjusted, conf_threshold=minConf)
             return nmsResults
         else:
-            boxes, classes, scores = yolo11RknnUtils.post_process(results)
+            boxes, classes, scores = yolo11RknnUtils.post_process(results, frame.shape)
             if boxes is not None:
                 return list(zip(boxes,classes,scores))
             return []
