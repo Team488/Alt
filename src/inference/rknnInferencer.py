@@ -64,8 +64,9 @@ class rknnInferencer(InferencerBackend):
             return nmsResults
         else:
             boxes, classes, scores = yolo11RknnUtils.post_process(results)
-            return [(boxes[i], scores[i], classes[i]) for i in range(boxes)]
-
+            if boxes is not None:
+                return list(zip(boxes,classes,scores))
+            return []
 
 
 

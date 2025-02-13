@@ -1,9 +1,10 @@
 import socket
 import logging
+logging.basicConfig
 
 UniqueId = socket.gethostname()
 Sentinel = logging.getLogger(f"Core[{UniqueId}]")
-Sentinel.setLevel(level=logging.DEBUG)
+Sentinel.setLevel(level=logging.WARNING)
 
 
 def setLogLevel(level):

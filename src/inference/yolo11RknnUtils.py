@@ -122,7 +122,7 @@ def post_process(input_data, img_shape):
     # filter according to threshold
     boxes, classes, scores = filter_boxes(boxes, scores, classes_conf)
 
-    boxes = [rescaleBox(box,img_shape) for box in boxes]
+    boxes = np.array([rescaleBox(box,img_shape) for box in boxes])
 
 
     # nms
