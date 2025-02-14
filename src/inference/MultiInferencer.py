@@ -65,7 +65,7 @@ class MultiInferencer:
         postns = post - inf
 
         totalTimeElapsedNs = prens + infns + postns
-        Sentinel.debug(f"{totalTimeElapsedNs=} {prens=} {infns=} {postns}")
+        # Sentinel.debug(f"{totalTimeElapsedNs=} {prens=} {infns=} {postns}")
         cumulativeFps = 1e9 / totalTimeElapsedNs
 
         # do stuff here

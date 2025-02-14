@@ -33,6 +33,8 @@ class Neo:
         tcm.invalidate()
         self.__xclient = XTablesClient(debug_mode=True)
         self.__xclient.add_client_version_property("MATRIX-ALT-VISION")
+        while not self.__xclient.get_socket_montior().is_connected("PUSH"):
+            Sentinel.info("Waiting for xtables push socket connection....")
         Sentinel.info("Client created")
         Sentinel.info("Creating Property operator")
         self.__propertyOp = PropertyOperator(
