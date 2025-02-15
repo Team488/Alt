@@ -20,10 +20,9 @@ class FrameDisplayer(Agent):
         self.keys = ["REARRIGHT", "REARLEFT", "FRONTLEFT", "FRONTRIGHT"]
         self.keyToHost = {
             "REARRIGHT": "photonvisionrearright",
-            "REARRIGHT": "photonvisionrearright",
+            "FRONTRIGHT": "photonvisionfrontright",
             "REARLEFT": "photonvisionrearleft",
             "FRONTLEFT": "photonvisionfrontleft",
-            "FRONTRIGHT": "Adem-Laptop",
         }
         self.getFrameTable = (
             lambda key: f"{self.keyToHost.get(key)}.{FrameProcessingAgent.FRAMEPOSTFIX}"
