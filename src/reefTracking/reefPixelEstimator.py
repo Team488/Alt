@@ -66,6 +66,17 @@ for branch, offset in cad_to_branch_offset.items():
     for i in range(len(offset)):
         offset[i] *= 0.0254
 
+widthOffset = 6  # in
+heightOffset = 12  # in
+heightClearence = 1
+reefBoxOffsets = [
+    np.array([widthOffset / 2 * 0.0254, -heightClearence * 0.0254, 0]),
+    np.array([-widthOffset / 2 * 0.0254, -heightClearence * 0.0254, 0]),
+    np.array([widthOffset / 2 * 0.0254, heightOffset * 0.0254, 0]),
+    np.array([-widthOffset / 2 * 0.0254, heightOffset * 0.0254, 0]),
+]
+# in to m, all corners of a imaginary box around a point on the reef
+
 
 class ReefPixelEstimator:
     def __init__(self, config_file="assets/config/1280x800v1.json"):
@@ -150,6 +161,7 @@ class ReefPixelEstimator:
                     offset_3d, 1.0
                 )  # ensures shape is 4x4
                 # camera_to_reef = np.dot(tag_pose_estimation_matrix, tag_to_reef_homography)
+
                 camera_to_reef = np.dot(
                     tag_pose_estimation_orthogonal_pose1_matrix.toMatrix(),
                     tag_to_reef_homography,
@@ -157,12 +169,60 @@ class ReefPixelEstimator:
 
                 x_cam, y_cam, z_cam, _ = camera_to_reef
 
+                corners = []
+                for boxOffset in reefBoxOffsets:
+                    box_offset_homogeneous = np.append(boxOffset, 0)  # Shape: (4,)
+                    tag_to_reef_corner_homography = (
+                        tag_to_reef_homography + box_offset_homogeneous
+                    )
+                    print(f"{tag_to_reef_homography=} {tag_to_reef_corner_homography=}")
+                    print(tag_to_reef_corner_homography)
+
+                    camera_to_reef_corner = np.dot(
+                        tag_pose_estimation_orthogonal_pose1_matrix.toMatrix(),
+                        tag_to_reef_corner_homography,
+                    )
+                    corners.append(camera_to_reef_corner)
+
+                    x_cam, y_cam, z_cam, _ = camera_to_reef_corner
+                    print(
+                        f"Corner 3D coords (camera frame): x={x_cam}, y={y_cam}, z={z_cam}"
+                    )
+                    x_cam, y_cam, z_cam, _ = camera_to_reef
+                    print(
+                        f"Reef post 3D coords (camera frame): x={x_cam}, y={y_cam}, z={z_cam}"
+                    )
+
+                # exit(0)
+
                 # project the 3D point to 2D image coordinates:
                 u = (self.fx * x_cam / z_cam) + self.cx
                 v = (self.fy * y_cam / z_cam) + self.cy
 
+                # project the 3d box corners to 2d image coords
+                imageCorners = []
+                for corner in corners:
+                    x_cam, y_cam, z_cam, _ = corner
+                    uC = (self.fx * x_cam / z_cam) + self.cx
+                    uV = (self.fy * y_cam / z_cam) + self.cy
+                    imageCorners.append((uC, uV))
+
                 if drawCoordinates:
                     cv2.circle(image, (int(u), int(v)), 5, (0, 255, 255), 2)
+                    min_x, min_y = np.min(imageCorners, axis=0)
+                    max_x, max_y = np.max(imageCorners, axis=0)
+                    cv2.rectangle(
+                        image,
+                        (int(min_x), int(min_y)),
+                        (int(max_x), int(max_y)),
+                        (255, 255, 255),
+                        2,
+                    )
+
+                    for imageCorner in imageCorners:
+                        uC, uV = imageCorner
+                        cv2.circle(image, (int(uC), int(uV)), 3, (255, 255, 255), 2)
+
                     cv2.putText(
                         image,
                         f"{offset_idx}",

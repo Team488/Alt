@@ -12,4 +12,4 @@
 # n.shutDown()
 from mapDemos import reefAprilTagDemo
 
-reefAprilTagDemo.startDemo(videoPath=1)
+reefAprilTagDemo.startDemo(videoPath=0)

@@ -25,8 +25,9 @@ def startDemo(videoPath=0):
 
         image = cv2.undistort(image, reefEstimator.K, reefEstimator.distCoeffs)
         coordinates = reefEstimator.getReefCoordinates(image, drawCoordinates=True)
+        # results = inf.run(image, 0.8, drawBoxes=True)
+        results = []
         if coordinates.items():
-            results = inf.run(image, 0.8, drawBoxes=True)
 
             for reefId in coordinates.values():
                 for offset_id, coordinate in reefId.items():
