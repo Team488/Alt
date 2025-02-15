@@ -23,6 +23,7 @@ def startDemo(videoPath=0):
         ret, image = cap.read()
         frame_ct += 1
 
+        image = cv2.undistort(image, reefEstimator.K, reefEstimator.distCoeffs)
         coordinates = reefEstimator.getReefCoordinates(image, drawCoordinates=True)
         if coordinates.items():
             results = inf.run(image, 0.8, drawBoxes=True)

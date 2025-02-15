@@ -98,8 +98,7 @@ class ReefPixelEstimator:
         except Exception as e:
             print(f"Failed to open config! {e}")
 
-    def getReefCoordinates(self, frame, drawCoordinates=True):
-        image = cv2.undistort(frame, self.K, self.distCoeffs)
+    def getReefCoordinates(self, image, drawCoordinates=True):
         grayscale_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         outputs = self.helper.getDetections(grayscale_image)
         orthogonalEsts = self.helper.getOrthogonalEstimates(outputs)
