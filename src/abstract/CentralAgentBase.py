@@ -2,7 +2,7 @@ import time
 from tools.Constants import CameraIdOffsets
 from coreinterface.DetectionPacket import DetectionPacket
 from abstract.Agent import Agent
-from abstract.FrameProcessingAgentBase import FrameProcessingAgent
+from abstract.ObjectLocalizingAgentBase import ObjectLocalizingAgentBase
 
 
 class CentralAgentBase(Agent):
@@ -22,7 +22,7 @@ class CentralAgentBase(Agent):
             "FRONTRIGHT": "photonvisionfrontright",
         }
         self.getDetectionTable = (
-            lambda key: f"{self.keyToHost.get(key)}.{FrameProcessingAgent.DETECTIONPOSTFIX}"
+            lambda key: f"{self.keyToHost.get(key)}.{ObjectLocalizingAgentBase.DETECTIONPOSTFIX}"
         )
         self.updateMap = {key: ([], 0, 0) for key in self.keys}
         self.localUpdateMap = {key: 0 for key in self.keys}

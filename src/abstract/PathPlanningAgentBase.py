@@ -2,12 +2,12 @@ from abc import abstractmethod
 import cv2
 import numpy as np
 from networktables import NetworkTables
-from abstract.LocalizingAgentBase import LocalizingAgentBase
+from abstract.PositionLocalizingAgentBase import PositionLocalizingAgentBase
 from tools import XTutils
 
 
-class PathPlanningAgentBase(LocalizingAgentBase):
-    """Agent -> LocalizingAgentBase -> PathPlanningAgentBase
+class PathPlanningAgentBase(PositionLocalizingAgentBase):
+    """Agent -> PositionLocalizingAgentBase -> PathPlanningAgentBase
 
     Adds path planning functionality to an agent
     NOTE: you must implement the getPath function

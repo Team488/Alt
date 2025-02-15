@@ -2,8 +2,8 @@ from abstract.Agent import Agent
 from tools import NtUtils
 
 
-class LocalizingAgentBase(Agent):
-    """Agent -> LocalizingAgentBase
+class PositionLocalizingAgentBase(Agent):
+    """Agent -> PositionLocalizingAgentBase
 
     Extending Agent with Localizing capabilites. Supports only XTables
     NOTE: For changes to properties to take place, the Agent must be restarted

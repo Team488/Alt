@@ -16,3 +16,6 @@ class TargetUpdatingOrder(Order):
 
     def getDescription(self):
         return "Updates_network_target"
+    
+    def getName(self):
+        "target_updating_order"

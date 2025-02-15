@@ -1,5 +1,5 @@
 import socket
-from abstract.FrameProcessingAgentBase import FrameProcessingAgent
+from abstract.ObjectLocalizingAgentBase import ObjectLocalizingAgentBase
 from enum import Enum
 from tools.Constants import InferenceMode, getCameraValues
 from tools import calibration
@@ -17,7 +17,7 @@ class CameraName(Enum):
         return CameraName(name)
 
 
-class OrangePiAgent(FrameProcessingAgent):
+class OrangePiAgent(ObjectLocalizingAgentBase):
     """Agent -> LocalizingAgentBase -> FrameProcessingAgentBase -> OrangePiAgent
 
     Agent to be run on the orange pis"""

@@ -9,39 +9,59 @@ from Core.Central import Central
 from Core.PropertyOperator import PropertyOperator
 from Core.ConfigOperator import ConfigOperator
 from Core.ShareOperator import ShareOperator
+from Core.TimeOperator import Timer
 
 
 class Order(ABC):
-    def __init__(
-        self,
-        central: Central,
-        xclient: XTablesClient,
-        propertyOperator: PropertyOperator,
-        configOperator: ConfigOperator,
-        shareOperator: ShareOperator,
+    def __init__(self):
+        pass
+
+    def inject(
+            self,
+            central: Central,
+            xclient: XTablesClient,
+            propertyOperator: PropertyOperator,
+            configOperator: ConfigOperator,
+            shareOperator: ShareOperator,
+            timer : Timer
     ):
+        """ "Injects" arguments into the order. Should not be modified in any subclasses 
+        
+        """
         self.central = central
         self.xclient = xclient
         self.propertyOperator = propertyOperator
         self.configOperator = configOperator
         self.shareOperator = shareOperator
-        # other than setting variables, nothing should go here
+        self.timer = timer
+
+    def getTimer(self):
+        """ Use only when needed, and only when associated with order"""
+        return self.timer
 
     @abstractmethod
     def create(self):
-        # perform order init here
+        """Perform any one time creation here.\n
+        NOTE: this will not be called multiple times, even if the order is run multiple times"""
         pass
 
     @abstractmethod
     def run(self, input):
-        # order run here
+        """ Put your run once code here"""
         pass
 
     @abstractmethod
     def getDescription(self) -> str:
-        # return order name here
+        """ Return Concise Order Description"""
         pass
 
-    def close(self):
-        # optional order cleanup here
+    def getName(self) -> str:
+        """ Return Order Name"""
         pass
+
+    def cleanup(self):
+        """ Optional Method: Cleanup after running order"""
+        pass
+
+    
+    
