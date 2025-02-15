@@ -116,14 +116,14 @@ class ReefPixelEstimator:
                 points = np.array(points, dtype=np.int32)
                 points = points.reshape((-1, 1, 2))
                 cv2.polylines(
-                    frame, [points], isClosed=True, color=(0, 255, 255), thickness=3
+                    image, [points], isClosed=True, color=(0, 255, 255), thickness=3
                 )
 
                 # Retrieve the center of the AT detection
                 centerX = output.getCenter().x
                 centerY = output.getCenter().y
                 cv2.circle(
-                    frame,
+                    image,
                     (int(centerX), int(centerY)),
                     2,
                     color=(0, 255, 255),
@@ -162,9 +162,9 @@ class ReefPixelEstimator:
                 v = (self.fy * y_cam / z_cam) + self.cy
 
                 if drawCoordinates:
-                    cv2.circle(frame, (int(u), int(v)), 5, (0, 255, 255), 2)
+                    cv2.circle(image, (int(u), int(v)), 5, (0, 255, 255), 2)
                     cv2.putText(
-                        frame,
+                        image,
                         f"{offset_idx}",
                         (int(u), int(v) + 30),
                         cv2.FONT_HERSHEY_SIMPLEX,
