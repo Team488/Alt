@@ -160,7 +160,7 @@ class ReefPixelEstimator:
 
                 # project the 3D point to 2D image coordinates:
                 u = (self.fx * x_cam / z_cam) + self.cx
-                v = (self.fx * y_cam / z_cam) + self.cx
+                v = (self.fy * y_cam / z_cam) + self.cy
 
                 if drawCoordinates:
                     cv2.circle(frame, (int(u), int(v)), 5, (0, 255, 255), 2)
