@@ -20,8 +20,10 @@ class Agent(ABC):
         # nothing should go here
         pass
 
-    def setValues(self, central : Central, xclient : XTablesClient, propertyOperator : PropertyOperator,
+    def inject(self, central : Central, xclient : XTablesClient, propertyOperator : PropertyOperator,
                         configOperator : ConfigOperator, shareOperator : ShareOperator, logger : Logger, timer : Timer):
+        """ "Injects" arguments into agent, should not be modified in any classes
+        """
         self.central = central
         self.xclient = xclient
         self.propertyOperator = propertyOperator
@@ -48,6 +50,7 @@ class Agent(ABC):
         """ Runs continously until the agent ends"""
         # agent periodic loop here
         pass
+
 
     @abstractmethod
     def isRunning(self) -> bool:

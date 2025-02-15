@@ -198,3 +198,4 @@ pycapnp/
 src/assets/PROPERTIES/*
 src/assets/TMPImages/*
 src/assets/dataset.txt
+.aider*

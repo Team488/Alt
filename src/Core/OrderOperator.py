@@ -11,8 +11,8 @@ class OrderOperator:
     ):
         self.Sentinel = logger
         self.propertyOp = propertyOp
+        self.triggers = set()
         self.__xclient: XTablesClient = xclient
-        self.__orderMap = {}
         self.__setTriggerDescription = lambda orderTriggerName, description: self.propertyOp.createCustomReadOnlyProperty(
             f"active_triggers.{orderTriggerName}.Description", description
         ).set(description)
@@ -20,32 +20,21 @@ class OrderOperator:
             f"active_triggers.{orderTriggerName}.Status", status
         ).set(status)
 
-    def __runOrder(self, ret):
+    def __runOrder(self, order : Order, ret):
         orderTriggerName = ret.key
-        order: Order = self.__orderMap.get(orderTriggerName)
-        if order == None:
-            self.__setTriggerStatus(orderTriggerName, "invalid trigger!")
-            # i dont see this ever happening (unless deregister is called then a run order)
-            Sentinel.error(
-                "OrderMap does not contain the trigger name expected to run order!"
-            )
-            return
-
         self.__setTriggerStatus(orderTriggerName, "running!")
         self.Sentinel.info(f"Starting order that does: {order.getDescription()}")
-
+        timer = order.getTimer()
         try:
-            self.Sentinel.debug(f"Creating order...")
-            progressStr = "create"
-            order.create()
-
             self.Sentinel.debug(f"Running order...")
             progressStr = "run"
-            order.run(input=ret.value)
+            with timer.run("run"):
+                order.run(input=ret.value)
 
-            self.Sentinel.debug(f"Closing order...")
-            progressStr = "close"
-            order.close()
+            self.Sentinel.debug(f"Cleanup order...")
+            progressStr = "cleanup"
+            with timer.run("cleanup"):
+                order.cleanup()
 
             self.__setTriggerStatus(orderTriggerName, f"sucessfully run!")
         except Exception as e:
@@ -59,19 +48,24 @@ class OrderOperator:
         # broadcast order and what it does
         self.__setTriggerDescription(orderTriggerName, orderToRun.getDescription())
         self.__setTriggerStatus(orderTriggerName, "waiting to run")
+
+        # running create
+        with orderToRun.getTimer().run("create"):
+                orderToRun.create()
+        
         # subscribing to trigger
-        self.__xclient.subscribe(orderTriggerName, self.__runOrder)
+        self.__xclient.subscribe(orderTriggerName, lambda ret : self.__runOrder(orderToRun, ret))
+        self.triggers.add(orderTriggerName)
         # assign the order order
-        self.__orderMap[orderTriggerName] = orderToRun
         self.Sentinel.info(
             f"Created order trigger | Trigger Name: {orderTriggerName} Order description: {orderToRun.getDescription()}"
         )
 
     def deregister(self):
         wasAllRemoved = True
-        for orderTriggerName in self.__orderMap.keys():
+        for orderTriggerName in self.triggers:
             wasAllRemoved &= self.__xclient.unsubscribe(
                 orderTriggerName, self.__runOrder
             )
-        self.__orderMap.clear()
+        self.triggers.clear()
         return wasAllRemoved

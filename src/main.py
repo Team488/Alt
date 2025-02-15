@@ -1,12 +1,15 @@
-from JXTABLES.TempConnectionManager import TempConnectionManager as tcm
-from Core.Neo import Neo
-from Core.Agents import InferenceAgent, DriveToTargetAgent, OrangePiAgent
-from Core.Orders import OrderExample
+# from JXTABLES.TempConnectionManager import TempConnectionManager as tcm
+# from Core.Neo import Neo
+# from Core.Agents import InferenceAgent, DriveToTargetAgent, OrangePiAgent
+# from Core.Orders import OrderExample
 
-# removes the temp ip for testing in main
-tcm.invalidate()
+# # removes the temp ip for testing in main
+# tcm.invalidate()
 
-n = Neo()
-n.wakeAgent(DriveToTargetAgent, isMainThread=True)
-n.waitForAgentsFinished()
-n.shutDown()
+# n = Neo()
+# n.wakeAgent(DriveToTargetAgent, isMainThread=True)
+# n.waitForAgentsFinished()
+# n.shutDown()
+from mapDemos import reefAprilTagDemo
+
+reefAprilTagDemo.startDemo(videoPath=1)

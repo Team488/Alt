@@ -77,29 +77,29 @@ class AgentOperator:
         try:
             timer = agent.getTimer()
             self.__setErrorLog(agent.getName(), "None...")
+            
             # create
             progressStr = "create"
             self.__setStatus(agent.getName(), "creating")
-            timer.resetMeasurement("init")
-            agent.create()
-            timer.measureAndUpdate("init")
+
+            with timer.run("create"):
+                agent.create()
 
             self.__setStatus(agent.getName(), "running")
             progressStr = "isRunning"
             while agent.isRunning():
-                timer.resetMeasurement()
-                if self.__stop:
-                    break
-                progressStr = "runPeriodic"
-                agent.runPeriodic()
+                with timer.run("runPeriodic"):
+                    if self.__stop:
+                        break
+                    progressStr = "runPeriodic"
+                    agent.runPeriodic()
 
-                progressStr = "getIntervalMs"
-                intervalMs = agent.getIntervalMs()
-                if intervalMs > 0:
-                    sleepTime = intervalMs / 1000  # ms -> seconds
-                    time.sleep(sleepTime)
+                    progressStr = "getIntervalMs"
+                    intervalMs = agent.getIntervalMs()
+                    if intervalMs > 0:
+                        sleepTime = intervalMs / 1000  # ms -> seconds
+                        time.sleep(sleepTime)
 
-                timer.measureAndUpdate()
 
             # if thread was shutdown abruptly (self.__stop flag), perform shutdown
             # shutdown before onclose
@@ -114,9 +114,8 @@ class AgentOperator:
                 self.__setStatus(agent.getName(), f"closing")
             
             # cleanup
-            timer.resetMeasurement("cleanup")
-            agent.onClose()
-            timer.measureAndUpdate("cleanup")
+            with timer.run("cleanup"):
+                agent.onClose()
 
             if not forceStopped:
                 self.__setStatus(
