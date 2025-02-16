@@ -33,6 +33,8 @@ class Neo:
         tcm.invalidate()
         self.__xclient = XTablesClient(debug_mode=True)
         self.__xclient.add_client_version_property("MATRIX-ALT-VISION")
+        while not self.__xclient.get_socket_montior().is_connected("PUSH"):
+            Sentinel.info("Waiting for xtables push socket connection....")
         Sentinel.info("Client created")
         Sentinel.info("Creating Property operator")
         self.__propertyOp = PropertyOperator(
@@ -100,16 +102,20 @@ class Neo:
 
     def addOrderTrigger(self, orderTriggerName: str, orderToRun: type[Order]):
         if not self.isShutdown():
-            childPropOp = self.__propertyOp.getChild(orderToRun.__name__)
-            self.__orderOp.createOrderTrigger(
-                orderTriggerName,
-                orderToRun(
+            order = orderToRun()
+            childPropOp = self.__propertyOp.getChild(order.getName())
+            timer = self.__timeOp.getTimer(order.getName())
+            order.inject(
                     self.__central,
                     self.__xclient,
                     childPropOp,
                     self.__configOp,
                     self.__shareOp,
-                ),
+                    timer
+            )
+            self.__orderOp.createOrderTrigger(
+                orderTriggerName,
+                order
             )
         else:
             Sentinel.warning("Neo is already shutdown!")
@@ -151,7 +157,7 @@ class Neo:
 
             timer = self.__timeOp.getTimer(agent.getName())
 
-            agent.setValues(
+            agent.inject(
                 central=self.__central,
                 xclient=self.__xclient,
                 propertyOperator=childPropertyOp,

@@ -16,8 +16,11 @@ class OrderExample(Order):
         print(f"Order input is: {input}")
         self.projectInput.set(input)
 
-    def close(self):
+    def cleanup(self):
         print(f"Cleaning up!")
 
     def getDescription(self):
         return "displays_input"
+    
+    def getName(self):
+        return "order_example"

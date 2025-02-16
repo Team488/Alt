@@ -7,18 +7,18 @@ import numpy as np
 
 # from JXTABLES.XDashDebugger import XDashDebugger
 
-from abstract.LocalizingAgentBase import LocalizingAgentBase
+from abstract.PositionLocalizingAgentBase import PositionLocalizingAgentBase
 from coreinterface.DetectionPacket import DetectionPacket
 from coreinterface.FramePacket import FramePacket
 from tools.Constants import InferenceMode, CameraExtrinsics, CameraIntrinsics
 from mapinternals.localFrameProcessor import LocalFrameProcessor
 
 
-class FrameProcessingAgent(LocalizingAgentBase):
-    """Agent -> LocalizingAgentBase -> FrameProcessingAgentBase
+class ObjectLocalizingAgentBase(PositionLocalizingAgentBase):
+    """Agent -> PositionLocalizingAgentBase -> ObjectLocalizingAgentBase
 
-    Adds inference capabilites to an agent, processing frames and sending detections
-    NOTE: Requires extra arguments passed in somehow, for example using Functools partial"""
+    Adds inference and object localization capabilites to an agent, processing frames and sending detections
+    NOTE: Requires extra arguments passed in somehow, for example using Functools partial or extending the class"""
 
     DETECTIONPOSTFIX = "Detections"
     FRAMEPOSTFIX = "Frame"
@@ -71,26 +71,22 @@ class FrameProcessingAgent(LocalizingAgentBase):
         return frame
 
     def runPeriodic(self):
-        self.timer.resetMeasurement("complete-run-periodic")
         super().runPeriodic()
 
-        self.timer.resetMeasurement("cap_read")
-        ret, frame = self.cap.read()
-        self.timer.measureAndUpdate("cap_read")
+        with self.timer.run("cap_read"):
+            ret, frame = self.cap.read()
+
         if ret:
-            self.timer.resetMeasurement("get-value")
             sendFrame = self.sendFrame.get()
-            self.timer.measureAndUpdate("get-value")
             processedFrame = self.preprocessFrame(frame)
-            self.timer.resetMeasurement("frame-processing")
-            processedResults = self.frameProcessor.processFrame(
-                processedFrame,
-                robotPosXCm=self.robotLocation[0] * 100,  # m to cm
-                robotPosYCm=self.robotLocation[1] * 100,  # m to cm
-                robotYawRad=self.robotLocation[2],
-                drawBoxes=sendFrame,  # if you are sending frames, you likely want to see bounding boxes aswell
-            )
-            self.timer.measureAndUpdate("frame-processing")
+            with self.timer.run("frame-processing"):
+                processedResults = self.frameProcessor.processFrame(
+                    processedFrame,
+                    robotPosXCm=self.robotLocation[0] * 100,  # m to cm
+                    robotPosYCm=self.robotLocation[1] * 100,  # m to cm
+                    robotYawRad=self.robotLocation[2],
+                    drawBoxes=sendFrame,  # if you are sending frames, you likely want to see bounding boxes aswell
+                )
 
             # add highest detection telemetry
             if processedResults:
@@ -109,10 +105,10 @@ class FrameProcessingAgent(LocalizingAgentBase):
                     "BestResult.BestZ", ""
                 ).set(float(z))
 
-            timestamp = time.monotonic()
+            timestampMs = time.time()*1000
 
             detectionPacket = DetectionPacket.createPacket(
-                processedResults, "Detection", timestamp
+                processedResults, "Detection", timestampMs
             )
             self.detectionProp.set(detectionPacket.to_bytes())
 
@@ -120,7 +116,7 @@ class FrameProcessingAgent(LocalizingAgentBase):
             if sendFrame:
                 self.checkSend.set(True)
                 framePacket = FramePacket.createPacket(
-                    timestamp, "Frame", processedFrame
+                    timestampMs, "Frame", processedFrame
                 )
                 self.frameProp.set(framePacket.to_bytes())
 
@@ -143,7 +139,6 @@ class FrameProcessingAgent(LocalizingAgentBase):
 
             self.exit = True
             # will close cap
-        self.timer.measureAndUpdate("complete-run-periodic")
 
     def onClose(self):
         super().onClose()
@@ -164,21 +159,21 @@ class FrameProcessingAgent(LocalizingAgentBase):
         self.cap.release()
 
     def getName(self):
-        return "Inference_Agent_Process"
+        return "Object_Localizer"
 
     def getDescription(self):
-        return "Ingest_Camera_Run_Ai_Model"
+        return "Inference_Then_Localize"
 
     def getIntervalMs(self):
         return 0
 
 
-def PartialFrameProcessingAgent(
+def PartialObjectLocalizingAgent(
     cameraPath, cameraIntrinsics, cameraExtrinsics, inferenceMode
 ):
     """Returns a partially completed frame processing agent. All you have to do is pass it into neo"""
     return partial(
-        FrameProcessingAgent,
+        ObjectLocalizingAgentBase,
         cameraPath=cameraPath,
         cameraIntrinsics=cameraIntrinsics,
         cameraExtrinsics=cameraExtrinsics,
