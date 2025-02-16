@@ -271,36 +271,36 @@ class PathPlanner:
         self.dynamic_obstacles = self.inflate_obstacles(dynamic_grid, safety_radius)
 
 
-def build_bezier_curves_proto(final_segments, times_to_traverse):
-    """
-    Build a BezierCurves protobuf from the final path segments and their traversal times.
-
-    Args:
-        final_segments (list of np.ndarray): Each element is a NumPy array of shape (N, 2),
-                                             containing [x, y] points for a segment.
-        times_to_traverse (list of float): Each element is the time (in seconds) required
-                                           to traverse the corresponding segment.
-
-    Returns:
-        your_proto_pb2.BezierCurves: The populated protobuf message.
-    """
-
-    # Create the top-level BezierCurves message
-    bezier_curves_msg = BezierCurve.BezierCurves()
-    bezier_curves_msg.pathFound = True
-    # Iterate through segments and their times
-    for segment, time_traverse in zip(final_segments, times_to_traverse):
-        # Create a BezierCurve entry
-        curve_msg = bezier_curves_msg.curves.add()
-        curve_msg.timeToTraverse = time_traverse
-
-        # Fill in the control points for this curve
-        for (x_val, y_val) in segment:
-            cp = curve_msg.controlPoints.add()
-            cp.x = x_val
-            cp.y = y_val
-
-    return bezier_curves_msg
+# def build_bezier_curves_proto(final_segments, times_to_traverse):
+#     """
+#     Build a BezierCurves protobuf from the final path segments and their traversal times.
+#
+#     Args:
+#         final_segments (list of np.ndarray): Each element is a NumPy array of shape (N, 2),
+#                                              containing [x, y] points for a segment.
+#         times_to_traverse (list of float): Each element is the time (in seconds) required
+#                                            to traverse the corresponding segment.
+#
+#     Returns:
+#         your_proto_pb2.BezierCurves: The populated protobuf message.
+#     """
+#
+#     # Create the top-level BezierCurves message
+#     bezier_curves_msg = BezierCurve.BezierCurves()
+#     bezier_curves_msg.pathFound = True
+#     # Iterate through segments and their times
+#     for segment, time_traverse in zip(final_segments, times_to_traverse):
+#         # Create a BezierCurve entry
+#         curve_msg = bezier_curves_msg.curves.add()
+#         curve_msg.timeToTraverse = time_traverse
+#
+#         # Fill in the control points for this curve
+#         for (x_val, y_val) in segment:
+#             cp = curve_msg.controlPoints.add()
+#             cp.x = x_val
+#             cp.y = y_val
+#
+#     return bezier_curves_msg
 
 
 # ---------------------------
