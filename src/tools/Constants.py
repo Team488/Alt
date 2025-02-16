@@ -1,54 +1,109 @@
 from enum import Enum
+from typing import Any
+
 import math
 import numpy as np
+
 
 class YOLOTYPE(Enum):
     V11 = "v11"
     V8 = "v8"
     V5 = "v5"
 
+
 class Backend(Enum):
     RKNN = "rknn"
     ONNX = "onnx"
     ULTRALYTICS = "ultralytics"
 
+
 class InferenceMode(Enum):
-    ONNX2024 = ("assets/yolov5s_fp32.onnx","yolov5s-onnx-fp32",("Robot", "Note"),2024,Backend.ONNX, YOLOTYPE.V5)
-    ONNXSMALL2025 = ("assets/yolov11s_fp32.onnx","yolov11s-onnx-fp32",("Algae", "Coral"),2025,Backend.ONNX, YOLOTYPE.V11)
-    ONNXMEDIUM2025 = ("assets/yolov11m_fp32.onnx","yolov11m-onnx-fp32",("Algae", "Coral"),2025,Backend.ONNX, YOLOTYPE.V11)
+    ONNX2024 = (
+        "assets/yolov5s_fp32.onnx",
+        "yolov5s-onnx-fp32",
+        ("Robot", "Note"),
+        2024,
+        Backend.ONNX,
+        YOLOTYPE.V5,
+    )
+    ONNXSMALL2025 = (
+        "assets/yolov11s_fp32.onnx",
+        "yolov11s-onnx-fp32",
+        ("Algae", "Coral"),
+        2025,
+        Backend.ONNX,
+        YOLOTYPE.V11,
+    )
+    ONNXMEDIUM2025 = (
+        "assets/yolov11m_fp32.onnx",
+        "yolov11m-onnx-fp32",
+        ("Algae", "Coral"),
+        2025,
+        Backend.ONNX,
+        YOLOTYPE.V11,
+    )
 
-    RKNN2024FP32 = ("assets/yolov5s_fp32.rknn","yolov5s-rknn-fp32",("Robot", "Note"), 2024,Backend.RKNN, YOLOTYPE.V5)
-    RKNN2025INT8 = ("assets/yolov11s_int8.rknn","yolov11s-rknn-int8",("Algae", "Coral"),2025,Backend.RKNN, YOLOTYPE.V11)
+    RKNN2024FP32 = (
+        "assets/yolov5s_fp32.rknn",
+        "yolov5s-rknn-fp32",
+        ("Robot", "Note"),
+        2024,
+        Backend.RKNN,
+        YOLOTYPE.V5,
+    )
+    RKNN2025INT8 = (
+        "assets/yolov11s_int8.rknn",
+        "yolov11s-rknn-int8",
+        ("Algae", "Coral"),
+        2025,
+        Backend.RKNN,
+        YOLOTYPE.V11,
+    )
 
-    ULTRALYTICSSMALL2025 = ("assets/yolov11s_fp32.pt","yolov11s-pytorch-fp32",("Algae", "Coral"),2025,Backend.ULTRALYTICS, YOLOTYPE.V11)
-    ULTRALYTICSMED2025 = ("assets/yolov11m_fp32.pt","yolov11s-pytorch-fp32",("Algae", "Coral"),2025,Backend.ULTRALYTICS, YOLOTYPE.V11)
-    
+    ULTRALYTICSSMALL2025 = (
+        "assets/yolov11s_fp32.pt",
+        "yolov11s-pytorch-fp32",
+        ("Algae", "Coral"),
+        2025,
+        Backend.ULTRALYTICS,
+        YOLOTYPE.V11,
+    )
+    ULTRALYTICSMED2025 = (
+        "assets/yolov11m_fp32.pt",
+        "yolov11s-pytorch-fp32",
+        ("Algae", "Coral"),
+        2025,
+        Backend.ULTRALYTICS,
+        YOLOTYPE.V11,
+    )
+
     # TORCH todo!
 
-    def getModelPath(self):
+    def getModelPath(self) -> str:
         return self.value[0]
-    
-    def getName(self):
+
+    def getName(self) -> str:
         return self.value[1]
-    
-    def getLabels(self):
+
+    def getLabels(self) -> tuple[str, str]:
         return self.value[2]
-    
-    def getYear(self):
+
+    def getYear(self) -> int:
         return self.value[3]
-    
-    def getBackend(self):
+
+    def getBackend(self) -> Backend:
         return self.value[4]
-    
-    def getYoloType(self):
+
+    def getYoloType(self) -> YOLOTYPE:
         return self.value[5]
-    
+
 
 class Object(Enum):
     ALGAE = "a"
     CORAL = "c"
     NOTE = "n"
     ROBOT = "r"
+
 
 class CameraExtrinsics(Enum):
     #   {PositionName} = ((offsetX(in),offsetY(in),offsetZ(in)),(yawOffset(deg),pitchOffset(deg)))
@@ -60,34 +115,34 @@ class CameraExtrinsics(Enum):
     DEPTHRIGHT = ((13.018, -2.548, 19.743), (-24, -17))
     NONE = ((0, 0, 0), (0, 0))
 
-    def getOffsetXIN(self):
+    def getOffsetXIN(self) -> float:
         return self.value[0][0]
-    
-    def getOffsetXCM(self):
-        return self.value[0][0]*2.54
 
-    def getOffsetYIN(self):
+    def getOffsetXCM(self) -> float:
+        return self.value[0][0] * 2.54
+
+    def getOffsetYIN(self) -> float:
         return self.value[0][1]
-    
-    def getOffsetYCM(self):
-        return self.value[0][1]*2.54
 
-    def getOffsetZIN(self):
+    def getOffsetYCM(self) -> float:
+        return self.value[0][1] * 2.54
+
+    def getOffsetZIN(self) -> float:
         return self.value[0][2]
-    
-    def getOffsetZCM(self):
-        return self.value[0][1]*2.54
 
-    def getYawOffset(self):
+    def getOffsetZCM(self) -> float:
+        return self.value[0][1] * 2.54
+
+    def getYawOffset(self) -> float:
         return self.value[1][0]
 
-    def getPitchOffset(self):
+    def getPitchOffset(self) -> float:
         return self.value[1][1]
 
-    def getYawOffsetAsRadians(self):
+    def getYawOffsetAsRadians(self) -> float:
         return math.radians(self.value[1][0])
 
-    def getPitchOffsetAsRadians(self):
+    def getPitchOffsetAsRadians(self) -> float:
         return math.radians(self.value[1][1])
 
 
@@ -107,57 +162,63 @@ class CameraIntrinsics(Enum):
         (640, 480),
         (1.22173, 0.9671),
         (1.745, 0.003, 6.3),
-        (609.34, 457),        
+        (609.34, 457),
         (320, 240),
     )
 
-    def getHres(self):
+    def getHres(self) -> float:
         return self.value[0][0]
 
-    def getVres(self):
+    def getVres(self) -> float:
         return self.value[0][1]
 
-    def getHFovRad(self):
+    def getHFovRad(self) -> float:
         return self.value[1][0]
 
-    def getVFovRad(self):
+    def getVFovRad(self) -> float:
         return self.value[1][1]
 
-    def getFocalLengthMM(self):
+    def getFocalLengthMM(self) -> float:
         return self.value[2][0]
 
-    def getPixelSizeMM(self):
+    def getPixelSizeMM(self) -> float:
         return self.value[2][1]
 
-    def getSensorSizeMM(self):
+    def getSensorSizeMM(self) -> float:
         return self.value[2][2]
 
-    def getFx(self):
+    def getFx(self) -> float:
+        assert len(self.value) > 3
         return self.value[3][0]
 
-    def getFy(self):
+    def getFy(self) -> float:
+        assert len(self.value) > 3
         return self.value[3][1]
 
-    def getCx(self):
+    def getCx(self) -> float:
+        assert len(self.value) > 4
         return self.value[4][0]
 
-    def getCy(self):
+    def getCy(self) -> float:
+        assert len(self.value) > 4
         return self.value[4][1]
 
 
 class ObjectReferences(Enum):
     NOTE = (35.56, 14)  # cm , in
     BUMPERHEIGHT = (12.7, 5)  # cm, in
-    ALGAEDIAMETER = (40.64,16) # cm in
+    ALGAEDIAMETER = (40.64, 16)  # cm in
 
-    def getMeasurementCm(self):
+    def getMeasurementCm(self) -> float:
         return self.value[0]
 
-    def getMeasurementIn(self):
+    def getMeasurementIn(self) -> float:
         return self.value[1]
+
 
 class ConfigConstants:
     confThreshold = 0.7
+
 
 class KalmanConstants:
     Q = np.eye(4) * 0.01  # Process noise covariance
@@ -173,7 +234,7 @@ class CameraIdOffsets(Enum):
     DEPTHLEFT = 120
     DEPTHRIGHT = 150
 
-    def getIdOffset(self):
+    def getIdOffset(self) -> int:
         return self.value
 
 
@@ -193,17 +254,17 @@ class Landmarks(Enum):
     BlueBackReefFace = (5.821, 5.821, -180)
     BlueBackRightReefFace = (5.150, 2.880, 120)
 
-    def get_cm(self):
+    def get_cm(self) -> tuple[float, float]:
         """Convert the x and y coordinates from meters to centimeters."""
         x_m, y_m, _ = self.value
         return x_m * 100, y_m * 100
-    
-    def get_m(self):
+
+    def get_m(self) -> tuple[float, float]:
         """Convert the x and y coordinates from meters to centimeters."""
         x_m, y_m, _ = self.value
         return x_m, y_m
 
-    def get_angle(self):
+    def get_angle(self) -> float:
         """Retrieve the rotation angle in degrees."""
         return self.value[2]
 
@@ -218,51 +279,57 @@ class MapConstants(Enum):
     robotWidth = 75  # cm
     robotHeight = 75  # cm assuming square robot with max frame perimiter of 300
     gameObjectWidth = 35  # cm
-    gameObjectHeight = 35  # cm 
+    gameObjectHeight = 35  # cm
 
     mapObstacles = []  # todo define these
-    reefRadius = 83.185 # cm
-    b_reef_center = (411.48, 365.76) # cm
-    r_reef_center = (1234.44, 365.76) # cm
+    reefRadius = 83.185  # cm
+    b_reef_center = (411.48, 365.76)  # cm
+    r_reef_center = (1234.44, 365.76)  # cm
     reef_post_radius = 1.5875
 
+    coral_inner_diameter = 10.16  # cm
+    coral_outer_diameter = 11.43  # cm
 
-    coral_inner_diameter = 10.16 #cm
-    coral_outer_diameter = 11.43 #cm
-
-    coral_width = 30.16 #cm
-
-    
+    coral_width = 30.16  # cm
 
     def getCM(self):
         return self.value
-        
+
 
 class LabelingConstants(Enum):
     MAXFRAMESNOTSEEN = 15
+
 
 # todo consolidate camera info into one central enum
 # class CAMERA(Enum):
 
 
-def getCameraIfOffset(cameraName):
+def getCameraIfOffset(cameraName: str) -> CameraIdOffsets | None:
     for cameraIdOffset in CameraIdOffsets:
         if cameraIdOffset.name == cameraName:
             return cameraIdOffset
 
+    return None
 
-def getCameraExtrinsic(cameraName):
+
+def getCameraExtrinsic(cameraName: str) -> CameraExtrinsics | None:
     for cameraExtrinsic in CameraExtrinsics:
         if cameraExtrinsic.name == cameraName:
             return cameraExtrinsic
 
+    return None
 
-def getCameraName(cameraId):
+
+def getCameraName(cameraId: int) -> Any | None:
     if cameraId == 0:
         return ...
 
+    return None
 
-def getCameraValues(cameraName):
+
+def getCameraValues(
+    cameraName: str,
+) -> tuple[CameraIntrinsics, CameraExtrinsics | None, CameraIdOffsets | None]:
     return (
         CameraIntrinsics.OV9782COLOR,
         getCameraExtrinsic(cameraName),
