@@ -10,8 +10,8 @@ from tools.NtUtils import getPose2dFromBytes
 from mapinternals.localFrameProcessor import LocalFrameProcessor
 from Core.Central import Central
 from tools.Constants import (
-    CameraExtrinsics,
-    CameraIntrinsics,
+    ColorCameraExtrinsics2024,
+    CameraIntrinsicsPredefined,
     CameraIdOffsets,
     InferenceMode,
 )
@@ -59,10 +59,10 @@ names = ["FRONTLEFT", "FRONTRIGHT", "REARRIGHT", "REARLEFT"]
 caps = [capFR, capFL, capRR, capRL]
 
 extrinsics = [
-    CameraExtrinsics.FRONTRIGHT,
-    CameraExtrinsics.FRONTLEFT,
-    CameraExtrinsics.REARRIGHT,
-    CameraExtrinsics.REARLEFT,
+    ColorCameraExtrinsics2024.FRONTRIGHT,
+    ColorCameraExtrinsics2024.FRONTLEFT,
+    ColorCameraExtrinsics2024.REARRIGHT,
+    ColorCameraExtrinsics2024.REARLEFT,
 ]
 offsets = [
     CameraIdOffsets.FRONTRIGHT,
@@ -73,7 +73,7 @@ offsets = [
 
 frameProcessors = [
     LocalFrameProcessor(
-        cameraIntrinsics=CameraIntrinsics.SIMULATIONCOLOR,
+        cameraIntrinsics=CameraIntrinsicsPredefined.SIMULATIONCOLOR,
         cameraExtrinsics=extrinsics[i],
         inferenceMode=InferenceMode.ONNX2024,
         tryOCR=True,

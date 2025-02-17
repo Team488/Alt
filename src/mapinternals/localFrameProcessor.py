@@ -47,8 +47,8 @@ class LocalFrameProcessor:
         robotPosZCm=0,
         robotYawRad=0,
         drawBoxes=False,
-        customCameraExtrinsics=None,
-        customCameraIntrinsics=None,
+        customCameraExtrinsics : CameraExtrinsics = None,
+        customCameraIntrinsics : CameraIntrinsics = None,
         maxDetections=None,
     ) -> list[list[int, tuple[int, int, int], float, bool, np.ndarray]]:
         """ output is list of id,(absX,absY,absZ),conf,isRobot,features """

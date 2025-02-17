@@ -1,7 +1,7 @@
 import math
 import cv2
 import numpy as np
-from tools.Constants import MapConstants, CameraExtrinsics, CameraIntrinsics
+from tools.Constants import CameraExtrinsics, MapConstants, CameraIntrinsicsPredefined
 
 class ReefPositioner:
     def __init__(self, bluereef_center_cm = MapConstants.b_reef_center.getCM(), redreef_center_cm=MapConstants.r_reef_center.getCM(), reef_radius_cm=MapConstants.reefRadius.getCM(), num_post_groups = 6):
@@ -56,5 +56,5 @@ class ReefPositioner:
         y = reef_center[1] + math.sin(ang)*self.reef_radius
         return x,y,post_idx
     
-    def getPostCoordinatesWconst(self,isBlueReef : bool, robot_pos_cm : tuple[int,int],robot_rot_rad : float,camera_extr : CameraExtrinsics,camera_intr : CameraIntrinsics):
+    def getPostCoordinatesWconst(self,isBlueReef : bool, robot_pos_cm : tuple[int,int],robot_rot_rad : float,camera_extr : CameraExtrinsics,camera_intr : CameraIntrinsicsPredefined):
         return self.getPostCoordinates(isBlueReef,robot_pos_cm,robot_rot_rad,(camera_extr.getOffsetXCM(),camera_extr.getOffsetYCM()),camera_extr.getYawOffsetAsRadians(),camera_intr.getHFovRad())

@@ -2,7 +2,7 @@ import numpy as np
 from mapinternals.probmap import ProbMap
 from mapinternals.localFrameProcessor import LocalFrameProcessor
 from tools.CsvParser import CsvParser
-from tools.Constants import CameraIntrinsics, CameraExtrinsics, InferenceMode
+from tools.Constants import CameraIntrinsicsPredefined, ColorCameraExtrinsics2024, InferenceMode
 from inference.onnxInferencer import onnxInferencer
 import cv2
 import math
@@ -31,8 +31,8 @@ def startDemo():
         robotHeight=robotHeight,
     )
 
-    cameraExtr = CameraExtrinsics.NONE
-    cameraIntr = CameraIntrinsics.OV9782COLOR
+    cameraExtr = ColorCameraExtrinsics2024.NONE
+    cameraIntr = CameraIntrinsicsPredefined.OV9782COLOR
     cap = cv2.VideoCapture(0)
 
     frameProcessor = LocalFrameProcessor(cameraIntr, cameraExtr,inferenceMode=InferenceMode.ONNX2024)

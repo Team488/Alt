@@ -24,7 +24,27 @@ from wpimath.geometry import Transform3d
 import json
 
 from reefTracking.aprilTagHelper import AprilTagHelper
+from scipy.spatial.transform import Rotation
 
+
+def affine_matrix_from_quaternion_translation(quat, translation):
+    """
+    Create a 4x4 affine transformation matrix from a quaternion and translation vector.
+    
+    :param quat: Quaternion (w, x, y, z)
+    :param translation: Translation vector (tx, ty, tz)
+    :return: 4x4 affine transformation matrix
+    """
+    # Convert quaternion to rotation matrix
+    r = Rotation.from_quat([quat[1], quat[2], quat[3], quat[0]])  # (x, y, z, w) format in scipy
+    rot_matrix = r.as_matrix()
+    
+    # Create 4x4 transformation matrix
+    T = np.eye(4)
+    T[:3, :3] = rot_matrix
+    T[:3, 3] = translation
+    
+    return T
 
 ### CAD Offset:
 ### X = Downwards -> Right
@@ -66,20 +86,22 @@ for branch, offset in cad_to_branch_offset.items():
     for i in range(len(offset)):
         offset[i] *= 0.0254
 
-widthOffset = 6  # in
-heightOffset = 12  # in
-heightClearence = 1
-reefBoxOffsets = [
-    np.array([widthOffset / 2 * 0.0254, -heightClearence * 0.0254, 0]),
-    np.array([-widthOffset / 2 * 0.0254, -heightClearence * 0.0254, 0]),
-    np.array([widthOffset / 2 * 0.0254, heightOffset * 0.0254, 0]),
-    np.array([-widthOffset / 2 * 0.0254, heightOffset * 0.0254, 0]),
-]
-# in to m, all corners of a imaginary box around a point on the reef
+zoffset = 3 # in
+widthOffset = 6  # in                                                                   #               ↖  (z)
+heightOffset = 12  # in                                                                 #                (3)
+heightClearence = 1                                                                     #                  \
+reefBoxOffsets = [      # in to m                                                       #                   \
+    np.array([widthOffset / 2 * 0.0254, -heightClearence * 0.0254, 0]),                 # (1)  (x) <(1)------o
+    np.array([-widthOffset / 2 * 0.0254, heightOffset * 0.0254, 0]),                    # (2)                | 
+    np.array([-widthOffset / 2 * 0.0254, -heightClearence * 0.0254, zoffset* 0.0254]),  # (3)               (2)
+]                                                                                       #                    ↓ (y)
+                                                                                        #                       
+                                                                                        # all corners of a imaginary box around a point on the reef
+
 
 
 class ReefPixelEstimator:
-    def __init__(self, config_file="assets/config/1280x800v1.json"):
+    def __init__(self, config_file="assets/config/640x480v2.json"):
         self.helper = AprilTagHelper(config_file)
         self.loadConfig(config_file)
 

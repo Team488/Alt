@@ -10,7 +10,7 @@ import numpy as np
 from tools.NtUtils import getPose2dFromBytes
 from reefTracking.reefPositioner import ReefPositioner
 # from mapinternals.CentralProcessor import CentralProcessor # fix import creating tensorflow
-from tools.Constants import CameraExtrinsics, CameraIntrinsics, MapConstants
+from tools.Constants import ColorCameraExtrinsics2024, CameraIntrinsicsPredefined, MapConstants
 from mapDemos.utils import drawRobotWithCams
 
 
@@ -19,13 +19,13 @@ logger = logging.getLogger(processName)
 
 # MJPEG stream URLs
 extrinsics = [
-    CameraExtrinsics.FRONTRIGHT,
+    ColorCameraExtrinsics2024.FRONTRIGHT,
     # CameraExtrinsics.FRONTLEFT,
     # CameraExtrinsics.REARRIGHT,
     # CameraExtrinsics.REARLEFT,
 ]
 cams = [
-    (extr,CameraIntrinsics.SIMULATIONCOLOR) for extr in extrinsics
+    (extr,CameraIntrinsicsPredefined.SIMULATIONCOLOR) for extr in extrinsics
 ]
 
 

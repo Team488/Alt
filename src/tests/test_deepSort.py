@@ -1,5 +1,5 @@
 from mapinternals.localFrameProcessor import LocalFrameProcessor
-from tools.Constants import CameraExtrinsics, CameraIntrinsics
+from tools.Constants import ColorCameraExtrinsics2024, CameraIntrinsicsPredefined
 import cv2
 
 
