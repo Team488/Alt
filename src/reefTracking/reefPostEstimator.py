@@ -135,8 +135,6 @@ class ReefPostEstimator:
                 # project the 3D point to 2D image coordinates:
                 u = (self.camIntr.getFx() * x_cam / z_cam) + self.camIntr.getCx()
                 v = (self.camIntr.getFy() * y_cam / z_cam) + self.camIntr.getCy()
-                u = 640-u
-                v = 480-v
 
                 print(f"{u=} {v=}")
 
@@ -147,8 +145,6 @@ class ReefPostEstimator:
                     print(f"{corner=}")
                     uC = (self.camIntr.getFx() * x_cam / z_cam) + self.camIntr.getCx()
                     uV = (self.camIntr.getFy() * y_cam / z_cam) + self.camIntr.getCy()
-                    uC = 640-uC
-                    uV = 480-uV
                     imageCorners.append((uC, uV))
 
                 if drawBoxes:
