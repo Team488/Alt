@@ -1,5 +1,5 @@
 from mapinternals.localFrameProcessor import LocalFrameProcessor
-from tools.Constants import CameraExtrinsics, CameraIntrinsics, InferenceMode
+from tools.Constants import ColorCameraExtrinsics2024, CameraIntrinsicsPredefined, InferenceMode
 import cv2
 
 from tools.Units import UnitMode
@@ -7,7 +7,7 @@ from tools.Units import UnitMode
 
 def verifyValidOutput():
     frameProcessor = LocalFrameProcessor(
-        CameraIntrinsics.OAKDLITE, CameraExtrinsics.DEPTHLEFT,inferenceMode=InferenceMode.ONNX2024 
+        CameraIntrinsicsPredefined.OAKDLITE, ColorCameraExtrinsics2024.DEPTHLEFT,inferenceMode=InferenceMode.ONNX2024 
     )  # these are not needed for the test
     cap = cv2.VideoCapture("assets/video12qual25clipped.mp4")
     cap.set(cv2.CAP_PROP_POS_FRAMES, 768)

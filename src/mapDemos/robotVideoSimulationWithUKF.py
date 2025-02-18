@@ -4,8 +4,8 @@ from mapinternals.localFrameProcessor import LocalFrameProcessor
 from Core.Central import Central
 from tools.CsvParser import CsvParser
 from tools.Constants import (
-    CameraIntrinsics,
-    CameraExtrinsics,
+    CameraIntrinsicsPredefined,
+    ColorCameraExtrinsics2024,
     CameraIdOffsets,
     InferenceMode,
 )
@@ -51,8 +51,8 @@ def startDemo():
         99.8  # time offset to align video start with log movements (seconds)
     )
 
-    cameraExtr = CameraExtrinsics.DEPTHLEFT
-    cameraIntr = CameraIntrinsics.OAKDLITE
+    cameraExtr = ColorCameraExtrinsics2024.DEPTHLEFT
+    cameraIntr = CameraIntrinsicsPredefined.OAKDLITE
     cap = cv2.VideoCapture("assets/video12qual25clipped.mp4")
     firstRun = True
     cap_outM = None
@@ -150,8 +150,8 @@ def __drawRobot(
     posX,
     posY,
     rotation,
-    cameraIntrinsics: CameraIntrinsics,
-    cameraExtrinsic: CameraExtrinsics,
+    cameraIntrinsics: CameraIntrinsicsPredefined,
+    cameraExtrinsic: ColorCameraExtrinsics2024,
 ):  # fov 90 deg  | fovLen = 70cm # camera is facing 45 to the left
     # drawing robot
     FrameOffset = math.atan((height / 2) / (width / 2))

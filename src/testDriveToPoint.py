@@ -13,8 +13,8 @@ from tools.NtUtils import getPose2dFromBytes
 from mapinternals.localFrameProcessor import LocalFrameProcessor
 from Core.Central import Central
 from tools.Constants import (
-    CameraExtrinsics,
-    CameraIntrinsics,
+    ColorCameraExtrinsics2024,
+    CameraIntrinsicsPredefined,
     CameraIdOffsets,
     InferenceMode,
     MapConstants,

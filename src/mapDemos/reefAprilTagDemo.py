@@ -3,6 +3,13 @@ import numpy as np
 from reefTracking.reefPixelEstimator import ReefPixelEstimator
 from inference.MultiInferencer import MultiInferencer
 from tools.Constants import InferenceMode
+from tools import NtUtils
+from networktables import NetworkTables
+
+NetworkTables.initialize("127.0.0.1")
+targetPoseFL = NetworkTables.getTable("photonvision/Apriltag_FrontLeft_Camera/")
+targetPoseFL = targetPoseFL.getEntry("targetPose")
+
 
 # Start Capture and Calibrate Camera
 # video_path = "video/2.mkv" # or do int 0 for /dev/video0
@@ -20,11 +27,14 @@ def startDemo(videoPath=0):
 
     frame_ct = -1
     while cap.isOpened():
+        pose_bytes = targetPoseFL.get()
+        if pose_bytes is not None:
+            print(f"Target pose: {NtUtils.getTranslation3dFromBytes(pose_bytes)}")
         ret, image = cap.read()
         frame_ct += 1
 
         image = cv2.undistort(image, reefEstimator.K, reefEstimator.distCoeffs)
-        coordinates = reefEstimator.getReefCoordinates(image, drawCoordinates=True)
+        coordinates = reefEstimator.__getReefCoordinates(image, drawCoordinates=True)
         # results = inf.run(image, 0.8, drawBoxes=True)
         results = []
         if coordinates.items():

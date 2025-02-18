@@ -1,7 +1,7 @@
 import math
 import cv2
 import numpy as np
-from tools.Constants import CameraIntrinsics,CameraExtrinsics,MapConstants
+from tools.Constants import CameraIntrinsicsPredefined,ColorCameraExtrinsics2024,MapConstants
 from mapDemos.utils import drawRobotWithCams
 from reefTracking.reefPositioner import ReefPositioner
 
@@ -18,8 +18,8 @@ def startDemo():
     r_reef_center = MapConstants.r_reef_center.getCM()
     reef_radius = int(MapConstants.reefRadius.getCM())
 
-    robotcam_extr = CameraExtrinsics.FRONTRIGHT
-    robotcam_intr = CameraIntrinsics.OV9782COLOR
+    robotcam_extr = ColorCameraExtrinsics2024.FRONTRIGHT
+    robotcam_intr = CameraIntrinsicsPredefined.OV9782COLOR
 
 
     title = "reef_point_demo"

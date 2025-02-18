@@ -1,6 +1,7 @@
 from enum import Enum
 import math
 import numpy as np
+from scipy.spatial.transform import Rotation
 
 class YOLOTYPE(Enum):
     V11 = "v11"
@@ -50,33 +51,25 @@ class Object(Enum):
     NOTE = "n"
     ROBOT = "r"
 
-class CameraExtrinsics(Enum):
+class CameraExtrinsics:
     #   {PositionName} = ((offsetX(in),offsetY(in),offsetZ(in)),(yawOffset(deg),pitchOffset(deg)))
-    FRONTLEFT = ((13.779, 13.887, 10.744), (80, -3))
-    FRONTRIGHT = ((13.779, -13.887, 10.744), (280, -3))
-    REARLEFT = ((-13.116, 12.853, 10.52), (215, -3.77))
-    REARRIGHT = ((-13.116, -12.853, 10.52), (145, -3.77))
-    DEPTHLEFT = ((13.018, 2.548, 19.743), (24, -17))
-    DEPTHRIGHT = ((13.018, -2.548, 19.743), (-24, -17))
-    NONE = ((0, 0, 0), (0, 0))
-
     def getOffsetXIN(self):
         return self.value[0][0]
     
     def getOffsetXCM(self):
-        return self.value[0][0]*2.54
+        return self.value[0][0] * 2.54
 
     def getOffsetYIN(self):
         return self.value[0][1]
     
     def getOffsetYCM(self):
-        return self.value[0][1]*2.54
+        return self.value[0][1] * 2.54
 
     def getOffsetZIN(self):
         return self.value[0][2]
     
     def getOffsetZCM(self):
-        return self.value[0][1]*2.54
+        return self.value[0][2] * 2.54  # Fixed typo (was using Y instead of Z)
 
     def getYawOffset(self):
         return self.value[1][0]
@@ -89,27 +82,87 @@ class CameraExtrinsics(Enum):
 
     def getPitchOffsetAsRadians(self):
         return math.radians(self.value[1][1])
+    
+    def get4x4AffineMatrix(self):
+        """Returns a 4x4 affine transformation matrix for the camera extrinsics"""
+        x, y, z = self.value[0]
+        yaw, pitch = map(math.radians, self.value[1])  # Convert degrees to radians
+        
+        # Create rotation matrix (assuming yaw around Z, pitch around Y)
+        rotation_matrix = Rotation.from_euler('zy', [yaw, pitch]).as_matrix()
+
+        # Construct the 4x4 transformation matrix
+        affine_matrix = np.eye(4)
+        affine_matrix[:3, :3] = rotation_matrix
+        affine_matrix[:3, 3] = [x, y, z]  # Set translation
+        
+        return affine_matrix
+    
+    def get4x4AffineMatrixMeters(self):
+        """Returns a 4x4 affine transformation matrix for the camera extrinsics"""
+        x, y, z = map(lambda x : x * 0.0254, self.value[0])
+        yaw, pitch = map(math.radians, self.value[1])  # Convert degrees to radians
+        
+        # Create rotation matrix (assuming yaw around Z, pitch around Y)
+        rotation_matrix = Rotation.from_euler('zy', [yaw, pitch]).as_matrix()
+
+        # Construct the 4x4 transformation matrix
+        affine_matrix = np.eye(4)
+        affine_matrix[:3, :3] = rotation_matrix
+        affine_matrix[:3, 3] = [x, y, z]  # Set translation
+        
+        return affine_matrix
 
 
-class CameraIntrinsics(Enum):
-    #                       res             fov                     physical constants
-    #   {CameraName} = ((HRes(pixels),Vres(pixels)),(Hfov(rad),Vfov(rad)),(Focal Length(mm),PixelSize(mm),sensor size(mm)), (CalibratedFx(pixels),CalibratedFy(pixels)),(CalibratedCx(pixels),CalibratedCy(pixels)))
-    OV9782COLOR = (
-        (640, 480),
-        (1.22173, -1),
-        (1.745, 0.003, 6.3),
-        (541.637, 542.563),
-        (346.66661258567217, 232.5032948773164),
-    )
-    OV9281BaW = ((640, 480), (1.22173, -1), (-1, 0.003, 6.3))
-    OAKDLITE = ((1920, 1080), (1.418953, -1), (3.37, 0.00112, 8.193))
-    SIMULATIONCOLOR = (
-        (640, 480),
-        (1.22173, 0.9671),
-        (1.745, 0.003, 6.3),
-        (609.34, 457),        
-        (320, 240),
-    )
+class ColorCameraExtrinsics2024(CameraExtrinsics, Enum):
+    #   {PositionName} = ((offsetX(in),offsetY(in),offsetZ(in)),(yawOffset(deg),pitchOffset(deg)))
+    FRONTLEFT = ((13.779, 13.887, 10.744), (80, -3))
+    FRONTRIGHT = ((13.779, -13.887, 10.744), (280, -3))
+    REARLEFT = ((-13.116, 12.853, 10.52), (215, -3.77))
+    REARRIGHT = ((-13.116, -12.853, 10.52), (145, -3.77))
+    DEPTHLEFT = ((13.018, 2.548, 19.743), (24, -17))
+    DEPTHRIGHT = ((13.018, -2.548, 19.743), (-24, -17))
+    NONE = ((0, 0, 0), (0, 0))
+
+class ColorCameraExtrinsics2025(CameraExtrinsics, Enum):
+    #   {PositionName} = ((offsetX(in),offsetY(in),offsetZ(in)),(yawOffset(deg),pitchOffset(deg)))
+    # TODO
+    pass
+
+class ATCameraExtrinsics(CameraExtrinsics):
+    def getPhotonCameraName(self):
+        return self.value[2]                        
+
+
+class ATCameraExtrinsics2024(ATCameraExtrinsics, Enum):
+    #   {PositionName} = ((offsetX(in),offsetY(in),offsetZ(in)),(yawOffset(deg),pitchOffset(deg)))
+    AprilTagFrontLeft = ((13.153,12.972,9.014),(10,-55.5),"Apriltag_FrontLeft_Camera")
+    AprilTagFrontRight = ((13.153,-12.972,9.014),(-10,-55.5),"Apriltag_FrontRight_Camera")
+    AprilTagRearLeft = ((-13.153,12.972,9.014),(180,0),"Apriltag_RearLeft_Camera")
+    AprilTagRearRight = ((-13.153,-12.972,9.014),(180,0),"Apriltag_RearRight_Camera")
+
+
+class ATCameraExtrinsics2025(ATCameraExtrinsics, Enum):
+    #   {PositionName} = ((offsetX(in),offsetY(in),offsetZ(in)),(yawOffset(deg),pitchOffset(deg)))
+    AprilTagFrontLeft = ((10.25,6.5,7),(0,-12),"Apriltag_FrontLeft_Camera")
+    AprilTagFrontRight = ((10.25,-6.5,7),(0,-12),"Apriltag_FrontRight_Camera")
+    AprilTagBack = ((-10.25,0,7),(180,-45),"Apriltag_Back_Camera")
+
+class CameraIntrinsics:
+    def __init__(self, hres_pix = -1, vres_pix = -1, hfov_rad = -1, vfov_rad = -1,
+                        focal_length_mm = -1, pixel_size_mm = -1, sensor_size_mm = -1,
+                        fx_pix = -1, fy_pix = -1, cx_pix = -1, cy_pix = -1):
+        self.value = (
+            (hres_pix, vres_pix),    # Resolution
+            (hfov_rad, vfov_rad),    # FOV
+            (focal_length_mm, pixel_size_mm, sensor_size_mm),  # Physical Constants
+            (fx_pix, fy_pix),        # Calibrated Fx, Fy
+            (cx_pix, cy_pix),        # Calibrated Cx, Cy
+            )
+    """
+    Create camera intrinsics at runtime.\n
+    WARNING, any unfilled values may cause errors down the line. Please override default values you know you need
+    """
 
     def getHres(self):
         return self.value[0][0]
@@ -143,6 +196,25 @@ class CameraIntrinsics(Enum):
 
     def getCy(self):
         return self.value[4][1]
+
+class CameraIntrinsicsPredefined():
+    #                       res             fov                     physical constants
+    #   {CameraName} = ((HRes(pixels),Vres(pixels)),(Hfov(rad),Vfov(rad)),(Focal Length(mm),PixelSize(mm),sensor size(mm)), (CalibratedFx(pixels),CalibratedFy(pixels)),(CalibratedCx(pixels),CalibratedCy(pixels)))
+    OV9782COLOR = CameraIntrinsics(
+        640, 480,          # Resolution
+        1.22173, -1,       # FOV
+        1.745, 0.003, 6.3, # Physical Constants
+        541.637, 542.563,  # Calibrated Fx, Fy
+        346.66661258567217, 232.5032948773164  # Calibrated Cx, Cy
+    )
+    
+    SIMULATIONCOLOR = CameraIntrinsics(
+        640, 480,          # Resolution
+        1.22173, 0.9671,   # FOV
+        1.745, 0.003, 6.3, # Physical Constants
+        609.34, 457,       # Calibrated Fx, Fy
+        320, 240           # Calibrated Cx, Cy
+    )
 
 
 class ObjectReferences(Enum):
@@ -251,8 +323,8 @@ def getCameraIfOffset(cameraName):
             return cameraIdOffset
 
 
-def getCameraExtrinsic(cameraName):
-    for cameraExtrinsic in CameraExtrinsics:
+def getCameraExtrinsics(cameraName):
+    for cameraExtrinsic in ColorCameraExtrinsics2024:
         if cameraExtrinsic.name == cameraName:
             return cameraExtrinsic
 
@@ -264,7 +336,7 @@ def getCameraName(cameraId):
 
 def getCameraValues(cameraName):
     return (
-        CameraIntrinsics.OV9782COLOR,
-        getCameraExtrinsic(cameraName),
+        CameraIntrinsicsPredefined.OV9782COLOR,
+        getCameraExtrinsics(cameraName),
         getCameraIfOffset(cameraName),
     )
