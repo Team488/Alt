@@ -120,9 +120,7 @@ class FastMarchingPathfinder:
         xs, ys = xs[valid], ys[valid]
         return np.any(self.grid_cost[ys, xs] >= minimum_heat)
 
-    def try_inflate_segment(
-        self, segment, max_offset_pixels=45, tol=1.0, record_history=False
-    ):
+    def try_inflate_segment(self, segment, max_offset_pixels=45, tol=1.0):
         """
         Try to inflate (bend) a segment using a binary search on the perpendicular offset
         so that the resulting Bézier curve avoids collisions.
@@ -140,23 +138,21 @@ class FastMarchingPathfinder:
                 best_candidate (or None if inflation fails)
         """
         if len(segment) < 2:
-            return None if not record_history else (None, [])
+            return None
 
         p0 = np.array(segment[0], dtype=float)
         p_end = np.array(segment[-1], dtype=float)
         chord = p_end - p0
         chord_length = np.linalg.norm(chord)
         if chord_length == 0:
-            return None if not record_history else (None, [])
+            return None
 
         perp = np.array([-chord[1], chord[0]]) / chord_length
-        combined_history = [] if record_history else None
         candidate_list = []
 
         # Try both directions.
         for sign in [1, -1]:
             lower, upper = 0, max_offset_pixels  # Reset bounds for this sign.
-            history_dir = [] if record_history else None
             best_candidate_dir = None
 
             while upper - lower > tol:
@@ -165,17 +161,13 @@ class FastMarchingPathfinder:
                 candidate_segment = [segment[0], tuple(mid), segment[-1]]
                 candidate_curve = self.bezier_curve(candidate_segment, num_points=100)
                 collision = self.check_collision(candidate_curve)
-                if record_history:
-                    history_dir.append(
-                        (mid_offset, mid.copy(), candidate_curve.copy(), collision)
-                    )
+
                 if not collision:
                     best_candidate_dir = candidate_segment
                     upper = mid_offset  # Try a smaller offset.
                 else:
                     lower = mid_offset  # Increase offset.
-            if record_history:
-                combined_history.extend(history_dir)
+
             if best_candidate_dir is not None:
                 candidate_list.append(best_candidate_dir)
 
@@ -186,13 +178,8 @@ class FastMarchingPathfinder:
                 return np.linalg.norm(mid - (p0 + p_end) / 2)
 
             best_candidate = min(candidate_list, key=candidate_offset)
-            if record_history:
-                return best_candidate, combined_history
-            else:
-                return best_candidate
 
-        if record_history:
-            return None, combined_history
+            return best_candidate
         return None
 
     def generate_safe_bezier_paths(self, control_points):
