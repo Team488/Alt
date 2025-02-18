@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+from tools.Constants import CameraIntrinsics
 from robotpy_apriltag import (
     AprilTagField,
     AprilTagFieldLayout,
@@ -11,11 +12,15 @@ from wpimath.geometry import Transform3d
 import json
 
 
-class AprilTagHelper:
-    def __init__(self, config_file: str):
+class AprilTagLocal:
+    def __init__(self, cameraIntrinsic: CameraIntrinsics):
         self.detector = AprilTagDetector()
         self.detector.addFamily("tag36h11")
-        self.loadConfig(config_file)
+
+        self.fx = cameraIntrinsic.getFx()
+        self.fy = cameraIntrinsic.getFy()
+        self.cx = cameraIntrinsic.getCx()
+        self.cy = cameraIntrinsic.getCy()
 
         # Tag Size: 165.1 mm = 0.1651 m
         config = AprilTagPoseEstimator.Config(

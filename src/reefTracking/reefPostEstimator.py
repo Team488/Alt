@@ -5,9 +5,11 @@ import numpy as np
 from typing import Dict
 from wpimath.geometry import Transform3d
 from reefTracking.photonvisionComminicator import PhotonVisionCommunicator
+from reefTracking.aprilTagHelper import AprilTagLocal
 from tools.Constants import CameraIntrinsics, CameraExtrinsics, ATCameraExtrinsics
 from tools import Calculator
 from Core import getLogger
+
 
 ### CAD Offset:
 ### X = Downwards -> Right
@@ -18,12 +20,12 @@ from Core import getLogger
 
 # CAD to tip of the rod. (MAX Distance)
 cad_to_branch_offset = {
-    "L2-L": np.array([-6.756, 19.707, 2.608]),
-    "L2-R": np.array([6.754, 19.707, 2.563]),
-    "L3-L": np.array([-6.639, 35.606, 2.628]),
-    "L3-R": np.array([6.637, 35.606, 2.583]),
-    "L4-L": np.array([-6.470, 58.4175, 0.921]),  # NOT MODIFIED
-    "L4-R": np.array([6.468, 58.4175, 0.876]),  # NOT MODIFIED
+    "L2-L": np.array([-6.756, -19.707, 2.608]),
+    "L2-R": np.array([6.754, -19.707, 2.563]),
+    "L3-L": np.array([-6.639, -35.606, 2.628]),
+    "L3-R": np.array([6.637, -35.606, 2.583]),
+    "L4-L": np.array([-6.470, -58.4175, 0.921]),  # NOT MODIFIED
+    "L4-R": np.array([6.468, -58.4175, 0.876]),  # NOT MODIFIED
 }
 
 
@@ -49,24 +51,98 @@ cad_to_branch_offset = {
 #   Z is DEPTH AWAY     [0, inf]
 
 
-
-zoffset = 3 # in
+zoffset = 3  # in
 widthOffset = 6  # in                                                                   #               ↖  (z)
-heightOffset = 12  # in                                                                 #                (3)
-heightClearence = 1                                                                     #                  \
-reefBoxOffsets = [      # in to m                                                       #                   \
-    np.array([widthOffset / 2 * 0.0254, heightClearence * 0.0254, 0]),                 # (1)  (x) <(1)------o
-    np.array([-widthOffset / 2 * 0.0254, -heightOffset * 0.0254, 0]),                    # (2)                | 
-    np.array([-widthOffset / 2 * 0.0254, heightClearence * 0.0254, zoffset* 0.0254]),  # (3)               (2)
-]                                                                                       #                    ↓ (y)
-                                                                                        #                       
-                                                                                        # all corners of a imaginary box around a point on the reef
+heightOffset = 10  # in                                                                 #                (3)
+heightClearence = 0.5
+depthOffset = 4  # in                                                             #                  \
+reefBoxOffsetsFRONT = [  # in to m                                                       #                   \
+    np.array(
+        [widthOffset / 2 * 0.0254, -heightClearence * 0.0254, 0]
+    ),  # (1)  (x) <(1)------o
+    np.array(
+        [-widthOffset / 2 * 0.0254, -heightClearence * 0.0254, 0]
+    ),  # (2)                |
+    np.array(
+        [-widthOffset / 2 * 0.0254, heightOffset * 0.0254, 0]
+    ),  # (2)                |
+    np.array(
+        [widthOffset / 2 * 0.0254, heightOffset * 0.0254, 0]
+    ),  # (2)                |
+    # np.array([-widthOffset / 2 * 0.0254, heightClearence * 0.0254, zoffset* 0.0254]),  # (3)               (2)
+]
+reefBoxOffsetsLEFT = [  # in to m
+    np.array(
+        [widthOffset / 2 * 0.0254, -heightClearence * 0.0254, depthOffset * 0.0254]
+    ),  # top left
+    np.array([widthOffset / 2 * 0.0254, -heightClearence * 0.0254, 0]),  # top right
+    np.array([widthOffset / 2 * 0.0254, heightOffset * 0.0254, 0]),  # bottom right
+    np.array(
+        [widthOffset / 2 * 0.0254, heightOffset * 0.0254, depthOffset * 0.0254]
+    ),  # bottom left
+]
+reefBoxOffsetsRIGHT = [  # in to m
+    np.array([-widthOffset / 2 * 0.0254, -heightClearence * 0.0254, 0]),  # top right
+    np.array(
+        [-widthOffset / 2 * 0.0254, -heightClearence * 0.0254, depthOffset * 0.0254]
+    ),  # top left
+    np.array(
+        [-widthOffset / 2 * 0.0254, heightOffset * 0.0254, depthOffset * 0.0254]
+    ),  # bottom left
+    np.array([-widthOffset / 2 * 0.0254, heightOffset * 0.0254, 0]),  # bottom right
+]
+reefBoxOffsetsTOP = [  # in to m
+    np.array(
+        [widthOffset / 2 * 0.0254, -heightClearence * 0.0254, depthOffset * 0.0254]
+    ),
+    np.array(
+        [-widthOffset / 2 * 0.0254, -heightClearence * 0.0254, depthOffset * 0.0254]
+    ),
+    np.array([-widthOffset / 2 * 0.0254, -heightClearence * 0.0254, 0]),
+    np.array([widthOffset / 2 * 0.0254, -heightClearence * 0.0254, 0]),
+]
+reefBoxOffsetsBOTTOM = [  # in to m
+    np.array([widthOffset / 2 * 0.0254, heightOffset * 0.0254, depthOffset * 0.0254]),
+    np.array([-widthOffset / 2 * 0.0254, heightOffset * 0.0254, depthOffset * 0.02540]),
+    np.array([-widthOffset / 2 * 0.0254, heightOffset * 0.0254, 0]),
+    np.array([widthOffset / 2 * 0.0254, heightOffset * 0.0254, 0]),
+]
 
+reefBoxOffsets = [
+    reefBoxOffsetsFRONT,
+    reefBoxOffsetsLEFT,
+    reefBoxOffsetsRIGHT,
+    reefBoxOffsetsTOP,
+    reefBoxOffsetsBOTTOM,
+]
+
+
+def getClosest3Faces(tag_to_cam_translation, frame):
+    pitch, yaw, _ = Calculator.extract_pitch_yaw_roll(
+        tag_to_cam_translation, format="XYZ"
+    )
+    cv2.putText(
+        frame, f"h: {yaw:.2f} v: {pitch:.2f}", (0, 40), 0, 1, (255, 255, 255), 1
+    )
+    horizontal_boxOffset = reefBoxOffsetsLEFT if yaw > 0 else reefBoxOffsetsRIGHT
+    vertical_boxOffset = reefBoxOffsetsTOP if pitch < 0 else reefBoxOffsetsBOTTOM
+    return [reefBoxOffsetsFRONT, horizontal_boxOffset, vertical_boxOffset]
+
+
+purpleHist = np.load("assets/purpleReefPostHist.npy")
+purpleThresh = 0.1
 
 Sentinel = getLogger("Reef_Post_Estimator")
+
+
 class ReefPostEstimator:
-    def __init__(self, cameraIntrinsics : CameraIntrinsics, cameraExtrinsics : CameraExtrinsics, atCameraToExtrinsics : list[ATCameraExtrinsics],
-                 photonCommunicator : PhotonVisionCommunicator = PhotonVisionCommunicator(useNetworkTables=True)):
+    def __init__(
+        self,
+        cameraIntrinsics: CameraIntrinsics,
+        isDriverStation=False,
+        cameraExtrinsics: CameraExtrinsics = None,
+        atCameraToExtrinsics: list[ATCameraExtrinsics] = None,
+    ):
         """
         Creates a reef post estimator, that using april tag results will detect coral slots and probabilistically measure if they are occupied\n
         This works by using a color camera along with known extrinsics/intrinsics and known extrinsics for the april tag camera
@@ -78,39 +154,88 @@ class ReefPostEstimator:
             photonCommunicator (`PhotonVisionCommunicator`) : An optional field, the class that allows network communication to grab the photonvision april tag results
 
         """
+        self.isDriverStation = isDriverStation
         self.camIntr = cameraIntrinsics
-        self.camExtr = cameraExtrinsics
-        self.camTransform = self.camExtr.get4x4AffineMatrixMeters()
-        # get at cam transforms using T(r -> bw)^-1 @ T(r -> c) = T(bw -> c) 
-        self.atTransforms =  {atIntrinsic.getPhotonCameraName(): Calculator.inverse4x4Affline(atIntrinsic.get4x4AffineMatrixMeters())@self.camTransform for atIntrinsic in atCameraToExtrinsics}
-        self.photonCommunicator = photonCommunicator
+        if not isDriverStation and (
+            cameraExtrinsics is None or atCameraToExtrinsics is None
+        ):
+            raise Exception(
+                "If you are operating in driverStationMode = False, you must provide camera Extrinsics and april tag camera extrinsics!"
+            )
 
-    def estimatePosts(self, colorframe, drawBoxes = True):
-        coordinates = {}
-        for key, bw_to_color_transform in self.atTransforms.items():
-            tagPoseMatrix = self.photonCommunicator.getTagPoseAsMatrix(key)
-            if tagPoseMatrix is None or np.isclose(tagPoseMatrix[:3,3], np.zeros(shape=(3))).all():
-                Sentinel.warning(f"Not able to access april tag results for: {key=}")
-                continue
-
-
-            onScreenBranches = {}
-            # iterate over each branch of reef
-            for offset_idx, offset_3d in cad_to_branch_offset.items():
-                # solve camera -> branch via camera -> tag and tag -> branch transformations
-                tag_to_reef_homography = np.append(
-                    offset_3d, 1.0
-                )  # ensures shape is 4x4
-
-                bw_camera_to_reef = np.dot(
-                    tagPoseMatrix,
-                    tag_to_reef_homography,
+        if not isDriverStation:
+            # setup camera transfors
+            self.camExtr = cameraExtrinsics
+            self.camTransform = self.camExtr.get4x4AffineMatrixMeters()
+            # get at cam transforms using T(r -> bw)^-1 @ T(r -> c) = T(bw -> c)
+            self.atTransforms = {
+                atIntrinsic.getPhotonCameraName(): Calculator.inverse4x4Affline(
+                    atIntrinsic.get4x4AffineMatrixMeters()
                 )
+                @ self.camTransform
+                for atIntrinsic in atCameraToExtrinsics
+            }
 
+        if isDriverStation:
+            self.ATPoseGetter = AprilTagLocal(cameraIntrinsics)
+        else:
+            self.ATPoseGetter = PhotonVisionCommunicator(useNetworkTables=True)
 
+    def estimatePosts(self, colorframe, drawBoxes=True):
+        allCoordinates = {}
+        if self.isDriverStation:
+            greyFrame = cv2.cvtColor(colorframe, cv2.COLOR_BGR2GRAY)
+            atDetections = self.ATPoseGetter.getDetections(greyFrame)
+            atPoses = self.ATPoseGetter.getOrthogonalEstimates(atDetections)
+            for detection, pose in zip(atDetections, atPoses):
+                coordinates = self.getCoordinatesForPost(
+                    colorframe, pose.pose1.toMatrix(), None, drawBoxes
+                )
+                allCoordinates[detection.getId()] = coordinates
+
+        else:
+            for key, bw_to_color_transform in self.atTransforms.items():
+                tagPoseMatrix = self.photonCommunicator.getTagPoseAsMatrix(key)
+                coordinates = self.getCoordinatesForPost(
+                    colorframe, tagPoseMatrix, bw_to_color_transform, drawBoxes
+                )
+                if coordinates is None:
+                    Sentinel.warning(
+                        f"Not able to access april tag results for: {key=}"
+                    )
+                else:
+                    allCoordinates[key] = coordinates
+
+        return allCoordinates
+
+    def getCoordinatesForPost(
+        self, colorframe, tagPoseMatrix, bw_to_color_transform, drawBoxes
+    ):
+        if (
+            tagPoseMatrix is None
+            or np.isclose(tagPoseMatrix[:3, 3], np.zeros(shape=(3))).all()
+        ):
+            return None
+
+        onScreenBranches = {}
+        mask = np.zeros_like(colorframe, dtype=np.uint8)
+        frameCopy = colorframe.copy()
+
+        # iterate over each branch of reef
+        for offset_idx, offset_3d in cad_to_branch_offset.items():
+            # solve camera -> branch via camera -> tag and tag -> branch transformations
+            tag_to_reef_homography = np.append(offset_3d, 1.0)  # ensures shape is 4x4
+
+            bw_camera_to_reef = np.dot(
+                tagPoseMatrix,
+                tag_to_reef_homography,
+            )
+
+            total_bw_corners = []
+            for reefBoxOffset in getClosest3Faces(tagPoseMatrix, colorframe):
                 bw_corners = []
-                for boxOffset in reefBoxOffsets:
-                    box_offset_homogeneous = np.append(boxOffset, 0)  # Shape: (4,)
+                for cornerOffset in reefBoxOffset:
+                    box_offset_homogeneous = np.append(cornerOffset, 0)  # Shape: (4,)
                     tag_to_reef_corner_homography = (
                         tag_to_reef_homography + box_offset_homogeneous
                     )
@@ -121,66 +246,98 @@ class ReefPostEstimator:
                     )
                     bw_corners.append(bw_camera_to_reef_corner)
 
+                total_bw_corners.append(bw_corners)
+
+            if bw_to_color_transform is not None:
                 color_camera_to_reef = bw_camera_to_reef @ bw_to_color_transform
+                total_color_corners = [
+                    [corner @ bw_to_color_transform for corner in bw_corners]
+                    for bw_corners in total_bw_corners
+                ]
+            else:
+                color_camera_to_reef = bw_camera_to_reef  # same pose
+                total_color_corners = total_bw_corners
 
-                print(f"{bw_camera_to_reef=}")
-                print(f"{color_camera_to_reef=}")
-                print(f"{tagPoseMatrix=}")
+            # print(f"{bw_camera_to_reef=}")
+            # print(f"{color_camera_to_reef=}")
+            # print(f"{tagPoseMatrix=}")
 
-                color_corners = [corner @ bw_to_color_transform for corner in bw_corners]
+            # project the 3D reef point to 2D image coordinates:
+            x_cam, y_cam, z_cam, _ = color_camera_to_reef
 
-                x_cam, y_cam, z_cam, _ = color_camera_to_reef
+            u = (self.camIntr.getFx() * x_cam / z_cam) + self.camIntr.getCx()
+            v = (self.camIntr.getFy() * y_cam / z_cam) + self.camIntr.getCy()
 
+            # print(f"{u=} {v=}")
 
-                # project the 3D point to 2D image coordinates:
-                u = (self.camIntr.getFx() * x_cam / z_cam) + self.camIntr.getCx()
-                v = (self.camIntr.getFy() * y_cam / z_cam) + self.camIntr.getCy()
-
-                print(f"{u=} {v=}")
-
-                # project the 3d box corners to 2d image coords
+            # project the 3d box corners to 2d image coords
+            reef_mask = np.zeros_like(frameCopy)
+            total_image_corners = []
+            for color_corner in total_color_corners:
                 imageCorners = []
-                for corner in color_corners:
+                for corner in color_corner:
                     x_cam, y_cam, z_cam, _ = corner
-                    print(f"{corner=}")
                     uC = (self.camIntr.getFx() * x_cam / z_cam) + self.camIntr.getCx()
                     uV = (self.camIntr.getFy() * y_cam / z_cam) + self.camIntr.getCy()
-                    imageCorners.append((uC, uV))
+                    imageCorners.append((int(uC), int(uV)))
 
-                if drawBoxes:
-                    cv2.circle(colorframe, (int(u), int(v)), 5, (0, 255, 255), 2)
-                    min_x, min_y = np.min(imageCorners, axis=0)
-                    max_x, max_y = np.max(imageCorners, axis=0)
-                    cv2.rectangle(
-                        colorframe,
-                        (int(min_x), int(min_y)),
-                        (int(max_x), int(max_y)),
-                        (255, 255, 255),
-                        2,
-                    )
+                total_image_corners.append(imageCorners)
+                # Fill the polygon (the rectangle area) with white (255)
+                cv2.fillPoly(mask, [np.int32(imageCorners)], (255, 255, 255))
+                cv2.fillPoly(reef_mask, [np.int32(imageCorners)], (255, 255, 255))
 
-                    for imageCorner in imageCorners:
+            extracted = cv2.bitwise_and(frameCopy, reef_mask)
+            lab = cv2.cvtColor(extracted, cv2.COLOR_BGR2LAB)
+            backProj = cv2.calcBackProject(
+                [lab], [1, 2], purpleHist, [0, 256, 0, 256], 1
+            )
+            dil = cv2.dilate(backProj, np.ones((2, 2)), iterations=6)
+            _, thresh = cv2.threshold(dil, 20, 255, cv2.THRESH_BINARY)
+            sum = np.sum(thresh)
+            _, baseThresh = cv2.threshold(extracted, 1, 255, cv2.THRESH_BINARY)
+            total = np.sum(baseThresh)
+
+            perc = sum / total
+            color = (0, 0, 255)  # red default
+            if perc > purpleThresh:
+                color = (0, 255, 0)  # green
+
+            if drawBoxes:
+                cv2.circle(colorframe, (int(u), int(v)), 5, color, 2)
+                for imageCorner in total_image_corners:
+                    for point1 in imageCorner:
+                        for point2 in imageCorner:
+                            if point1 != point2:
+                                cv2.line(colorframe, point1, point2, color, 1)
+
+                    for imageCorner in imageCorner:
                         uC, uV = imageCorner
-                        cv2.circle(colorframe, (int(uC), int(uV)), 3, (255, 255, 255), 2)
+                        cv2.circle(colorframe, (int(uC), int(uV)), 3, color, 2)
 
-                    cv2.putText(
-                        colorframe,
-                        f"{offset_idx}",
-                        (int(u), int(v) + 30),
-                        cv2.FONT_HERSHEY_SIMPLEX,
-                        1,
-                        (255, 255, 255),
-                        2,
-                    )
+                cv2.putText(
+                    colorframe,
+                    f"{offset_idx}",
+                    (int(u), int(v) + 30),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    1,
+                    color,
+                    2,
+                )
 
-                onScreenBranches[offset_idx] = (u, v)
+            onScreenBranches[offset_idx] = (u, v)
 
-            coordinates[key] = onScreenBranches
+        extracted = cv2.bitwise_and(frameCopy, mask)
+        lab = cv2.cvtColor(extracted, cv2.COLOR_BGR2LAB)
+        backProj = cv2.calcBackProject([lab], [1, 2], purpleHist, [0, 256, 0, 256], 1)
+        dil = cv2.dilate(backProj, np.ones((3, 3)), iterations=6)
+        _, thresh = cv2.threshold(dil, 20, 255, cv2.THRESH_BINARY)
+        sum = np.sum(thresh)
+        _, baseThresh = cv2.threshold(extracted, 1, 255, cv2.THRESH_BINARY)
+        total = np.sum(baseThresh)
 
-        return coordinates
+        perc = sum / total
+        cv2.putText(extracted, f"P: {perc}", (0, 20), 0, 1, (255, 255, 255), 1)
+        cv2.imshow("extracted", extracted)
+        cv2.imshow("thresh", thresh)
 
-
-
-
-
-            
+        return onScreenBranches
