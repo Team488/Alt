@@ -296,7 +296,7 @@ def find_inflection_points(path):
     return inflection_points
 
 
-def server():
+def example():
     fieldHeightMeters = 8.05
     fieldWidthMeters = 17.55
     grid_width = 690
@@ -349,4 +349,4 @@ def server():
 
 
 if __name__ == "__main__":
-    server()
+    example()
