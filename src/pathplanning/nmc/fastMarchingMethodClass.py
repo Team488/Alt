@@ -1,11 +1,7 @@
-import time
-
 import cv2
 import numpy as np
 import skfmm
-import zmq
 import json
-import BezierCurve_pb2 as BezierCurve
 
 
 class FastMarchingPathfinder:
