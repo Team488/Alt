@@ -65,6 +65,7 @@ class HexagonLayout(RelativeLayout):
         # Generate buttons list dynamically
         self.buttons_data = []
 
+        self.button_lookup = {}
         for btn in alphabet_buttons:
             self.buttons_data.append(btn)  # Add alphabet button
 
@@ -105,6 +106,8 @@ class HexagonLayout(RelativeLayout):
             self.add_widget(button)
             self.buttons.append(button)
 
+            self.button_lookup.update({text : button})
+            
         # Bind resizing event
         Window.bind(on_resize=self.update_layout)
         self.update_layout(Window, Window.width, Window.height)
@@ -135,6 +138,11 @@ class HexagonLayout(RelativeLayout):
                 width * button_x_ratio,  
                 height * button_y_ratio  
             )
+
+    # button_text = key
+    def update_button_color(self, button_text, color):
+        print("COLOR UPDATED")
+        self.button_lookup[button_text].background_color = color
 
     def update_mouse_position(self, dt):
         x, y = Window.mouse_pos
