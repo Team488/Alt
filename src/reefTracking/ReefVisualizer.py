@@ -34,7 +34,7 @@ class HexagonLayout(RelativeLayout):
         alphabet_buttons = [
             {"text": "A", "pos": (1015, 800)},
             {"text": "B", "pos": (1015, 700)},
-            {"text": "C", "pos": (1035, 650)},  # Example with diagonal offset
+            {"text": "C", "pos": (1035, 650)},
             {"text": "D", "pos": (1100, 600)},
             {"text": "E", "pos": (1200, 600)},
             {"text": "F", "pos": (1275, 650)},
@@ -43,7 +43,7 @@ class HexagonLayout(RelativeLayout):
             {"text": "I", "pos": (1275, 850)},
             {"text": "J", "pos": (1200, 900)},
             {"text": "K", "pos": (1100, 900)},
-            {"text": "L", "pos": (1035, 850)},
+            {"text": "L", "pos": (1035, 850)}
         ]
 
         # Define L2 offsets and L3/L4 spacing direction per alphabet button
@@ -91,7 +91,17 @@ class HexagonLayout(RelativeLayout):
         # Create buttons
         self.buttons = []
         for data in self.buttons_data:
-            button = Button(text=data["text"], size_hint=(None, None))
+            background_color=(255, 255, 0, 1)
+            text = data["text"]
+            if len(text) == 1:
+                background_color=(255, 255, 255, 1)
+            button = Button(
+                text=data["text"],
+                size_hint=(None, None),
+                background_color=background_color,
+                color=(0, 0, 0, 1),
+                font_size=32
+                )
             self.add_widget(button)
             self.buttons.append(button)
 
