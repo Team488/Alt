@@ -1,7 +1,10 @@
-import math
+import heapq
+from typing import Any
+
 import cv2
 import numpy as np
-import heapq
+
+import math
 from tools.Constants import MapConstants
 
 
@@ -17,12 +20,12 @@ class Cell:
 class AStarPathfinder:
     def __init__(
         self,
-        grid,
-        obstacleWidth,
-        obstacleHeight,
-        gridSizeCol,
-        gridSizeRow,
-        mapResolution,
+        grid: Any,
+        obstacleWidth: float,
+        obstacleHeight: float,
+        gridSizeCol: int,
+        gridSizeRow: int,
+        mapResolution: float,
     ):
         self.original_grid = grid
         self.obstacle_radius = math.ceil(
@@ -41,7 +44,7 @@ class AStarPathfinder:
         self.ROW_SIZE = gridSizeRow
         self.COL_SIZE = gridSizeCol
 
-    def inflate_obstacles(self, grid, radius):
+    def inflate_obstacles(self, grid: Any, radius: int) -> Any:
         # Create a circular kernel
         kernel_size = int(2 * radius)  # small safety offset
         kernel = cv2.getStructuringElement(
@@ -52,22 +55,22 @@ class AStarPathfinder:
         return inflated_grid
 
     @staticmethod
-    def is_valid(col, row, ROW_SIZE, COL_SIZE):
+    def is_valid(col: int, row: int, ROW_SIZE: int, COL_SIZE: int) -> bool:
         return 0 <= row < ROW_SIZE and 0 <= col < COL_SIZE
 
-    def is_unblocked(self, col, row, grid):
+    def is_unblocked(self, col: int, row: int, grid: Any) -> bool:
         return not grid[row, col]
 
     @staticmethod
-    def is_destination(col, row, dest):
+    def is_destination(col: int, row: int, dest: list[int]) -> bool:
         return col == dest[0] and row == dest[1]
 
     @staticmethod
-    def calculate_h_value(col, row, dest):
+    def calculate_h_value(col: int, row: int, dest: list[int]) -> float:
         return ((col - dest[0]) ** 2 + (row - dest[1]) ** 2) ** 0.5
 
     @staticmethod
-    def trace_path(cell_details, dest):
+    def trace_path(cell_details: list[list[Any]], dest: tuple[int, int]) -> Any:
         path = []
         row, col = dest
         while not (
@@ -83,7 +86,9 @@ class AStarPathfinder:
         path.reverse()
         return np.array(path)
 
-    def a_star_search(self, src, dest, extraObstacles=None):
+    def a_star_search(
+        self, src: list[int], dest: list[int], extraObstacles: Any | None = None
+    ):
         grid = self.grid
         print(self.grid.shape)
         if extraObstacles is not None:

@@ -1,19 +1,20 @@
-import time
-import numpy as np
 import os
 import sys
+import time
+from typing import Any
+
 import cv2
 
+import numpy as np
+import pathplanning.utils as pathPlanningUtils
 from mapinternals.KalmanCache import KalmanCache
 from mapinternals.KalmanEntry import KalmanEntry
 from mapinternals.probmap import ProbMap
-from tools.Constants import MapConstants
-from pathplanning.PathFind import PathFinder
-import pathplanning.utils as pathPlanningUtils
 from pathplanning import AStarGrid
 from pathplanning.AStarGrid import AStarPathfinder
+from pathplanning.PathFind import PathFinder
 from tools import UnitConversion
-from tools.Constants import Landmarks
+from tools.Constants import Landmarks, MapConstants
 
 
 class PathGenerator:
@@ -56,22 +57,28 @@ class PathGenerator:
     def generateToPoint(self, currentPosition, target):
         return self.generate(currentPosition, target)
 
-    def generate(self, start, goal, extraObstacles=None, reducePoints=True):
+    def generate(
+        self,
+        start: list[float],
+        goal: list[float],
+        extraObstacles: Any | None = None,
+        reducePoints=True,
+    ):
         if len(start) > 2 or len(goal) > 2:
             print(f"{start=} {goal=}")
             print("Start and goal invalid length!!")
             return None
         # flipping col,row into standard row,col
-        start = np.array(start)
-        goal = np.array(goal)
+        start_arr = np.array(start)
+        goal_arr = np.array(goal)
 
         # grid based so need integers
         # reducing to internal scale
-        start = tuple(map(int, start / self.map.resolution))
-        goal = tuple(map(int, goal / self.map.resolution))
+        start_scaled = list(map(int, start_arr / self.map.resolution))
+        goal_scaled = list(map(int, goal_arr / self.map.resolution))
 
         stime = time.time()
-        path = self.pathFinder.a_star_search(start, goal, extraObstacles)
+        path = self.pathFinder.a_star_search(start_scaled, goal_scaled, extraObstacles)
         etime = time.time()
         print(f"Time elapsed === {(etime-stime)*1000:2f}")
         if path is not None:

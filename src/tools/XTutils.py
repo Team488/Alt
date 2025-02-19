@@ -1,7 +1,9 @@
 from JXTABLES import XTableValues_pb2
 
 
-def getCoordinatesAXCoords(path):
+def getCoordinatesAXCoords(
+    path: list[list[float]],
+) -> list[XTableValues_pb2.Coordinate]:
     """Returns coordinates in xtables format with 2 major assumptions:\n
     #1 Path units are in cm\n
     #2 coordinates out are in m
