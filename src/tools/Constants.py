@@ -43,31 +43,6 @@ class InferenceMode(Enum):
         Backend.ONNX,
         YOLOTYPE.V11,
     )
-    ONNX2024 = (
-        "assets/yolov5s_fp32.onnx",
-        "yolov5s-onnx-fp32",
-        ("Robot", "Note"),
-        2024,
-        Backend.ONNX,
-        YOLOTYPE.V5,
-    )
-    ONNXSMALL2025 = (
-        "assets/yolov11s_fp32.onnx",
-        "yolov11s-onnx-fp32",
-        ("Algae", "Coral"),
-        2025,
-        Backend.ONNX,
-        YOLOTYPE.V11,
-    )
-    ONNXMEDIUM2025 = (
-        "assets/yolov11m_fp32.onnx",
-        "yolov11m-onnx-fp32",
-        ("Algae", "Coral"),
-        2025,
-        Backend.ONNX,
-        YOLOTYPE.V11,
-    )
-
     RKNN2024FP32 = (
         "assets/yolov5s_fp32.rknn",
         "yolov5s-rknn-fp32",
@@ -82,39 +57,6 @@ class InferenceMode(Enum):
         ("Algae", "Coral"),
         2025,
         Backend.RKNN,
-        YOLOTYPE.V11,
-    )
-    RKNN2024FP32 = (
-        "assets/yolov5s_fp32.rknn",
-        "yolov5s-rknn-fp32",
-        ("Robot", "Note"),
-        2024,
-        Backend.RKNN,
-        YOLOTYPE.V5,
-    )
-    RKNN2025INT8 = (
-        "assets/yolov11s_int8.rknn",
-        "yolov11s-rknn-int8",
-        ("Algae", "Coral"),
-        2025,
-        Backend.RKNN,
-        YOLOTYPE.V11,
-    )
-
-    ULTRALYTICSSMALL2025 = (
-        "assets/yolov11s_fp32.pt",
-        "yolov11s-pytorch-fp32",
-        ("Algae", "Coral"),
-        2025,
-        Backend.ULTRALYTICS,
-        YOLOTYPE.V11,
-    )
-    ULTRALYTICSMED2025 = (
-        "assets/yolov11m_fp32.pt",
-        "yolov11s-pytorch-fp32",
-        ("Algae", "Coral"),
-        2025,
-        Backend.ULTRALYTICS,
         YOLOTYPE.V11,
     )
 
@@ -377,7 +319,6 @@ class ObjectReferences(Enum):
     NOTE = (35.56, 14)  # cm , in
     BUMPERHEIGHT = (12.7, 5)  # cm, in
     ALGAEDIAMETER = (40.64, 16)  # cm in
-    ALGAEDIAMETER = (40.64, 16)  # cm in
 
     def getMeasurementCm(self) -> float:
         return self.value[0]
@@ -450,23 +391,14 @@ class MapConstants(Enum):
     robotHeight = 75  # cm assuming square robot with max frame perimiter of 300
     gameObjectWidth = 35  # cm
     gameObjectHeight = 35  # cm
-    gameObjectHeight = 35  # cm
 
-    mapObstacles = []  # todo define these
-    reefRadius = 83.185  # cm
     b_reef_center = (411.48, 365.76)  # cm
     r_reef_center = (1234.44, 365.76)  # cm
     reefRadius = 83.185  # cm
-    b_reef_center = (411.48, 365.76)  # cm
-    r_reef_center = (1234.44, 365.76)  # cm
-    reef_post_radius = 1.5875
 
     coral_inner_diameter = 10.16  # cm
     coral_outer_diameter = 11.43  # cm
-    coral_inner_diameter = 10.16  # cm
-    coral_outer_diameter = 11.43  # cm
 
-    coral_width = 30.16  # cm
     coral_width = 30.16  # cm
 
     def getCM(self):
@@ -481,7 +413,7 @@ class LabelingConstants(Enum):
 # class CAMERA(Enum):
 
 
-def getCameraIfOffset(cameraName: str) -> CameraIdOffsets | None:
+def getCameraIfOffset(cameraName: str):
     for cameraIdOffset in CameraIdOffsets:
         if cameraIdOffset.name == cameraName:
             return cameraIdOffset
@@ -497,7 +429,7 @@ def getCameraExtrinsics(cameraName):
     return None
 
 
-def getCameraName(cameraId: int) -> Any | None:
+def getCameraName(cameraId: int) -> Any:
     if cameraId == 0:
         return ...
 
@@ -506,7 +438,7 @@ def getCameraName(cameraId: int) -> Any | None:
 
 def getCameraValues(
     cameraName: str,
-) -> tuple[CameraIntrinsics, CameraExtrinsics | None, CameraIdOffsets | None]:
+) -> tuple[CameraIntrinsics, CameraExtrinsics, CameraIdOffsets]:
     return (
         CameraIntrinsicsPredefined.OV9782COLOR,
         getCameraExtrinsics(cameraName),
