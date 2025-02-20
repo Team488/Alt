@@ -10,10 +10,32 @@ from kivy.clock import Clock
 from kivy.core.window import Window
 
 
+from queue import Queue
+
+
 class HexagonLayout(RelativeLayout):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
+        self.init_background()
+        self.init_reef_buttons()
+        
+        # Bind resizing event
+        Window.bind(on_resize=self.update_layout)
+        self.update_layout(Window, Window.width, Window.height)
+
+        # Mouse position label (for development)
+        self.mouse = Label(text="Mouse Position: (0, 0)", size_hint=(None, None), pos=(100, 10))
+        Clock.schedule_interval(self.update_mouse_position, 0.05)
+        self.add_widget(self.mouse)
+
+        # Store the data queue for updating colors:
+        self.update_queue = Queue()
+        Clock.schedule_interval(self.process_queue_updates, 0.05)
+
+
+
+    def init_background(self):
         # Original image dimensions
         self.bg_width = int(1886 * 1.0)
         self.bg_height = int(1528 * 1.0)
@@ -30,6 +52,7 @@ class HexagonLayout(RelativeLayout):
         )
         self.add_widget(self.background)
 
+    def init_reef_buttons(self):
         # Define alphabet buttons with fixed positions
         alphabet_buttons = [
             {"text": "A", "pos": (1015, 800)},
@@ -91,7 +114,7 @@ class HexagonLayout(RelativeLayout):
 
         # Create buttons
         self.buttons = []
-        for data in self.buttons_data:
+        for data in self.buttons_data:        # Store the data queue for updating colors:
             background_color=(255, 255, 0, 1)
             text = data["text"]
             if len(text) == 1:
@@ -108,15 +131,6 @@ class HexagonLayout(RelativeLayout):
 
             self.button_lookup.update({text : button})
             
-        # Bind resizing event
-        Window.bind(on_resize=self.update_layout)
-        self.update_layout(Window, Window.width, Window.height)
-
-        # Mouse position label (for development)
-        self.mouse = Label(text="Mouse Position: (0, 0)", size_hint=(None, None), pos=(10, 10))
-        Clock.schedule_interval(self.update_mouse_position, 0.05)
-        self.add_widget(self.mouse)
-
     def update_layout(self, instance, width, height):
         # Ensure background size matches the window
         self.background.size = (width, height)
@@ -139,18 +153,37 @@ class HexagonLayout(RelativeLayout):
                 height * button_y_ratio  
             )
 
-    # button_text = key
     def update_button_color(self, button_text, color):
-        print("COLOR UPDATED")
-        self.button_lookup[button_text].background_color = color
+        if button_text in self.button_lookup:
+            button = self.button_lookup[button_text]
+            print("COLOR UPDATED", button_text, self.button_lookup[button_text])
+            button.background_color = color
+            print("updated to", button.background_color)
 
     def update_mouse_position(self, dt):
         x, y = Window.mouse_pos
         self.mouse.text = f"Mouse Position: ({int(x)}, {int(y)})"
 
+    def queue_color_update(self, button_text, color):
+        self.update_queue.put((button_text, color))
+
+    def get_background_colors(self, button_text):
+        print(button_text, "background color:", self.button_lookup[button_text].background_color)
+
+    def process_queue_updates(self, dt):
+        # Update the color according to the queue
+        while not self.update_queue.empty():
+            button_text, color = self.update_queue.get()
+            print("Processing queue updates for", button_text)
+            Clock.schedule_once(lambda dt, btn=button_text, col=color: self.update_button_color(btn, col))
+            #Clock.schedule_once(lambda dt: self.update_button_color(button_text, color))
+
+
 class ReefVisualizer(App):
     def build(self):
         return HexagonLayout()
 
+"""
 if __name__ == '__main__':
     ReefVisualizer().run()
+"""
