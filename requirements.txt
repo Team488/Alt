@@ -23,7 +23,7 @@ fsspec==2024.9.0
 gast==0.6.0
 google-pasta==0.2.0
 gorilla==0.4.0
-grpcio==1.66.1
+grpcio~=1.70.0
 identify==2.6.1
 idna>=3.7
 importlib_metadata>=8.2.0
@@ -92,4 +92,7 @@ zipp>=3.20.0
 pycapnp
 pytesseract
 XTablesClient
-pynetworktables
+pynetworktables~=2021.0.0
+protobuf~=5.29.2
+scikit-fmm~=2025.1.29
+pyzmq~=26.2.0

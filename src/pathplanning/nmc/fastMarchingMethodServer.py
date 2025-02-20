@@ -9,6 +9,7 @@ import zmq
 from matplotlib.colors import LinearSegmentedColormap
 import json
 import BezierCurve_pb2 as BezierCurve
+import JXTABLES.XTableValues_pb2 as XTableValues
 
 
 class FastMarchingPathfinder:
@@ -336,9 +337,7 @@ def build_bezier_curves_proto(final_segments):
         your_proto_pb2.BezierCurves: The populated protobuf message.
     """
     # Create the top-level BezierCurves message
-    bezier_curves_msg = BezierCurve.BezierCurves()
-    bezier_curves_msg.finalRotationDegrees = 0
-    bezier_curves_msg.pathFound = True
+    bezier_curves_msg = XTableValues.BezierCurves()
 
     # Normalize input to be an iterable of segments.
     if isinstance(final_segments, list):
