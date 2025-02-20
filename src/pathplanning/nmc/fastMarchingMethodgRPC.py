@@ -1,3 +1,5 @@
+import math
+
 import grpc
 from concurrent import futures
 from JXTABLES import XTableValues_pb2 as XTableValues
@@ -335,7 +337,10 @@ fieldHeightMeters = 8.05
 fieldWidthMeters = 17.55
 grid_width = 690
 grid_height = 316
-ROBOT_SIZE_INCHES = 45
+ROBOT_SIZE_INCHES = 35
+
+
+MAX_ROBOT_SIZE_DIAGONAL_INCHES = int(math.ceil(math.sqrt(2) * ROBOT_SIZE_INCHES))
 PIXELS_PER_METER_X = grid_width / fieldWidthMeters
 PIXELS_PER_METER_Y = grid_height / fieldHeightMeters
 
@@ -349,7 +354,7 @@ class VisionCoprocessorServicer(XTableGRPC.VisionCoprocessorServicer):
         SAFE_DISTANCE_INCHES = (
             request.safeDistanceInches if request.HasField("safeDistanceInches") else 5
         )
-        TOTAL_SAFE_DISTANCE = ROBOT_SIZE_INCHES + SAFE_DISTANCE_INCHES
+        TOTAL_SAFE_DISTANCE = MAX_ROBOT_SIZE_DIAGONAL_INCHES + SAFE_DISTANCE_INCHES
 
         base_grid = np.ones((grid_height, grid_width), dtype=float)
         static_obs_array = get_static_obstacles("static_obstacles_inch.json")
