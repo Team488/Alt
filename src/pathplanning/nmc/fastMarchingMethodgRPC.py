@@ -1,8 +1,15 @@
-import time
+import grpc
+from concurrent import futures
+from JXTABLES import XTableValues_pb2 as XTableValues
+from JXTABLES import XTableValues_pb2_grpc as XTableGRPC
 
 import cv2
 import numpy as np
+import cupy as cp
 import skfmm
+import matplotlib.pyplot as plt
+import zmq
+from matplotlib.colors import LinearSegmentedColormap
 import json
 
 
@@ -281,30 +288,74 @@ def find_inflection_points(path):
     return inflection_points
 
 
-def example():
-    fieldHeightMeters = 8.05
-    fieldWidthMeters = 17.55
-    grid_width = 690
-    grid_height = 316
-    ROBOT_SIZE_INCHES = 45
-    SAFE_DISTANCE_INCHES = 5
-    PIXELS_PER_METER_X = grid_width / fieldWidthMeters
-    PIXELS_PER_METER_Y = grid_height / fieldHeightMeters
-    TOTAL_SAFE_DISTANCE = ROBOT_SIZE_INCHES + SAFE_DISTANCE_INCHES
-    base_grid = np.ones((grid_height, grid_width), dtype=float)
-    static_obs_array = get_static_obstacles("static_obstacles_inch.json")
-    static_grid = apply_and_inflate_all_static_obstacles(
-        base_grid, static_obs_array, TOTAL_SAFE_DISTANCE
-    )
+def build_bezier_curves_proto(final_segments, options):
+    """
+    Build a BezierCurves protobuf from the final path segments and their traversal times.
 
-    # --------------------- REPEATED ---------------------
-    # Combine static obs grid with prob map detections (static_grid.copy() for continuous use)
-    while True:
-        t = time.time()
-        start = (0, 0)
-        goal = (10, 8)
+    Args:
+        final_segments: Either a NumPy array or a list of NumPy arrays. The array can be:
+                        - 2D array of shape (N, 2) representing a single segment, or
+                        - 3D array of shape (num_segments, N, 2) for multiple segments, or
+                        - a list of 2D arrays.
 
-        # Only use kalman cache
+    Returns:
+        your_proto_pb2.BezierCurves: The populated protobuf message.
+    """
+    # Create the top-level BezierCurves message
+    bezier_curves_msg = XTableValues.BezierCurves()
+    bezier_curves_msg.options.CopyFrom(options)
+
+    # Normalize input to be an iterable of segments.
+    if isinstance(final_segments, list):
+        segments = final_segments
+    elif isinstance(final_segments, np.ndarray):
+        if final_segments.ndim == 2:
+            segments = [final_segments]
+        else:
+            segments = final_segments
+    else:
+        raise TypeError("final_segments must be a list or a numpy array.")
+
+    # Iterate through segments
+    for segment in segments:
+        # Create a BezierCurve entry for the current segment
+        curve_msg = bezier_curves_msg.curves.add()
+        # Fill in the control points for this curve
+        for (x_val, y_val) in segment:
+            cp = curve_msg.controlPoints.add()
+            cp.x = x_val
+            cp.y = y_val
+
+    return bezier_curves_msg
+
+    # ----------- MAIN CODE (DO NOT EDIT) -------------
+
+
+fieldHeightMeters = 8.05
+fieldWidthMeters = 17.55
+grid_width = 690
+grid_height = 316
+ROBOT_SIZE_INCHES = 45
+PIXELS_PER_METER_X = grid_width / fieldWidthMeters
+PIXELS_PER_METER_Y = grid_height / fieldHeightMeters
+
+
+class VisionCoprocessorServicer(XTableGRPC.VisionCoprocessorServicer):
+    def RequestBezierPathWithOptions(self, request, context):
+        print(f"Received request with option: {request}")
+
+        start = (request.start.x, request.start.y)
+        goal = (request.end.x, request.end.y)
+        SAFE_DISTANCE_INCHES = 5  # request.safeRadiusInches
+        TOTAL_SAFE_DISTANCE = ROBOT_SIZE_INCHES + SAFE_DISTANCE_INCHES
+
+        base_grid = np.ones((grid_height, grid_width), dtype=float)
+        static_obs_array = get_static_obstacles("static_obstacles_inch.json")
+        static_grid = apply_and_inflate_all_static_obstacles(
+            base_grid.copy(), static_obs_array, TOTAL_SAFE_DISTANCE
+        )
+
+        # add prob map detections
 
         pathfinder = FastMarchingPathfinder(static_grid)
         START = (int(start[0] * PIXELS_PER_METER_X), int(start[1] * PIXELS_PER_METER_Y))
@@ -323,6 +374,7 @@ def example():
                 break
         inflection_points = find_inflection_points(path)
         smoothed_control_points = deflate_inflection_points(inflection_points)
+
         safe_bezier_segments = pathfinder.generate_safe_bezier_paths(
             smoothed_control_points
         )
@@ -330,10 +382,27 @@ def example():
             segment / np.array([PIXELS_PER_METER_X, PIXELS_PER_METER_Y])
             for segment in safe_bezier_segments
         ]
-        # This is a list of Pose2d relative to real world field.
-        print((time.time() - t) * 1000)
-    # --------------------- REPEATED ---------------------
+        response = build_bezier_curves_proto(
+            safe_bezier_segments_poses, request.options
+        )
+        return response
+
+
+def serve():
+    server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
+    XTableGRPC.add_VisionCoprocessorServicer_to_server(
+        VisionCoprocessorServicer(), server
+    )
+
+    server.add_insecure_port("[::]:9281")  # Listen on all interfaces
+    server.start()
+    print("Python gRPC Server is running on port 9281...")
+
+    try:
+        server.wait_for_termination()
+    except KeyboardInterrupt:
+        print("Shutting down gRPC server.")
 
 
 if __name__ == "__main__":
-    example()
+    serve()
