@@ -336,14 +336,15 @@ fieldHeightMeters = 8.05
 fieldWidthMeters = 17.55
 grid_width = 690
 grid_height = 316
-ROBOT_SIZE_LENGTH = 35
-ROBOT_SIZE_WIDTH = 35
+ROBOT_SIZE_LENGTH_INCHES = 35
+ROBOT_SIZE_WIDTH_INCHES = 35
+DEFAULT_SAFE_DISTANCE_INCHES = 5
 # ----------- CONSTANTS (DO NOT CHANGE UNLESS KNOWN) -------------
 
 
 # ----------- MAIN CODE (DO NOT EDIT) -------------
 MAX_ROBOT_SIZE_DIAGONAL_INCHES = int(
-    math.ceil(math.sqrt(ROBOT_SIZE_LENGTH**2 + ROBOT_SIZE_WIDTH**2))
+    math.ceil(math.sqrt(ROBOT_SIZE_LENGTH_INCHES**2 + ROBOT_SIZE_WIDTH_INCHES**2))
 )
 PIXELS_PER_METER_X = grid_width / fieldWidthMeters
 PIXELS_PER_METER_Y = grid_height / fieldHeightMeters
