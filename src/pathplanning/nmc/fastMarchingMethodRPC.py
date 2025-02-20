@@ -410,7 +410,7 @@ def serve():
     print("RPC Server is running on port 9281...")
 
     try:
-        server.wait_for_termination()
+        server.wait_for_termination()  # This BLOCKS until the program is shutdown from a KILL signal etc.
     except KeyboardInterrupt:
         print("Shutting down RPC server.")
 
