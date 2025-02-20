@@ -357,7 +357,9 @@ class VisionCoprocessorServicer(XTableGRPC.VisionCoprocessorServicer):
         start = (request.start.x, request.start.y)
         goal = (request.end.x, request.end.y)
         SAFE_DISTANCE_INCHES = (
-            request.safeDistanceInches if request.HasField("safeDistanceInches") else 5
+            max(DEFAULT_SAFE_DISTANCE_INCHES, request.safeDistanceInches)
+            if request.HasField("safeDistanceInches")
+            else DEFAULT_SAFE_DISTANCE_INCHES
         )
         TOTAL_SAFE_DISTANCE = MAX_ROBOT_SIZE_DIAGONAL_INCHES + SAFE_DISTANCE_INCHES
 
