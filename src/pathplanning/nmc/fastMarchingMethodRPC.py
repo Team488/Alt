@@ -357,7 +357,7 @@ class VisionCoprocessorServicer(XTableGRPC.VisionCoprocessorServicer):
             if request.HasField("safeDistanceInches")
             else DEFAULT_SAFE_DISTANCE_INCHES
         )
-        TOTAL_SAFE_DISTANCE = MAX_ROBOT_SIZE_DIAGONAL_INCHES + SAFE_DISTANCE_INCHES
+        TOTAL_SAFE_DISTANCE = int(MAX_ROBOT_SIZE_DIAGONAL_INCHES + SAFE_DISTANCE_INCHES)
 
         base_grid = np.ones((grid_height, grid_width), dtype=float)
         static_obs_array = get_static_obstacles("static_obstacles_inch.json")
