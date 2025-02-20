@@ -1,5 +1,6 @@
 import codecs
 import json
+import os
 import numpy as np
 import cv2
 
@@ -81,6 +82,55 @@ def startCalibration(chessBoardDim = (7, 10)):
     cv2.destroyAllWindows()
     cap.release()
 
+def charuco_calibration(imagesPath, json_file_location, arucoboarddim):
+    # Load images from the provided camera path
+    images = []
+    for image_file in sorted(os.listdir(imagesPath)):
+        if image_file.endswith(".jpg") or image_file.endswith(".png"):
+            img = cv2.imread(os.path.join(imagesPath, image_file))
+            images.append(img)
+
+    # Define the Charuco board parameters
+    board = cv2.aruco.CharucoBoard(
+        arucoboarddim,  # number of squares in height
+        1.0,               # size of each square
+        0.8,               # marker size
+        cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_250)  # ArUco marker dictionary
+    )
+
+    # Prepare object points and image points
+    obj_points = []  # 3d points in world space
+    img_points = []  # 2d points in image plane
+
+    # Loop through the images and detect ArUco markers
+    for img in images:
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        detector = cv2.aruco.CharucoDetector(board)
+        charuco_corners, charuco_ids, aruco_corners, aruco_ids = detector.detectBoard(gray)
+        obj_pt, img_pt = board.matchImagePoints(charuco_corners,charuco_ids)
+        obj_points.append(obj_pt)
+        img_points.append(img_pt)
+
+    # Camera calibration
+    ret, mtx, dist, rvecs, tvecs = cv2.calibrateCameraExtended(
+        obj_points, img_points, gray.shape[::-1], None, None)
+
+    # Save the calibration results to a JSON file
+    calibrationJSON = {
+        "CameraMatrix": json.dumps(mtx.tolist()),
+        "DistortionCoeff": json.dumps(dist.tolist()),
+    }
+
+    with codecs.open(json_file_location, "w", encoding="utf-8") as json_file:
+        json.dump(
+            calibrationJSON,
+            json_file,
+            separators=(",", ":"),
+            sort_keys=True,
+            indent=4,
+        )
+
+    print("Calibration saved to", json_file_location)
 
 
 
