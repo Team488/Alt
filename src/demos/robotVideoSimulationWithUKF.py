@@ -1,8 +1,15 @@
 import numpy as np
 from mapinternals.probmap import ProbMap
 from mapinternals.localFrameProcessor import LocalFrameProcessor
+from Core.Central import Central
 from tools.CsvParser import CsvParser
-from tools.Constants import CameraIntrinsicsPredefined, ColorCameraExtrinsics2024, InferenceMode
+from tools.Constants import (
+    CameraExtrinsics,
+    CameraIntrinsicsPredefined,
+    ColorCameraExtrinsics2024,
+    CameraIdOffsets,
+    InferenceMode,
+)
 from inference.onnxInferencer import onnxInferencer
 import cv2
 import math
@@ -11,8 +18,8 @@ from tools.Units import UnitMode
 
 
 def startDemo():
-    cv2.namedWindow("view", cv2.WINDOW_NORMAL)
-    cv2.setWindowProperty("view", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
+    # cv2.namedWindow("view", cv2.WINDOW_NORMAL)
+    # cv2.setWindowProperty("view", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
 
     fieldWidth = 1653  # 54' 3" to cm
     fieldHeight = 800  # 26' 3" to cm
@@ -49,22 +56,25 @@ def startDemo():
     cameraIntr = CameraIntrinsicsPredefined.OAKDLITE
     cap = cv2.VideoCapture("assets/video12qual25clipped.mp4")
     firstRun = True
-    # cap_outM = None
-    frameProcessor = LocalFrameProcessor(cameraIntr, cameraExtr,inferenceMode=InferenceMode.ONNX2024)
+    cap_outM = None
+    frameProcessor = LocalFrameProcessor(
+        cameraIntr, cameraExtr, inferenceMode=InferenceMode.ONNX2024
+    )
+    centralProcessor = Central()
     fps = cap.get(cv2.CAP_PROP_FPS)
     timePassed = 0
     timePerFrame = 1 / fps
-    cap.set(cv2.CAP_PROP_POS_FRAMES, 1000)
+
     while cap.isOpened():
         ret, frame = cap.read()
-        # if firstRun:
-        #     firstRun = False
-        #     cap_outM = cv2.VideoWriter(
-        #         "out.mp4",
-        #         cv2.VideoWriter_fourcc(*"mp4v"),
-        #         fps,
-        #         (frame.shape[1], frame.shape[0]),
-        #     )
+        if firstRun:
+            firstRun = False
+            cap_outM = cv2.VideoWriter(
+                "out.mp4",
+                cv2.VideoWriter_fourcc(*"mp4v"),
+                fps,
+                (frame.shape[1], frame.shape[0]),
+            )
         if ret:
             # read and draw robot location
             values = parser.getNearestValues(timePassed + csvTimeOffset)
@@ -93,19 +103,16 @@ def startDemo():
             positionY = fieldHeight - positionY
 
             # Run yolov5 on the frame
+
+            # local process
             out = frameProcessor.processFrame(frame, positionX, positionY, 0)
+            # imagine a network connection here
+            # now central process
+            centralProcessor.processFrameUpdate(
+                [(out, CameraIdOffsets.FRONTLEFT)], timePerFrame
+            )
 
-            for result in out:
-                id = result[0]
-                x, y, z = result[1]
-                conf = result[2]
-                isRobot = result[3]
-                if isRobot:
-                    simMap.addCustomRobotDetection(int(x), int(y), 200, 200, conf)
-                else:
-                    simMap.addCustomObjectDetection(int(x), int(y), 200, 200, conf)
-
-            (gameObjMap, robotMap) = simMap.getHeatMaps()
+            (gameObjMap, robotMap) = centralProcessor.map.getHeatMaps()
             height, width = robotMap.shape
             zeros = np.zeros((height, width), dtype=np.uint8)
             mapView = cv2.merge((zeros, gameObjMap, robotMap))
@@ -120,10 +127,10 @@ def startDemo():
                 cameraExtr,
             )
             frame = __embed_frame(frame, mapView, scale_factor=1 / 2.7)
-            # cap_outM.write(frame)
+            cap_outM.write(frame)
             cv2.imshow("view", frame)
             if cv2.waitKey(1) & 0xFF == ord("q"):
-                # cap_outM.release()
+                cap_outM.release()
                 cap.release()
                 return
             simMap.disspateOverTime(timePerFrame)
@@ -132,7 +139,7 @@ def startDemo():
         else:
             break
 
-    # cap_outM.release()
+    cap_outM.release()
     cap.release()
     cv2.destroyAllWindows()
 
@@ -145,7 +152,7 @@ def __drawRobot(
     posY,
     rotation,
     cameraIntrinsics: CameraIntrinsicsPredefined,
-    cameraExtrinsic: ColorCameraExtrinsics2024,
+    cameraExtrinsic: CameraExtrinsics,
 ):  # fov 90 deg  | fovLen = 70cm # camera is facing 45 to the left
     # drawing robot
     FrameOffset = math.atan((height / 2) / (width / 2))

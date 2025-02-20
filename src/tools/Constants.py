@@ -1,6 +1,6 @@
 from enum import Enum
-from typing import Any
-
+from typing import Union, Any
+from tools import UnitConversion, Units
 import math
 import numpy as np
 from scipy.spatial.transform import Rotation
@@ -107,6 +107,14 @@ class Object(Enum):
 
 class CameraExtrinsics:
     #   {PositionName} = ((offsetX(in),offsetY(in),offsetZ(in)),(yawOffset(deg),pitchOffset(deg)))
+    @staticmethod
+    def getDefaultLengthType():
+        return Units.LengthType.IN
+    
+    @staticmethod
+    def getDefaultRotationType():
+        return Units.RotationType.Deg
+    
     def getOffsetXIN(self):
         return self.value[0][0]
 
@@ -137,13 +145,18 @@ class CameraExtrinsics:
     def getPitchOffsetAsRadians(self) -> float:
         return math.radians(self.value[1][1])
 
-    def get4x4AffineMatrix(self):
+    def get4x4AffineMatrix(self, lengthType : Units.LengthType = Units.LengthType.CM):
         """Returns a 4x4 affine transformation matrix for the camera extrinsics"""
-        x, y, z = self.value[0]
+        
+
+        x_in, y_in, z_in = self.value[0]
         yaw, pitch = map(math.radians, self.value[1])  # Convert degrees to radians
 
+        x, y, z = UnitConversion.convertLength((x_in,y_in,z_in),CameraExtrinsics.getDefaultLengthType(), lengthType)
+
+
         # Create rotation matrix (assuming yaw around Z, pitch around Y)
-        rotation_matrix = Rotation.from_euler("zy", [yaw, pitch]).as_matrix()
+        rotation_matrix = Rotation.from_euler("zy", [yaw, pitch], degrees=False).as_matrix()
 
         # Construct the 4x4 transformation matrix
         affine_matrix = np.eye(4)
@@ -152,20 +165,6 @@ class CameraExtrinsics:
 
         return affine_matrix
 
-    def get4x4AffineMatrixMeters(self):
-        """Returns a 4x4 affine transformation matrix for the camera extrinsics"""
-        x, y, z = map(lambda x: x * 0.0254, self.value[0])
-        yaw, pitch = map(math.radians, self.value[1])  # Convert degrees to radians
-
-        # Create rotation matrix (assuming yaw around Z, pitch around Y)
-        rotation_matrix = Rotation.from_euler("zy", [yaw, pitch]).as_matrix()
-
-        # Construct the 4x4 transformation matrix
-        affine_matrix = np.eye(4)
-        affine_matrix[:3, :3] = rotation_matrix
-        affine_matrix[:3, 3] = [x, y, z]  # Set translation
-
-        return affine_matrix
 
 
 class ColorCameraExtrinsics2024(CameraExtrinsics, Enum):
@@ -220,18 +219,18 @@ class ATCameraExtrinsics2025(ATCameraExtrinsics, Enum):
 class CameraIntrinsics:
     def __init__(
         self,
-        hres_pix=-1,
-        vres_pix=-1,
-        hfov_rad=-1,
-        vfov_rad=-1,
-        focal_length_mm=-1,
-        pixel_size_mm=-1,
-        sensor_size_mm=-1,
-        fx_pix=-1,
-        fy_pix=-1,
-        cx_pix=-1,
-        cy_pix=-1,
-    ):
+        hres_pix: int=-1,
+        vres_pix: int=-1,
+        hfov_rad: float=-1,
+        vfov_rad: Union[float, int]=-1,
+        focal_length_mm: float=-1,
+        pixel_size_mm: float=-1,
+        sensor_size_mm: float=-1,
+        fx_pix: float=-1,
+        fy_pix: Union[int, float]=-1,
+        cx_pix: Union[int, float]=-1,
+        cy_pix: Union[int, float]=-1,
+    ) -> None:
         self.value = (
             (hres_pix, vres_pix),  # Resolution
             (hfov_rad, vfov_rad),  # FOV
@@ -308,8 +307,8 @@ class CameraIntrinsicsPredefined:
         1.745,
         0.003,
         6.3,  # Physical Constants
-        609.34,
-        457,  # Calibrated Fx, Fy
+        650,
+        530,  # Calibrated Fx, Fy
         320,
         240,  # Calibrated Cx, Cy
     )
@@ -349,7 +348,88 @@ class CameraIdOffsets(Enum):
         return self.value
 
 
+class ATLocations(Enum):
+    """
+    AprilTag locations with ID, (x, y, z) coordinates in inches, and (yaw, pitch) rotations in degrees.
+    """
+    @staticmethod
+    def getDefaultLengthType():
+        return Units.LengthType.IN
+    
+    @staticmethod
+    def getDefaultRotationType():
+        return Units.RotationType.Deg
+    
+    TAG_1 = ((1), (657.37, 25.80, 58.50), (126, 0))
+    TAG_2 = ((2), (657.37, 291.20, 58.50), (234, 0))
+    TAG_3 = ((3), (455.15, 317.15, 51.25), (270, 0))
+    TAG_4 = ((4), (365.20, 241.64, 73.54), (0, 30))
+    TAG_5 = ((5), (365.20, 75.39, 73.54), (0, 30))
+    TAG_6 = ((6), (530.49, 130.17, 12.13), (300, 0))
+    TAG_7 = ((7), (546.87, 158.50, 12.13), (0, 0))
+    TAG_8 = ((8), (530.49, 186.83, 12.13), (60, 0))
+    TAG_9 = ((9), (497.77, 186.83, 12.13), (120, 0))
+    TAG_10 = ((10), (481.39, 158.50, 12.13), (180, 0))
+    TAG_11 = ((11), (497.77, 130.17, 12.13), (240, 0))
+    TAG_12 = ((12), (33.51, 25.80, 58.50), (54, 0))
+    TAG_13 = ((13), (33.51, 291.20, 58.50), (306, 0))
+    TAG_14 = ((14), (325.68, 241.64, 73.54), (180, 30))
+    TAG_15 = ((15), (325.68, 75.39, 73.54), (180, 30))
+    TAG_16 = ((16), (235.73, -0.15, 51.25), (90, 0))
+    TAG_17 = ((17), (160.39, 130.17, 12.13), (240, 0))
+    TAG_18 = ((18), (144.00, 158.50, 12.13), (180, 0))
+    TAG_19 = ((19), (160.39, 186.83, 12.13), (120, 0))
+    TAG_20 = ((20), (193.10, 186.83, 12.13), (60, 0))
+    TAG_21 = ((21), (209.49, 158.50, 12.13), (0, 0))
+    TAG_22 = ((22), (193.10, 130.17, 12.13), (300, 0))
+
+    @property
+    def id(self):
+        return self.value[0]
+    
+    @property
+    def position(self):
+        return self.value[1]
+    
+    @property
+    def rotation(self):
+        return self.value[2]
+    
+    @classmethod
+    def get_by_id(cls, tag_id):
+        """Retrieve an ATLocation by its ID."""
+        for tag in cls:
+            if tag.id == tag_id:
+                return tag
+        return None
+
+    @classmethod
+    def get_pose_by_id(cls, tag_id):
+        """Retrieve the position and rotation for a given tag ID."""
+        tag = cls.get_by_id(tag_id)
+        return (tag.position, tag.rotation) if tag else None
+    
+    @classmethod
+    def getPoseAfflineMatrix(cls, tag_id, units : Units.LengthType = Units.LengthType.CM):
+        pose = cls.get_pose_by_id(tag_id)
+        if pose is None:
+            return None
+        translation, rotation = pose
+        x_in,y_in,z_in = translation
+        yaw,pitch = rotation
+
+        rotMatrix = Rotation.from_euler("ZY",(yaw,pitch),degrees=True).as_matrix()
+        translationMatrix = UnitConversion.convertLength((x_in,y_in,z_in),cls.getDefaultLengthType(),units)
+        m = np.eye(4)
+        m[:3,:3] = rotMatrix
+        m[:3,3] = translationMatrix
+        return m
+        
+
+
 class Landmarks(Enum):
+    # in meters
+    # NOT CORRECT VALUES
     BlueTopCoralStationLeftLoad = (1.608, 7.26, -54)
     BlueTopCoralStationMiddleLoad = (1.225, 7, -54)
     BlueTopCoralStationRightLoad = (0.811, 6.7, -54)
@@ -391,9 +471,10 @@ class MapConstants(Enum):
     robotHeight = 75  # cm assuming square robot with max frame perimiter of 300
     gameObjectWidth = 35  # cm
     gameObjectHeight = 35  # cm
+    mapObstacles = []
 
-    b_reef_center = (411.48, 365.76)  # cm
-    r_reef_center = (1234.44, 365.76)  # cm
+    b_reef_center = (448.93, 402.59)  # cm 
+    r_reef_center = (1305.8902, 402.59)  # cm 
     reefRadius = 83.185  # cm
 
     coral_inner_diameter = 10.16  # cm

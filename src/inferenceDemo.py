@@ -1,5 +1,5 @@
 from Core.Neo import Neo
-from abstract.InferenceAgent import (
+from Core.Agents.Abstract.InferenceAgent import (
     InferenceAgentPartial
 )
 from Core.Agents import FrameDisplayer

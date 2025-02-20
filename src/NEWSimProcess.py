@@ -1,5 +1,5 @@
 from Core.Neo import Neo
-from abstract.ObjectLocalizingAgentBase import (
+from Core.Agents.Abstract.ObjectLocalizingAgentBase import (
     PartialObjectLocalizingAgent,
     ObjectLocalizingAgentBase,
 )

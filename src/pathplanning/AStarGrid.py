@@ -87,7 +87,7 @@ class AStarPathfinder:
         return np.array(path)
 
     def a_star_search(
-        self, src: list[int], dest: list[int], extraObstacles: Any | None = None
+        self, src: list[int], dest: list[int], extraObstacles: Any = None
     ):
         grid = self.grid
         print(self.grid.shape)

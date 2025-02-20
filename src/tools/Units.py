@@ -12,6 +12,9 @@ class LengthType(Enum):
     """
     CM = "cm"
     IN = "in"
+    FT = "feet"
+    M = "meter"
+    YARD = "yard"
 
 class RotationType(Enum):
     """
@@ -83,7 +86,7 @@ class Length:
 
     
     @classmethod
-    def fromCm(cls, centimeters: float):
+    def fromCm(cls, centimeters: float) -> "Length":
         """
         Creates a Length instance from centimeters.
         """
@@ -93,7 +96,7 @@ class Length:
         return obj
 
     @classmethod
-    def fromM(cls, meters: float):
+    def fromM(cls, meters: float) -> "Length":
         """
         Creates a Length instance from meters.
         """
@@ -103,7 +106,7 @@ class Length:
         return obj
 
     @classmethod
-    def fromIn(cls, inches: float):
+    def fromIn(cls, inches: float) -> "Length":
         """
         Creates a Length instance from inches.
         """
@@ -113,7 +116,7 @@ class Length:
         return obj
 
     @classmethod
-    def fromFeet(cls, feet: float):
+    def fromFeet(cls, feet: float) -> "Length":
         """
         Creates a Length instance from feet.
         """
@@ -123,7 +126,7 @@ class Length:
         return obj
 
     @classmethod
-    def fromYards(cls, yards: float):
+    def fromYards(cls, yards: float) -> "Length":
         """
         Creates a Length instance from yards.
         """
@@ -131,6 +134,19 @@ class Length:
         obj.__cm = UnitConversion.ytocm(yards)
         obj.__in = yards * 36
         return obj
+    
+    @classmethod
+    def fromLengthType(cls, length : float, lengthType: LengthType) -> "Length":
+        if lengthType == LengthType.CM:
+            return cls.fromCm(length)
+        if lengthType == LengthType.IN:
+            return cls.fromIn(length)
+        if lengthType == LengthType.M:
+            return cls.fromM(length)
+        if lengthType == LengthType.YARD:
+            return cls.fromYards(length)
+        if lengthType == LengthType.FT:
+            return cls.fromFeet(length)
 
     def getCm(self) -> float:
         """
@@ -162,7 +178,7 @@ class Length:
         """
         return self.__in / 36
 
-    def getUnitMode(self, unitmode: UnitMode):
+    def getAsLengthType(self, lengthType: LengthType) -> float:
         """
         Returns the length in the desired unit mode.
         
@@ -172,9 +188,19 @@ class Length:
         Returns:
         - float: The length in the requested unit.
         """
-        if unitmode.lengthType == LengthType.CM:
+        if lengthType == LengthType.CM:
             return self.getCm()
-        return self.getIn()
+        if lengthType == LengthType.IN:
+            return self.getIn()
+        if lengthType == LengthType.M:
+            return self.getIn()
+        if lengthType == LengthType.YARD:
+            return self.getYards()
+        if lengthType == LengthType.FT:
+            return self.getFeet()
+    @classmethod    
+    def convert(cls, value : float, fromL : LengthType, toL : LengthType) -> float:
+        return cls.fromLengthType(value,fromL).getAsLengthType(toL)
 
 
 @dataclass

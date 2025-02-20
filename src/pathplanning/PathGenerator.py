@@ -61,7 +61,7 @@ class PathGenerator:
         self,
         start: list[float],
         goal: list[float],
-        extraObstacles: Any | None = None,
+        extraObstacles: Any = None,
         reducePoints=True,
     ):
         if len(start) > 2 or len(goal) > 2:

@@ -2,7 +2,7 @@ from abc import abstractmethod
 import cv2
 import numpy as np
 from networktables import NetworkTables
-from abstract.PositionLocalizingAgentBase import PositionLocalizingAgentBase
+from Core.Agents.Abstract.PositionLocalizingAgentBase import PositionLocalizingAgentBase
 from tools import XTutils
 
 

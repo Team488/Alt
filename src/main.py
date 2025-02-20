@@ -1,38 +1,15 @@
-# from JXTABLES.TempConnectionManager import TempConnectionManager as tcm
-# from Core.Neo import Neo
-# from Core.Agents import InferenceAgent, DriveToTargetAgent, OrangePiAgent
-# from Core.Orders import OrderExample
+from JXTABLES.TempConnectionManager import TempConnectionManager as tcm
+from Core.Neo import Neo
+from Core.Agents.Abstract.ReefTrackingAgentBase import ReefTrackingAgentPartial
+from tools.Constants import CameraIntrinsicsPredefined, ColorCameraExtrinsics2024
 
-# # removes the temp ip for testing in main
-# tcm.invalidate()
+# removes the temp ip for testing in main
+tcm.invalidate()
 
-# n = Neo()
-# n.wakeAgent(DriveToTargetAgent, isMainThread=True)
-# n.waitForAgentsFinished()
-# n.shutDown()
-import time
+reefAgent = ReefTrackingAgentPartial("http://localhost:3000/Robot_FrontRight%20Camera?dummy=param.mjpg",cameraIntrinsics=CameraIntrinsicsPredefined.SIMULATIONCOLOR,cameraExtrinsics=ColorCameraExtrinsics2024.FRONTRIGHT,showFrames=True)
 
-import cv2
-from tools.Constants import (
-    CameraIntrinsicsPredefined,
-    ColorCameraExtrinsics2024,
-    ATCameraExtrinsics2025,
-)
-from reefTracking.reefPostEstimator import ReefPostEstimator
-
-est = ReefPostEstimator(CameraIntrinsicsPredefined.OV9782COLOR, isDriverStation=True)
-
-cap = cv2.VideoCapture(0)
-
-while cap.isOpened():
-    ret, frame = cap.read()
-
-    if not ret:
-        break
-
-    print(est.estimatePosts(frame, drawBoxes=True))
-
-    cv2.imshow("est", frame)
-
-    if cv2.waitKey(1) & 0xFF == ord("q"):
-        break
+n = Neo()
+n.wakeAgent(reefAgent, isMainThread=True)
+n.shutDown()
+# from demos import reefPointDemo
+# reefPointDemo.startDemo()

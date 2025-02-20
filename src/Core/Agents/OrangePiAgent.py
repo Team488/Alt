@@ -1,5 +1,5 @@
 import socket
-from abstract.ObjectLocalizingAgentBase import ObjectLocalizingAgentBase
+from Core.Agents.Abstract.ObjectLocalizingAgentBase import ObjectLocalizingAgentBase
 from enum import Enum
 from tools.Constants import InferenceMode, getCameraValues
 from tools import calibration

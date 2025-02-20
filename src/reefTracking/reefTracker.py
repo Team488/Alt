@@ -4,10 +4,10 @@ import json
 import numpy as np
 from typing import Dict
 from wpimath.geometry import Transform3d
-from reefTracking.photonvisionComminicator import PhotonVisionCommunicator
+from reefTracking.aprilTagSolver import AprilTagSover
 from reefTracking.aprilTagHelper import AprilTagLocal
 from tools.Constants import CameraIntrinsics, CameraExtrinsics, ATCameraExtrinsics
-from tools import Calculator
+from tools import Calculator, UnitConversion
 from Core import getLogger
 
 
@@ -128,6 +128,44 @@ def getClosest3Faces(tag_to_cam_translation, frame):
     vertical_boxOffset = reefBoxOffsetsTOP if pitch < 0 else reefBoxOffsetsBOTTOM
     return [reefBoxOffsetsFRONT, horizontal_boxOffset, vertical_boxOffset]
 
+def transform_basis_from_frc_toimg(T):
+    """
+    Transforms an affine transformation matrix from a coordinate system where:
+    - x is front, y is right, z is up
+    to a coordinate system where:
+    - z is front, y is down, x is left
+
+    Args:
+        T: 4x4 affine transformation matrix
+
+    Returns:
+        Transformed 4x4 affine matrix
+    """
+    # Coordinate transformation rotation matrix (3x3)
+    R_P = np.array([[ 0,  -1, 0],
+                    [0,  0,  -1],
+                    [ 1, 0,  0]])
+    
+
+    # Extract rotation and translation from T
+    R_T = T[:3, :3]  # Original rotation
+    t_T = T[:3, 3]   # Original translation
+
+    # Transform rotation
+    R_new = R_P @ R_T @ R_P.T
+
+    # Transform translation
+    t_new = R_P @ t_T
+
+    # Construct new affine transformation matrix
+    T_new = np.eye(4)
+    T_new[:3, :3] = R_new
+    T_new[:3, 3] = t_new
+
+    return T_new
+
+
+
 
 purpleHist = np.load("assets/purpleReefPostHist.npy")
 purpleThresh = 0.1
@@ -135,13 +173,12 @@ purpleThresh = 0.1
 Sentinel = getLogger("Reef_Post_Estimator")
 
 
-class ReefPostEstimator:
+class ReefTracker:
     def __init__(
         self,
         cameraIntrinsics: CameraIntrinsics,
         isDriverStation=False,
         cameraExtrinsics: CameraExtrinsics = None,
-        atCameraToExtrinsics: list[ATCameraExtrinsics] = None,
     ):
         """
         Creates a reef post estimator, that using april tag results will detect coral slots and probabilistically measure if they are occupied\n
@@ -157,59 +194,56 @@ class ReefPostEstimator:
         self.isDriverStation = isDriverStation
         self.camIntr = cameraIntrinsics
         if not isDriverStation and (
-            cameraExtrinsics is None or atCameraToExtrinsics is None
+            cameraExtrinsics is None
         ):
             raise Exception(
                 "If you are operating in driverStationMode = False, you must provide camera Extrinsics and april tag camera extrinsics!"
             )
 
-        if not isDriverStation:
-            # setup camera transfors
-            self.camExtr = cameraExtrinsics
-            self.camTransform = self.camExtr.get4x4AffineMatrixMeters()
-            # get at cam transforms using T(r -> bw)^-1 @ T(r -> c) = T(bw -> c)
-            self.atTransforms = {
-                atIntrinsic.getPhotonCameraName(): Calculator.inverse4x4Affline(
-                    atIntrinsic.get4x4AffineMatrixMeters()
-                )
-                @ self.camTransform
-                for atIntrinsic in atCameraToExtrinsics
-            }
-
         if isDriverStation:
             self.ATPoseGetter = AprilTagLocal(cameraIntrinsics)
         else:
-            self.ATPoseGetter = PhotonVisionCommunicator(useNetworkTables=True)
+            self.ATPoseGetter = AprilTagSover(camExtr=cameraExtrinsics,camIntr=cameraIntrinsics)
 
-    def estimatePosts(self, colorframe, drawBoxes=True):
-        allCoordinates = {}
+    def __isInFrame(self,u,v):
+        return  0 <= u < self.camIntr.getHres() and 0 <= v < self.camIntr.getVres()
+
+    def getAllTracks(self, colorframe, robotPose2dCMRad = None, drawBoxes=True):
+        if not self.isDriverStation and robotPose2dCMRad is None:
+            raise Exception(
+                "If you are operating in driverStationMode = False, you must provide robotPose2dCMRad!"
+            )
+        
+        allTracks = {}
         if self.isDriverStation:
             greyFrame = cv2.cvtColor(colorframe, cv2.COLOR_BGR2GRAY)
             atDetections = self.ATPoseGetter.getDetections(greyFrame)
             atPoses = self.ATPoseGetter.getOrthogonalEstimates(atDetections)
             for detection, pose in zip(atDetections, atPoses):
-                coordinates = self.getCoordinatesForPost(
-                    colorframe, pose.pose1.toMatrix(), None, drawBoxes
+                coordinates = self.__getTracksForPost(
+                    colorframe, pose.pose1.toMatrix(), drawBoxes
                 )
-                allCoordinates[detection.getId()] = coordinates
+                allTracks[detection.getId()] = coordinates
 
         else:
-            for key, bw_to_color_transform in self.atTransforms.items():
-                tagPoseMatrix = self.photonCommunicator.getTagPoseAsMatrix(key)
-                coordinates = self.getCoordinatesForPost(
-                    colorframe, tagPoseMatrix, bw_to_color_transform, drawBoxes
-                )
-                if coordinates is None:
-                    Sentinel.warning(
-                        f"Not able to access april tag results for: {key=}"
-                    )
-                else:
-                    allCoordinates[key] = coordinates
+            ret = self.ATPoseGetter.getNearestAtPose(robotPose2dCMRad)
+            print(ret)
+            if ret:
+                for nearestTagPose, nearestTagId in ret:
+                    print(f"{nearestTagId=}")
+                    print(f"PRE: {nearestTagPose=}")
+                    nearestTagPose = transform_basis_from_frc_toimg(nearestTagPose)
+                    print(f"POST: {nearestTagPose=}")
+                    nearestTagPose[:3,3] *= 0.01 # cm -> m
+                    coordinates = self.__getTracksForPost(
+                            colorframe, nearestTagPose, drawBoxes
+                        )
+                    allTracks[nearestTagId] = coordinates
 
-        return allCoordinates
+        return allTracks
 
-    def getCoordinatesForPost(
-        self, colorframe, tagPoseMatrix, bw_to_color_transform, drawBoxes
+    def __getTracksForPost(
+        self, colorframe, tagPoseMatrix, drawBoxes
     ):
         if (
             tagPoseMatrix is None
@@ -225,40 +259,35 @@ class ReefPostEstimator:
         for offset_idx, offset_3d in cad_to_branch_offset.items():
             # solve camera -> branch via camera -> tag and tag -> branch transformations
             tag_to_reef_homography = np.append(offset_3d, 1.0)  # ensures shape is 4x4
+            if not self.isDriverStation:
+                tag_to_reef_homography[2] *= -1
 
-            bw_camera_to_reef = np.dot(
+            color_camera_to_reef = np.dot(
                 tagPoseMatrix,
                 tag_to_reef_homography,
             )
 
-            total_bw_corners = []
+            total_color_corners = []
             for reefBoxOffset in getClosest3Faces(tagPoseMatrix, colorframe):
-                bw_corners = []
+                color_corners = []
                 for cornerOffset in reefBoxOffset:
                     box_offset_homogeneous = np.append(cornerOffset, 0)  # Shape: (4,)
+                    if not self.isDriverStation:
+                        box_offset_homogeneous[2] *= -1
+
                     tag_to_reef_corner_homography = (
                         tag_to_reef_homography + box_offset_homogeneous
                     )
 
-                    bw_camera_to_reef_corner = np.dot(
+                    color_camera_to_reef_corner = np.dot(
                         tagPoseMatrix,
                         tag_to_reef_corner_homography,
                     )
-                    bw_corners.append(bw_camera_to_reef_corner)
+                    color_corners.append(color_camera_to_reef_corner)
 
-                total_bw_corners.append(bw_corners)
+                total_color_corners.append(color_corners)
 
-            if bw_to_color_transform is not None:
-                color_camera_to_reef = bw_camera_to_reef @ bw_to_color_transform
-                total_color_corners = [
-                    [corner @ bw_to_color_transform for corner in bw_corners]
-                    for bw_corners in total_bw_corners
-                ]
-            else:
-                color_camera_to_reef = bw_camera_to_reef  # same pose
-                total_color_corners = total_bw_corners
 
-            # print(f"{bw_camera_to_reef=}")
             # print(f"{color_camera_to_reef=}")
             # print(f"{tagPoseMatrix=}")
 
@@ -267,7 +296,8 @@ class ReefPostEstimator:
 
             u = (self.camIntr.getFx() * x_cam / z_cam) + self.camIntr.getCx()
             v = (self.camIntr.getFy() * y_cam / z_cam) + self.camIntr.getCy()
-
+            if not self.__isInFrame(u,v):
+                continue
             # print(f"{u=} {v=}")
 
             # project the 3d box corners to 2d image coords
@@ -286,6 +316,7 @@ class ReefPostEstimator:
                 cv2.fillPoly(mask, [np.int32(imageCorners)], (255, 255, 255))
                 cv2.fillPoly(reef_mask, [np.int32(imageCorners)], (255, 255, 255))
 
+            """" Here is the reef tracking magic"""
             extracted = cv2.bitwise_and(frameCopy, reef_mask)
             lab = cv2.cvtColor(extracted, cv2.COLOR_BGR2LAB)
             backProj = cv2.calcBackProject(
@@ -298,21 +329,24 @@ class ReefPostEstimator:
             total = np.sum(baseThresh)
 
             perc = sum / total
+            isOpen = False
             color = (0, 0, 255)  # red default
             if perc > purpleThresh:
                 color = (0, 255, 0)  # green
+                isOpen = True
+            """ Magic ends"""
 
             if drawBoxes:
-                cv2.circle(colorframe, (int(u), int(v)), 5, color, 2)
-                for imageCorner in total_image_corners:
-                    for point1 in imageCorner:
-                        for point2 in imageCorner:
-                            if point1 != point2:
-                                cv2.line(colorframe, point1, point2, color, 1)
+                cv2.circle(colorframe, (int(u), int(v)), 3, color, 2)
+                # for imageCorner in total_image_corners:
+                #     for point1 in imageCorner:
+                #         for point2 in imageCorner:
+                #             if point1 != point2:
+                #                 cv2.line(colorframe, point1, point2, color, 1)
 
-                    for imageCorner in imageCorner:
-                        uC, uV = imageCorner
-                        cv2.circle(colorframe, (int(uC), int(uV)), 3, color, 2)
+                #     for imageCorner in imageCorner:
+                #         uC, uV = imageCorner
+                #         cv2.circle(colorframe, (int(uC), int(uV)), 1, color, 2)
 
                 cv2.putText(
                     colorframe,
@@ -324,7 +358,7 @@ class ReefPostEstimator:
                     2,
                 )
 
-            onScreenBranches[offset_idx] = (u, v)
+            onScreenBranches[offset_idx] = (u, v, isOpen)
 
         extracted = cv2.bitwise_and(frameCopy, mask)
         lab = cv2.cvtColor(extracted, cv2.COLOR_BGR2LAB)

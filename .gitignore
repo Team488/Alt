@@ -195,7 +195,13 @@ deep_sort/
 
 pycapnp/
 
+# saved properties
 src/assets/PROPERTIES/*
+# temp model images
 src/assets/TMPImages/*
+# txt file linking to images
 src/assets/dataset.txt
+# aider(ai assistant) config files
 .aider*
+# monkeytype database
+*.sqlite3 
