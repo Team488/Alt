@@ -363,10 +363,11 @@ class VisionCoprocessorServicer(XTableGRPC.VisionCoprocessorServicer):
         base_grid = np.ones((grid_height, grid_width), dtype=float)
         static_obs_array = get_static_obstacles("static_obstacles_inch.json")
         static_grid = apply_and_inflate_all_static_obstacles(
-            base_grid.copy(), static_obs_array, TOTAL_SAFE_DISTANCE
+            base_grid, static_obs_array, TOTAL_SAFE_DISTANCE
         )
 
         # add prob map detections to static_grid here
+        # static_grid.copy() # Copy so can add dynamic obs without affecting static grid
 
         pathfinder = FastMarchingPathfinder(static_grid)
         START = (int(start[0] * PIXELS_PER_METER_X), int(start[1] * PIXELS_PER_METER_Y))
