@@ -330,16 +330,18 @@ def build_bezier_curves_proto(final_segments, options):
 
     return bezier_curves_msg
 
-    # ----------- MAIN CODE (DO NOT EDIT) -------------
 
-
+# ----------- CONSTANTS (DO NOT CHANGE UNLESS KNOWN) -------------
 fieldHeightMeters = 8.05
 fieldWidthMeters = 17.55
 grid_width = 690
 grid_height = 316
 ROBOT_SIZE_LENGTH = 35
 ROBOT_SIZE_WIDTH = 35
+# ----------- CONSTANTS (DO NOT CHANGE UNLESS KNOWN) -------------
 
+
+# ----------- MAIN CODE (DO NOT EDIT) -------------
 MAX_ROBOT_SIZE_DIAGONAL_INCHES = int(
     math.ceil(math.sqrt(ROBOT_SIZE_LENGTH**2 + ROBOT_SIZE_WIDTH**2))
 )
@@ -364,7 +366,7 @@ class VisionCoprocessorServicer(XTableGRPC.VisionCoprocessorServicer):
             base_grid.copy(), static_obs_array, TOTAL_SAFE_DISTANCE
         )
 
-        # add prob map detections
+        # add prob map detections to static_grid here
 
         pathfinder = FastMarchingPathfinder(static_grid)
         START = (int(start[0] * PIXELS_PER_METER_X), int(start[1] * PIXELS_PER_METER_Y))
@@ -405,12 +407,15 @@ def serve():
 
     server.add_insecure_port("[::]:9281")  # Listen on all interfaces
     server.start()
-    print("Python gRPC Server is running on port 9281...")
+    print("RPC Server is running on port 9281...")
 
     try:
         server.wait_for_termination()
     except KeyboardInterrupt:
-        print("Shutting down gRPC server.")
+        print("Shutting down RPC server.")
+
+
+# ----------- MAIN CODE (DO NOT EDIT) -------------
 
 
 if __name__ == "__main__":
