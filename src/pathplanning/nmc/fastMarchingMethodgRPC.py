@@ -346,7 +346,9 @@ class VisionCoprocessorServicer(XTableGRPC.VisionCoprocessorServicer):
 
         start = (request.start.x, request.start.y)
         goal = (request.end.x, request.end.y)
-        SAFE_DISTANCE_INCHES = 5  # request.safeRadiusInches
+        SAFE_DISTANCE_INCHES = (
+            request.safeDistanceInches if request.HasField("safeDistanceInches") else 5
+        )
         TOTAL_SAFE_DISTANCE = ROBOT_SIZE_INCHES + SAFE_DISTANCE_INCHES
 
         base_grid = np.ones((grid_height, grid_width), dtype=float)
