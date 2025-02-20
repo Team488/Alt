@@ -7,11 +7,7 @@ from JXTABLES import XTableValues_pb2_grpc as XTableGRPC
 
 import cv2
 import numpy as np
-import cupy as cp
 import skfmm
-import matplotlib.pyplot as plt
-import zmq
-from matplotlib.colors import LinearSegmentedColormap
 import json
 
 
