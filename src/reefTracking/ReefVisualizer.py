@@ -9,7 +9,6 @@ from kivy.uix.relativelayout import RelativeLayout
 from kivy.uix.button import Button
 from kivy.uix.image import Image
 from kivy.clock import Clock
-
 from kivy.core.window import Window
 
 from queue import Queue
@@ -23,7 +22,7 @@ class HexagonLayout(RelativeLayout):
         self.init_reef_buttons()
         
         # Bind resizing event
-        #Window.bind(on_resize=self.update_layout)
+        Window.bind(on_resize=self.update_layout)
         self.update_layout(Window, Window.width, Window.height)
 
         # Mouse position label (for development)
@@ -55,6 +54,7 @@ class HexagonLayout(RelativeLayout):
         self.add_widget(self.background)
 
     def init_reef_buttons(self):
+        print("INITIALIZE REEF BUTTONS")
         # Define alphabet buttons with fixed positions
         alphabet_buttons = [
             {"text": "A", "pos": (1015, 800)},
@@ -108,8 +108,6 @@ class HexagonLayout(RelativeLayout):
                 l2_x_offset, l2_y_offset = l2_offsets[letter]["offset"]
                 l_spacing = l2_offsets[letter]["l_spacing"]  # Determine spacing direction
 
-                # TODO: Fix dictionary scheme
-
                 # Generate L2
                 l2_x = base_x + l2_x_offset
                 l2_y = base_y + l2_y_offset
@@ -127,14 +125,16 @@ class HexagonLayout(RelativeLayout):
         self.button_dictionary = {}
         for key in self.init_dictionary.keys():
             data = self.init_dictionary[key]["data"]
-            background_color=(255, 255, 0, 1)
+            background_color=(1, 1, 0, 1)
             text = data["text"]
             if len(text) == 1: # If it's a letter or level ("A" vs "L2")
-                background_color=(255, 255, 255, 1)
+                background_color=(1, 1, 1, 1)
             button = Button(
                 text=data["text"],
                 size_hint=(None, None),
                 background_color=background_color,
+                background_normal= '', #INVESTIGATE THIS
+                background_down= '',
                 color=(0, 0, 0, 1),
                 font_size=32
                 )
@@ -142,6 +142,7 @@ class HexagonLayout(RelativeLayout):
             self.button_dictionary[key] = button
 
     def update_layout(self, instance, width, height):
+        print("Layout updated")
         # Ensure background size matches the window
         self.background.size = (width, height)
         self.background.pos = (0, 0)
@@ -165,27 +166,18 @@ class HexagonLayout(RelativeLayout):
             )
 
     def update_button_color(self, button_text, color):
+        print(self.button_dictionary)
         if button_text in self.button_dictionary:
-            import random
-            r = random.randint(0, 255)
-            g = random.randint(0, 255)
-            b = random.randint(0, 255)
-            print(r, g, b)
-            self.button_dictionary["A"].background_color = (r, g, b, 1)
-            print("COLOR UPDATED", button_text, self.button_dictionary[button_text])
+            self.button_dictionary[button_text].background_color = color
+            print("COLOR UPDATED", color, button_text, self.button_dictionary[button_text], "to", self.button_dictionary[button_text].background_color)
 
     def update_mouse_position(self, dt):
         x, y = Window.mouse_pos
         self.mouse.text = f"Mouse Position: ({int(x)}, {int(y)})"
-        #TODO: Remove below. Debugging purposes
-        import random
-        r = random.randint(0, 255)
-        g = random.randint(0, 255)
-        b = random.randint(0, 255)
-        print(r, g, b)
-        self.button_dictionary["A"].background_color = (r, g, b, 1)
+        #print("color of A", self.button_dictionary["A"].background_color)
         
     def queue_color_update(self, button_text, color):
+        print("queueing", button_text, color)
         self.update_queue.put((button_text, color))
 
     def get_background_colors(self, button_text):
@@ -193,17 +185,20 @@ class HexagonLayout(RelativeLayout):
 
     def process_queue_updates(self, dt):
         # Update the color according to the queue
+        print("length of queue", self.update_queue.qsize())
         while not self.update_queue.empty():
             button_text, color = self.update_queue.get()
             print("Processing queue updates for", button_text)
             Clock.schedule_once(lambda dt: self.update_button_color(button_text, color))
 
 
+layout = HexagonLayout()
 class ReefVisualizer(App):
     def build(self):
-        return HexagonLayout()
+        return layout
 
 if __name__ == '__main__':
     app = ReefVisualizer()
     app_instance = app.build()
+    app_instance.update_button_color( "A", (1, 0, 0, 1))
     app.run()
