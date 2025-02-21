@@ -1,7 +1,9 @@
 from enum import Enum
+import json
 from typing import Union, Any
 from tools import UnitConversion, Units
 import math
+import cv2
 import numpy as np
 from scipy.spatial.transform import Rotation
 
@@ -110,11 +112,11 @@ class CameraExtrinsics:
     @staticmethod
     def getDefaultLengthType():
         return Units.LengthType.IN
-    
+
     @staticmethod
     def getDefaultRotationType():
         return Units.RotationType.Deg
-    
+
     def getOffsetXIN(self):
         return self.value[0][0]
 
@@ -145,18 +147,20 @@ class CameraExtrinsics:
     def getPitchOffsetAsRadians(self) -> float:
         return math.radians(self.value[1][1])
 
-    def get4x4AffineMatrix(self, lengthType : Units.LengthType = Units.LengthType.CM):
+    def get4x4AffineMatrix(self, lengthType: Units.LengthType = Units.LengthType.CM):
         """Returns a 4x4 affine transformation matrix for the camera extrinsics"""
-        
 
         x_in, y_in, z_in = self.value[0]
         yaw, pitch = map(math.radians, self.value[1])  # Convert degrees to radians
 
-        x, y, z = UnitConversion.convertLength((x_in,y_in,z_in),CameraExtrinsics.getDefaultLengthType(), lengthType)
-
+        x, y, z = UnitConversion.convertLength(
+            (x_in, y_in, z_in), CameraExtrinsics.getDefaultLengthType(), lengthType
+        )
 
         # Create rotation matrix (assuming yaw around Z, pitch around Y)
-        rotation_matrix = Rotation.from_euler("zy", [yaw, pitch], degrees=False).as_matrix()
+        rotation_matrix = Rotation.from_euler(
+            "zy", [yaw, pitch], degrees=False
+        ).as_matrix()
 
         # Construct the 4x4 transformation matrix
         affine_matrix = np.eye(4)
@@ -164,7 +168,6 @@ class CameraExtrinsics:
         affine_matrix[:3, 3] = [x, y, z]  # Set translation
 
         return affine_matrix
-
 
 
 class ColorCameraExtrinsics2024(CameraExtrinsics, Enum):
@@ -219,17 +222,17 @@ class ATCameraExtrinsics2025(ATCameraExtrinsics, Enum):
 class CameraIntrinsics:
     def __init__(
         self,
-        hres_pix: int=-1,
-        vres_pix: int=-1,
-        hfov_rad: float=-1,
-        vfov_rad: Union[float, int]=-1,
-        focal_length_mm: float=-1,
-        pixel_size_mm: float=-1,
-        sensor_size_mm: float=-1,
-        fx_pix: float=-1,
-        fy_pix: Union[int, float]=-1,
-        cx_pix: Union[int, float]=-1,
-        cy_pix: Union[int, float]=-1,
+        hres_pix: int = -1,
+        vres_pix: int = -1,
+        hfov_rad: float = -1,
+        vfov_rad: Union[float, int] = -1,
+        focal_length_mm: float = -1,
+        pixel_size_mm: float = -1,
+        sensor_size_mm: float = -1,
+        fx_pix: float = -1,
+        fy_pix: Union[int, float] = -1,
+        cx_pix: Union[int, float] = -1,
+        cy_pix: Union[int, float] = -1,
     ) -> None:
         self.value = (
             (hres_pix, vres_pix),  # Resolution
@@ -281,6 +284,68 @@ class CameraIntrinsics:
         assert len(self.value) > 4
         return self.value[4][1]
 
+    @staticmethod
+    def fromPhotonConfig(photonConfigPath):
+        try:
+            with open(photonConfigPath) as PV_config:
+                data = json.load(PV_config)
+
+                cameraIntrinsics = data["cameraIntrinsics"]["data"]
+                fx = cameraIntrinsics[0]
+                fy = cameraIntrinsics[4]
+                cx = cameraIntrinsics[2]
+                cy = cameraIntrinsics[5]
+
+                width = int(data["resolution"]["width"])
+                height = int(data["resolution"]["height"])
+
+                return CameraIntrinsics(
+                    hres_pix=width,
+                    vres_pix=height,
+                    fx_pix=fx,
+                    fy_pix=fy,
+                    cx_pix=cx,
+                    cy_pix=cy,
+                )
+
+        except Exception as e:
+            print(f"Failed to open config! {e}")
+            return None
+
+    @staticmethod
+    def fromCustomConfig(customConfigPath):
+        try:
+            with open(customConfigPath) as custom_config:
+                data = json.load(custom_config)
+
+                cameraIntrinsics = data["CameraMatrix"]
+                fx = cameraIntrinsics[0][0]
+                fy = cameraIntrinsics[1][1]
+                cx = cameraIntrinsics[0][2]
+                cy = cameraIntrinsics[1][2]
+
+                width = int(data["resolution"]["width"])
+                height = int(data["resolution"]["height"])
+
+                return CameraIntrinsics(
+                    hres_pix=width,
+                    vres_pix=height,
+                    fx_pix=fx,
+                    fy_pix=fy,
+                    cx_pix=cx,
+                    cy_pix=cy,
+                )
+
+        except Exception as e:
+            print(f"Failed to open config! {e}")
+            return None
+
+    @staticmethod
+    def setCapRes(cameraIntrinsics: "CameraIntrinsics", cap: cv2.VideoCapture):
+        cap.set(cv2.CAP_PROP_FRAME_WIDTH, cameraIntrinsics.getHres())
+        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, cameraIntrinsics.getVres())
+        return cap
+
 
 class CameraIntrinsicsPredefined:
     #                       res             fov                     physical constants
@@ -311,6 +376,17 @@ class CameraIntrinsicsPredefined:
         530,  # Calibrated Fx, Fy
         320,
         240,  # Calibrated Cx, Cy
+    )
+    OAKDLITE4K = CameraIntrinsics(
+        3840,
+        2160,  # Resolution
+        fx_pix=2986.8527832,
+        fy_pix=2986.8527832,  # Calibrated Fx, Fy
+        cx_pix=1787.41931152,
+        cy_pix=1037.04040527,  # Calibrated Cx, Cy
+    )
+    OAKDLITE1080P = CameraIntrinsics(
+        1920, 1080, fx_pix=1493.4263, fy_pix=1493.4263, cx_pix=893.709, cy_pix=518.52
     )
 
 
@@ -352,14 +428,15 @@ class ATLocations(Enum):
     """
     AprilTag locations with ID, (x, y, z) coordinates in inches, and (yaw, pitch) rotations in degrees.
     """
+
     @staticmethod
     def getDefaultLengthType():
         return Units.LengthType.IN
-    
+
     @staticmethod
     def getDefaultRotationType():
         return Units.RotationType.Deg
-    
+
     TAG_1 = ((1), (657.37, 25.80, 58.50), (126, 0))
     TAG_2 = ((2), (657.37, 291.20, 58.50), (234, 0))
     TAG_3 = ((3), (455.15, 317.15, 51.25), (270, 0))
@@ -386,15 +463,15 @@ class ATLocations(Enum):
     @property
     def id(self):
         return self.value[0]
-    
+
     @property
     def position(self):
         return self.value[1]
-    
+
     @property
     def rotation(self):
         return self.value[2]
-    
+
     @classmethod
     def get_by_id(cls, tag_id):
         """Retrieve an ATLocation by its ID."""
@@ -408,23 +485,26 @@ class ATLocations(Enum):
         """Retrieve the position and rotation for a given tag ID."""
         tag = cls.get_by_id(tag_id)
         return (tag.position, tag.rotation) if tag else None
-    
+
     @classmethod
-    def getPoseAfflineMatrix(cls, tag_id, units : Units.LengthType = Units.LengthType.CM):
+    def getPoseAfflineMatrix(
+        cls, tag_id, units: Units.LengthType = Units.LengthType.CM
+    ):
         pose = cls.get_pose_by_id(tag_id)
         if pose is None:
             return None
         translation, rotation = pose
-        x_in,y_in,z_in = translation
-        yaw,pitch = rotation
+        x_in, y_in, z_in = translation
+        yaw, pitch = rotation
 
-        rotMatrix = Rotation.from_euler("ZY",(yaw,pitch),degrees=True).as_matrix()
-        translationMatrix = UnitConversion.convertLength((x_in,y_in,z_in),cls.getDefaultLengthType(),units)
+        rotMatrix = Rotation.from_euler("ZY", (yaw, pitch), degrees=True).as_matrix()
+        translationMatrix = UnitConversion.convertLength(
+            (x_in, y_in, z_in), cls.getDefaultLengthType(), units
+        )
         m = np.eye(4)
-        m[:3,:3] = rotMatrix
-        m[:3,3] = translationMatrix
+        m[:3, :3] = rotMatrix
+        m[:3, 3] = translationMatrix
         return m
-        
 
 
 class Landmarks(Enum):
@@ -473,8 +553,8 @@ class MapConstants(Enum):
     gameObjectHeight = 35  # cm
     mapObstacles = []
 
-    b_reef_center = (448.93, 402.59)  # cm 
-    r_reef_center = (1305.8902, 402.59)  # cm 
+    b_reef_center = (448.93, 402.59)  # cm
+    r_reef_center = (1305.8902, 402.59)  # cm
     reefRadius = 83.185  # cm
 
     coral_inner_diameter = 10.16  # cm

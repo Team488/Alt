@@ -53,7 +53,7 @@ def startDemo():
     )
 
     cameraExtr = ColorCameraExtrinsics2024.DEPTHLEFT
-    cameraIntr = CameraIntrinsicsPredefined.OAKDLITE
+    cameraIntr = CameraIntrinsicsPredefined.OAKDLITE4K
     cap = cv2.VideoCapture("assets/video12qual25clipped.mp4")
     firstRun = True
     cap_outM = None

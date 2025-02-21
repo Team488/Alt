@@ -15,6 +15,10 @@ import json
 class AprilTagLocal:
     def __init__(self, cameraIntrinsic: CameraIntrinsics):
         self.detector = AprilTagDetector()
+        self.detectorConfig = AprilTagDetector.Config()
+        self.detectorConfig.quadDecimate = 1
+        self.detectorConfig.quadSigma = 0.4
+        self.detector.setConfig(self.detectorConfig)
         self.detector.addFamily("tag36h11")
 
         self.fx = cameraIntrinsic.getFx()
@@ -59,6 +63,7 @@ class AprilTagLocal:
             print(f"Failed to open config! {e}")
 
     def getDetections(self, grayscale_image):
+        cv2.imshow("graw", grayscale_image)
         output = self.detector.detect(grayscale_image)
         return output
 

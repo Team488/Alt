@@ -14,25 +14,30 @@ import time
 
 import cv2
 from tools.Constants import (
+    CameraIntrinsics,
     CameraIntrinsicsPredefined,
     ColorCameraExtrinsics2024,
     ATCameraExtrinsics2025,
 )
 from reefTracking.reefTracker import ReefTracker
 
-est = ReefTracker(CameraIntrinsicsPredefined.OV9782COLOR, isDriverStation=True)
+# intr = CameraIntrinsics.fromCustomConfig("assets/bigboycalib.json")
+intr = CameraIntrinsicsPredefined.OAKDLITE1080P
 
-cap = cv2.VideoCapture("assets/video12qual25clipped.mp4")
+est = ReefTracker(intr, isDriverStation=True)
 
-while cap.isOpened():
-    ret, frame = cap.read()
+cap = cv2.VideoCapture(0)
+CameraIntrinsics.setCapRes(intr, cap)
+from tools.depthAiHelper import DepthAIHelper
 
-    if not ret:
-        break
+helper = DepthAIHelper()
 
+while True:
+    frame = helper.getFrame()
     print(est.getAllTracks(frame, drawBoxes=True))
+    cv2.imshow("RGB Camera", frame)
 
-    cv2.imshow("est", frame)
-
-    if cv2.waitKey(1) & 0xFF == ord("q"):
+    if cv2.waitKey(1) == ord("q"):
         break
+
+cv2.destroyAllWindows()
