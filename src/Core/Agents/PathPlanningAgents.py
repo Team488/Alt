@@ -1,6 +1,6 @@
 import cv2
-from abstract.PathPlanningAgentBase import PathPlanningAgentBase
-from abstract.CentralAgentBase import CentralAgentBase
+from Core.Agents.Abstract.PathPlanningAgentBase import PathPlanningAgentBase
+from Core.Agents.Abstract.CentralAgentBase import CentralAgentBase
 from Core.Orders import TargetUpdatingOrder
 
 
@@ -25,7 +25,7 @@ class DriveToTargetAgent(CentralAgentBase, PathPlanningAgentBase):
         path = None
         if conf > self.targetConf.get():
             path = self.central.pathGenerator.generate(
-                (self.robotLocation[0] * 100, self.robotLocation[1] * 100),
+                (self.robotPose2dMRAD[0] * 100, self.robotPose2dMRAD[1] * 100),
                 target[:2],
             )
         return path
@@ -55,9 +55,9 @@ class DriveToFixedPointAgent(PathPlanningAgentBase):
 
     def getPath(self):
         target = (self.targetX.get() * 100, self.targetY.get() * 100)
-        self.Sentinel.info(f"{self.robotLocation=} {target=}")
+        self.Sentinel.info(f"{self.robotPose2dMRAD=} {target=}")
         return self.central.pathGenerator.generate(
-            (self.robotLocation[0] * 100, self.robotLocation[1] * 100),
+            (self.robotPose2dMRAD[0] * 100, self.robotPose2dMRAD[1] * 100),
             target,
             reducePoints=True,
         )
@@ -87,11 +87,11 @@ class DriveToNetworkTargetAgent(PathPlanningAgentBase):
         else:
             self.hasTarget.set(True)
 
-        self.Sentinel.info(f"in meters: {self.robotLocation=} {target=}")
+        self.Sentinel.info(f"in meters: {self.robotPose2dMRAD=} {target=}")
 
         # from meters into cm
         return self.central.pathGenerator.generate(
-            (self.robotLocation[0] * 100, self.robotLocation[1] * 100),
+            (self.robotPose2dMRAD[0] * 100, self.robotPose2dMRAD[1] * 100),
             (target[0] * 100, target[1] * 100),
             reducePoints=True,
         )

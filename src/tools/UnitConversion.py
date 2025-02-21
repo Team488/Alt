@@ -1,5 +1,8 @@
-from collections.abc import Iterable 
-from tools.Constants import MapConstants
+from collections.abc import Iterable
+from typing import Any
+import tools
+from tools import Units
+import tools.Constants
 
 def mtoin(m):
     return m*39.37
@@ -27,18 +30,24 @@ def cmtoy(cm):
 
 
 def toint(value):
-    if isinstance(value,Iterable):
-        return tuple(map(int,value))
-    try:
-        ret = int(value)
-    except ValueError:
-        print("Warning not able to convert to integer!")
-        ret = value
-    finally:
-        return ret
+    return __convert(value,int)
 
 def invertY(yCM):
-    return MapConstants.fieldHeight.getCM()-yCM
+    return tools.Constants.MapConstants.fieldHeight.getCM()-yCM
 
 def invertX(xCM):
-    return MapConstants.fieldWidth.getCM()-xCM
+    return tools.Constants.MapConstants.fieldWidth.getCM()-xCM
+
+def convertLength(value, fromType : Units.LengthType, toType : Units.LengthType):
+    convertLengthFunc = lambda value : Units.Length.convert(value,fromType,toType)
+    return __convert(value,convertLengthFunc)
+    
+
+def __convert(value : Any, convertFunction : Any):
+    try:
+        if isinstance(value,Iterable):
+            return tuple(map(convertFunction,value))
+        else:
+            return convertFunction(value)
+    except ValueError:
+        return None

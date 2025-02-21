@@ -15,7 +15,7 @@ from Core.TimeOperator import Timer
 
 
 class Agent(ABC):
-    DEFAULT_LOOP_TIME = 1 # 1 ms
+    DEFAULT_LOOP_TIME = 0 # 0 ms
     def __init__(self):
         # nothing should go here
         pass
@@ -75,7 +75,9 @@ class Agent(ABC):
     # ----- optional methods -----
     
     def getIntervalMs(self):
-        """ how long to wait between each run call """
+        """ how long to wait between each run call
+            default is 0, eg no waiting
+        """
         # can leave as None, will use default time of 1 ms
         return self.DEFAULT_LOOP_TIME
     

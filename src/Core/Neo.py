@@ -253,7 +253,7 @@ class Neo:
    | $$   | $$\\  $ | $$        | $$   /$$  \\ $$ /$$  \\ $$ /$$  \\ $$
    | $$   | $$ \\/  | $$       /$$$$$$|  $$$$$$/|  $$$$$$/|  $$$$$$/
    |__/   |__/     |__/      |______/ \\______/  \\______/  \\______/"""
-        Sentinel.info(f"\\n\\n{message}\\n\\n")
+        Sentinel.info(f"\n\n{message}\n\n")
 
     def __printFinish(self):
         message = """⠀⠀⠀⠀⠀⠀⣀⣤⣴⣶⣶⣦⣤⡀⠀⠀⠀⠀⠀⠀⠀
@@ -271,4 +271,4 @@ class Neo:
 ⢸⣇⠀⠈⢻⣿⣷⣤⡀⠀⠀⠀⠀⢀⣴⣾⣿⡏⠀⠀⠀
 ⠀⠻⢷⣦⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡄⠀⠀
 ⠀⠀⠀⠸⠿⠿⠿⠿⠿⠏⠀⠀⠙⠿⠿⠿⠿⠿⠇⠀⠀"""
-        Sentinel.info(f"\\nNeo has been shutdown.\\nWatch Agent Smith...\\n{message}")
+        Sentinel.info(f"\nNeo has been shutdown.\nWatch Agent Smith...\n{message}")

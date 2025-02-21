@@ -21,18 +21,18 @@ class PositionLocalizingAgentBase(Agent):
         self.locRot = self.propertyOperator.createReadOnlyProperty("Robot.Robot_Rot", 0)
 
         """Variable to store robot location. Units will be (X(m), Y(m), Yaw Rotation (rad))"""
-        self.robotLocation = (0, 0, 0)
+        self.robotPose2dMRAD = (0, 0, 0)
         self.connectedToLoc = False
 
         self.xclient.subscribe(self.xtablesPosTable.get(), self.__updateLocation)
 
     def __updateLocation(self, ret):
         try:
-            self.robotLocation = NtUtils.getPose2dFromBytes(ret.value)
-            self.locX.set(self.robotLocation[0])
-            self.locY.set(self.robotLocation[1])
-            self.locRot.set(self.robotLocation[2])
-            self.Sentinel.debug("Updated robot pose!!")
+            self.robotPose2dMRAD = NtUtils.getPose2dFromBytes(ret.value)
+            self.locX.set(self.robotPose2dMRAD[0])
+            self.locY.set(self.robotPose2dMRAD[1])
+            self.locRot.set(self.robotPose2dMRAD[2])
+            # self.Sentinel.debug("Updated robot pose!!")
             self.connectedToLoc = True
         except Exception as e:
             self.Sentinel.debug(e)

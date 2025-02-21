@@ -2,7 +2,7 @@ import time
 from tools.Constants import CameraIdOffsets
 from coreinterface.DetectionPacket import DetectionPacket
 from abstract.Agent import Agent
-from abstract.ObjectLocalizingAgentBase import ObjectLocalizingAgentBase
+from Core.Agents.Abstract.ObjectLocalizingAgentBase import ObjectLocalizingAgentBase
 
 
 class CentralAgentBase(Agent):

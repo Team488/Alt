@@ -11,7 +11,7 @@ from tools.NtUtils import getPose2dFromBytes
 from reefTracking.reefPositioner import ReefPositioner
 # from mapinternals.CentralProcessor import CentralProcessor # fix import creating tensorflow
 from tools.Constants import ColorCameraExtrinsics2024, CameraIntrinsicsPredefined, MapConstants
-from mapDemos.utils import drawRobotWithCams
+from demos.utils import drawRobotWithCams
 
 
 processName = "Simulation_Process"

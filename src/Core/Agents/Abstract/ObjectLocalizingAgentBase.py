@@ -7,7 +7,7 @@ import numpy as np
 
 # from JXTABLES.XDashDebugger import XDashDebugger
 
-from abstract.PositionLocalizingAgentBase import PositionLocalizingAgentBase
+from Core.Agents.Abstract.PositionLocalizingAgentBase import PositionLocalizingAgentBase
 from coreinterface.DetectionPacket import DetectionPacket
 from coreinterface.FramePacket import FramePacket
 from tools.Constants import InferenceMode, CameraExtrinsics, CameraIntrinsics
@@ -82,9 +82,9 @@ class ObjectLocalizingAgentBase(PositionLocalizingAgentBase):
             with self.timer.run("frame-processing"):
                 processedResults = self.frameProcessor.processFrame(
                     processedFrame,
-                    robotPosXCm=self.robotLocation[0] * 100,  # m to cm
-                    robotPosYCm=self.robotLocation[1] * 100,  # m to cm
-                    robotYawRad=self.robotLocation[2],
+                    robotPosXCm=self.robotPose2dMRAD[0] * 100,  # m to cm
+                    robotPosYCm=self.robotPose2dMRAD[1] * 100,  # m to cm
+                    robotYawRad=self.robotPose2dMRAD[2],
                     drawBoxes=sendFrame,  # if you are sending frames, you likely want to see bounding boxes aswell
                 )
 

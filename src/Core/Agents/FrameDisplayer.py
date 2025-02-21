@@ -4,7 +4,7 @@ import cv2
 from tools.Constants import CameraIdOffsets
 from coreinterface.FramePacket import FramePacket
 from abstract.Agent import Agent
-from abstract.ObjectLocalizingAgentBase import ObjectLocalizingAgentBase
+from Core.Agents.Abstract.ObjectLocalizingAgentBase import ObjectLocalizingAgentBase
 
 
 class FrameDisplayer(Agent):
