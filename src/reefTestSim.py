@@ -57,7 +57,7 @@ try:
             for cam in cams:
                 res = positioner.getPostCoordinatesWconst(True,pos[:2],pos[2],cam[0],cam[1])
                 if res:
-                    x,y,postIdx = res
+                    x,y,ang,postIdx = res
                     cv2.circle(frame,(int(x),int(y)),int(MapConstants.reef_post_radius.getCM()+20),(255,255,255),-1)
                     post_id += f" {postIdx=}"
             cv2.putText(frame,post_id,(10,20),1,1,(255,255,255),1)

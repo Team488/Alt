@@ -93,7 +93,7 @@ def startDemo():
             if res is None:
                 continue
             # draw two "posts"
-            x,y,postidxs = res
+            x,y,ang,postidxs = res
             coord = 20
             for postidx in postidxs:
                 atID = ReefPositioner.getAprilTagId(postidx,isBlueSide)

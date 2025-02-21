@@ -29,6 +29,8 @@ class PositionLocalizingAgentBase(Agent):
     def __updateLocation(self, ret):
         try:
             self.robotPose2dMRAD = NtUtils.getPose2dFromBytes(ret.value)
+            self.robotPose2dCMRAD = (self.robotPose2dMRAD[0]*100,self.robotPose2dMRAD[1]*100,self.robotPose2dMRAD[2]) # m to cm
+
             self.locX.set(self.robotPose2dMRAD[0])
             self.locY.set(self.robotPose2dMRAD[1])
             self.locRot.set(self.robotPose2dMRAD[2])

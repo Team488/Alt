@@ -15,7 +15,7 @@ class ReefPositioner:
         self.r_reef_center = redreef_center_cm
         self.reef_radius = reef_radius_cm
         self.anglePerPost = math.radians(360/num_post_groups)
-        self.postThresh = (math.pi/2+0.05)/self.anglePerPost
+        self.postThresh = (math.pi/4+0.05)/self.anglePerPost
     
     # wraps an angle between +-pi (instead of 0-2pi)
     def __wrap(self,ang):
@@ -37,7 +37,7 @@ class ReefPositioner:
         
         
 
-    def __calculateNearestSeenPostAng(self,reef_pos,robot_pos,robot_rot_rad,robotcam_offsetXY_cm,robotcam_yaw_rad,robotcam_fov_rad)-> tuple[float,float,tuple[int]]:
+    def __calculateNearestSeenPostAng(self,reef_pos,robot_pos,robot_rot_rad,robotcam_offsetXY_cm,robotcam_yaw_rad,robotcam_fov_rad)-> tuple[float,tuple[int]]:
         dx = robotcam_offsetXY_cm[0]
         dy = robotcam_offsetXY_cm[1]
         cameraPos = (robot_pos[0] + dx*math.cos(robot_rot_rad)-dy*math.sin(robot_rot_rad), robot_pos[1] + dx*math.sin(robot_rot_rad) + dy*math.cos(robot_rot_rad))
@@ -60,7 +60,7 @@ class ReefPositioner:
         If the camera is not in the field of view of the reef, the function returns None
         If the camera is in view, it returns the coordinate of the reef it sees, and also the closest reef post idx
     """
-    def getPostCoordinates(self,isBlueReef : bool, robot_pos_cm : tuple[int,int],robot_yaw_rad : float,robotcam_offsetXY_cm : tuple[int,int],robotcam_yaw_rad : float,robotcam_fov_rad : float) -> tuple[float,float,tuple[int]]:
+    def getPostCoordinates(self,isBlueReef : bool, robot_pos_cm : tuple[int,int],robot_yaw_rad : float,robotcam_offsetXY_cm : tuple[int,int],robotcam_yaw_rad : float,robotcam_fov_rad : float) -> tuple[float,float,float,tuple[int]]:
         reef_center = self.b_reef_center if isBlueReef else self.r_reef_center
         res = self.__calculateNearestSeenPostAng(reef_center,robot_pos_cm,robot_yaw_rad,robotcam_offsetXY_cm,robotcam_yaw_rad,robotcam_fov_rad)
         if res is None:
@@ -68,9 +68,9 @@ class ReefPositioner:
         ang, post_idxs = res
         x = reef_center[0] + math.cos(ang)*self.reef_radius
         y = reef_center[1] + math.sin(ang)*self.reef_radius
-        return x,y,post_idxs
+        return x,y,ang,post_idxs
     
-    def getPostCoordinatesWconst(self,isBlueReef : bool, robot_pos_cm : tuple[int,int],robot_yaw_rad : float,camera_extr : CameraExtrinsics,camera_intr : CameraIntrinsicsPredefined) -> tuple[float,float,tuple[int]]:
+    def getPostCoordinatesWconst(self,isBlueReef : bool, robot_pos_cm : tuple[int,int],robot_yaw_rad : float,camera_extr : CameraExtrinsics,camera_intr : CameraIntrinsicsPredefined) -> tuple[float,float,float,tuple[int]]:
         return self.getPostCoordinates(isBlueReef,robot_pos_cm,robot_yaw_rad,(camera_extr.getOffsetXCM(),camera_extr.getOffsetYCM()),camera_extr.getYawOffsetAsRadians(),camera_intr.getHFovRad())
     
     @staticmethod

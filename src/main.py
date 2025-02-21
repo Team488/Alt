@@ -6,7 +6,7 @@ from tools.Constants import CameraIntrinsicsPredefined, ColorCameraExtrinsics202
 # removes the temp ip for testing in main
 tcm.invalidate()
 
-reefAgent = ReefTrackingAgentPartial("http://localhost:3000/Robot_FrontRight%20Camera?dummy=param.mjpg",cameraIntrinsics=CameraIntrinsicsPredefined.SIMULATIONCOLOR,cameraExtrinsics=ColorCameraExtrinsics2024.FRONTRIGHT,showFrames=True)
+reefAgent = ReefTrackingAgentPartial("http://localhost:3000/Robot_FrontRight%20Camera?dummy=param.mjpg",cameraIntrinsics=CameraIntrinsicsPredefined.SIMULATIONCOLOR,showFrames=True)
 
 n = Neo()
 n.wakeAgent(reefAgent, isMainThread=True)

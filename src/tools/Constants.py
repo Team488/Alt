@@ -372,8 +372,8 @@ class CameraIntrinsicsPredefined:
         1.745,
         0.003,
         6.3,  # Physical Constants
-        650,
-        530,  # Calibrated Fx, Fy
+        604,
+        414,  # Calibrated Fx, Fy
         320,
         240,  # Calibrated Cx, Cy
     )

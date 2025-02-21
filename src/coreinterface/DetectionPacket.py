@@ -23,7 +23,7 @@ class DetectionPacket:
 
         for i in range(numDetections):
             detection = detections[i]
-            packet_detection = packet_detections[0]
+            packet_detection = packet_detections[i]
             packet_detection.id = detection[0]
             xyz = packet_detection.init("coordinates")
             coords = detection[1]

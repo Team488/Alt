@@ -20,12 +20,12 @@ from Core import getLogger
 
 # CAD to tip of the rod. (MAX Distance)
 cad_to_branch_offset = {
-    "L2-L": np.array([-6.756, -19.707, 2.608]),
-    "L2-R": np.array([6.754, -19.707, 2.563]),
-    "L3-L": np.array([-6.639, -35.606, 2.628]),
-    "L3-R": np.array([6.637, -35.606, 2.583]),
-    "L4-L": np.array([-6.470, -58.4175, 0.921]),  # NOT MODIFIED
-    "L4-R": np.array([6.468, -58.4175, 0.876]),  # NOT MODIFIED
+    0: np.array([-6.756, -19.707, 2.608]),      #"L2-L"
+    1: np.array([6.754, -19.707, 2.563]),       #"L2-R"
+    2: np.array([-6.639, -35.606, 2.628]),      #"L3-L"
+    3: np.array([6.637, -35.606, 2.583]),       #"L3-R"
+    4: np.array([-6.470, -58.4175, 0.921]),     #"L4-L" 
+    5: np.array([6.468, -58.4175, 0.876]),      #"L4-R" 
 }
 
 
@@ -167,8 +167,10 @@ def transform_basis_from_frc_toimg(T):
 
 
 
-purpleHist = np.load("assets/purpleReefPostHist.npy")
+# purpleHist = np.load("assets/purpleReefPostHist.npy")
+purpleHist = np.load("assets/simulationPurpleReefPost.npy")
 purpleThresh = 0.1
+fullpurpleThresh = 0.5
 
 Sentinel = getLogger("Reef_Post_Estimator")
 
@@ -259,8 +261,8 @@ class ReefTracker:
         for offset_idx, offset_3d in cad_to_branch_offset.items():
             # solve camera -> branch via camera -> tag and tag -> branch transformations
             tag_to_reef_homography = np.append(offset_3d, 1.0)  # ensures shape is 4x4
-            if not self.isDriverStation:
-                tag_to_reef_homography[2] *= -1
+            # if not self.isDriverStation:
+            #     tag_to_reef_homography[2] *= -1
 
             color_camera_to_reef = np.dot(
                 tagPoseMatrix,
@@ -272,8 +274,8 @@ class ReefTracker:
                 color_corners = []
                 for cornerOffset in reefBoxOffset:
                     box_offset_homogeneous = np.append(cornerOffset, 0)  # Shape: (4,)
-                    if not self.isDriverStation:
-                        box_offset_homogeneous[2] *= -1
+                    # if not self.isDriverStation:
+                    #     box_offset_homogeneous[2] *= -1
 
                     tag_to_reef_corner_homography = (
                         tag_to_reef_homography + box_offset_homogeneous
@@ -316,7 +318,6 @@ class ReefTracker:
                 cv2.fillPoly(mask, [np.int32(imageCorners)], (255, 255, 255))
                 cv2.fillPoly(reef_mask, [np.int32(imageCorners)], (255, 255, 255))
 
-            """" Here is the reef tracking magic"""
             extracted = cv2.bitwise_and(frameCopy, reef_mask)
             lab = cv2.cvtColor(extracted, cv2.COLOR_BGR2LAB)
             backProj = cv2.calcBackProject(
@@ -329,24 +330,23 @@ class ReefTracker:
             total = np.sum(baseThresh)
 
             perc = sum / total
-            isOpen = False
+            openPercentage = 0
             color = (0, 0, 255)  # red default
             if perc > purpleThresh:
                 color = (0, 255, 0)  # green
-                isOpen = True
-            """ Magic ends"""
+                openPercentage = perc/fullpurpleThresh
 
             if drawBoxes:
                 cv2.circle(colorframe, (int(u), int(v)), 3, color, 2)
-                # for imageCorner in total_image_corners:
-                #     for point1 in imageCorner:
-                #         for point2 in imageCorner:
-                #             if point1 != point2:
-                #                 cv2.line(colorframe, point1, point2, color, 1)
+                for imageCorner in total_image_corners:
+                    for point1 in imageCorner:
+                        for point2 in imageCorner:
+                            if point1 != point2:
+                                cv2.line(colorframe, point1, point2, color, 1)
 
-                #     for imageCorner in imageCorner:
-                #         uC, uV = imageCorner
-                #         cv2.circle(colorframe, (int(uC), int(uV)), 1, color, 2)
+                    for imageCorner in imageCorner:
+                        uC, uV = imageCorner
+                        cv2.circle(colorframe, (int(uC), int(uV)), 1, color, 2)
 
                 cv2.putText(
                     colorframe,
@@ -358,20 +358,20 @@ class ReefTracker:
                     2,
                 )
 
-            onScreenBranches[offset_idx] = (u, v, isOpen)
+            onScreenBranches[offset_idx] = (openPercentage)
 
-        extracted = cv2.bitwise_and(frameCopy, mask)
-        lab = cv2.cvtColor(extracted, cv2.COLOR_BGR2LAB)
-        backProj = cv2.calcBackProject([lab], [1, 2], purpleHist, [0, 256, 0, 256], 1)
-        dil = cv2.dilate(backProj, np.ones((3, 3)), iterations=6)
-        _, thresh = cv2.threshold(dil, 20, 255, cv2.THRESH_BINARY)
-        sum = np.sum(thresh)
-        _, baseThresh = cv2.threshold(extracted, 1, 255, cv2.THRESH_BINARY)
-        total = np.sum(baseThresh)
+        # extracted = cv2.bitwise_and(frameCopy, mask)
+        # lab = cv2.cvtColor(extracted, cv2.COLOR_BGR2LAB)
+        # backProj = cv2.calcBackProject([lab], [1, 2], purpleHist, [0, 256, 0, 256], 1)
+        # dil = cv2.dilate(backProj, np.ones((3, 3)), iterations=6)
+        # _, thresh = cv2.threshold(dil, 20, 255, cv2.THRESH_BINARY)
+        # sum = np.sum(thresh)
+        # _, baseThresh = cv2.threshold(extracted, 1, 255, cv2.THRESH_BINARY)
+        # total = np.sum(baseThresh)
 
-        perc = sum / total
-        cv2.putText(extracted, f"P: {perc}", (0, 20), 0, 1, (255, 255, 255), 1)
-        cv2.imshow("extracted", extracted)
-        cv2.imshow("thresh", thresh)
+        # perc = sum / total
+        # cv2.putText(extracted, f"P: {perc}", (0, 20), 0, 1, (255, 255, 255), 1)
+        # cv2.imshow("extracted", extracted)
+        # cv2.imshow("thresh", thresh)
 
         return onScreenBranches

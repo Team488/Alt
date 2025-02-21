@@ -72,7 +72,7 @@ class AprilTagSover:
         if preferredRet is None:
             return None
         
-        _,_,postidxs = preferredRet
+        _,_,_,postidxs = preferredRet
         results = []
         for postidx in postidxs:
             atID = ReefPositioner.getAprilTagId(postidx,didPreferBlue)
