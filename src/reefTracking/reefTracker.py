@@ -20,12 +20,12 @@ from Core import getLogger
 
 # CAD to tip of the rod. (MAX Distance)
 cad_to_branch_offset = {
-    0: np.array([-6.756, -19.707, 2.608]),      #"L2-L"
-    1: np.array([6.754, -19.707, 2.563]),       #"L2-R"
-    2: np.array([-6.639, -35.606, 2.628]),      #"L3-L"
-    3: np.array([6.637, -35.606, 2.583]),       #"L3-R"
-    4: np.array([-6.470, -58.4175, 0.921]),     #"L4-L" 
-    5: np.array([6.468, -58.4175, 0.876]),      #"L4-R" 
+    0: np.array([-6.756, -19.707, 2.608]),  # "L2-L"
+    1: np.array([6.754, -19.707, 2.563]),  # "L2-R"
+    2: np.array([-6.639, -35.606, 2.628]),  # "L3-L"
+    3: np.array([6.637, -35.606, 2.583]),  # "L3-R"
+    4: np.array([-6.470, -58.4175, 0.921]),  # "L4-L"
+    5: np.array([6.468, -58.4175, 0.876]),  # "L4-R"
 }
 
 
@@ -52,10 +52,10 @@ cad_to_branch_offset = {
 
 
 zoffset = 3  # in
-widthOffset = 6  # in                                                                   #               ↖  (z)
+widthOffset = 5  # in                                                                   #               ↖  (z)
 heightOffset = 10  # in                                                                 #                (3)
 heightClearence = 0.5
-depthOffset = 4  # in                                                             #                  \
+depthOffset = 6  # in                                                             #                  \
 reefBoxOffsetsFRONT = [  # in to m                                                       #                   \
     np.array(
         [widthOffset / 2 * 0.0254, -heightClearence * 0.0254, 0]
@@ -128,6 +128,7 @@ def getClosest3Faces(tag_to_cam_translation, frame):
     vertical_boxOffset = reefBoxOffsetsTOP if pitch < 0 else reefBoxOffsetsBOTTOM
     return [reefBoxOffsetsFRONT, horizontal_boxOffset, vertical_boxOffset]
 
+
 def transform_basis_from_frc_toimg(T):
     """
     Transforms an affine transformation matrix from a coordinate system where:
@@ -142,14 +143,11 @@ def transform_basis_from_frc_toimg(T):
         Transformed 4x4 affine matrix
     """
     # Coordinate transformation rotation matrix (3x3)
-    R_P = np.array([[ 0,  -1, 0],
-                    [0,  0,  -1],
-                    [ 1, 0,  0]])
-    
+    R_P = np.array([[0, -1, 0], [0, 0, -1], [1, 0, 0]])
 
     # Extract rotation and translation from T
     R_T = T[:3, :3]  # Original rotation
-    t_T = T[:3, 3]   # Original translation
+    t_T = T[:3, 3]  # Original translation
 
     # Transform rotation
     R_new = R_P @ R_T @ R_P.T
@@ -165,10 +163,9 @@ def transform_basis_from_frc_toimg(T):
     return T_new
 
 
-
-
 # purpleHist = np.load("assets/purpleReefPostHist.npy")
-purpleHist = np.load("assets/simulationPurpleReefPost.npy")
+# purpleHist = np.load("assets/simulationPurpleReefPost.npy")
+purpleHist = np.load("assets/purpleReefPostHistReal.npy")
 purpleThresh = 0.1
 fullpurpleThresh = 0.3
 
@@ -195,9 +192,7 @@ class ReefTracker:
         """
         self.isLocalAT = isLocalAT
         self.camIntr = cameraIntrinsics
-        if not isLocalAT and (
-            cameraExtrinsics is None
-        ):
+        if not isLocalAT and (cameraExtrinsics is None):
             raise Exception(
                 "If you are operating in driverStationMode = False, you must provide camera Extrinsics and april tag camera extrinsics!"
             )
@@ -205,17 +200,19 @@ class ReefTracker:
         if isLocalAT:
             self.ATPoseGetter = AprilTagLocal(cameraIntrinsics)
         else:
-            self.ATPoseGetter = AprilTagSover(camExtr=cameraExtrinsics,camIntr=cameraIntrinsics)
+            self.ATPoseGetter = AprilTagSover(
+                camExtr=cameraExtrinsics, camIntr=cameraIntrinsics
+            )
 
-    def __isInFrame(self,u,v):
-        return  0 <= u < self.camIntr.getHres() and 0 <= v < self.camIntr.getVres()
+    def __isInFrame(self, u, v):
+        return 0 <= u < self.camIntr.getHres() and 0 <= v < self.camIntr.getVres()
 
-    def getAllTracks(self, colorframe, robotPose2dCMRad = None, drawBoxes=True):
+    def getAllTracks(self, colorframe, robotPose2dCMRad=None, drawBoxes=True):
         if not self.isLocalAT and robotPose2dCMRad is None:
             raise Exception(
                 "If you are operating in driverStationMode = False, you must provide robotPose2dCMRad!"
             )
-        
+
         allTracks = {}
         if self.isLocalAT:
             greyFrame = cv2.cvtColor(colorframe, cv2.COLOR_BGR2GRAY)
@@ -236,17 +233,15 @@ class ReefTracker:
                     print(f"PRE: {nearestTagPose=}")
                     nearestTagPose = transform_basis_from_frc_toimg(nearestTagPose)
                     print(f"POST: {nearestTagPose=}")
-                    nearestTagPose[:3,3] *= 0.01 # cm -> m
+                    nearestTagPose[:3, 3] *= 0.01  # cm -> m
                     coordinates = self.__getTracksForPost(
-                            colorframe, nearestTagPose, drawBoxes
-                        )
+                        colorframe, nearestTagPose, drawBoxes
+                    )
                     allTracks[nearestTagId] = coordinates
 
         return allTracks
 
-    def __getTracksForPost(
-        self, colorframe, tagPoseMatrix, drawBoxes
-    ):
+    def __getTracksForPost(self, colorframe, tagPoseMatrix, drawBoxes):
         if (
             tagPoseMatrix is None
             or np.isclose(tagPoseMatrix[:3, 3], np.zeros(shape=(3))).all()
@@ -289,7 +284,6 @@ class ReefTracker:
 
                 total_color_corners.append(color_corners)
 
-
             # print(f"{color_camera_to_reef=}")
             # print(f"{tagPoseMatrix=}")
 
@@ -298,7 +292,7 @@ class ReefTracker:
 
             u = (self.camIntr.getFx() * x_cam / z_cam) + self.camIntr.getCx()
             v = (self.camIntr.getFy() * y_cam / z_cam) + self.camIntr.getCy()
-            if not self.__isInFrame(u,v):
+            if not self.__isInFrame(u, v):
                 continue
             # print(f"{u=} {v=}")
 
@@ -331,10 +325,10 @@ class ReefTracker:
 
             perc = sum / total
             openPercentage = 0
-            color = (0, 0, 255)  # red default
+            color = (0, 0, 1)  # red default
             if perc > purpleThresh:
                 color = (0, 255, 0)  # green
-                openPercentage = perc/fullpurpleThresh
+                openPercentage = perc / fullpurpleThresh
 
             if drawBoxes:
                 cv2.circle(colorframe, (int(u), int(v)), 3, color, 2)
@@ -358,20 +352,20 @@ class ReefTracker:
                     2,
                 )
 
-            onScreenBranches[offset_idx] = (openPercentage)
+            onScreenBranches[offset_idx] = openPercentage
 
-        # extracted = cv2.bitwise_and(frameCopy, mask)
-        # lab = cv2.cvtColor(extracted, cv2.COLOR_BGR2LAB)
-        # backProj = cv2.calcBackProject([lab], [1, 2], purpleHist, [0, 256, 0, 256], 1)
-        # dil = cv2.dilate(backProj, np.ones((3, 3)), iterations=6)
-        # _, thresh = cv2.threshold(dil, 20, 255, cv2.THRESH_BINARY)
-        # sum = np.sum(thresh)
-        # _, baseThresh = cv2.threshold(extracted, 1, 255, cv2.THRESH_BINARY)
-        # total = np.sum(baseThresh)
+        extracted = cv2.bitwise_and(frameCopy, mask)
+        lab = cv2.cvtColor(extracted, cv2.COLOR_BGR2LAB)
+        backProj = cv2.calcBackProject([lab], [1, 2], purpleHist, [0, 256, 0, 256], 1)
+        dil = cv2.dilate(backProj, np.ones((3, 3)), iterations=6)
+        _, thresh = cv2.threshold(dil, 20, 255, cv2.THRESH_BINARY)
+        sum = np.sum(thresh)
+        _, baseThresh = cv2.threshold(extracted, 1, 255, cv2.THRESH_BINARY)
+        total = np.sum(baseThresh)
 
-        # perc = sum / total
-        # cv2.putText(extracted, f"P: {perc}", (0, 20), 0, 1, (255, 255, 255), 1)
-        # cv2.imshow("extracted", extracted)
-        # cv2.imshow("thresh", thresh)
+        perc = sum / total
+        cv2.putText(extracted, f"P: {perc}", (0, 20), 0, 1, (255, 255, 255), 1)
+        cv2.imshow("extracted", extracted)
+        cv2.imshow("thresh", thresh)
 
         return onScreenBranches

@@ -23,7 +23,7 @@ class CentralAgentBase(PositionLocalizingAgentBase):
             "REARLEFT": "photonvisionrearleft",
             "FRONTLEFT": "photonvisionfrontleft",
             "FRONTRIGHT": "photonvisionfrontright",
-            "FRONTRIGHT": "Adem-GamingPc",
+            "FRONTRIGHT": "Adem-Laptop",
         }
         self.getDetectionTable = (
             lambda key: f"{self.keyToHost.get(key)}.{ObjectLocalizingAgentBase.DETECTIONPOSTFIX}"
@@ -48,10 +48,18 @@ class CentralAgentBase(PositionLocalizingAgentBase):
                 consumer=lambda ret: self.__handleReefUpdate(key, ret),
             )
 
-        self.clAT = self.propertyOperator.createCustomReadOnlyProperty("BESTOPENREEF_AT",None,addBasePrefix=False)
-        self.clBR = self.propertyOperator.createCustomReadOnlyProperty("BESTOPENREEFBRANCH",None,addBasePrefix=False)
-        self.brx = self.propertyOperator.createCustomReadOnlyProperty("BESTROBOTXaa",None,addBasePrefix=False)
-        self.bry = self.propertyOperator.createCustomReadOnlyProperty("BESTROBOTYaa",None,addBasePrefix=False)
+        self.clAT = self.propertyOperator.createCustomReadOnlyProperty(
+            "BESTOPENREEF_AT", None, addBasePrefix=False
+        )
+        self.clBR = self.propertyOperator.createCustomReadOnlyProperty(
+            "BESTOPENREEFBRANCH", None, addBasePrefix=False
+        )
+        self.brx = self.propertyOperator.createCustomReadOnlyProperty(
+            "BESTROBOTXaa", None, addBasePrefix=False
+        )
+        self.bry = self.propertyOperator.createCustomReadOnlyProperty(
+            "BESTROBOTYaa", None, addBasePrefix=False
+        )
 
         self.reefmap_states = self.propertyOperator.createCustomReadOnlyProperty("REEFMAP_STATES", None, addBasePrefix=False)
 
@@ -67,7 +75,6 @@ class CentralAgentBase(PositionLocalizingAgentBase):
         # print(f"{det_packet.timestamp=}")
         packet = (DetectionPacket.toDetections(det_packet), idOffset, lastidx)
         self.objectupdateMap[key] = packet
-
 
     def __handleReefUpdate(self, key, ret):
         val = ret.value
@@ -108,7 +115,7 @@ class CentralAgentBase(PositionLocalizingAgentBase):
                 # no update same id
                 self.localReefUpdateMap[key] = packetidx
                 accumulatedReefResults.append(res)
-        
+
         # update objects
         self.central.processFrameUpdate(
             cameraResults=accumulatedObjectResults, timeStepMs=timePerLoopMS
@@ -117,7 +124,6 @@ class CentralAgentBase(PositionLocalizingAgentBase):
         self.central.processReefUpdate(
             reefResults=accumulatedReefResults, timeStepMs=timePerLoopMS
         )
-
 
     def runPeriodic(self):
         super().runPeriodic()
@@ -134,7 +140,9 @@ class CentralAgentBase(PositionLocalizingAgentBase):
         self.brx.set(highest_algae[0])
         self.bry.set(highest_algae[1])
 
-        closest_At,closest_branch = self.central.reefState.getClosestOpen(self.robotPose2dCMRAD,threshold=0.2)
+        closest_At, closest_branch = self.central.reefState.getClosestOpen(
+            self.robotPose2dCMRAD, threshold=0.2
+        )
         self.clAT.set(closest_At)
         self.clBR.set(closest_branch)
 
