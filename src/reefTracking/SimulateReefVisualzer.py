@@ -8,9 +8,7 @@ def simulate_backend_update(app):
     colors = {
         "red": (1, 0, 0, 1),
         "green": (0, 1, 0, 1),
-        "blue": (0, 0, 1, 1),
         "yellow": (1, 1, 0, 1),
-       # "white": (1, 1, 1, 1)
     }
 
 
@@ -29,6 +27,5 @@ if __name__ == '__main__':
     backend_thread = Thread(target=simulate_backend_update, args=(app_instance,))
     backend_thread.daemon = True
     backend_thread.start()
-    app_instance.update_button_color("A", (255, 0, 0, 1))
     
     app.run()
