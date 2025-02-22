@@ -424,6 +424,11 @@ class CameraIdOffsets(Enum):
         return self.value
 
 
+class TEAM(Enum):
+    RED = "red"
+    BLUE = "blue"
+
+
 class ATLocations(Enum):
     """
     AprilTag locations with ID, (x, y, z) coordinates in inches, and (yaw, pitch) rotations in degrees.
@@ -437,28 +442,28 @@ class ATLocations(Enum):
     def getDefaultRotationType():
         return Units.RotationType.Deg
 
-    TAG_1 = ((1), (657.37, 25.80, 58.50), (126, 0))
-    TAG_2 = ((2), (657.37, 291.20, 58.50), (234, 0))
-    TAG_3 = ((3), (455.15, 317.15, 51.25), (270, 0))
-    TAG_4 = ((4), (365.20, 241.64, 73.54), (0, 30))
-    TAG_5 = ((5), (365.20, 75.39, 73.54), (0, 30))
-    TAG_6 = ((6), (530.49, 130.17, 12.13), (300, 0))
-    TAG_7 = ((7), (546.87, 158.50, 12.13), (0, 0))
-    TAG_8 = ((8), (530.49, 186.83, 12.13), (60, 0))
-    TAG_9 = ((9), (497.77, 186.83, 12.13), (120, 0))
-    TAG_10 = ((10), (481.39, 158.50, 12.13), (180, 0))
-    TAG_11 = ((11), (497.77, 130.17, 12.13), (240, 0))
-    TAG_12 = ((12), (33.51, 25.80, 58.50), (54, 0))
-    TAG_13 = ((13), (33.51, 291.20, 58.50), (306, 0))
-    TAG_14 = ((14), (325.68, 241.64, 73.54), (180, 30))
-    TAG_15 = ((15), (325.68, 75.39, 73.54), (180, 30))
-    TAG_16 = ((16), (235.73, -0.15, 51.25), (90, 0))
-    TAG_17 = ((17), (160.39, 130.17, 12.13), (240, 0))
-    TAG_18 = ((18), (144.00, 158.50, 12.13), (180, 0))
-    TAG_19 = ((19), (160.39, 186.83, 12.13), (120, 0))
-    TAG_20 = ((20), (193.10, 186.83, 12.13), (60, 0))
-    TAG_21 = ((21), (209.49, 158.50, 12.13), (0, 0))
-    TAG_22 = ((22), (193.10, 130.17, 12.13), (300, 0))
+    TAG_1 = ((1), (657.37, 25.80, 58.50), (126, 0), None)
+    TAG_2 = ((2), (657.37, 291.20, 58.50), (234, 0), None)
+    TAG_3 = ((3), (455.15, 317.15, 51.25), (270, 0), None)
+    TAG_4 = ((4), (365.20, 241.64, 73.54), (0, 30), None)
+    TAG_5 = ((5), (365.20, 75.39, 73.54), (0, 30), None)
+    TAG_6 = ((6), (530.49, 130.17, 12.13), (300, 0), TEAM.RED)
+    TAG_7 = ((7), (546.87, 158.50, 12.13), (0, 0), TEAM.RED)
+    TAG_8 = ((8), (530.49, 186.83, 12.13), (60, 0), TEAM.RED)
+    TAG_9 = ((9), (497.77, 186.83, 12.13), (120, 0), TEAM.RED)
+    TAG_10 = ((10), (481.39, 158.50, 12.13), (180, 0), TEAM.RED)
+    TAG_11 = ((11), (497.77, 130.17, 12.13), (240, 0), TEAM.RED)
+    TAG_12 = ((12), (33.51, 25.80, 58.50), (54, 0), None)
+    TAG_13 = ((13), (33.51, 291.20, 58.50), (306, 0), None)
+    TAG_14 = ((14), (325.68, 241.64, 73.54), (180, 30), None)
+    TAG_15 = ((15), (325.68, 75.39, 73.54), (180, 30), None)
+    TAG_16 = ((16), (235.73, -0.15, 51.25), (90, 0), None)
+    TAG_17 = ((17), (160.39, 130.17, 12.13), (240, 0), TEAM.BLUE)
+    TAG_18 = ((18), (144.00, 158.50, 12.13), (180, 0), TEAM.BLUE)
+    TAG_19 = ((19), (160.39, 186.83, 12.13), (120, 0), TEAM.BLUE)
+    TAG_20 = ((20), (193.10, 186.83, 12.13), (60, 0), TEAM.BLUE)
+    TAG_21 = ((21), (209.49, 158.50, 12.13), (0, 0), TEAM.BLUE)
+    TAG_22 = ((22), (193.10, 130.17, 12.13), (300, 0), TEAM.BLUE)
 
     @property
     def id(self):
@@ -471,6 +476,10 @@ class ATLocations(Enum):
     @property
     def rotation(self):
         return self.value[2]
+
+    @property
+    def team(self):
+        return self.value[3]
 
     @classmethod
     def get_by_id(cls, tag_id):
@@ -505,6 +514,44 @@ class ATLocations(Enum):
         m[:3, :3] = rotMatrix
         m[:3, 3] = translationMatrix
         return m
+
+    @classmethod
+    def getReefBasedIds(cls, team: TEAM = None) -> list[int]:
+        if not team:
+            return ATLocations.getReefBasedIds(TEAM.BLUE).extend(
+                ATLocations.getReefBasedIds(TEAM.RED)
+            )
+
+        ids = []
+        for tag in cls:
+            if tag.team == team:
+                ids.append(tag.id)
+
+        return ids
+
+
+class ReefBranches(Enum):
+    @staticmethod
+    def getDefaultLengthType():
+        return Units.LengthType.IN
+
+    L2L = (0, "L2-L", np.array([-6.756, -19.707, 2.608]))
+    L2R = (1, "L2-R", np.array([6.754, -19.707, 2.563]))
+    L3L = (2, "L3-L", np.array([-6.639, -35.606, 2.628]))
+    L3R = (3, "L3-R", np.array([6.637, -35.606, 2.583]))
+    L4L = (4, "L4-L", np.array([-6.470, -58.4175, 0.921]))
+    L4R = (5, "L4-R", np.array([6.468, -58.4175, 0.876]))
+
+    @property
+    def branchid(self):
+        return self[0]
+
+    @property
+    def branchname(self):
+        return self[1]
+
+    def getAprilTagOffset(self, units: Units.LengthType = Units.LengthType.CM):
+        return UnitConversion.convertLength(self[2], self.getDefaultLengthType(), units)
 
 
 class Landmarks(Enum):
