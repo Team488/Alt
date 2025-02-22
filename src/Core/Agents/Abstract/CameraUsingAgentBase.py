@@ -2,7 +2,8 @@ import time
 import cv2
 from abstract.Agent import Agent
 from coreinterface.FramePacket import FramePacket
-from tools.depthAIHelper import DepthAIHelper
+from tools.depthAiHelper import DepthAIHelper
+
 
 class CameraUsingAgentBase(Agent):
     """Agent -> CameraUsingAgentBase
@@ -12,11 +13,7 @@ class CameraUsingAgentBase(Agent):
     NOTE: This means you cannot run this class as is
     """
 
-
-    def __init__(
-        self,
-        **kwargs
-    ):
+    def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.cameraPath = kwargs.get("cameraPath", None)
         self.showFrames = kwargs.get("showFrames", None)
@@ -31,17 +28,16 @@ class CameraUsingAgentBase(Agent):
             self.cap = DepthAIHelper()
         else:
             self.cap = cv2.VideoCapture(self.cameraPath)
-        
+
         self.testCapture()
-        
+
         self.sendFrame = self.propertyOperator.createProperty(
             "Send-Frame", False, loadIfSaved=False
         )  # this is one of those properties that should always be opt-in Eg reset after restart
 
-
     def testCapture(self):
         retTest = True
-        
+
         if self.oakMode:
             try:
                 frame = self.cap.getFrame()
@@ -57,25 +53,26 @@ class CameraUsingAgentBase(Agent):
                 retTest = False
 
         if not retTest:
-            raise BrokenPipeError(f"Failed to read from camera! {self.cameraPath=} {self.oakMode=}")
-    
+            raise BrokenPipeError(
+                f"Failed to read from camera! {self.cameraPath=} {self.oakMode=}"
+            )
+
     def runPeriodic(self):
         super().runPeriodic()
         # show last frame if enabled. This allows any drawing that might have been on the frame to be shown
         if self.hasIngested:
             # local showing of frame
             if self.showFrames:
-                cv2.imshow("frame",self.latestFrame)
+                cv2.imshow("frame", self.latestFrame)
 
-                if cv2.waitKey(1) & 0xFF == ord('q'):
+                if cv2.waitKey(1) & 0xFF == ord("q"):
                     self.exit = True
             # network showing of frame
             if self.sendFrame.get():
                 framePacket = FramePacket.createPacket(
-                    time.time()*1000, "Frame", self.latestFrame
+                    time.time() * 1000, "Frame", self.latestFrame
                 )
                 self.frameProp.set(framePacket.to_bytes())
-
 
         with self.timer.run("cap_read"):
             self.hasIngested = True
@@ -84,14 +81,12 @@ class CameraUsingAgentBase(Agent):
             #     if time.time() - stime > 0.050:  # Timeout after 100ms
             #         self.Sentinel.warning("Skipping buffer due to timeout.")
             #         break
-            
+
             ret, frame = self.cap.read()
             self.latestFrame = frame
 
         if not ret:
             raise BrokenPipeError("Camera ret is false!")
-        
-
 
     def onClose(self):
         super().onClose()
