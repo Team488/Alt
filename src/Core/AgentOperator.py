@@ -74,6 +74,8 @@ class AgentOperator:
         self.Sentinel.info("The agent is alive!")
 
     def __startAgentLoop(self, agent: Agent, futurePtr: int):
+        
+        """ Main part #1 Creation and running"""
         try:
             timer = agent.getTimer()
             self.__setErrorLog(agent.getName(), "None...")
@@ -100,35 +102,38 @@ class AgentOperator:
                         sleepTime = intervalMs / 1000  # ms -> seconds
                         time.sleep(sleepTime)
 
+        except Exception as e:
+            self.__handleException(progressStr,agent.getName(),e)
 
-            # if thread was shutdown abruptly (self.__stop flag), perform shutdown
-            # shutdown before onclose
-            forceStopped = self.__stop
-            if forceStopped:
-                progressStr = "shutdown interrupt"
-                self.__setStatus(agent.getName(), progressStr)
-                self.Sentinel.debug("Shutting down agent")
+
+        """ Main part #2 possible shutdown"""
+        # if thread was shutdown abruptly (self.__stop flag), perform shutdown
+        # shutdown before onclose
+        forceStopped = self.__stop
+        if forceStopped:
+            progressStr = "shutdown interrupt"
+            self.__setStatus(agent.getName(), progressStr)
+            self.Sentinel.debug("Shutting down agent")
+            try:
                 agent.forceShutdown()
-            else:
-                progressStr = "close"
-                self.__setStatus(agent.getName(), f"closing")
-            
+            except Exception as e:
+                self.__handleException("shutdown",agent.getName(),e)
+
+        else:
+            self.__setStatus(
+                agent.getName(), f"agent isRunning returned false (Not an error)"
+            )
+            self.Sentinel.debug(f"agent isRunning returned false (Not an error)")
+        
+        """ Main part #3 Cleanup"""
+        try:    
             # cleanup
             with timer.run("cleanup"):
                 agent.onClose()
 
-            if not forceStopped:
-                self.__setStatus(
-                    agent.getName(), f"agent isRunning returned false (Not an error)"
-                )
-                self.Sentinel.debug(f"agent isRunning returned false (Not an error)")
-
         except Exception as e:
-            message = f"Failed! | During {progressStr}: {e}"
-            self.__setStatus(agent.getName(), message)
-            tb = traceback.format_exc()
-            self.__setErrorLog(agent.getName(), tb)
-            self.Sentinel.error(tb)
+            self.__handleException("cleanup",agent.getName(),e)
+        
 
         # potentially run a task on agent finish
         if not self.__stop and self.__runOnFinish is not None:
@@ -142,6 +147,12 @@ class AgentOperator:
             with self.__futureLock:
                 self.__futures.pop(futurePtr)
 
+    def __handleException(self, task: str, agentName: str, exception):
+        message = f"Failed! | During {task}: {exception}"
+        self.__setStatus(agentName, message)
+        tb = traceback.format_exc()
+        self.__setErrorLog(agentName, tb)
+        self.Sentinel.error(tb)
 
 
     def setOnAgentFinished(self, runOnFinish):

@@ -19,7 +19,7 @@
 #     print(K)
 # exit()
 
-import depthai as dai
+import depthaiTest as dai
 
 import numpy as np
 import sys

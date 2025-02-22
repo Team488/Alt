@@ -490,37 +490,44 @@ class ATLocations(Enum):
         return None
 
     @classmethod
-    def get_pose_by_id(cls, tag_id):
+    def get_pose_by_id(cls, tag_id, length: Units.LengthType = Units.LengthType.CM, rotation : Units.RotationType = Units.RotationType.Rad):
         """Retrieve the position and rotation for a given tag ID."""
         tag = cls.get_by_id(tag_id)
-        return (tag.position, tag.rotation) if tag else None
+
+        if tag is None:
+            return None
+
+        position = UnitConversion.convertLength(
+            tag.position, cls.getDefaultLengthType(), length
+        )
+
+        rotation = UnitConversion.convertRotation(
+            tag.position, cls.getDefaultRotationType(), rotation
+        )
+
+        return position, rotation
 
     @classmethod
     def getPoseAfflineMatrix(
         cls, tag_id, units: Units.LengthType = Units.LengthType.CM
     ):
-        pose = cls.get_pose_by_id(tag_id)
+        pose = cls.get_pose_by_id(tag_id, length=units)
         if pose is None:
             return None
+        
         translation, rotation = pose
-        x_in, y_in, z_in = translation
-        yaw, pitch = rotation
+        rotMatrix = Rotation.from_euler("ZY", rotation, degrees=False).as_matrix()
 
-        rotMatrix = Rotation.from_euler("ZY", (yaw, pitch), degrees=True).as_matrix()
-        translationMatrix = UnitConversion.convertLength(
-            (x_in, y_in, z_in), cls.getDefaultLengthType(), units
-        )
         m = np.eye(4)
         m[:3, :3] = rotMatrix
-        m[:3, 3] = translationMatrix
+        m[:3, 3] = translation
         return m
 
     @classmethod
     def getReefBasedIds(cls, team: TEAM = None) -> list[int]:
         if not team:
-            return ATLocations.getReefBasedIds(TEAM.BLUE).extend(
-                ATLocations.getReefBasedIds(TEAM.RED)
-            )
+            return ATLocations.getReefBasedIds(TEAM.BLUE) + ATLocations.getReefBasedIds(TEAM.RED)
+            
 
         ids = []
         for tag in cls:
@@ -528,6 +535,7 @@ class ATLocations(Enum):
                 ids.append(tag.id)
 
         return ids
+    
 
 
 class ReefBranches(Enum):
@@ -549,9 +557,19 @@ class ReefBranches(Enum):
     @property
     def branchname(self):
         return self[1]
-
+    
     def getAprilTagOffset(self, units: Units.LengthType = Units.LengthType.CM):
         return UnitConversion.convertLength(self[2], self.getDefaultLengthType(), units)
+    
+    @classmethod
+    def getByID(cls, branchid : int):
+        for branch in cls:
+            if branch.branchid == branchid:
+                return branch
+            
+        return None
+
+    
 
 
 class Landmarks(Enum):

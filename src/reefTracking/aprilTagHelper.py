@@ -63,7 +63,6 @@ class AprilTagLocal:
             print(f"Failed to open config! {e}")
 
     def getDetections(self, grayscale_image):
-        cv2.imshow("graw", grayscale_image)
         output = self.detector.detect(grayscale_image)
         return output
 

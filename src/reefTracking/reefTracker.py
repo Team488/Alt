@@ -170,7 +170,7 @@ def transform_basis_from_frc_toimg(T):
 # purpleHist = np.load("assets/purpleReefPostHist.npy")
 purpleHist = np.load("assets/simulationPurpleReefPost.npy")
 purpleThresh = 0.1
-fullpurpleThresh = 0.5
+fullpurpleThresh = 0.3
 
 Sentinel = getLogger("Reef_Post_Estimator")
 
@@ -179,7 +179,7 @@ class ReefTracker:
     def __init__(
         self,
         cameraIntrinsics: CameraIntrinsics,
-        isDriverStation=False,
+        isLocalAT=False,
         cameraExtrinsics: CameraExtrinsics = None,
     ):
         """
@@ -193,16 +193,16 @@ class ReefTracker:
             photonCommunicator (`PhotonVisionCommunicator`) : An optional field, the class that allows network communication to grab the photonvision april tag results
 
         """
-        self.isDriverStation = isDriverStation
+        self.isLocalAT = isLocalAT
         self.camIntr = cameraIntrinsics
-        if not isDriverStation and (
+        if not isLocalAT and (
             cameraExtrinsics is None
         ):
             raise Exception(
                 "If you are operating in driverStationMode = False, you must provide camera Extrinsics and april tag camera extrinsics!"
             )
 
-        if isDriverStation:
+        if isLocalAT:
             self.ATPoseGetter = AprilTagLocal(cameraIntrinsics)
         else:
             self.ATPoseGetter = AprilTagSover(camExtr=cameraExtrinsics,camIntr=cameraIntrinsics)
@@ -211,13 +211,13 @@ class ReefTracker:
         return  0 <= u < self.camIntr.getHres() and 0 <= v < self.camIntr.getVres()
 
     def getAllTracks(self, colorframe, robotPose2dCMRad = None, drawBoxes=True):
-        if not self.isDriverStation and robotPose2dCMRad is None:
+        if not self.isLocalAT and robotPose2dCMRad is None:
             raise Exception(
                 "If you are operating in driverStationMode = False, you must provide robotPose2dCMRad!"
             )
         
         allTracks = {}
-        if self.isDriverStation:
+        if self.isLocalAT:
             greyFrame = cv2.cvtColor(colorframe, cv2.COLOR_BGR2GRAY)
             atDetections = self.ATPoseGetter.getDetections(greyFrame)
             atPoses = self.ATPoseGetter.getOrthogonalEstimates(atDetections)

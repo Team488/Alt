@@ -9,13 +9,12 @@ class TimestampRegulatedAgentBase(CameraUsingAgentBase, PositionLocalizingAgentB
     NOTE: this class should always be extended
     """
 
-
+    BINSIZE = 5 # whatever the timestamp units are in, likely MS but todo figure out
     def __init__(
-        self, cameraPath, showFrames,  binsize = 5 # whatever the timestamp units are in, likely MS but todo figure out
+        self, **kwargs
     ):
-        super().__init__(cameraPath, showFrames)
+        super().__init__(**kwargs)
         self.binnedMap = {}
-        self.binSize = binsize
 
     def runPeriodic(self):
         super().runPeriodic()

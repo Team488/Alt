@@ -16,7 +16,7 @@ from Core.TimeOperator import Timer
 
 class Agent(ABC):
     DEFAULT_LOOP_TIME = 0 # 0 ms
-    def __init__(self):
+    def __init__(self, **kwargs):
         # nothing should go here
         pass
 

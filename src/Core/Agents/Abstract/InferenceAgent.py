@@ -22,11 +22,10 @@ class InferenceAgent(CameraUsingAgentBase):
 
     def __init__(
         self,
-        cameraPath: str,
-        inferenceMode: InferenceMode,
+        **kwargs
     ):
-        super().__init__(cameraPath)
-        self.inferenceMode = inferenceMode
+        super().__init__(**kwargs)
+        self.inferenceMode = kwargs.get("inferenceMode",None)
 
     def create(self):
         super().create()

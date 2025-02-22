@@ -7,3 +7,4 @@ from .PathPlanningAgents import (
 )
 from .FrameDisplayer import FrameDisplayer
 from .InteractivePathPlanner import InteractivePathPlanner
+from .ReefAndObjectLocalizer import ReefAndObjectLocalizerPartial

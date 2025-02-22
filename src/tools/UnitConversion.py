@@ -41,6 +41,10 @@ def invertX(xCM):
 def convertLength(value, fromType : Units.LengthType, toType : Units.LengthType):
     convertLengthFunc = lambda value : Units.Length.convert(value,fromType,toType)
     return __convert(value,convertLengthFunc)
+
+def convertRotation(value, fromType : Units.RotationType, toType : Units.RotationType):
+    convertLengthFunc = lambda value : Units.Rotation.convert(value,fromType,toType)
+    return __convert(value,convertLengthFunc)
     
 
 def __convert(value : Any, convertFunction : Any):

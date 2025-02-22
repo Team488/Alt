@@ -23,6 +23,7 @@ class PositionLocalizingAgentBase(Agent):
         """Variable to store robot location. Units will be (X(m), Y(m), Yaw Rotation (rad))"""
         self.robotPose2dMRAD = (0, 0, 0)
         self.connectedToLoc = False
+        self.locTimeStamp = -1
 
         self.xclient.subscribe(self.xtablesPosTable.get(), self.__updateLocation)
 

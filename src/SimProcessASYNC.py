@@ -210,7 +210,7 @@ try:
             localUpdateMap[processName] = packetidx
             results.append(result)
         central.processFrameUpdate(results, 1)
-        x, y, p = central.map.getHighestGameObject()
+        x, y, p = central.objectmap.getHighestGameObject()
         scaleFactor = 100  # cm to m
         table.getEntry("est/Target_Estimate").setDoubleArray(
             [x / scaleFactor, y / scaleFactor, 0, 0]
@@ -226,8 +226,8 @@ try:
             logger.warning(
                 f"Overran Loop! Time elapsed: {dMS}ms | Max loop time: {MAINLOOPTIMEMS}ms"
             )
-        cv2.imshow(f"{title}_robots", central.map.getRobotHeatMap())
-        cv2.imshow(f"{title}_notes", central.map.getGameObjectHeatMap())
+        cv2.imshow(f"{title}_robots", central.objectmap.getRobotHeatMap())
+        cv2.imshow(f"{title}_notes", central.objectmap.getGameObjectHeatMap())
 
         while not frame_queue.empty():
             print("In frame queue")

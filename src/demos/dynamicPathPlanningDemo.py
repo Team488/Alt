@@ -12,8 +12,8 @@ from Core.Central import Central
 from pathplanning.PathGenerator import PathGenerator
 
 central = Central()
-mapSizeX = central.map.internalHeight
-mapSizeY = central.map.internalWidth
+mapSizeX = central.objectmap.internalHeight
+mapSizeY = central.objectmap.internalWidth
 print(f"mx{mapSizeX} my{mapSizeY} ")
 pathgenerator = PathGenerator(central)
 isMouseDownL = False
@@ -45,18 +45,18 @@ def getInterestingRandomTarget(maxX, maxY, currentX, currentY):
 def mouseDownCallback(event, x, y, flags, param):
     global isMouseDownL
     global needUpdate
-    rX, rY = demoUtils.rescaleCoordsUp(x, y, central.map)
+    rX, rY = demoUtils.rescaleCoordsUp(x, y, central.objectmap)
     if event == cv2.EVENT_LBUTTONDOWN:
         isMouseDownL = True
         #  print("clicked at ", x," ", y)
-        central.map.addCustomRobotDetection(
+        central.objectmap.addCustomRobotDetection(
             rX, rY, 400, 400, 1
         )  # adding as a 75% probability
         needUpdate = True
     elif event == cv2.EVENT_MOUSEMOVE:
         if isMouseDownL:
             #   print("dragged at ", x," ", y)
-            central.map.addCustomRobotDetection(
+            central.objectmap.addCustomRobotDetection(
                 rX, rY, 400, 400, 1
             )  # adding as a 75% probability
             needUpdate = True
@@ -85,9 +85,9 @@ def startDemo():
     global needUpdate
     global curLocation
     trackbarName = "Min Height in CM"
-    cv2.namedWindow(central.map.gameObjWindowName)
-    cv2.createTrackbar(trackbarName, central.map.gameObjWindowName, 10, 255, n)
-    cv2.setMouseCallback(central.map.gameObjWindowName, mouseDownCallback)
+    cv2.namedWindow(central.objectmap.gameObjWindowName)
+    cv2.createTrackbar(trackbarName, central.objectmap.gameObjWindowName, 10, 255, n)
+    cv2.setMouseCallback(central.objectmap.gameObjWindowName, mouseDownCallback)
     nextMovementVector = None
     currentPathIndex = 1
 
@@ -108,9 +108,9 @@ def startDemo():
                 curLocation,
                 randomTarget,
                 minHeightCm=cv2.getTrackbarPos(
-                    trackbarName, central.map.gameObjWindowName
+                    trackbarName, central.objectmap.gameObjWindowName
                 ),
-                customObstacleMap=(255 - central.map.getRobotHeatMap()),
+                customObstacleMap=(255 - central.objectmap.getRobotHeatMap()),
                 reducePoints=True,
             )
             nextMovementVector = getNextMovementVector(curLocation, currentPath, 1)
@@ -135,9 +135,9 @@ def startDemo():
             )
             currentPathIndex += 1
 
-        robotMap = central.map.getRobotHeatMap()
+        robotMap = central.objectmap.getRobotHeatMap()
         w, h = robotMap.shape
-        display_frame = cv2.merge((central.map.getGameObjectHeatMap(), robotMap))
+        display_frame = cv2.merge((central.objectmap.getGameObjectHeatMap(), robotMap))
         cv2.circle(display_frame, curLocation, 10, (0, 255, 0), -1)
         cv2.circle(display_frame, randomTarget, 10, (255, 0, 0), -1)
 
@@ -149,14 +149,14 @@ def startDemo():
         if k == ord("q"):
             break
         if k == ord("c"):
-            central.map.clear_maps()
+            central.objectmap.clear_maps()
             needUpdate = True
         if k == ord("r"):
             randomTarget = getInterestingRandomTarget(
                 mapSizeX, mapSizeY, curLocation[0], curLocation[1]
             )
             needUpdate = True
-        cv2.imshow(central.map.gameObjWindowName, display_frame)
+        cv2.imshow(central.objectmap.gameObjWindowName, display_frame)
 
 
 if __name__ == "__main__":

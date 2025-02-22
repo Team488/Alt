@@ -1,9 +1,8 @@
-import socket
-from Core.Agents.Abstract.ObjectLocalizingAgentBase import ObjectLocalizingAgentBase
 from enum import Enum
-from tools.Constants import InferenceMode, getCameraValues
+import socket
+from Core.Agents.ReefAndObjectLocalizer import ReefAndObjectLocalizer
 from tools import calibration
-
+from tools.Constants import InferenceMode, getCameraValues
 
 class CameraName(Enum):
     REARRIGHT = "photonvisionrearright"
@@ -11,13 +10,13 @@ class CameraName(Enum):
     FRONTRIGHT = "photonvisionfrontright"
     FRONTLEFT = "photonvisionfrontleft"
 
-    @staticmethod
-    def getCameraName():
-        name = socket.gethostname()
-        return CameraName(name)
+
+def getCameraName():
+    name = socket.gethostname()
+    return CameraName(name)
 
 
-class OrangePiAgent(ObjectLocalizingAgentBase):
+class OrangePiAgent(ReefAndObjectLocalizer):
     """Agent -> LocalizingAgentBase -> FrameProcessingAgentBase -> OrangePiAgent
 
     Agent to be run on the orange pis"""
@@ -29,10 +28,11 @@ class OrangePiAgent(ObjectLocalizingAgentBase):
 
         super().__init__(
             cameraPath="/dev/color_camera",
+            showFrames=False,
             cameraIntrinsics=cameraIntrinsics,
             cameraExtrinsics=cameraExtrinsics,
             inferenceMode=InferenceMode.RKNN2025INT8,
-        )  # heres where we add our constants
+        )
 
     def create(self):
         super().create()
@@ -53,7 +53,7 @@ class OrangePiAgent(ObjectLocalizingAgentBase):
         return "Orange_Pi_Process"
 
     def getDescription(self):
-        return "Ingest_Camera_Run_Ai_Model_Return_Localized_Detections"
+        return "Ingest_Camera_Run_Ai_Model_Return_Localized_Detections_And_NowAlsoTrackReef"
 
     def getIntervalMs(self):
         return 0

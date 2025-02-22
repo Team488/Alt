@@ -1,10 +1,11 @@
 import numpy as np
-import depthai as dai
 import cv2
+import depthai as dai
 
 
 class DepthAIHelper:
     def __init__(self):
+        
         self.pipeline = dai.Pipeline()
         self.load_pipeline(self.pipeline)
         self.device = dai.Device(self.pipeline)
@@ -27,20 +28,31 @@ class DepthAIHelper:
         cam_rgb.video.link(xout.input)
 
     def getFrame(self) -> np.ndarray:
-        frame = self.video_queue.get().getCvFrame()
-        return frame
+        frame = self.color_queue.get()
+        if frame is not None:
+            return frame.getCvFrame()
+        return None
 
     @staticmethod
     def getCameraIntrinsicDump(res=None):
-        with dai.Device() as device:
-            calibData = device.readCalibration()
+        import depthaiTest as dai
 
+        device = dai.Device()  # Create device
+        try:
+            calibData = device.readCalibration()
             cameras = device.getConnectedCameras()
 
             for cam in cameras:
                 M, width, height = calibData.getDefaultIntrinsics(cam)
-                # intrinsics = calibData.getCameraIntrinsics(dai.CameraBoardSocket.RGB, 1920, 1080)
-
                 M = np.array(M)
                 print(f"Camera Name: {cam}")
-                print(f"Camerera Matrix: {M} \n {width=} {height=}")
+                print(f"Camera Matrix: {M} \nWidth: {width}, Height: {height}")
+
+        finally:
+            device.close()  # Ensure the device is closed
+
+    def close(self):
+        """Properly release resources."""
+        self.color_queue.close()
+        self.device.close()
+

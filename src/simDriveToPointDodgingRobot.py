@@ -183,7 +183,7 @@ def run_frameprocess(imitatedProcIdx):
         [x / 100, y / 100, math.radians(r)]
     )
 
-    highestRobot = central.map.getHighestRobot()
+    highestRobot = central.objectmap.getHighestRobot()
     postable.getEntry("VisionEstimatedRobotLocation").setDoubleArray(
         [highestRobot[0] / 100, highestRobot[1] / 100, 0]
     )
@@ -249,8 +249,8 @@ while True:
         results.append(result)
         print(results)
     central.processFrameUpdate(results, 2)
-    robotobstacles = central.map.getAllRobotsAboveThreshold(0.5)
-    frame = np.zeros_like(central.map.getRobotHeatMap(), dtype=np.uint8)
+    robotobstacles = central.objectmap.getAllRobotsAboveThreshold(0.5)
+    frame = np.zeros_like(central.objectmap.getRobotHeatMap(), dtype=np.uint8)
     for obstacle in robotobstacles:
         cv2.circle(
             frame,

@@ -208,7 +208,7 @@ try:
         else:
             logger.warning("Cannot get robot location from network tables!")
 
-        target = central.map.getHighestGameObjectT(0.2)
+        target = central.objectmap.getHighestGameObjectT(0.2)
         path = pathGenerator.generate(
             (pos[0] * 100, pos[1] * 100), target[:2], 0
         )  # m to cm
@@ -225,7 +225,7 @@ try:
                 coordinates.append(element)
             xclient.putCoordinates("target_waypoints", coordinates)
 
-        print(central.map.getHighestGameObject())
+        print(central.objectmap.getHighestGameObject())
 
         etime = time.time()
         dMS = (etime - stime) * 1000
@@ -236,8 +236,8 @@ try:
             logger.warning(
                 f"Overran Loop! Time elapsed: {dMS}ms | Max loop time: {MAINLOOPTIMEMS}ms"
             )
-        cv2.imshow(f"{title}_robots", central.map.getRobotHeatMap())
-        cv2.imshow(f"{title}_notes", central.map.getGameObjectHeatMap())
+        cv2.imshow(f"{title}_robots", central.objectmap.getRobotHeatMap())
+        cv2.imshow(f"{title}_notes", central.objectmap.getGameObjectHeatMap())
 
         while not frame_queue.empty():
             print("In frame queue")

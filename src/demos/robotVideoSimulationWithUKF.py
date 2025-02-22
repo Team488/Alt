@@ -112,7 +112,7 @@ def startDemo():
                 [(out, CameraIdOffsets.FRONTLEFT)], timePerFrame
             )
 
-            (gameObjMap, robotMap) = centralProcessor.map.getHeatMaps()
+            (gameObjMap, robotMap) = centralProcessor.objectmap.getHeatMaps()
             height, width = robotMap.shape
             zeros = np.zeros((height, width), dtype=np.uint8)
             mapView = cv2.merge((zeros, gameObjMap, robotMap))

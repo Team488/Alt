@@ -263,6 +263,13 @@ class Rotation:
         obj.__rad = radians
         return obj
 
+    @classmethod
+    def fromRotationType(cls, length : float, rotationType: RotationType) -> "Rotation":
+        if rotationType == RotationType.Rad:
+            return cls.fromRadians(length)
+        if rotationType == RotationType.Deg:
+            return cls.fromDegrees(length)
+    
     def getDegrees(self) -> float:
         """
         Returns the rotation in degrees.
@@ -275,16 +282,22 @@ class Rotation:
         """
         return self.__rad
 
-    def getUnitMode(self, unitMode: UnitMode):
+    
+    def getAsRotationType(self, rotationType: RotationType) -> float:
         """
-        Returns the rotation in the desired unit mode.
-
+        Returns the length in the desired rotationType.
+        
         Args:
-        - unitMode (UnitMode): The unit mode for rotation.
+        - rotationType (RotationType): The rotationType for rotation.
 
         Returns:
         - float: The rotation in the requested unit.
         """
-        if unitMode.rotationType == RotationType.Deg:
+        if rotationType == RotationType.Rad:
+            return self.getRadians()
+        if rotationType == RotationType.Deg:
             return self.getDegrees()
-        return self.getRadians()
+
+    @classmethod    
+    def convert(cls, value : float, fromR : RotationType, toR : RotationType) -> float:
+        return cls.fromRotationType(value,fromR).getAsRotationType(toR)

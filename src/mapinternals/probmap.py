@@ -461,9 +461,9 @@ class ProbMap:
         coordinates = np.unravel_index(flat_index, probmap.shape)
         # scale output by resolution
         return (
-            coordinates[1] * self.resolution,
-            coordinates[0] * self.resolution,
-            probmap[coordinates[0]][coordinates[1]],
+            float(coordinates[1] * self.resolution),
+            float(coordinates[0] * self.resolution),
+            float(probmap[coordinates[0]][coordinates[1]]),
         )
 
     def __getHighestRange(
@@ -909,7 +909,7 @@ class ProbMap:
     """ Used in dissipating over time, need to find best smoothing function"""
 
     def __smooth(self, probmap, timeParam):
-        kernel = self.sigma**timeParam * np.array(
+        kernel = self.sigma**round(timeParam/100) * np.array(
             [0.05, 0.2, 0.5, 0.2, 0.05]
         )
         kernel = kernel / kernel.sum()  # Normalize
@@ -923,15 +923,15 @@ class ProbMap:
 
     """ Exposed dissipate over time method, timepassed parameter in seconds"""
 
-    def disspateOverTime(self, timeSeconds: float) -> None:
+    def disspateOverTime(self, timeMS: float) -> None:
         """Apply time-based dissipation to probability values.
 
         Args:
             timeSeconds: Time in seconds over which to apply dissipation
         """
         # self.__saveToTemp(self.probmapGameObj,self.probmapRobots)
-        self.probmapGameObj = self.__smooth(self.probmapGameObj, timeSeconds)
-        self.probmapRobots = self.__smooth(self.probmapRobots, timeSeconds)
+        self.probmapGameObj = self.__smooth(self.probmapGameObj, timeMS)
+        self.probmapRobots = self.__smooth(self.probmapRobots, timeMS)
 
     """Granular interaction with the map"""
 

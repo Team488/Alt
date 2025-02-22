@@ -64,7 +64,7 @@ def getAndSetPath(clickpos):
     path = pathGenerator.generate(
         (MapConstants.fieldWidth.getCM() - pos[0] * 100, pos[1] * 100),
         clickpos,
-        central.map.getRobotMap() > 0.1,
+        central.objectmap.getRobotMap() > 0.1,
     )  # m to cm
     logger.debug(f"Generated Path: {path}")
     if path is None:
@@ -93,7 +93,7 @@ cv2.setMouseCallback(title, clickCallback)
 # Executor outside the with block
 
 while True:
-    frame = central.map.getRobotHeatMap().copy()
+    frame = central.objectmap.getRobotHeatMap().copy()
     if currentPath is not None:
         for point in currentPath:
             cv2.circle(frame, point, 2, (255, 255, 255), -1)

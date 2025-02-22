@@ -1,6 +1,6 @@
 from JXTABLES.TempConnectionManager import TempConnectionManager as tcm
 from Core.Neo import Neo
-from Core.Agents.Abstract.ReefTrackingAgentBase import ReefTrackingAgentPartial
+from Core.Agents.Abstract.CentralAgentBase import CentralAgentBase
 from tools.Constants import CameraIntrinsicsPredefined, ColorCameraExtrinsics2024
 
 # removes the temp ip for testing in main

@@ -22,7 +22,7 @@ class ReefPacket:
             packet_detection = packet_observations[i]
             packet_detection.apriltagid = observation[0]
             packet_detection.branchindex = observation[1]
-            packet_detection.openconfidence = observation[2]
+            packet_detection.openconfidence = float(observation[2])
         return packet
     
     @staticmethod
@@ -57,7 +57,8 @@ class ReefPacket:
 
         return None
 
-    def getFlattenedObservations(packet):
+    def getFlattenedObservations(packet)-> list[tuple[int,int,float]]:
+        """ Observations as a list of (april tag id, branch index, confidence)"""
         # Decompress the JPEG data
         flattenedOutput = []
         for observation in packet.observations:

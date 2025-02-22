@@ -8,6 +8,7 @@ from mapinternals.probmap import ProbMap
 from mapinternals.KalmanLabeler import KalmanLabeler
 from mapinternals.KalmanCache import KalmanCache
 from pathplanning.PathGenerator import PathGenerator
+from reefTracking.ReefState import ReefState
 from Core.ConfigOperator import ConfigOperator
 from Core.PropertyOperator import PropertyOperator
 
@@ -22,11 +23,12 @@ class Central:
         
         self.kalmanCacheRobots: KalmanCache = KalmanCache()
         self.kalmanCacheGameObjects: KalmanCache = KalmanCache()
-        self.map = ProbMap()
+        self.objectmap = ProbMap()
+        self.reefState = ReefState()
         self.ukf = Ukf()
         self.labler = KalmanLabeler(self.kalmanCacheRobots, self.kalmanCacheGameObjects)
         self.obstacleMap = self.__tryLoadObstacleMap()
-        self.pathGenerator = PathGenerator(self.map, self.obstacleMap)
+        self.pathGenerator = PathGenerator(self.objectmap, self.obstacleMap)
         
 
     def __tryLoadObstacleMap(self):
@@ -43,6 +45,15 @@ class Central:
 
         return defaultMap
 
+    def processReefUpdate(self, reefResults: list[list[tuple[int,int,float]]], timeStepMs):
+        self.reefState.dissipateOverTime(timeStepMs)
+        print(f"{timeStepMs=}")
+
+        for reefResult in reefResults:
+            for apriltagid, branchid, opennessconfidence in reefResult:
+                self.reefState.addObservation(apriltagid,branchid,opennessconfidence)
+    
+    
     def processFrameUpdate(
         self,
         cameraResults: list[
@@ -53,18 +64,18 @@ class Central:
                 ]
             ]
         ],
-        timeStepSeconds,
+        timeStepMs,
         positionOffset=(0, 0, 0),
     ):
         # dissipate at start of iteration
-        self.map.disspateOverTime(timeStepSeconds)
+        self.objectmap.disspateOverTime(timeStepMs)
 
         # first get real ids
 
         # go through each detection and do the magic
         for singleCamResult, idOffset in cameraResults:
             if singleCamResult:
-                self.labler.updateRealIds(singleCamResult, idOffset, timeStepSeconds)
+                self.labler.updateRealIds(singleCamResult, idOffset, timeStepMs)
                 (id, coord, prob, isRobot, features) = singleCamResult[0]
                 # todo add feature deduping here
                 coord = tuple(np.add(coord, positionOffset))
@@ -85,8 +96,8 @@ class Central:
                     self.kalmanCacheGameObjects.saveKalmanData(id, self.ukf)
                 # input new estimated state into the map
                 if isRobot:
-                    self.map.addDetectedRobot(int(newState[0]), int(newState[1]), prob)
+                    self.objectmap.addDetectedRobot(int(newState[0]), int(newState[1]), prob)
                 else:
-                    self.map.addDetectedGameObject(
+                    self.objectmap.addDetectedGameObject(
                         int(newState[0]), int(newState[1]), prob
                     )

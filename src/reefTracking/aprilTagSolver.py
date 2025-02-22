@@ -47,8 +47,8 @@ class AprilTagSover:
     def __getBluePreference(self, robotPose2dCmRad: tuple[float,float,float]) -> bool:
         """ If an april tag in the blue and red side is seen, which one should be preferred"""
         robotPosCm = robotPose2dCmRad[:2]
-        bdist = np.linalg.norm(np.power(np.subtract(robotPosCm,self.breefCM),2)) 
-        rdist = np.linalg.norm(np.power(np.subtract(robotPosCm,self.rreefCM),2)) 
+        bdist = np.linalg.norm(np.subtract(robotPosCm,self.breefCM)) 
+        rdist = np.linalg.norm(np.subtract(robotPosCm,self.rreefCM)) 
         return bdist < rdist
 
     

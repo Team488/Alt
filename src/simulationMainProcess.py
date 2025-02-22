@@ -79,7 +79,7 @@ def mainLoop():
                 localUpdateMap[key] = packetidx
                 accumulatedResults.append(res)
             central.processFrameUpdate(
-                cameraResults=accumulatedResults, timeStepSeconds=TIMEPERLOOPMS / 1000
+                cameraResults=accumulatedResults, timeStepMs=TIMEPERLOOPMS / 1000
             )
             posebytes = client.getBytes("robot_pose")  # ms
             loc = (0, 0, 0)  # x(m),y(m),rotation(rad)
@@ -90,7 +90,7 @@ def mainLoop():
                     "Unable to get robot position! using origin (0,0,0) instead"
                 )
             # maps = central.map.getHeatMaps()
-            target = central.map.getHighestGameObject()
+            target = central.objectmap.getHighestGameObject()
             if target[:2] == (0, 0):
                 logger.warning("No suitable target found!")
                 client.putCoordinates(pathName, [])

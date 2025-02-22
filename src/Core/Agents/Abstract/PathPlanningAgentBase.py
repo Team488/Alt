@@ -50,9 +50,9 @@ class PathPlanningAgentBase(PositionLocalizingAgentBase):
 
         frame = cv2.merge(
             (
-                self.central.map.getGameObjectHeatMap(),
-                np.zeros_like(self.central.map.getGameObjectHeatMap()),
-                self.central.map.getRobotHeatMap(),
+                self.central.objectmap.getGameObjectHeatMap(),
+                np.zeros_like(self.central.objectmap.getGameObjectHeatMap()),
+                self.central.objectmap.getRobotHeatMap(),
             )
         )
 
