@@ -1,19 +1,42 @@
 import kivy
 
+from enum import Enum
+from Reef import Reef
+
 from kivy.app import App
 from kivy.uix.label import Label
 from kivy.uix.relativelayout import RelativeLayout
 from kivy.uix.button import Button
 from kivy.uix.image import Image
 from kivy.clock import Clock
-
 from kivy.core.window import Window
+
+from queue import Queue
 
 
 class HexagonLayout(RelativeLayout):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
+        self.init_background()
+        self.init_reef_buttons()
+        
+        # Bind resizing event
+        Window.bind(on_resize=self.update_layout)
+        self.update_layout(Window, Window.width, Window.height)
+
+        # Mouse position label (for development)
+        self.mouse = Label(text="Mouse Position: (0, 0)", size_hint=(None, None), pos=(100, 10))
+        Clock.schedule_interval(self.update_mouse_position, 0.05)
+        self.add_widget(self.mouse)
+
+        # Store the data queue for updating colors:
+        self.update_queue = Queue()
+        Clock.schedule_interval(self.process_queue_updates, 0.05)
+
+
+
+    def init_background(self):
         # Original image dimensions
         self.bg_width = int(1886 * 1.0)
         self.bg_height = int(1528 * 1.0)
@@ -30,6 +53,8 @@ class HexagonLayout(RelativeLayout):
         )
         self.add_widget(self.background)
 
+    def init_reef_buttons(self):
+        #print("INITIALIZE REEF BUTTONS")
         # Define alphabet buttons with fixed positions
         alphabet_buttons = [
             {"text": "A", "pos": (1015, 800)},
@@ -63,14 +88,21 @@ class HexagonLayout(RelativeLayout):
         }
 
         # Generate buttons list dynamically
-        self.buttons_data = []
-
-        self.button_lookup = {}
+        self.init_dictionary = {}
         for btn in alphabet_buttons:
-            self.buttons_data.append(btn)  # Add alphabet button
-
             base_x, base_y = btn["pos"]
             letter = btn["text"]
+            
+            self.init_dictionary[letter] = {
+                "button": None,
+                "data": btn
+            }
+            for level in ["L2", "L3", "L4"]:
+                index = f"{letter}_{level}"
+                self.init_dictionary[index] = {
+                    "button": None,
+                    "data": None
+                }
 
             if letter in l2_offsets:
                 l2_x_offset, l2_y_offset = l2_offsets[letter]["offset"]
@@ -79,45 +111,38 @@ class HexagonLayout(RelativeLayout):
                 # Generate L2
                 l2_x = base_x + l2_x_offset
                 l2_y = base_y + l2_y_offset
-                self.buttons_data.append({"text": "L2", "pos": (l2_x, l2_y)})
+                self.init_dictionary[f"{letter}_L2"]["data"] = {"text": "L2", "pos": (l2_x, l2_y)}
 
                 # Determine L3 and L4 positioning logic
                 if l2_y_offset == 0:  # If L2 is only shifted horizontally, keep parallel
-                    self.buttons_data.append({"text": "L3", "pos": (l2_x + l_spacing, l2_y)})
-                    self.buttons_data.append({"text": "L4", "pos": (l2_x + 2 * l_spacing, l2_y)})
+                    self.init_dictionary[f"{letter}_L3"]["data"] = {"text": "L3", "pos": (l2_x + l_spacing, l2_y)}
+                    self.init_dictionary[f"{letter}_L4"]["data"] = {"text": "L4", "pos": (l2_x + 2 * l_spacing, l2_y)}
                 else:  # If L2 has a diagonal offset, apply the same diagonal shift
-                    self.buttons_data.append({"text": "L3", "pos": (l2_x + l2_x_offset, l2_y + l2_y_offset)})
-                    self.buttons_data.append({"text": "L4", "pos": (l2_x + 2 * l2_x_offset, l2_y + 2 * l2_y_offset)})
+                    self.init_dictionary[f"{letter}_L3"]["data"] = {"text": "L3", "pos": (l2_x + l2_x_offset, l2_y + l2_y_offset)}
+                    self.init_dictionary[f"{letter}_L4"]["data"] = {"text": "L4", "pos": (l2_x + 2 * l2_x_offset, l2_y + 2 * l2_y_offset)}
 
         # Create buttons
-        self.buttons = []
-        for data in self.buttons_data:
-            background_color=(255, 255, 0, 1)
+        self.button_dictionary = {}
+        for key in self.init_dictionary.keys():
+            data = self.init_dictionary[key]["data"]
+            background_color=(1, 1, 0, 1)
             text = data["text"]
-            if len(text) == 1:
-                background_color=(255, 255, 255, 1)
+            if len(text) == 1: # If it's a letter or level ("A" vs "L2")
+                background_color=(1, 1, 1, 1)
             button = Button(
                 text=data["text"],
                 size_hint=(None, None),
                 background_color=background_color,
+                background_normal= '', #INVESTIGATE THIS
+                background_down= '',
                 color=(0, 0, 0, 1),
                 font_size=32
                 )
             self.add_widget(button)
-            self.buttons.append(button)
-
-            self.button_lookup.update({text : button})
-            
-        # Bind resizing event
-        Window.bind(on_resize=self.update_layout)
-        self.update_layout(Window, Window.width, Window.height)
-
-        # Mouse position label (for development)
-        self.mouse = Label(text="Mouse Position: (0, 0)", size_hint=(None, None), pos=(10, 10))
-        Clock.schedule_interval(self.update_mouse_position, 0.05)
-        self.add_widget(self.mouse)
+            self.button_dictionary[key] = button
 
     def update_layout(self, instance, width, height):
+        #print("Layout updated")
         # Ensure background size matches the window
         self.background.size = (width, height)
         self.background.pos = (0, 0)
@@ -127,8 +152,9 @@ class HexagonLayout(RelativeLayout):
         button_width = width * button_size_ratio
         button_height = height * button_size_ratio
 
-        for button, data in zip(self.buttons, self.buttons_data):
-            original_x, original_y = data["pos"]
+        for key, button in self.button_dictionary.items():
+            data = self.init_dictionary[key]["data"]
+            original_x, original_y = data["pos"] # original positioning
             button.size = (button_width, button_height)
 
             # Scale button positions relative to the new background size
@@ -139,18 +165,39 @@ class HexagonLayout(RelativeLayout):
                 height * button_y_ratio  
             )
 
-    # button_text = key
     def update_button_color(self, button_text, color):
-        print("COLOR UPDATED")
-        self.button_lookup[button_text].background_color = color
+        #print(self.button_dictionary)
+        #print(button_text, color)
+        if button_text in self.button_dictionary:
+            self.button_dictionary[button_text].background_color = color
+            #print("COLOR UPDATED", color, button_text, self.button_dictionary[button_text], "to", self.button_dictionary[button_text].background_color)
 
     def update_mouse_position(self, dt):
         x, y = Window.mouse_pos
         self.mouse.text = f"Mouse Position: ({int(x)}, {int(y)})"
+        #print("color of A", self.button_dictionary["A"].background_color)
+        
+    def queue_color_update(self, button_text, color):
+        #print("queueing", button_text, color)
+        self.update_queue.put((button_text, color))
 
+
+    def process_queue_updates(self, dt):
+        # Update the color according to the queue
+        #print("length of queue", self.update_queue.qsize())
+        while not self.update_queue.empty():
+            button_text, color = self.update_queue.get()
+            #print("Processing queue updates for", button_text, "with color", color)
+            Clock.schedule_once(lambda dt, bt=button_text, c=color: self.update_button_color(bt, c))
+
+
+layout = HexagonLayout()
 class ReefVisualizer(App):
     def build(self):
-        return HexagonLayout()
+        return layout
 
 if __name__ == '__main__':
-    ReefVisualizer().run()
+    app = ReefVisualizer()
+    app_instance = app.build()
+    app_instance.update_button_color( "A", (1, 0, 0, 1))
+    app.run()

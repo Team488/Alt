@@ -102,7 +102,7 @@ class Reef:
     # get_branch_state_at("A", Reef.Level.L2) => Reef.BranchState.OFF
     def get_branch_state_at(self, branch : Branch, level : Level):
         branch_face = self.get_branch(branch)
-        print("branch", branch_face)
+        #print("branch", branch_face)
         return branch_face.get(level)
     
     # get_branches_at_tag(7) => ["A", "B"]
@@ -111,6 +111,9 @@ class Reef:
            index = self.alliance_tags.index(id) * 2
            return BRANCHES[index:index+2]
         return []
+    
+    def get_self_alliance_tags(self):
+        return self.alliance_tags
     
     # get_tag_from_branch("A") => 7
     def get_tag_from_branch(self, branch : chr):
