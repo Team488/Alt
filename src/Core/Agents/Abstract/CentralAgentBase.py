@@ -1,5 +1,5 @@
 import time
-from tools.Constants import CameraIdOffsets
+from tools.Constants import CameraIdOffsets, ATLocations, Units
 from coreinterface.DetectionPacket import DetectionPacket
 from coreinterface.ReefPacket import ReefPacket
 from abstract.Agent import Agent
@@ -60,6 +60,8 @@ class CentralAgentBase(PositionLocalizingAgentBase):
         self.bry = self.propertyOperator.createCustomReadOnlyProperty(
             "BESTROBOTYaa", None, addBasePrefix=False
         )
+
+        self.reefmap_states = self.propertyOperator.createCustomReadOnlyProperty("REEFMAP_STATES", None, addBasePrefix=False)
 
     # handles a subscriber update from one of the cameras
     def __handleObjectUpdate(self, key, ret):
@@ -129,6 +131,11 @@ class CentralAgentBase(PositionLocalizingAgentBase):
         self.putBestNetworkValues()
 
     def putBestNetworkValues(self):
+        # Stores the state of the reef
+        # List w/ tuple (April tag id, branch id, openness confidence)
+        reefmap_state = self.central.reefState.getOpenSlotsAboveT(threshold=0.0)
+        self.reefmap_states.set(reefmap_state)
+        
         highest_algae = self.central.objectmap.getHighestRobot()
         self.brx.set(highest_algae[0])
         self.bry.set(highest_algae[1])
