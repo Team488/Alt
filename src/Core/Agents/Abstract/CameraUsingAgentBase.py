@@ -82,11 +82,15 @@ class CameraUsingAgentBase(Agent):
             #         self.Sentinel.warning("Skipping buffer due to timeout.")
             #         break
 
-            ret, frame = self.cap.read()
-            self.latestFrame = frame
+            if self.oakMode:
+                frame = self.cap.getFrame()
+            else:
+                ret, frame = self.cap.read()
 
-        if not ret:
-            raise BrokenPipeError("Camera ret is false!")
+                if not ret:
+                    raise BrokenPipeError("Camera ret is false!")
+
+            self.latestFrame = frame
 
     def onClose(self):
         super().onClose()

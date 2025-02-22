@@ -22,6 +22,7 @@ class PositionLocalizingAgentBase(Agent):
 
         """Variable to store robot location. Units will be (X(m), Y(m), Yaw Rotation (rad))"""
         self.robotPose2dMRAD = (0, 0, 0)
+        self.robotPose2dCMRAD = (0, 0, 0)
         self.connectedToLoc = False
         self.locTimeStamp = -1
 
@@ -30,7 +31,11 @@ class PositionLocalizingAgentBase(Agent):
     def __updateLocation(self, ret):
         try:
             self.robotPose2dMRAD = NtUtils.getPose2dFromBytes(ret.value)
-            self.robotPose2dCMRAD = (self.robotPose2dMRAD[0]*100,self.robotPose2dMRAD[1]*100,self.robotPose2dMRAD[2]) # m to cm
+            self.robotPose2dCMRAD = (
+                self.robotPose2dMRAD[0] * 100,
+                self.robotPose2dMRAD[1] * 100,
+                self.robotPose2dMRAD[2],
+            )  # m to cm
 
             self.locX.set(self.robotPose2dMRAD[0])
             self.locY.set(self.robotPose2dMRAD[1])
