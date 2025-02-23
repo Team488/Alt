@@ -76,7 +76,7 @@ class DriveToNetworkTargetAgent(PathPlanningAgentBase):
     def create(self):
         super().create()
         self.hasTarget = self.propertyOperator.createReadOnlyProperty(
-            propertyName="hasTarget", propertyDefault=False
+            propertyName="hasTarget", propertyValue=False
         )
 
     def getPath(self):
