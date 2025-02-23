@@ -94,7 +94,10 @@ class PathGenerator:
         if path is not None:
             if reducePoints:
                 path = self.greedy_simplify(path, 0.3)
-            return [coord * self.map.resolution for coord in path]
+            return [
+                (coord[0] * self.map.resolution, coord[1] * self.map.resolution)
+                for coord in path
+            ]
         return None
 
     def estimateTimeToPoint(

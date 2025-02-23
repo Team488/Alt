@@ -58,7 +58,7 @@ class PathPlanningAgentBase(PositionLocalizingAgentBase):
 
         if self.path:
             for point in self.path:
-                cv2.circle(frame, tuple(map(int, point)), 5, (255, 255, 255), -1)
+                cv2.circle(frame, point, 5, (255, 255, 255), -1)
         frame = cv2.flip(frame, 0)
         # add debug message
         if not self.path:
