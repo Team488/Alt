@@ -55,13 +55,15 @@ class CentralAgentBase(PositionLocalizingAgentBase):
             "BESTOPENREEFBRANCH", None, addBasePrefix=False
         )
         self.brx = self.propertyOperator.createCustomReadOnlyProperty(
-            "BESTROBOTXaa", None, addBasePrefix=False
+            "BESTROBOTX", None, addBasePrefix=False
         )
         self.bry = self.propertyOperator.createCustomReadOnlyProperty(
-            "BESTROBOTYaa", None, addBasePrefix=False
+            "BESTROBOTY", None, addBasePrefix=False
         )
 
-        self.reefmap_states = self.propertyOperator.createCustomReadOnlyProperty("REEFMAP_STATES", None, addBasePrefix=False)
+        self.reefmap_states = self.propertyOperator.createCustomReadOnlyProperty(
+            "REEFMAP_STATES", None, addBasePrefix=False
+        )
 
     # handles a subscriber update from one of the cameras
     def __handleObjectUpdate(self, key, ret):
@@ -135,7 +137,7 @@ class CentralAgentBase(PositionLocalizingAgentBase):
         # List w/ tuple (April tag id, branch id, openness confidence)
         reefmap_state = self.central.reefState.getOpenSlotsAboveT(threshold=0.0)
         self.reefmap_states.set(reefmap_state)
-        
+
         highest_algae = self.central.objectmap.getHighestRobot()
         self.brx.set(highest_algae[0])
         self.bry.set(highest_algae[1])

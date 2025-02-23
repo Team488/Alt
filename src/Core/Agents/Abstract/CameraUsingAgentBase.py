@@ -2,6 +2,7 @@ import time
 import cv2
 from abstract.Agent import Agent
 from coreinterface.FramePacket import FramePacket
+from tools.Constants import CameraIntrinsics
 from tools.depthAiHelper import DepthAIHelper
 
 
@@ -15,6 +16,7 @@ class CameraUsingAgentBase(Agent):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self.cameraIntrinsics = kwargs.get("cameraIntrinsics", None)
         self.cameraPath = kwargs.get("cameraPath", None)
         self.showFrames = kwargs.get("showFrames", None)
         self.hasIngested = False
@@ -25,9 +27,12 @@ class CameraUsingAgentBase(Agent):
         # self.xdashDebugger = XDashDebugger()
         self.oakMode = self.cameraPath == "oakdlite"
         if self.oakMode:
-            self.cap = DepthAIHelper()
+            self.cap = DepthAIHelper(self.cameraIntrinsics)
         else:
             self.cap = cv2.VideoCapture(self.cameraPath)
+            fourcc = cv2.VideoWriter_fourcc(*"MJPG")  # or 'XVID', 'MP4V'
+            self.cap.set(cv2.CAP_PROP_FOURCC, fourcc)
+            CameraIntrinsics.setCapRes(self.cameraIntrinsics, self.cap)
 
         self.testCapture()
 
