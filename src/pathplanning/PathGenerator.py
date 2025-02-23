@@ -1,7 +1,7 @@
 import os
 import sys
 import time
-from typing import Any, Optional
+from typing import Any, Optional, Union
 
 import cv2
 
@@ -69,8 +69,8 @@ class PathGenerator:
 
     def generate(
         self,
-        start: list[float],
-        goal: list[float],
+        start: tuple[Union[int, float], Union[int, float]],
+        goal: tuple[Union[int, float], Union[int, float]],
         extraObstacles: Any = None,
         reducePoints=True,
     ) -> Optional[list[tuple[int, int]]]:

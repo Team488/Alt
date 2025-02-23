@@ -6,6 +6,7 @@ import time
 from logging import Logger
 from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import Future
+from typing import Optional
 from JXTABLES.XTablesClient import XTablesClient
 import concurrent
 from Core.TimeOperator import TimeOperator
@@ -15,7 +16,9 @@ from Core.PropertyOperator import PropertyOperator
 
 # subscribes to command request with xtables and then executes when requested
 class AgentOperator:
-    def __init__(self, propertyOp: PropertyOperator, timeOp : TimeOperator, logger: Logger):
+    def __init__(
+        self, propertyOp: PropertyOperator, timeOp: TimeOperator, logger: Logger
+    ):
         self.Sentinel = logger
         self.propertyOp = propertyOp
         self.timeOp = timeOp
@@ -73,13 +76,13 @@ class AgentOperator:
         # grace period for thread to start
         self.Sentinel.info("The agent is alive!")
 
-    def __startAgentLoop(self, agent: Agent, futurePtr: int):
-        
-        """ Main part #1 Creation and running"""
+    def __startAgentLoop(self, agent: Agent, futurePtr: Optional[int]):
+
+        """Main part #1 Creation and running"""
         try:
             timer = agent.getTimer()
             self.__setErrorLog(agent.getName(), "None...")
-            
+
             # create
             progressStr = "create"
             self.__setStatus(agent.getName(), "creating")
@@ -103,8 +106,7 @@ class AgentOperator:
                         time.sleep(sleepTime)
 
         except Exception as e:
-            self.__handleException(progressStr,agent.getName(),e)
-
+            self.__handleException(progressStr, agent.getName(), e)
 
         """ Main part #2 possible shutdown"""
         # if thread was shutdown abruptly (self.__stop flag), perform shutdown
@@ -117,23 +119,22 @@ class AgentOperator:
             try:
                 agent.forceShutdown()
             except Exception as e:
-                self.__handleException("shutdown",agent.getName(),e)
+                self.__handleException("shutdown", agent.getName(), e)
 
         else:
             self.__setStatus(
                 agent.getName(), f"agent isRunning returned false (Not an error)"
             )
             self.Sentinel.debug(f"agent isRunning returned false (Not an error)")
-        
+
         """ Main part #3 Cleanup"""
-        try:    
+        try:
             # cleanup
             with timer.run("cleanup"):
                 agent.onClose()
 
         except Exception as e:
-            self.__handleException("cleanup",agent.getName(),e)
-        
+            self.__handleException("cleanup", agent.getName(), e)
 
         # potentially run a task on agent finish
         if not self.__stop and self.__runOnFinish is not None:
@@ -141,7 +142,6 @@ class AgentOperator:
             # clear
             self.__runOnFinish = None
 
-        
         # close agent future if exists
         if futurePtr is not None:
             with self.__futureLock:
@@ -153,7 +153,6 @@ class AgentOperator:
         tb = traceback.format_exc()
         self.__setErrorLog(agentName, tb)
         self.Sentinel.error(tb)
-
 
     def setOnAgentFinished(self, runOnFinish):
         if self.__futures:

@@ -25,7 +25,7 @@ Sentinel = LogManager.Sentinel
 
 
 class Neo:
-    def __init__(self) -> "Neo":
+    def __init__(self) -> None:
         self.__printInit()
         Sentinel.info("Creating Config operator")
         Sentinel.info("Loading configs")
@@ -131,10 +131,10 @@ class Neo:
         logProperty.set(msg)
         self.__logMap[table] = lastlogs
 
-    def wakeAgent(self, agent: type[Agent], isMainThread=False) -> None:
+    def wakeAgent(self, agentClass: type[Agent], isMainThread=False) -> None:
         """NOTE: if isMainThread=True, this will threadblock indefinitely"""
         if not self.isShutdown():
-            agent = agent()
+            agent = agentClass()
             agentName = agent.getName()
 
             childPropertyOp = self.__propertyOp.getChild(
