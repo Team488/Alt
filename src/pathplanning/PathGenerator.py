@@ -1,7 +1,7 @@
 import os
 import sys
 import time
-from typing import Any
+from typing import Any, Optional
 
 import cv2
 
@@ -28,13 +28,19 @@ class PathGenerator:
             self.obstacleMap, width, height, gridWidth, gridHeight, self.map.resolution
         )
 
-    def generateToPointWStaticRobotsL(self, currentPosition, target: Landmarks):
+    def generateToPointWStaticRobotsL(
+        self, currentPosition, target: Landmarks
+    ) -> Optional[list[tuple[int, int]]]:
         return self.generateWStaticRobots(currentPosition, target.get_cm())
 
-    def generateToPointWStaticRobots(self, currentPosition, target):
+    def generateToPointWStaticRobots(
+        self, currentPosition, target
+    ) -> Optional[list[tuple[int, int]]]:
         return self.generateWStaticRobots(currentPosition, target)
 
-    def generateWStaticRobots(self, start, goal, threshold=0.5):
+    def generateWStaticRobots(
+        self, start, goal, threshold=0.5
+    ) -> Optional[list[tuple[int, int]]]:
         robotobstacles = self.map.getAllRobotsAboveThreshold(threshold)
         robotObstacleMap = np.zeros_like(self.map.getRobotMap(), dtype=np.uint8)
         for obstacle in robotobstacles:
@@ -51,10 +57,14 @@ class PathGenerator:
         path = self.generate(start, goal, np.fliplr(robotObstacleMap > 1))  # m to cm
         return path
 
-    def generateToPointL(self, currentPosition, target: Landmarks):
+    def generateToPointL(
+        self, currentPosition, target: Landmarks
+    ) -> Optional[list[tuple[int, int]]]:
         return self.generate(currentPosition, target.get_cm())
 
-    def generateToPoint(self, currentPosition, target):
+    def generateToPoint(
+        self, currentPosition, target
+    ) -> Optional[list[tuple[int, int]]]:
         return self.generate(currentPosition, target)
 
     def generate(
@@ -63,7 +73,7 @@ class PathGenerator:
         goal: list[float],
         extraObstacles: Any = None,
         reducePoints=True,
-    ):
+    ) -> Optional[list[tuple[int, int]]]:
         if len(start) > 2 or len(goal) > 2:
             print(f"{start=} {goal=}")
             print("Start and goal invalid length!!")

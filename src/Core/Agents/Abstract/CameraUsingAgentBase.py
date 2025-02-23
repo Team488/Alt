@@ -30,9 +30,14 @@ class CameraUsingAgentBase(Agent):
             self.cap = DepthAIHelper(self.cameraIntrinsics)
         else:
             self.cap = cv2.VideoCapture(self.cameraPath)
-            fourcc = cv2.VideoWriter_fourcc(*"MJPG")  # or 'XVID', 'MP4V'
-            self.cap.set(cv2.CAP_PROP_FOURCC, fourcc)
-            CameraIntrinsics.setCapRes(self.cameraIntrinsics, self.cap)
+            if CameraIntrinsics is not None:
+                fourcc = cv2.VideoWriter_fourcc(*"MJPG")  # or 'XVID', 'MP4V'
+                self.cap.set(cv2.CAP_PROP_FOURCC, fourcc)
+                CameraIntrinsics.setCapRes(self.cameraIntrinsics, self.cap)
+            else:
+                self.Sentinel.warning(
+                    "Camera intrinsics is None! Cap properties will not be set."
+                )
 
         self.testCapture()
 
