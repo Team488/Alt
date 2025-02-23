@@ -22,10 +22,7 @@ class ObjectLocalizingAgentBase(TimestampRegulatedAgentBase):
     DETECTIONPOSTFIX = "Detections"
     FRAMEPOSTFIX = "Frame"
 
-    def __init__(
-        self,
-        **kwargs
-    ):
+    def __init__(self, **kwargs):
         self.cameraIntrinsics = kwargs.get("cameraIntrinsics", None)
         self.cameraExtrinsics = kwargs.get("cameraExtrinsics", None)
         self.inferenceMode = kwargs.get("inferenceMode", None)
@@ -46,24 +43,18 @@ class ObjectLocalizingAgentBase(TimestampRegulatedAgentBase):
         self.detectionProp = self.propertyOperator.createCustomReadOnlyProperty(
             self.DETECTIONPOSTFIX, b""
         )
-        
-
-    def preprocessFrame(self, frame):
-        """Optional method you can implement to add preprocessing to a frame"""
-        return frame
 
     def runPeriodic(self):
         super().runPeriodic()
-        processedFrame = self.preprocessFrame(self.latestFrame)
-
         sendFrame = self.sendFrame.get()
         with self.timer.run("frame-processing"):
             processedResults = self.frameProcessor.processFrame(
-                processedFrame,
+                self.latestFrame,
                 robotPosXCm=self.robotPose2dMRAD[0] * 100,  # m to cm
                 robotPosYCm=self.robotPose2dMRAD[1] * 100,  # m to cm
                 robotYawRad=self.robotPose2dMRAD[2],
-                drawBoxes=sendFrame or self.showFrames,  # if you are sending frames, you likely want to see bounding boxes aswell
+                drawBoxes=sendFrame
+                or self.showFrames,  # if you are sending frames, you likely want to see bounding boxes aswell
             )
 
         # add highest detection telemetry
@@ -83,7 +74,7 @@ class ObjectLocalizingAgentBase(TimestampRegulatedAgentBase):
         #         "BestResult.BestZ", ""
         #     ).set(float(z))
 
-        timestampMs = time.time()*1000
+        timestampMs = time.time() * 1000
 
         detectionPacket = DetectionPacket.createPacket(
             processedResults, "Detection", timestampMs
@@ -91,10 +82,8 @@ class ObjectLocalizingAgentBase(TimestampRegulatedAgentBase):
         self.detectionProp.set(detectionPacket.to_bytes())
 
         # optionally send frame
-        
 
         self.Sentinel.info("Processed frame!")
-
 
     def getName(self):
         return "Object_Localizer"

@@ -18,7 +18,7 @@ class CameraUsingAgentBase(Agent):
         super().__init__(**kwargs)
         self.cameraIntrinsics = kwargs.get("cameraIntrinsics", None)
         self.cameraPath = kwargs.get("cameraPath", None)
-        self.showFrames = kwargs.get("showFrames", None)
+        self.showFrames = kwargs.get("showFrames", False)
         self.hasIngested = False
         self.exit = False
 
@@ -62,6 +62,10 @@ class CameraUsingAgentBase(Agent):
                 f"Failed to read from camera! {self.cameraPath=} {self.oakMode=}"
             )
 
+    def preprocessFrame(self, frame):
+        """Optional method you can implement to add preprocessing to a frame"""
+        return frame
+
     def runPeriodic(self):
         super().runPeriodic()
         # show last frame if enabled. This allows any drawing that might have been on the frame to be shown
@@ -95,7 +99,7 @@ class CameraUsingAgentBase(Agent):
                 if not ret:
                     raise BrokenPipeError("Camera ret is false!")
 
-            self.latestFrame = frame
+            self.latestFrame = self.preprocessFrame(frame)
 
     def onClose(self):
         super().onClose()
