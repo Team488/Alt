@@ -388,9 +388,6 @@ class CameraIntrinsicsPredefined:
     OAKDLITE1080P = CameraIntrinsics(
         1920, 1080, fx_pix=1493.4263, fy_pix=1493.4263, cx_pix=893.709, cy_pix=518.52
     )
-    OAKDLITE720P = CameraIntrinsics(
-        1280, 720, fx_pix=1005.94, fy_pix=1005.94, cx_pix=648.33, cy_pix=353.46
-    )
 
 
 class ObjectReferences(Enum):

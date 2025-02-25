@@ -271,7 +271,7 @@ def backProjWhite(labImage, threshold=120):
 
 # purpleHist = np.load("assets/purpleReefPostHist.npy")
 # # purpleHist = np.load("assets/simulationPurpleReefPost.npy")
-purpleHist = np.load("assets/histograms/purpleReefPostHistRealDARK.npy")
+purpleHist = np.load("assets/histograms/darkdarkdark.npy")
 whiteHist = np.load("assets/histograms/whiteCoralHistBAD.npy")
 algaeHist = np.load("assets/histograms/blueAlgaeHist.npy")
 objThresh = 0.2
@@ -279,6 +279,7 @@ blockerThresh = 0.2
 fullpurpleThresh = 0.7
 
 Sentinel = getLogger("Reef_Post_Estimator")
+AtCorrectionMap = {}
 
 
 class ReefTracker:
@@ -332,6 +333,19 @@ class ReefTracker:
                 tracks = self.__getTracksForPost(
                     colorframe, pose.pose1.toMatrix(), drawBoxes, detection.getId()
                 )
+                centerX = detection.getCenter().x
+                centerY = detection.getCenter().y
+                if drawBoxes:
+                    cv2.putText(
+                        colorframe,
+                        f"{pose.pose1.toMatrix()}",
+                        tuple(map(int, (centerX, centerY))),
+                        1,
+                        1,
+                        (255, 255, 255),
+                        1,
+                    )
+
                 if tracks is not None:
                     coralTracks, algaeOccuppancy = tracks
                     allTracksCoral[detection.getId()] = coralTracks
@@ -367,6 +381,7 @@ class ReefTracker:
             Sentinel.warning(f"Invalid tag pose matrix!: {tagPoseMatrix}")
             return None
 
+        correctionOffset = np.array(AtCorrectionMap.get(atId, [0, 0, 0]))
         coralOpenBranches = {}
         algaeLevel = ATLocations.getAlgaeLevel(atId)
         if algaeLevel is None:
@@ -380,7 +395,7 @@ class ReefTracker:
         for offset_idx, offset_3d in cad_to_branch_offset.items():
             openPercentage = self.__runTrack(
                 tagPoseMatrix,
-                offset_3d,
+                np.add(offset_3d, correctionOffset),
                 getClosest3FacesCoral(tagPoseMatrix, colorframe),
                 colorframe,
                 purpleHist,
@@ -394,7 +409,7 @@ class ReefTracker:
         # run track on the one algae slot each side of the reef has
         algaeOcupancy = self.__runTrack(
             tagPoseMatrix,
-            algaeOffset,
+            np.add(algaeOffset, correctionOffset),
             getClosest3FacesAlgae(tagPoseMatrix, colorframe),
             colorframe,
             algaeHist,
@@ -424,6 +439,11 @@ class ReefTracker:
             tag_to_reef_homography,
         )
 
+        camera_to_at = np.dot(
+            tagPoseMatrix,
+            np.zeros(4),
+        )
+
         total_color_corners = []
         for reefBoxOffset in reefBoxOffsets:
             color_corners = []
@@ -447,6 +467,7 @@ class ReefTracker:
 
         u = (self.camIntr.getFx() * x_cam / z_cam) + self.camIntr.getCx()
         v = (self.camIntr.getFy() * y_cam / z_cam) + self.camIntr.getCy()
+
         if not self.__isInFrame(u, v):
             return None
         # print(f"{u=} {v=}")
@@ -514,6 +535,7 @@ class ReefTracker:
                     uC, uV = imageCorner
                     cv2.circle(colorframe, (int(uC), int(uV)), 1, color, 2)
 
-            colorPercentage = np.clip(colorPercentage, -1, 1)
+            if colorPercentage is not None:
+                colorPercentage = np.clip(colorPercentage, -1, 1)
 
         return colorPercentage

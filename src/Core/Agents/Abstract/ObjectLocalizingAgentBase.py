@@ -20,7 +20,6 @@ class ObjectLocalizingAgentBase(TimestampRegulatedAgentBase):
     NOTE: Requires extra arguments passed in somehow, for example using Functools partial or extending the class"""
 
     DETECTIONPOSTFIX = "Detections"
-    FRAMEPOSTFIX = "Frame"
 
     def __init__(self, **kwargs):
         self.cameraIntrinsics = kwargs.get("cameraIntrinsics", None)
@@ -36,9 +35,6 @@ class ObjectLocalizingAgentBase(TimestampRegulatedAgentBase):
             cameraIntrinsics=self.cameraIntrinsics,
             cameraExtrinsics=self.cameraExtrinsics,
             inferenceMode=self.inferenceMode,
-        )
-        self.frameProp = self.propertyOperator.createCustomReadOnlyProperty(
-            self.FRAMEPOSTFIX, b""
         )
         self.detectionProp = self.propertyOperator.createCustomReadOnlyProperty(
             self.DETECTIONPOSTFIX, b""

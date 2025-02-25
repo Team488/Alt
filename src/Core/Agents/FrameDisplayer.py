@@ -1,10 +1,10 @@
 import time
 
 import cv2
+from Core.Agents.Abstract.CameraUsingAgentBase import CameraUsingAgentBase
 from tools.Constants import CameraIdOffsets
 from coreinterface.FramePacket import FramePacket
 from abstract.Agent import Agent
-from Core.Agents.Abstract.ObjectLocalizingAgentBase import ObjectLocalizingAgentBase
 
 
 class FrameDisplayer(Agent):
@@ -26,7 +26,7 @@ class FrameDisplayer(Agent):
             # "ademGamingPC": "Adem-GamingPc",
         }
         self.getFrameTable = (
-            lambda key: f"{self.keyToHost.get(key)}.{ObjectLocalizingAgentBase.FRAMEPOSTFIX}"
+            lambda key: f"{self.keyToHost.get(key)}.{CameraUsingAgentBase.FRAMEPOSTFIX}"
         )
 
         self.updateMap = {key: None for key in self.keyToHost.keys()}
