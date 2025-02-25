@@ -353,14 +353,24 @@ low_hanging_blue_mid_active = False
 low_hanging_blue_close_active = True
 
 print("Loading pre-set static obstacles...")
-static_obs_array = get_static_obstacles("static_obstacles_inch.json")
-static_hang_obs_red_far = get_static_obstacles("static_obstacles_inch_red_far.json")
-static_hang_obs_red_mid = get_static_obstacles("static_obstacles_inch_red_mid.json")
-static_hang_obs_red_close = get_static_obstacles("static_obstacles_inch_red_close.json")
-static_hang_obs_blue_far = get_static_obstacles("static_obstacles_inch_blue_far.json")
-static_hang_obs_blue_mid = get_static_obstacles("static_obstacles_inch_blue_mid.json")
+static_obs_array = get_static_obstacles("pathplanning/nmc/static_obstacles_inch.json")
+static_hang_obs_red_far = get_static_obstacles(
+    "pathplanning/nmc/static_obstacles_inch_red_far.json"
+)
+static_hang_obs_red_mid = get_static_obstacles(
+    "pathplanning/nmc/static_obstacles_inch_red_mid.json"
+)
+static_hang_obs_red_close = get_static_obstacles(
+    "pathplanning/nmc/static_obstacles_inch_red_close.json"
+)
+static_hang_obs_blue_far = get_static_obstacles(
+    "pathplanning/nmc/static_obstacles_inch_blue_far.json"
+)
+static_hang_obs_blue_mid = get_static_obstacles(
+    "pathplanning/nmc/static_obstacles_inch_blue_mid.json"
+)
 static_hang_obs_blue_close = get_static_obstacles(
-    "static_obstacles_inch_blue_close.json"
+    "pathplanning/nmc/static_obstacles_inch_blue_close.json"
 )
 print("Finished loading pre-set static obstacles...")
 
