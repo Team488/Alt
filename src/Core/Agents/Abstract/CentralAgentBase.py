@@ -63,15 +63,10 @@ class CentralAgentBase(PositionLocalizingAgentBase):
             "BESTROBOTY", None, addBasePrefix=False
         )
 
-<<<<<<< HEAD
-        self.reefmap_states = self.propertyOperator.createCustomReadOnlyProperty("REEFMAP_STATES", None, addBasePrefix=False)
-        self.debug_ct = 0
-=======
         self.reefmap_states = self.propertyOperator.createCustomReadOnlyProperty(
             "REEFMAP_STATES", None, addBasePrefix=False
         )
 
->>>>>>> da4edb4879205f4c1475192c5eac57840e732db0
     # handles a subscriber update from one of the cameras
     def __handleObjectUpdate(self, key, ret):
         val = ret.value
