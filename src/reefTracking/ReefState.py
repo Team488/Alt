@@ -69,27 +69,22 @@ class ReefState:
             Sentinel.warning(
                 f"Invalid apriltagid or branchid! {apriltagid=} {branchid=}"
             )
-    
-    def addObservation(self, apriltagid, branchid, opennessconfidence, weighingfactor = 0.85):
-        #print(f"AddingObservation", apriltagid, branchid, opennessconfidence)
-        if apriltagid not in self.apriltag_to_idx or (branchid < 0 or branchid >= self.reef_map.shape[0]):
-            Sentinel.warning(f"Invalid apriltagid or branchid! {apriltagid=} {branchid=}")
             return
-        
+
         col_idx = self.apriltag_to_idx.get(apriltagid)
         row_idx = branchid
-
+        
         # We know 100% that the space is filled.
         # Stop updating to that particular observation. It becomes "locked".
-        # TODO: Add this in if necesary
+        # TODO: Locking Mechanism Commented Out. Add it in if necessary
 
         #if self.reef_map[row_idx, col_idx] < 0.1:
             #self.reef_map[row_idx, col_idx] = -1.0
             #return
+         
+        self.reef_map[row_idx, col_idx] *= 1 - weighingfactor
+        self.reef_map[row_idx, col_idx] += opennessconfidence * weighingfactor 
         
-        self.reef_map[row_idx, col_idx] *= (1-weighingfactor)
-        self.reef_map[row_idx, col_idx] += opennessconfidence * weighingfactor
-
     def addObservationAlgae(self, apriltagid, opennessconfidence, weighingfactor=0.85):
         if apriltagid not in self.apriltag_to_idx:
             Sentinel.warning(f"Invalid apriltagid{apriltagid=}")

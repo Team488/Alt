@@ -150,7 +150,7 @@ class CentralAgentBase(PositionLocalizingAgentBase):
         closest_At, closest_branch = self.central.reefState.getClosestOpen(
             self.robotPose2dCMRAD, threshold=0.0
         )
-        print("closeAT and closeBranch", closest_At, closest_branch)
+        #print("closeAT and closeBranch", closest_At, closest_branch)
         self.clAT.set(closest_At)
         self.clBR.set(closest_branch)
 
