@@ -1,7 +1,7 @@
 import kivy
 
 from enum import Enum
-from Reef import Reef
+from reefTracking import Reef
 
 from kivy.app import App
 from kivy.uix.label import Label
@@ -46,7 +46,7 @@ class HexagonLayout(RelativeLayout):
 
         # Create background image with explicit size
         self.background = Image(
-            source="blue_field.jpg",
+            source="./assets/blue_field.jpg",
             size_hint=(None, None),  # Disable automatic scaling
             allow_stretch=True,  
             keep_ratio=True  # Preserve aspect ratio
@@ -192,12 +192,12 @@ class HexagonLayout(RelativeLayout):
 
 
 layout = HexagonLayout()
-class ReefVisualizer(App):
+class ReefVisualizerApp(App):
     def build(self):
         return layout
 
 if __name__ == '__main__':
-    app = ReefVisualizer()
+    app = ReefVisualizerApp()
     app_instance = app.build()
     app_instance.update_button_color( "A", (1, 0, 0, 1))
     app.run()

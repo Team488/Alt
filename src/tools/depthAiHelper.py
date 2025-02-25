@@ -33,8 +33,6 @@ class DepthAIHelper:
         res = None
         if cameraIntrinsics == CameraIntrinsicsPredefined.OAKDLITE1080P:
             res = dai.ColorCameraProperties.SensorResolution.THE_1080_P
-        elif cameraIntrinsics == CameraIntrinsicsPredefined.OAKDLITE720P:
-            res = dai.ColorCameraProperties.SensorResolution.THE_720_P
         elif cameraIntrinsics == CameraIntrinsicsPredefined.OAKDLITE4K:
             res = dai.ColorCameraProperties.SensorResolution.THE_4_K
         if res == None:

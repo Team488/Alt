@@ -4,9 +4,20 @@ from abstract.Agent import Agent
 from coreinterface.FramePacket import FramePacket
 from tools.Constants import CameraIntrinsics
 from tools.depthAiHelper import DepthAIHelper
+from screeninfo import get_monitors
+
+
+def getPrimary():
+    mons = get_monitors()
+    for monitor in mons:
+        if monitor.is_primary:
+            return monitor
+    return None
 
 
 class CameraUsingAgentBase(Agent):
+    FRAMEPOSTFIX = "Frame"
+
     """Agent -> CameraUsingAgentBase
 
     Adds camera ingestion capabilites to an agent. When used with a localizing agent, it matches timestamps aswell
@@ -21,6 +32,8 @@ class CameraUsingAgentBase(Agent):
         self.showFrames = kwargs.get("showFrames", False)
         self.hasIngested = False
         self.exit = False
+        self.WINDOWNAME = "frame"
+        self.primaryMonitor = getPrimary()
 
     def create(self):
         super().create()
@@ -44,6 +57,13 @@ class CameraUsingAgentBase(Agent):
         self.sendFrame = self.propertyOperator.createProperty(
             "Send-Frame", False, loadIfSaved=False
         )  # this is one of those properties that should always be opt-in Eg reset after restart
+
+        self.frameProp = self.propertyOperator.createCustomReadOnlyProperty(
+            self.FRAMEPOSTFIX, b""
+        )
+
+        if self.showFrames:
+            cv2.namedWindow(self.WINDOWNAME, cv2.WINDOW_AUTOSIZE)
 
     def testCapture(self):
         retTest = True
@@ -77,10 +97,16 @@ class CameraUsingAgentBase(Agent):
         if self.hasIngested:
             # local showing of frame
             if self.showFrames:
-                cv2.imshow("frame", self.latestFrame)
+                if self.primaryMonitor:
+                    self.latestFrame = cv2.resize(
+                        self.latestFrame,
+                        (self.primaryMonitor.width, self.primaryMonitor.height),
+                    )
+                cv2.imshow(self.WINDOWNAME, self.latestFrame)
 
                 if cv2.waitKey(1) & 0xFF == ord("q"):
                     self.exit = True
+
             # network showing of frame
             if self.sendFrame.get():
                 framePacket = FramePacket.createPacket(

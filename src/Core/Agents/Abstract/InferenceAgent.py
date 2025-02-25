@@ -18,8 +18,6 @@ class InferenceAgent(CameraUsingAgentBase):
     Adds inference capabilites to an agent, processing frames
     NOTE: Requires extra arguments passed in somehow, for example using Functools partial or extending the class"""
 
-    FRAMEPOSTFIX = "Frame"
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.inferenceMode = kwargs.get("inferenceMode", None)
@@ -35,10 +33,6 @@ class InferenceAgent(CameraUsingAgentBase):
         )
         self.drawBoxes = self.propertyOperator.createProperty("Draw_Boxes", True)
 
-        self.frameProp = self.propertyOperator.createCustomReadOnlyProperty(
-            self.FRAMEPOSTFIX, b""
-        )
-
     def runPeriodic(self):
         super().runPeriodic()
 
@@ -46,9 +40,6 @@ class InferenceAgent(CameraUsingAgentBase):
             self.results = self.inf.run(
                 self.latestFrame, self.confidence.get(), self.drawBoxes.get()
             )
-
-        framepkt = FramePacket.createPacket(time.time(), "helooo", self.latestFrame)
-        self.frameProp.set(framepkt.to_bytes())
 
     def getName(self):
         return "Inference_Agent_Process"
@@ -58,7 +49,10 @@ class InferenceAgent(CameraUsingAgentBase):
 
 
 def InferenceAgentPartial(
-    cameraPath, cameraIntrinsics: CameraIntrinsics, inferenceMode: InferenceMode
+    cameraPath,
+    cameraIntrinsics: CameraIntrinsics,
+    inferenceMode: InferenceMode,
+    showFrames: bool = False,
 ):
     """Returns a partially completed frame processing agent. All you have to do is pass it into neo"""
     return partial(
@@ -66,4 +60,5 @@ def InferenceAgentPartial(
         cameraPath=cameraPath,
         cameraIntrinsics=cameraIntrinsics,
         inferenceMode=inferenceMode,
+        showFrames=showFrames,
     )
