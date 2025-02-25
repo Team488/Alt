@@ -3,6 +3,7 @@ import cv2
 import numpy as np
 from abstract.inferencerBackend import InferencerBackend
 from tools.Constants import ConfigConstants, InferenceMode, Backend
+from tools import UnitConversion
 from Core.LogManager import getLogger
 
 Sentinel = getLogger("Multi_Inferencer")
@@ -34,7 +35,7 @@ class MultiInferencer:
         Sentinel.fatal(f"Invalid backend provided!: {backend}")
         return None
 
-    def run(self, frame, minConf, drawBoxes=False):
+    def run(self, frame: np.ndarray, minConf: float, drawBoxes: bool = False):
         start = time.time_ns()
         if frame is None:
             Sentinel.fatal("Frame is None!")
@@ -80,9 +81,9 @@ class MultiInferencer:
                 if len(self.backend.labels) > class_id:
                     label = self.backend.labels[class_id]
 
-                p1 = tuple(map(int, bbox[:2]))  # Convert to integer tuple
-                p2 = tuple(map(int, bbox[2:4]))  # Convert to integer tuple
-                m = tuple(map(int, np.add(bbox[:2], bbox[2:4]) / 2))
+                p1 = UnitConversion.toint(bbox[:2])  # Convert to integer tuple
+                p2 = UnitConversion.toint(bbox[2:4])  # Convert to integer tuple
+                m = UnitConversion.toint(np.add(bbox[:2], bbox[2:4]) / 2)
                 cv2.rectangle(frame, p1, p2, (0, 0, 255), 3)  # Drawing the rectangle
                 cv2.putText(
                     frame, f"Label: {label} Conf: {conf:.2f}", m, 1, 1, (0, 255, 0), 1

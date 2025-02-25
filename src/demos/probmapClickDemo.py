@@ -46,7 +46,7 @@ def startDemo():
     while True:
         map.disspateOverTime(1)  # 1s
         map.displayHeatMaps()
-        print("Best game obj:", map.getHighestGameObject())
+        print("Best game obj:", map.getHighestObject())
         print("Best robot:", map.getHighestRobot())
 
         k = cv2.waitKey(100) & 0xFF

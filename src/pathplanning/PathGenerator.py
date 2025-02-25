@@ -42,7 +42,7 @@ class PathGenerator:
         self, start, goal, threshold=0.5
     ) -> Optional[list[tuple[int, int]]]:
         robotobstacles = self.map.getAllRobotsAboveThreshold(threshold)
-        robotObstacleMap = np.zeros_like(self.map.getRobotMap(), dtype=np.uint8)
+        robotObstacleMap = np.zeros_like(self.map.getMap(), dtype=np.uint8)
         for obstacle in robotobstacles:
             cv2.circle(
                 robotObstacleMap,

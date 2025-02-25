@@ -1,11 +1,12 @@
 import numpy as np
 import cv2
 from decimal import Decimal, ROUND_FLOOR
-from tools.Constants import MapConstants
+from tools.Constants import Label, MapConstants
+from Core import getLogger
 
 largeValue = 10000000000000000000  # for cv2 thresholding
 
-
+Sentinel = getLogger("ProbMap")
 # This whole thing is axis aligned for speed, but that may not work great
 class ProbMap:
     """A class for managing probability maps of game objects and robots.
@@ -16,13 +17,10 @@ class ProbMap:
 
     def __init__(
         self,
+        labels: list[Label],
         x=MapConstants.fieldWidth.value,
         y=MapConstants.fieldHeight.value,
         resolution=MapConstants.res.value,
-        gameObjectWidth=MapConstants.gameObjectWidth.value,
-        gameObjectHeight=MapConstants.gameObjectHeight.value,
-        robotWidth=MapConstants.robotWidth.value,
-        robotHeight=MapConstants.robotHeight.value,
         sigma=0.9,
         alpha=0.8,
     ):
@@ -30,20 +28,13 @@ class ProbMap:
         # exposed constants
         self.width = x
         self.height = y
-        self.robotWidth = robotWidth
-        self.robotHeight = robotHeight
-        self.gameObjectWidth = gameObjectWidth
-        self.gameObjectHeight = gameObjectHeight
+        self.labels = labels
+        self.sizes = [label.getSizeCm for label in self.labels]
 
         # flip values due to numpy using row,col (y,x)
         # internal values (some resolution adjusted)
         self.__internalWidth = y // resolution
         self.__internalHeight = x // resolution
-        # NOTE these values are not resized, because they are resized right before adding to the map
-        self.__internalGameObjectX = gameObjectHeight
-        self.__internalGameObjectY = gameObjectWidth
-        self.__internalRobotX = robotHeight
-        self.__internalRobotY = robotWidth
 
         self.sigma = sigma  # dissipation rate for gaussian blur
         self.alpha = alpha  # weight of new inputs
@@ -53,25 +44,27 @@ class ProbMap:
         # create blank probability maps
 
         # game objects
-        self.probmapGameObj = np.zeros(
-            (self.__internalWidth, self.__internalHeight), dtype=np.float64
-        )
-
-        # robots
-        self.probmapRobots = np.zeros(
-            (self.__internalWidth, self.__internalHeight), dtype=np.float64
-        )
+        self.probmaps = [
+            np.zeros((self.__internalWidth, self.__internalHeight), dtype=np.float64)
+            for _ in self.labels
+        ]
 
     """ RC = row,col format | CR = col,row format"""
+
     def getInternalSizeRC(self):
         return (self.__internalWidth, self.__internalHeight)
-    
+
     def getInternalSizeCR(self):
         return (self.__internalHeight, self.__internalWidth)
-    
+
     def __isOutOfMap(self, x, y, obj_x, obj_y):
         # independently check if the added detection is completely out of bounds in any way
-        return x+obj_x/2 < 0 or x-obj_x/2 >= self.__internalWidth or y+obj_y/2 < 0 or y-obj_y >= self.__internalHeight
+        return (
+            x + obj_x / 2 < 0
+            or x - obj_x / 2 >= self.__internalWidth
+            or y + obj_y / 2 < 0
+            or y - obj_y >= self.__internalHeight
+        )
 
     """ Adding detections to the probability maps"""
 
@@ -89,14 +82,14 @@ class ProbMap:
         obj_x = obj_y // self.resolution
         obj_y = tmpX // self.resolution
 
-        if self.__isOutOfMap(x,y,obj_x,obj_y):
+        if self.__isOutOfMap(x, y, obj_x, obj_y):
             print("Error! Detection completely out of map!")
             return
 
         # print(f"internal values :  {x},{y} with size {obj_x},{obj_y}")
         if x >= self.__internalWidth:
             print("Error X too large! clipping")
-            x = self.__internalWidth-1
+            x = self.__internalWidth - 1
             # return
 
         if x < 0:
@@ -106,7 +99,7 @@ class ProbMap:
 
         if y >= self.__internalHeight:
             print("Error y too large! clipping")
-            y = self.__internalHeight-1
+            y = self.__internalHeight - 1
             # return
 
         if y < 0:
@@ -134,7 +127,7 @@ class ProbMap:
         # print('max = ' + str(np.max(gaussian_blob)) + ' (s/b 1.0)')
         # print(gaussian_blob)
 
-        threshold = prob/10
+        threshold = prob / 10
         mask = gaussian_blob >= threshold
 
         # Step 2: Get the coordinates of the values that satisfy the threshold
@@ -146,8 +139,8 @@ class ProbMap:
         y_min, x_min = coords.min(axis=0)
         y_max, x_max = coords.max(axis=0)
 
-        coords[:,0] -= y_min
-        coords[:,1] -= x_min
+        coords[:, 0] -= y_min
+        coords[:, 1] -= x_min
 
         # Step 4: Crop the Gaussian blob
         gaussian_blob = gaussian_blob[y_min : y_max + 1, x_min : x_max + 1]
@@ -211,7 +204,6 @@ class ProbMap:
 
         gaussian_blob = gaussian_blob.astype(np.float64)
 
-        
         # blob_height, blob_width = gaussian_blob.shape[0:2]
         # print("\n" + "gaussian size: " + str(blob_height) + ", " + str(blob_width))
 
@@ -223,13 +215,18 @@ class ProbMap:
         # print("prob map x", probmap[blob_top_edge_loc:blob_bottom_edge_loc].shape)
         # print("prob map y", probmap[blob_left_edge_loc:blob_right_edge_loc].shape)
 
-        adjusted_coords = coords + np.array([blob_left_edge_loc, blob_top_edge_loc]) # adjust coords to go from relative in the meshgrid to absolute relative to the probmap
-        
+        adjusted_coords = coords + np.array(
+            [blob_left_edge_loc, blob_top_edge_loc]
+        )  # adjust coords to go from relative in the meshgrid to absolute relative to the probmap
+
         # some bounds checks
-        valid = (adjusted_coords[:, 0] >= 0) & (adjusted_coords[:, 0] < probmap.shape[0]) & \
-                (adjusted_coords[:, 1] >= 0) & (adjusted_coords[:, 1] < probmap.shape[1])
-        
-    
+        valid = (
+            (adjusted_coords[:, 0] >= 0)
+            & (adjusted_coords[:, 0] < probmap.shape[0])
+            & (adjusted_coords[:, 1] >= 0)
+            & (adjusted_coords[:, 1] < probmap.shape[1])
+        )
+
         adjusted_coords = adjusted_coords[valid]
         valid_coords = coords[valid]
         # blob bounds check
@@ -238,98 +235,67 @@ class ProbMap:
 
         if adjusted_coords.size == 0 or valid_coords.size == 0:
             print("No valid coordinates")
-            return 
+            return
         # averaging out step
-        probmap[
-            adjusted_coords[:,0],
-            adjusted_coords[:,1],
-        ] *= (
+        probmap[adjusted_coords[:, 0], adjusted_coords[:, 1],] *= (
             1 - self.alpha
         )
 
         # Adjusted coordinates for the Gaussian blob
 
         # # Optional: Bounds checking, likely not needed
-        
 
         # Apply the Gaussian blob using the valid coordinates
-        probmap[
-            adjusted_coords[:, 0],
-            adjusted_coords[:, 1]
-        ] += gaussian_blob[valid_coords[:, 0], valid_coords[:, 1]] * self.alpha
-
+        probmap[adjusted_coords[:, 0], adjusted_coords[:, 1]] += (
+            gaussian_blob[valid_coords[:, 0], valid_coords[:, 1]] * self.alpha
+        )
 
     """ Exposed methods for adding detections """
 
     """ Regular detection methods use sizes provided in constructor """
 
-    def addDetectedGameObject(self, x: int, y: int, prob: float):
-        """Add a single game object detection to the probability map.
+    def addDetectedObject(self, class_idx: int, x: int, y: int, prob: float):
+        """Add a single object detection of class to the probability map.
 
         Args:
+            class_idx: Class_id of detection, must match labels from model
             x: X coordinate of detection
             y: Y coordinate of detection
             prob: Probability/confidence of the detection (0-1)
         """
+        if class_idx < 0 or class_idx > len(self.sizes):
+            Sentinel.warning(
+                f"Out of bounds class id provided to addDetectedObject!: {class_idx}"
+            )
+            return
+
+        size_obj = self.sizes[class_idx]
+        probmap = self.probmaps[class_idx]
+        w, h = size_obj
         self.__add_detection(
-            self.probmapGameObj,
+            probmap,
             x,
             y,
-            self.__internalGameObjectX,
-            self.__internalGameObjectX,
+            w,
+            h,
             prob,
         )
 
-    def addDetectedRobot(self, x: int, y: int, prob: float):
-        """Add a single robot detection to the probability map.
-
-        Args:
-            x: X coordinate of detection
-            y: Y coordinate of detection
-            prob: Probability/confidence of the detection (0-1)
-        """
-        self.__add_detection(
-            self.probmapRobots, x, y, self.__internalRobotX, self.__internalRobotY, prob
-        )
-
-    def addDetectedGameObjectCoords(self, coords: list[tuple]):
+    def addDetectedCoords(self, coords: list[tuple[int, int, int, float]]):
         """Add multiple game object detections to the probability map.
 
         Args:
-            coords: List of tuples containing (x, y, probability) for each detection
+            coords: List of tuples containing (class_idx, x, y, probability) for each detection
         """
         for coord in coords:
-            (x, y, prob) = coord
-            self.__add_detection(
-                self.probmapGameObj,
-                x,
-                y,
-                self.__internalGameObjectX,
-                self.__internalGameObjectX,
-                prob,
-            )
-
-    def addDetectedRobotCoords(self, coords: list[tuple]):
-        """Add multiple robot detections to the probability map.
-
-        Args:
-            coords: List of tuples containing (x, y, probability) for each detection
-        """
-        for coord in coords:
-            (x, y, prob) = coord
-            self.__add_detection(
-                self.probmapRobots,
-                x,
-                y,
-                self.__internalRobotX,
-                self.__internalRobotY,
-                prob,
-            )
+            (class_idx, x, y, prob) = coord
+            self.addDetectedObject(class_idx, x, y, prob)
 
     """ Custom size detection methods """
 
     def addCustomObjectDetection(
         self,
+        class_idx: int,
         x: int,
         y: int,
         objX: int,
@@ -339,50 +305,33 @@ class ProbMap:
         """Add a game object detection with custom size to the probability map.
 
         Args:
+            class_idx: Class_id of detection, must match inference mode
             x: X coordinate of detection
             y: Y coordinate of detection
             objX: Width of the object
             objY: Height of the object
             prob: Probability/confidence of the detection (0-1)
         """
-        self.__add_detection(self.probmapGameObj, x, y, objX, objY, prob)
+        if class_idx < 0 or class_idx > len(self.probmaps):
+            Sentinel.warning(
+                f"Out of bounds class id provided to addCustomObjectDetection!: {class_idx}"
+            )
+            return
 
-    def addCustomRobotDetection(
-        self,
-        x: int,
-        y: int,
-        objX: int,
-        objY: int,
-        prob: float,
-    ):
-        """Add a robot detection with custom size to the probability map.
+        probmap = self.probmaps[class_idx]
+        self.__add_detection(probmap, x, y, objX, objY, prob)
 
-        Args:
-            x: X coordinate of detection
-            y: Y coordinate of detection
-            objX: Width of the robot
-            objY: Height of the robot
-            prob: Probability/confidence of the detection (0-1)
-        """
-        self.__add_detection(self.probmapRobots, x, y, objX, objY, prob)
-
-    """ Getting views of the map"""
-
-    def getRobotMap(self) -> np.ndarray:
-        """Get the raw probability map for robots.
+    def getMap(self, class_idx) -> np.ndarray:
+        """Get a copy the raw probability map for a class_idx.
 
         Returns:
             2D numpy array containing probability values
         """
-        return self.probmapRobots
+        if class_idx < 0 or class_idx > len(self.probmaps):
+            Sentinel.warning(f"Out of bounds class id provided to getMap!: {class_idx}")
+            return
 
-    def getGameObjectMap(self) -> np.ndarray:
-        """Get the raw probability map for game objects.
-
-        Returns:
-            2D numpy array containing probability values
-        """
-        return self.probmapGameObj
+        return self.probmaps[class_idx].copy()
 
     """ Displaying heat maps"""
 
@@ -394,16 +343,18 @@ class ProbMap:
     def displayHeatMaps(self):
         # self.__displayHeatMap(self.probmapGameObj, self.gameObjWindowName)
         """Display visualization of both probability maps using OpenCV windows."""
-        self.__displayHeatMap(self.probmapGameObj, self.gameObjWindowName)
-        self.__displayHeatMap(self.probmapRobots, self.robotWindowName)
+        for probmap, label in zip(self.probmaps, self.labels):
+            self.__displayHeatMap(probmap, str(label))
 
-    def displayGameObjMap(self):
+    def displayMap(self, class_idx):
         """Display visualization of game object probability map using OpenCV window."""
-        self.__displayHeatMap(self.probmapGameObj, self.gameObjWindowName)
+        if class_idx < 0 or class_idx > len(self.probmaps):
+            Sentinel.warning(
+                f"Out of bounds class id provided to displayMap!: {class_idx}"
+            )
+            return
 
-    def displayRobotObjMap(self):
-        """Display visualization of robot probability map using OpenCV window."""
-        self.__displayHeatMap(self.probmapRobots, self.robotWindowName)
+        self.__displayHeatMap(self.probmaps[class_idx], self.gameObjWindowName)
 
     """ Getting heatmaps """
 
@@ -423,32 +374,27 @@ class ProbMap:
     """ Exposed get heatmap method"""
 
     # returns gameobject map then robot map
-    def getHeatMaps(self) -> tuple[np.ndarray, np.ndarray]:
-        """Get visualizations of both probability maps.
+    def getHeatMaps(self) -> list[np.ndarray]:
+        """Get visualizations of all probability maps.
 
         Returns:
-            Tuple of (game object heatmap, robot heatmap) as uint8 numpy arrays
+            List of (probmaps) as uint8 numpy arrays
         """
-        return (
-            self.__getHeatMap(self.probmapGameObj),
-            self.__getHeatMap(self.probmapRobots),
-        )
+        return [self.__getHeatMap(probmap) for probmap in self.probmaps]
 
-    def getRobotHeatMap(self) -> np.ndarray:
+    def getHeatMap(self, class_idx) -> np.ndarray:
         """Get visualization of robot probability map.
 
         Returns:
-            Robot heatmap as uint8 numpy array
+            heatmap as uint8 numpy array
         """
-        return self.__getHeatMap(self.probmapRobots)
+        if class_idx < 0 or class_idx > len(self.probmaps):
+            Sentinel.warning(
+                f"Out of bounds class id provided to getHeatMap!: {class_idx}"
+            )
+            return
 
-    def getGameObjectHeatMap(self) -> np.ndarray:
-        """Get visualization of game object probability map.
-
-        Returns:
-            Game object heatmap as uint8 numpy array
-        """
-        return self.__getHeatMap(self.probmapGameObj)
+        return self.__getHeatMap(self.probmaps[class_idx])
 
     """ Getting highest probability objects """
 
@@ -543,25 +489,25 @@ class ProbMap:
 
     """ Exposed highest probabilty methods"""
 
-    def getHighestGameObject(self) -> tuple[int, int, np.float64]:
+    def getHighestObject(self, class_idx: int) -> tuple[int, int, np.float64]:
         """Get coordinates and probability of highest probability game object detection.
 
         Returns:
             Tuple of (x, y, probability) for the highest probability location
         """
-        return self.__getHighest(self.probmapGameObj)
+        if class_idx < 0 or class_idx > len(self.probmaps):
+            Sentinel.warning(
+                f"Out of bounds class id provided to getHighestGameObject!: {class_idx}"
+            )
+            return
 
-    def getHighestRobot(self) -> tuple[int, int, np.float64]:
-        """Get coordinates and probability of highest probability robot detection.
-
-        Returns:
-            Tuple of (x, y, probability) for the highest probability location
-        """
-        return self.__getHighest(self.probmapRobots)
+        return self.__getHighest(self.probmaps[class_idx])
 
     """ Thresholded versions"""
 
-    def getHighestGameObjectT(self, threshold: float) -> tuple[int, int, np.float64]:
+    def getHighestObjectT(
+        self, class_idx: int, threshold: float
+    ) -> tuple[int, int, np.float64]:
         """Get coordinates and probability of highest probability game object detection above threshold.
 
         Args:
@@ -570,23 +516,18 @@ class ProbMap:
         Returns:
             Tuple of (x, y, probability) for the highest probability location above threshold
         """
-        return self.__getHighestT(self.probmapGameObj, threshold)
+        if class_idx < 0 or class_idx > len(self.probmaps):
+            Sentinel.warning(
+                f"Out of bounds class id provided to getHighestGameObjectT!: {class_idx}"
+            )
+            return
 
-    def getHighestRobotT(self, threshold: float) -> tuple[int, int, np.float64]:
-        """Get coordinates and probability of highest probability robot detection above threshold.
-
-        Args:
-            threshold: Minimum probability threshold (0-1)
-
-        Returns:
-            Tuple of (x, y, probability) for the highest probability location above threshold
-        """
-        return self.__getHighestT(self.probmapRobots, threshold)
+        return self.__getHighestT(self.probmaps[class_idx], threshold)
 
     """ Highest probability within a rectangular range"""
 
-    def getHighestGameObjectWithinRange(
-        self, posX: int, posY: int, rangeX: int, rangeY: int
+    def getHighestObjectWithinRange(
+        self, class_idx: int, posX: int, posY: int, rangeX: int, rangeY: int
     ) -> tuple[int, int, np.float64]:
         """Get coordinates and probability of highest probability game object detection within a rectangular range.
 
@@ -599,28 +540,26 @@ class ProbMap:
         Returns:
             Tuple of (x, y, probability) for the highest probability location in range
         """
-        return self.__getHighestRange(self.probmapGameObj, posX, posY, rangeX, rangeY)
+        if class_idx < 0 or class_idx > len(self.probmaps):
+            Sentinel.warning(
+                f"Out of bounds class id provided to getHighestGameObjectWithinRange!: {class_idx}"
+            )
+            return
 
-    def getHighestRobotWithinRange(
-        self, posX: int, posY: int, rangeX: int, rangeY: int
-    ) -> tuple[int, int, np.float64]:
-        """Get coordinates and probability of highest probability robot detection within a rectangular range.
-
-        Args:
-            posX: X coordinate of rectangle center
-            posY: Y coordinate of rectangle center
-            rangeX: Width of search rectangle
-            rangeY: Height of search rectangle
-
-        Returns:
-            Tuple of (x, y, probability) for the highest probability location in range
-        """
-        return self.__getHighestRange(self.probmapRobots, posX, posY, rangeX, rangeY)
+        return self.__getHighestRange(
+            self.probmaps[class_idx], posX, posY, rangeX, rangeY
+        )
 
     """ Thresholded versions of the get highest"""
 
-    def getHighestGameObjectWithinRangeT(
-        self, posX: int, posY: int, rangeX: int, rangeY: int, threshold: float
+    def getHighestObjectWithinRangeT(
+        self,
+        class_idx: int,
+        posX: int,
+        posY: int,
+        rangeX: int,
+        rangeY: int,
+        threshold: float,
     ) -> tuple[int, int, np.float64]:
         """Get coordinates and probability of highest probability game object detection within range and above threshold.
 
@@ -634,27 +573,14 @@ class ProbMap:
         Returns:
             Tuple of (x, y, probability) for the highest probability location in range above threshold
         """
+        if class_idx < 0 or class_idx > len(self.probmaps):
+            Sentinel.warning(
+                f"Out of bounds class id provided to getHighestGameObjectWithinRangeT!: {class_idx}"
+            )
+            return
+
         return self.__getHighestRangeT(
-            self.probmapGameObj, posX, posY, rangeX, rangeY, threshold
-        )
-
-    def getHighestRobotWithinRangeT(
-        self, posX: int, posY: int, rangeX: int, rangeY: int, threshold: float
-    ) -> tuple[int, int, np.float64]:
-        """Get coordinates and probability of highest probability robot detection within range and above threshold.
-
-        Args:
-            posX: X coordinate of rectangle center
-            posY: Y coordinate of rectangle center
-            rangeX: Width of search rectangle
-            rangeY: Height of search rectangle
-            threshold: Minimum probability threshold (0-1)
-
-        Returns:
-            Tuple of (x, y, probability) for the highest probability location in range above threshold
-        """
-        return self.__getHighestRangeT(
-            self.probmapRobots, posX, posY, rangeX, rangeY, threshold
+            self.probmaps[class_idx], posX, posY, rangeX, rangeY, threshold
         )
 
     """ Get List of all coordinates where the probability is above threshold"""
@@ -724,8 +650,8 @@ class ProbMap:
 
     """ Exposed get threshold methods"""
 
-    def getAllGameObjectsAboveThreshold(
-        self, threshold: float
+    def getAllObjectsAboveThreshold(
+        self, class_idx: int, threshold: float
     ) -> list[tuple[int, int, int, np.float64]]:
         """Get all game object detections above probability threshold.
 
@@ -735,25 +661,22 @@ class ProbMap:
         Returns:
             List of tuples (x, y, radius, probability) for all detections above threshold
         """
-        return self.__getCoordinatesAboveThreshold(self.probmapGameObj, threshold)
+        if class_idx < 0 or class_idx > len(self.probmaps):
+            Sentinel.warning(
+                f"Out of bounds class id provided to getAllGameObjectsAboveThreshold!: {class_idx}"
+            )
+            return
 
-    def getAllRobotsAboveThreshold(
-        self, threshold: float
-    ) -> list[tuple[int, int, int, np.float64]]:
-        """Get all robot detections above probability threshold.
+        return self.__getCoordinatesAboveThreshold(self.probmaps[class_idx], threshold)
 
-        Args:
-            threshold: Minimum probability threshold (0-1)
-
-        Returns:
-            List of tuples (x, y, radius, probability) for all detections above threshold
-        """
-        return self.__getCoordinatesAboveThreshold(self.probmapRobots, threshold)
-
-    """ All above threshold within a rectangular range"""
-
-    def getAllGameObjectsWithinRangeT(
-        self, posX: int, posY: int, rangeX: int, rangeY: int, threshold: float
+    def getAllObjectsWithinRangeT(
+        self,
+        class_idx: int,
+        posX: int,
+        posY: int,
+        rangeX: int,
+        rangeY: int,
+        threshold: float,
     ) -> list[tuple[int, int, int, np.float64]]:
         """Get all game object detections within range and above threshold.
 
@@ -767,27 +690,14 @@ class ProbMap:
         Returns:
             List of tuples (x, y, radius, probability) for all detections in range above threshold
         """
+        if class_idx < 0 or class_idx > len(self.probmaps):
+            Sentinel.warning(
+                f"Out of bounds class id provided to getAllGameObjectsWithinRangeT!: {class_idx}"
+            )
+            return
+
         return self.__getCoordinatesAboveThresholdRangeLimited(
-            self.probmapGameObj, posX, posY, rangeX, rangeY, threshold
-        )
-
-    def getAllRobotsWithinRangeT(
-        self, posX: int, posY: int, rangeX: int, rangeY: int, threshold: float
-    ) -> list[tuple[int, int, int, np.float64]]:
-        """Get all robot detections within range and above threshold.
-
-        Args:
-            posX: X coordinate of rectangle center
-            posY: Y coordinate of rectangle center
-            rangeX: Width of search rectangle
-            rangeY: Height of search rectangle
-            threshold: Minimum probability threshold (0-1)
-
-        Returns:
-            List of tuples (x, y, radius, probability) for all detections in range above threshold
-        """
-        return self.__getCoordinatesAboveThresholdRangeLimited(
-            self.probmapRobots, posX, posY, rangeX, rangeY, threshold
+            self.probmaps[class_idx], posX, posY, rangeX, rangeY, threshold
         )
 
     def __setChunkOfMap(self, probmap, x, y, chunkX, chunkY, chunk):
@@ -882,18 +792,20 @@ class ProbMap:
 
     def clear_maps(self) -> None:
         """Clear both probability maps, resetting all values to zero."""
-        self.clear_gameObjectMap()
-        self.clear_robotMap()
+        for probmap in self.probmaps:
+            probmap = self.getEmpty()
 
-    def clear_robotMap(self) -> None:
-        self.probmapRobots = np.zeros(
-            (self.__internalWidth, self.__internalHeight), dtype=np.float64
-        )
+    def getEmpty(self) -> None:
+        return np.zeros((self.__internalWidth, self.__internalHeight), dtype=np.float64)
 
-    def clear_gameObjectMap(self) -> None:
-        self.probmapGameObj = np.zeros(
-            (self.__internalWidth, self.__internalHeight), dtype=np.float64
-        )
+    def clear_map(self, class_idx) -> None:
+        if class_idx < 0 or class_idx > len(self.probmaps):
+            Sentinel.warning(
+                f"Out of bounds class id provided to clear_map!: {class_idx}"
+            )
+            return
+
+        self.probmaps[class_idx] = self.getEmpty()
 
     """ Get the shape of the probability maps"""
 
@@ -903,13 +815,15 @@ class ProbMap:
         Returns:
             Tuple of (width, height) in pixels
         """
-        # both maps have same shape
-        return np.shape(self.probmapGameObj)
+        # all maps have same shape
+        if self.probmaps:
+            return np.shape(self.probmaps[0])
+        return None
 
     """ Used in dissipating over time, need to find best smoothing function"""
 
     def __smooth(self, probmap, timeParam):
-        kernel = self.sigma**round(timeParam/100) * np.array(
+        kernel = self.sigma ** round(timeParam / 100) * np.array(
             [0.05, 0.2, 0.5, 0.2, 0.05]
         )
         kernel = kernel / kernel.sum()  # Normalize
@@ -921,17 +835,17 @@ class ProbMap:
         )
         return probmap
 
-    """ Exposed dissipate over time method, timepassed parameter in seconds"""
+    """ Exposed dissipate over time method, timepassed parameter in ms"""
 
     def disspateOverTime(self, timeMS: float) -> None:
         """Apply time-based dissipation to probability values.
 
         Args:
-            timeSeconds: Time in seconds over which to apply dissipation
+            timeSeconds: Time in ms over which to apply dissipation
         """
         # self.__saveToTemp(self.probmapGameObj,self.probmapRobots)
-        self.probmapGameObj = self.__smooth(self.probmapGameObj, timeMS)
-        self.probmapRobots = self.__smooth(self.probmapRobots, timeMS)
+        for probmap in self.probmaps:
+            probmap = self.__smooth(probmap, timeMS)
 
     """Granular interaction with the map"""
 
@@ -958,8 +872,11 @@ class ProbMap:
 
         return map[i_X][i_Y]
 
-    def getSpecificRobotValue(self, x: int, y: int):
-        return self.__getSpecificValue(self.probmapRobots, x, y)
+    def getSpecificRobotValue(self, class_idx: int, x: int, y: int):
+        if class_idx < 0 or class_idx > len(self.probmaps):
+            Sentinel.warning(
+                f"Out of bounds class id provided to getSpecificRobotValue!: {class_idx}"
+            )
+            return
 
-    def getSpecificGameObjectValue(self, x: int, y: int):
-        return self.__getSpecificValue(self.probmapGameObj, x, y)
+        return self.__getSpecificValue(self.probmaps[class_idx], x, y)

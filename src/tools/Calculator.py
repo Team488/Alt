@@ -1,6 +1,6 @@
 import math
 import numpy as np
-from tools.Constants import MapConstants
+from tools.Constants import MapConstants, Label
 from scipy.spatial.transform import Rotation as R
 
 from numba import njit
@@ -15,9 +15,9 @@ def getDistance(detectionX, detectionY, oldX, oldY, velX, velY, timeStepSeconds)
     return dist
 
 
-def calculateMaxRange(vx, vy, timeStep, isRobot):
+def calculateMaxRange(vx, vy, timeStep, label: Label):
     velocityComponent = np.linalg.norm([vx * timeStep, vy * timeStep])
-    if not isRobot:
+    if label is not Label.ROBOT:
         return velocityComponent
     # only considering acceleration if its a robot
     maxAcceler = MapConstants.RobotAcceleration.value

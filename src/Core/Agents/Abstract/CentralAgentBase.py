@@ -1,5 +1,5 @@
 import time
-from tools.Constants import CameraIdOffsets, ATLocations, Units, TEAM
+from tools.Constants import CameraIdOffsets2024, ATLocations, Units, TEAM
 from coreinterface.DetectionPacket import DetectionPacket
 from coreinterface.ReefPacket import ReefPacket
 from abstract.Agent import Agent
@@ -56,12 +56,18 @@ class CentralAgentBase(PositionLocalizingAgentBase):
         self.clBR = self.propertyOperator.createCustomReadOnlyProperty(
             "BESTOPENREEFBRANCH", None, addBasePrefix=False
         )
-        self.brx = self.propertyOperator.createCustomReadOnlyProperty(
-            "BESTROBOTX", None, addBasePrefix=False
-        )
-        self.bry = self.propertyOperator.createCustomReadOnlyProperty(
-            "BESTROBOTY", None, addBasePrefix=False
-        )
+        self.bestObjs = []
+        for label in self.central.labels:
+            boX = self.propertyOperator.createCustomReadOnlyProperty(
+                f"Best.{str(label)}.x", None, addBasePrefix=False
+            )
+            boY = self.propertyOperator.createCustomReadOnlyProperty(
+                f"Best.{str(label)}.y", None, addBasePrefix=False
+            )
+            boP = self.propertyOperator.createCustomReadOnlyProperty(
+                f"Best.{str(label)}.prob", None, addBasePrefix=False
+            )
+            self.bestObjs.append((boX, boY, boP))
 
         self.reefmap_states = self.propertyOperator.createCustomReadOnlyProperty(
             "REEFMAP_STATES", None, addBasePrefix=False
@@ -70,7 +76,7 @@ class CentralAgentBase(PositionLocalizingAgentBase):
     # handles a subscriber update from one of the cameras
     def __handleObjectUpdate(self, key, ret):
         val = ret.value
-        idOffset = CameraIdOffsets[key]
+        idOffset = CameraIdOffsets2024[key]
         lastidx = self.objectupdateMap[key][2]
         lastidx += 1
         if not val or val == b"":
@@ -137,20 +143,25 @@ class CentralAgentBase(PositionLocalizingAgentBase):
     def putBestNetworkValues(self):
         # Send the ReefPacket for the entire map
         import time
+
         timestamp = time.time()
-        mapstate_packet = self.central.reefState.getReefMapState_as_ReefPacket(team=TEAM.BLUE, timestamp=timestamp)
+        mapstate_packet = self.central.reefState.getReefMapState_as_ReefPacket(
+            team=TEAM.BLUE, timestamp=timestamp
+        )
         bytes = mapstate_packet.to_bytes()
         self.reefmap_states.set(bytes)
-        
+
         # Send the confidence of highest algae
-        highest_algae = self.central.objectmap.getHighestRobot()
-        self.brx.set(highest_algae[0])
-        self.bry.set(highest_algae[1])
+        for idx, (setX, setY, setProb) in enumerate(self.bestObjs):
+            highest = self.central.objectmap.getHighestObject(class_idx=idx)
+            setX.set(highest[0])
+            setY.set(highest[1])
+            setProb.set(float(highest[2]))
 
         closest_At, closest_branch = self.central.reefState.getClosestOpen(
             self.robotPose2dCMRAD, threshold=0.0
         )
-        #print("closeAT and closeBranch", closest_At, closest_branch)
+        # print("closeAT and closeBranch", closest_At, closest_branch)
         self.clAT.set(closest_At)
         self.clBR.set(closest_branch)
 

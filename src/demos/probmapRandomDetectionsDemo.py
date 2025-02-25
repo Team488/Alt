@@ -27,7 +27,7 @@ def startDemo():
         __test_randomization_ranges(
             fieldMap, int(fieldMap.get_shape()[1]), int(fieldMap.get_shape()[0])
         )
-        coords = fieldMap.getAllGameObjectsAboveThreshold(0.4)  # threshold is .4
+        coords = fieldMap.getAllObjectsAboveThreshold(0.4)  # threshold is .4
         objMap = fieldMap.getGameObjectHeatMap()
         fieldMap.disspateOverTime(0.2)
         if coords:

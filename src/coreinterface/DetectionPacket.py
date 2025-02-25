@@ -9,9 +9,9 @@ import sys
 
 class DetectionPacket:
     @staticmethod
-    # id,(absX,absY,absZ),conf,isRobot,features
+    # id,(absX,absY,absZ),conf,class_idx,features
     def createPacket(
-        detections: list[list[int, tuple[int, int, int], float, bool, np.ndarray]],
+        detections: list[list[int, tuple[int, int, int], float, int, np.ndarray]],
         message,
         timeStamp,
     ) -> detectionNetPacket_capnp.DataPacket:
@@ -24,14 +24,19 @@ class DetectionPacket:
         for i in range(numDetections):
             detection = detections[i]
             packet_detection = packet_detections[i]
+
             packet_detection.id = detection[0]
+
             xyz = packet_detection.init("coordinates")
             coords = detection[1]
             xyz.x = int(coords[0])
             xyz.y = int(coords[1])
             xyz.z = int(coords[2])
+
             packet_detection.confidence = float(detection[2])
-            packet_detection.isRobot = detection[3]
+
+            packet_detection.class_idx = int(detection[3])
+
             features = detection[4]
             packet_features = packet_detection.init("features")
 
@@ -59,7 +64,7 @@ class DetectionPacket:
         with detectionNetPacket_capnp.DataPacket.from_bytes(decoded_bytestr) as packet:
             return packet
         return None
-    
+
     @staticmethod
     def fromBytes(bytes):
         with detectionNetPacket_capnp.DataPacket.from_bytes(bytes) as packet:
@@ -85,28 +90,29 @@ class DetectionPacket:
             # Extract the confidence
             confidence = float(packet_detection.confidence)
 
-            # Extract the isRobot flag
-            isRobot = bool(packet_detection.isRobot)
+            # Extract the class_idx flag
+            class_idx = int(packet_detection.class_idx)
 
             # Extract the features
             packet_features = packet_detection.features
             features = np.array([float(f) for f in packet_features.data])
 
-            # Combine into a tuple (id, (absX, absY, absZ), conf, isRobot, features)
+            # Combine into a tuple (id, (absX, absY, absZ), conf, class_idx, features)
             detection = [
                 detection_id,
                 (absX, absY, absZ),
                 confidence,
-                isRobot,
+                class_idx,
                 features,
             ]
             detections.append(detection)
 
         return detections
 
+
 def test_packet():
     packet = DetectionPacket.createPacket(
-        [[10, (1, 2, 3), 0.6, True, np.array([1, 2, 3, 4])]], "HELLO", 12345
+        [[10, (1, 2, 3), 0.6, 1, np.array([1, 2, 3, 4])]], "HELLO", 12345
     )
     print(packet)
     b64 = DetectionPacket.toBase64(packet)
@@ -114,6 +120,7 @@ def test_packet():
     outPacket = DetectionPacket.fromBase64(b64)
     print(outPacket)
     print(DetectionPacket.toDetections(outPacket))
+
 
 if __name__ == "__main__":
     DetectionPacket.test_packet()

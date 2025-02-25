@@ -7,6 +7,26 @@ import numpy as np
 from enum import Enum
 
 
+def staticLoad(fileName: str):
+    try:
+        for path in ConfigOperator.READPATHS:
+            filePath = os.path.join(path, fileName)
+            for (ending, filetype) in ConfigOperator.knownFileEndings:
+                if filePath.endswith(ending):
+                    content = filetype.load(filePath)
+                    return content
+
+            print(
+                f"Invalid file ending. Options are: {[ending[0] for ending in ConfigOperator.knownFileEndings]}"
+            )
+    except Exception as agentSmith:
+        # override config path dosent exist
+        print(agentSmith)
+        print(f"{path} does not exist!")
+
+    return None
+
+
 class ConfigType(Enum):
     NUMPY = "numpy"
     JSON = "json"

@@ -65,25 +65,26 @@ class rknnInferencer(InferencerBackend):
         else:
             boxes, classes, scores = yolo11RknnUtils.post_process(results, frame.shape)
             if boxes is not None:
-                return list(zip(boxes,classes,scores))
+                return list(zip(boxes, classes, scores))
             return []
 
 
+def startDemo():
+    from inference.MultiInferencer import MultiInferencer
+    from tools.Constants import InferenceMode
 
-if __name__ == "__main__":
-    classes = ["Robot", "Note"]
-    inf = rknnInferencer("assets/bestV5.rknn")
-    cap = cv2.VideoCapture("assets/video12qual25clipped.mp4")
-    cap.set(cv2.CAP_PROP_POS_FRAMES, 1004)
+    inf = MultiInferencer(inferenceMode=InferenceMode.RKNN2025INT8)
+    cap = cv2.VideoCapture("assets/reefscapevid.mp4")
+
     while cap.isOpened():
         ret, frame = cap.read()
         if ret:
-            startTime = time.time()
-            results = inf.inferenceFrame(frame, drawBox=True)
-            timePassed = time.time() - startTime
-            fps = 1 / timePassed  # seconds
-            cv2.putText(frame, f"Fps {fps}", (10, 50), 1, 2, (0, 255, 0), 1)
+            results = inf.run(frame, 0.7, drawBoxes=True)
             cv2.imshow("rknn", frame)
 
         if cv2.waitKey(1) & 0xFF == ord("q"):
             break
+
+
+if __name__ == "__main__":
+    startDemo()

@@ -2,7 +2,7 @@ from enum import Enum
 import socket
 from Core.Agents.Abstract.ReefTrackingAgentBase import ReefTrackingAgentBase
 from tools import calibration
-from tools.Constants import getCameraValues
+from tools.Constants import getCameraValues2024
 
 
 class CameraName(Enum):
@@ -25,7 +25,7 @@ class OrangePiAgent(ReefTrackingAgentBase):
     def __init__(self):
         self.device_name = CameraName.getCameraName().name
         # camera values
-        cameraIntrinsics, _, _ = getCameraValues(self.device_name)
+        cameraIntrinsics, _, _ = getCameraValues2024(self.device_name)
 
         super().__init__(
             cameraPath="/dev/color_camera",

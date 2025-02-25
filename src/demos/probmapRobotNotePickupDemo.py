@@ -32,7 +32,7 @@ def getRangeHighest(x, y):
     global lastCollectedX
     global lastCollectedY
     highest = None
-    (px, py, prob) = fieldMap.getHighestGameObjectWithinRangeT(
+    (px, py, prob) = fieldMap.getHighestObjectWithinRangeT(
         x, y, wX, wY, 0.30
     )  # .30 threshold
     (objMap, robtMap) = fieldMap.getHeatMaps()

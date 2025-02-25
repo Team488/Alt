@@ -4,7 +4,7 @@ import cv2
 from filterpy.kalman import UnscentedKalmanFilter
 from filterpy.kalman import MerweScaledSigmaPoints
 from filterpy.kalman.unscented_transform import unscented_transform
-from tools import configLoader
+from Core.ConfigOperator import staticLoad
 from tools.Constants import MapConstants
 
 
@@ -18,7 +18,7 @@ class MultistateUkf:
         fieldY=MapConstants.fieldHeight.value,
     ):
         # "Constants"
-        self.obstacles = configLoader.loadNumpyConfig("obstacleMap.npy")
+        self.obstacles = staticLoad("obstacleMap.npy")
         self.NUMSIMULATEDSTATES = numStates
         self.SINGLESTATELEN = 4
         self.STATELEN = self.NUMSIMULATEDSTATES * self.SINGLESTATELEN
@@ -27,7 +27,7 @@ class MultistateUkf:
         self.fieldY = fieldY
         self.maxDist = np.linalg.norm((self.fieldX, self.fieldY))
         # Parameters
-        self.dt = 1/15  # Time step
+        self.dt = 1 / 15  # Time step
 
         # Covariance matrices
         self.P_initial = np.eye(self.STATELEN) * 0.01
@@ -42,7 +42,12 @@ class MultistateUkf:
 
         # UKF initialization
         self.baseUKF = UnscentedKalmanFilter(
-            dim_x=self.STATELEN, dim_z=self.MEASUREMENTLEN, fx=self.fx, hx=self.hx, dt=self.dt, points=self.points
+            dim_x=self.STATELEN,
+            dim_z=self.MEASUREMENTLEN,
+            fx=self.fx,
+            hx=self.hx,
+            dt=self.dt,
+            points=self.points,
         )
         # Initial state
         self.set_state(0, 0, 0, 0)  # x, y, vx, vy
@@ -61,25 +66,25 @@ class MultistateUkf:
     def fx(self, x, dt):
         for i in range(self.NUMSIMULATEDSTATES):
             idx = i * self.SINGLESTATELEN
-            old_x, old_y, vel_x, vel_y = x[idx:idx + self.SINGLESTATELEN]
+            old_x, old_y, vel_x, vel_y = x[idx : idx + self.SINGLESTATELEN]
 
             # New state prediction
             new_x = old_x + vel_x * dt
             new_y = old_y + vel_y * dt
 
             # noise = np.random.normal(0, 1e-40, size=2)
-            noise = (0,0)
+            noise = (0, 0)
             new_vx = vel_x + noise[0]
             new_vy = vel_y + noise[1]
 
             # Update particle state
-            x[idx:idx + self.SINGLESTATELEN] = new_x, new_y, new_vx, new_vy
+            x[idx : idx + self.SINGLESTATELEN] = new_x, new_y, new_vx, new_vy
 
         self.baseUKF.P += 1e-20
         return x
 
     # Check if a position is valid (within bounds and not an obstacle)
-    def is_valid_position(self, x, y,robotHeight):
+    def is_valid_position(self, x, y, robotHeight):
         if x < 0 or x > self.fieldX or y < 0 or y > self.fieldY:
             return False  # Outside the bounds
         if self.obstacles[int(y), int(x)] <= robotHeight:
@@ -88,8 +93,12 @@ class MultistateUkf:
 
     def hx(self, x):
         # Calculate the mean position (x, y) across all particles
-        mean_x = np.mean([x[i * self.SINGLESTATELEN] for i in range(self.NUMSIMULATEDSTATES)])
-        mean_y = np.mean([x[i * self.SINGLESTATELEN + 1] for i in range(self.NUMSIMULATEDSTATES)])
+        mean_x = np.mean(
+            [x[i * self.SINGLESTATELEN] for i in range(self.NUMSIMULATEDSTATES)]
+        )
+        mean_y = np.mean(
+            [x[i * self.SINGLESTATELEN + 1] for i in range(self.NUMSIMULATEDSTATES)]
+        )
         return np.array([mean_x, mean_y])  # Return the mean as the measurement
 
     def getMeanEstimate(self):
@@ -98,13 +107,9 @@ class MultistateUkf:
     def pseudo_measurement_update(self, pseudo_measurement_noise=1e-3, robotHeight=35):
         sigmas = self.baseUKF.sigmas_f
         h_sigmas = np.array([self.pseudo_measurement(s, robotHeight) for s in sigmas])
-        h_sigmas = np.vstack(
-            h_sigmas
-        )
+        h_sigmas = np.vstack(h_sigmas)
         # Predicted pseudo-measurement
-        z_pred, S = unscented_transform(
-            h_sigmas, self.baseUKF.Wm, self.baseUKF.Wc
-        )
+        z_pred, S = unscented_transform(h_sigmas, self.baseUKF.Wm, self.baseUKF.Wc)
         # print(f"{S=}")
         S += pseudo_measurement_noise
 
@@ -125,7 +130,7 @@ class MultistateUkf:
         penalty = 0
         for i in range(self.NUMSIMULATEDSTATES):
             idx = i * self.SINGLESTATELEN
-            x, y, vx, vy = state[idx:idx+self.SINGLESTATELEN]
+            x, y, vx, vy = state[idx : idx + self.SINGLESTATELEN]
             new_x = x + vx * self.dt
             new_y = y + vy * self.dt
             if not self.is_valid_position(new_x, new_y, robotHeight):
@@ -133,8 +138,7 @@ class MultistateUkf:
         print(penalty)
         return np.array([penalty])
 
-
-    def predict_and_update(self, measurements,robotHeight):
+    def predict_and_update(self, measurements, robotHeight):
         self.baseUKF.predict()
         self.pseudo_measurement_update(robotHeight=robotHeight)
         measurement = np.array(measurements)

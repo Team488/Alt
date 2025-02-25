@@ -25,7 +25,7 @@ lastY = -1
 
 
 def __isolateRangeHighest(x, y):
-    (px, py, prob) = fieldMap.getHighestGameObjectWithinRange(x, y, wX, wY)
+    (px, py, prob) = fieldMap.getHighestObjectWithinRange(x, y, wX, wY)
     (objMap, robtMap) = fieldMap.getHeatMaps()
     cv2.rectangle(
         objMap,

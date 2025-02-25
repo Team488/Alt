@@ -9,89 +9,96 @@
     Expected output: A Label String that will help us know which robot is which
 
 """
+import numpy as np
 from mapinternals.KalmanCache import KalmanCache
 from mapinternals.KalmanEntry import KalmanEntry
-from tools.Constants import CameraIdOffsets, LabelingConstants
+from tools.Constants import CameraIdOffsets2024, LabelingConstants, Label
 from tools import Calculator
+from Core import getLogger
+
+Sentinel = getLogger("Kalman_Labler")
 
 
 class KalmanLabeler:
-    def __init__(
-        self, kalmanCacheRobots: KalmanCache, kalmanCacheGameObjects: KalmanCache
-    ):
-        self.kalmanCacheRobots: KalmanCache = kalmanCacheRobots
-        self.kalmanCacheGameObjects: KalmanCache = kalmanCacheGameObjects
-        pass
+    def __init__(self, kalmanCaches: list[KalmanCache], labels: list[Label]):
+        self.kalmanCaches = kalmanCaches
+        self.labels = labels
 
     """ Replaces relative ids in list provided with their absolute id, handling new detections by trying to find old ids"""
 
     def updateRealIds(
         self,
-        singleCameraResults: list[list[int, tuple[int, int, int], float, bool]],
-        cameraIdOffset: CameraIdOffsets,
+        singleCameraResults: list[
+            list[int, tuple[int, int, int], float, int, np.ndarray]
+        ],
+        cameraIdOffset: CameraIdOffsets2024,
         timeStepSeconds: float,
-    ):
-        robotKeys: set = self.kalmanCacheRobots.getKeySet()
-        gameObjectKeys: set = self.kalmanCacheGameObjects.getKeySet()
-        markedIndexs = []
+    ) -> None:
+        allkeys: list[set] = [cache.getKeySet() for cache in self.kalmanCaches]
+        allmarkedIndexs = [[] for _ in range(len(self.kalmanCaches))]
+
         for i in range(len(singleCameraResults)):
             singleCameraResult = singleCameraResults[i]
             singleCameraResult[0] += cameraIdOffset.getIdOffset()
             # adjust id by a fixed camera offset, so that id collisions dont happen
-            (realId, (x, y, z), conf, isRobot) = singleCameraResult[:4]
-            cacheOfChoice: KalmanCache = self.kalmanCacheRobots if isRobot else self.kalmanCacheGameObjects
-            keySetOfChoice = robotKeys if isRobot else gameObjectKeys
-            data = cacheOfChoice.getSavedKalmanData(realId)
+            (realId, (x, y, z), conf, class_idx, features) = singleCameraResult
+
+            if class_idx < 0 or class_idx > len(self.kalmanCaches):
+                Sentinel.warning(
+                    f"Update real ids got invalid class_idx! : {class_idx}"
+                )
+                continue
+            cache = self.kalmanCaches[class_idx]
+            keySetOfChoice = allkeys[class_idx]
+            data = cache.getSavedKalmanData(realId)
+
             if data is None:
                 markedIndexs.append(i)
             else:
                 # we want to isolate entries not seen
                 keySetOfChoice.remove(realId)
 
-        # iterate over remaining robot and gameobject keys to see if any of the new detections are within a delta and match
+        # iterate over remaining keys to see if any of the new detections are within a delta and match
         # todo add robot color as a matching factor
 
-        for index in markedIndexs:
-            (realId, (detectionX, detectionY, z), conf, isRobot) = singleCameraResults[index][:4]
-            keySetOfChoice = robotKeys if isRobot else gameObjectKeys
-            cacheOfChoice: KalmanCache = (
-                self.kalmanCacheRobots if isRobot else self.kalmanCacheGameObjects
-            )
+        for markedIndexs, keys, cache in zip(
+            allmarkedIndexs, allkeys, self.kalmanCaches
+        ):
+            for index in markedIndexs:
+                (realId, (x, y, z), conf, class_idx, features) = singleCameraResults[
+                    index
+                ]
 
-            closestId = None
-            closestDistance = 100000
-            # todo optimize use rectangle segments
-            for key in keySetOfChoice:
-                kalmanEntry: KalmanEntry = cacheOfChoice.getSavedKalmanData(key)
-                # right now i am trying to find a match by finding the closest entry and seeing if its within a maximum delta
-                [oldX, oldY, vx, vy] = kalmanEntry.X
-                maxRange = (
-                    Calculator.calculateMaxRange(vx, vy, timeStepSeconds, isRobot)
-                    + 0.05
-                )
-                objectRange = Calculator.getDistance(
-                    detectionX, detectionY, oldX, oldY, vx, vy, timeStepSeconds
-                )
-                if objectRange < maxRange and objectRange < closestDistance:
-                    closestId = key
-                    closestDistance = objectRange
+                closestId = None
+                closestDistance = 100000
+                # todo optimize use rectangle segments
+                for key in keys:
+                    kalmanEntry: KalmanEntry = cache.getSavedKalmanData(key)
+                    # right now i am trying to find a match by finding the closest entry and seeing if its within a maximum delta
+                    [oldX, oldY, vx, vy] = kalmanEntry.X
+                    maxRange = (
+                        Calculator.calculateMaxRange(
+                            vx, vy, timeStepSeconds, self.labels[class_idx]
+                        )
+                        + 0.05
+                    )
+                    objectRange = Calculator.getDistance(
+                        x, y, oldX, oldY, vx, vy, timeStepSeconds
+                    )
+                    if objectRange < maxRange and objectRange < closestDistance:
+                        closestId = key
+                        closestDistance = objectRange
 
-            if closestId is not None:
-                # found match within range
-                # remove id from possible options and update result entry
-                singleCameraResults[index][0] = closestId
-                keySetOfChoice.remove(closestId)
-        
-        for remainingKey in robotKeys:
-            out: KalmanEntry = self.kalmanCacheRobots.getSavedKalmanData(remainingKey)
-            out.incrementNotSeen()
-            if out.framesNotSeen > LabelingConstants.MAXFRAMESNOTSEEN.value:
-                self.kalmanCacheRobots.removeKalmanEntry(remainingKey)
+                if closestId is not None:
+                    # found match within range
+                    # remove id from possible options and update result entry
+                    singleCameraResults[index][0] = closestId
+                    keySetOfChoice.remove(closestId)
 
-        for remainingKey in gameObjectKeys:
-            out: KalmanEntry = self.kalmanCacheGameObjects.getSavedKalmanData(
-                remainingKey
-            )
-            out.incrementNotSeen()
-            if out.framesNotSeen > LabelingConstants.MAXFRAMESNOTSEEN.value:
-                self.kalmanCacheGameObjects.removeKalmanEntry(remainingKey)
+        for keys, cache in zip(allkeys, self.kalmanCaches):
+            for remainingKey in keys:
+                out = cache.getSavedKalmanData(remainingKey)
+                out.incrementNotSeen()
+                if out.framesNotSeen > LabelingConstants.MAXFRAMESNOTSEEN.value:
+                    # too many frames being not seen
+                    self.kalmanCacheRobots.removeKalmanEntry(remainingKey)

@@ -14,11 +14,13 @@ from Core.OrderOperator import OrderOperator
 from Core.AgentOperator import AgentOperator
 from Core.ShareOperator import ShareOperator
 from Core.XDashOperator import XDashOperator
-from Core import LogManager
+from Core import LogManager, COREMODELTABLE, COREINFERENCEMODE
 from Core.Central import Central
 from abstract.Agent import Agent
 from abstract.Order import Order
 from JXTABLES.TempConnectionManager import TempConnectionManager as tcm
+
+from tools.Constants import InferenceMode
 
 
 Sentinel = LogManager.Sentinel
@@ -70,6 +72,7 @@ class Neo:
             logger=Sentinel.getChild("Central_Processor"),
             configOp=self.__configOp,
             propertyOp=self.__propertyOp,
+            inferenceMode=COREINFERENCEMODE,
         )
         Sentinel.info("Creating XDASH operator")
         self.__xdOp = XDashOperator(
@@ -87,6 +90,9 @@ class Neo:
 
         self.__logMap = {}
         self.__getBasePrefix = lambda agentName: f"active_agents.{agentName}"
+
+        # put inference mode on xtables, so local observers can assert they are running the same model type
+        self.__xclient.putString(COREMODELTABLE, COREINFERENCEMODE.getName())
 
     def __handleArchitectKill(self, sig, frame) -> None:
         Sentinel.info("The architect has caused our demise! Shutting down any agent")

@@ -7,7 +7,7 @@ from tools.Constants import (
     CameraExtrinsics,
     CameraIntrinsicsPredefined,
     ColorCameraExtrinsics2024,
-    CameraIdOffsets,
+    CameraIdOffsets2024,
     InferenceMode,
 )
 from inference.onnxInferencer import onnxInferencer
@@ -109,7 +109,7 @@ def startDemo():
             # imagine a network connection here
             # now central process
             centralProcessor.processFrameUpdate(
-                [(out, CameraIdOffsets.FRONTLEFT)], timePerFrame
+                [(out, CameraIdOffsets2024.FRONTLEFT)], timePerFrame
             )
 
             (gameObjMap, robotMap) = centralProcessor.objectmap.getHeatMaps()

@@ -2,7 +2,7 @@ import time
 
 import cv2
 from Core.Agents.Abstract.CameraUsingAgentBase import CameraUsingAgentBase
-from tools.Constants import CameraIdOffsets
+from tools.Constants import CameraIdOffsets2024
 from coreinterface.FramePacket import FramePacket
 from abstract.Agent import Agent
 

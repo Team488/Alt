@@ -7,14 +7,15 @@ from tools.Constants import ConfigConstants, InferenceMode
 from Core.LogManager import getLogger
 
 Sentinel = getLogger("onnx_inferencer")
-class onnxInferencer(InferencerBackend):
 
+
+class onnxInferencer(InferencerBackend):
     def initialize(self):
         providers = ort.get_available_providers()
         Sentinel.info(f"Using provider {providers[0]}")
         session_options = ort.SessionOptions()
         self.session = ort.InferenceSession(
-            self.mode.getModelPath(), sess_options=session_options,providers=providers
+            self.mode.getModelPath(), sess_options=session_options, providers=providers
         )
         # Get input/output names from the ONNX model
         self.inputName = self.session.get_inputs()[0].name
@@ -28,7 +29,7 @@ class onnxInferencer(InferencerBackend):
         input_frame = input_frame.astype(np.float32)  # Ensure correct data type
         input_frame /= 255
         return input_frame
-    
+
     def runInference(self, inputTensor):
         return self.session.run([self.outputName], {self.inputName: inputTensor})
 
@@ -36,30 +37,24 @@ class onnxInferencer(InferencerBackend):
         adjusted = self.adjustBoxes(results[0], frame.shape, minConf)
         nmsResults = utils.non_max_suppression(adjusted, minConf)
         return nmsResults
-        
+
 
 def startDemo():
-    video_path = "assets/reefscapevid.mp4"
-    cap = cv2.VideoCapture(video_path)
-    inferencer = onnxInferencer(model_path="assets/2025-best-151.onnx")
-    # Check if the video opened successfully
-    if not cap.isOpened():
-        print("Error: Could not open video.")
-        exit()
+    from inference.MultiInferencer import MultiInferencer
+    from tools.Constants import InferenceMode
 
-    cap.set(cv2.CAP_PROP_POS_FRAMES, 1004)
+    inf = MultiInferencer(inferenceMode=InferenceMode.ONNXMEDIUM2025)
+    cap = cv2.VideoCapture("assets/reefscapevid.mp4")
 
-    # Process each frame
-    while True:
+    while cap.isOpened():
         ret, frame = cap.read()
         if ret:
-            inferencer.inferenceFrame(frame, drawBox=True)
-            cv2.imshow("frame", frame)
+            results = inf.run(frame, 0.7, drawBoxes=True)
+            cv2.imshow("onnx", frame)
 
         if cv2.waitKey(1) & 0xFF == ord("q"):
             break
-    cv2.destroyAllWindows()
-    cap.release
+
 
 if __name__ == "__main__":
     startDemo()

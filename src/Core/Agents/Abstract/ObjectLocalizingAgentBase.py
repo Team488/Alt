@@ -11,6 +11,7 @@ from Core.Agents.Abstract.TimestampRegulatedAgentBase import TimestampRegulatedA
 from coreinterface.DetectionPacket import DetectionPacket
 from tools.Constants import InferenceMode, CameraExtrinsics, CameraIntrinsics
 from mapinternals.localFrameProcessor import LocalFrameProcessor
+import Core
 
 
 class ObjectLocalizingAgentBase(TimestampRegulatedAgentBase):
@@ -31,6 +32,27 @@ class ObjectLocalizingAgentBase(TimestampRegulatedAgentBase):
         super().create()
         # self.xdashDebugger = XDashDebugger()
         self.Sentinel.info("Creating Frame Processor...")
+        currentCoreINFName = self.xclient.getString(Core.COREMODELTABLE)
+        currentCoreINFMode = InferenceMode.getFromName(currentCoreINFName, default=None)
+        if currentCoreINFMode is not None:
+            # assert you are running same model type as any current core process
+            isMatch = InferenceMode.assertModelType(
+                currentCoreINFMode, self.inferenceMode
+            )
+            if not isMatch:
+                self.Sentinel.fatal(
+                    f"Model type mismatch!: Core is Running: {currentCoreINFMode.getModelType()} This is running {self.inferenceMode.getModelType()}"
+                )
+                raise Exception(
+                    f"Model type mismatch!: Core is Running: {currentCoreINFMode.getModelType()} This is running {self.inferenceMode.getModelType()}"
+                )
+            else:
+                self.Sentinel.fatal(f"Model type matched!")
+        else:
+            self.Sentinel.warning(
+                "Was not able to get core model type! Make sure you match!"
+            )
+
         self.frameProcessor = LocalFrameProcessor(
             cameraIntrinsics=self.cameraIntrinsics,
             cameraExtrinsics=self.cameraExtrinsics,
