@@ -18,7 +18,7 @@ from tools.Constants import Landmarks, MapConstants
 
 
 class PathGenerator:
-    def __init__(self, probmap: ProbMap, staticObstacleMap):
+    def __init__(self, probmap: ProbMap, staticObstacleMap) -> None:
         self.map = probmap
         self.obstacleMap = staticObstacleMap
         width = MapConstants.robotWidth.getCM()

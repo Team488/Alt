@@ -5,7 +5,7 @@ from Core.Orders import OrderExample
 from tools.Constants import InferenceMode
 
 
-def startDemo():
+def startDemo() -> None:
     n = Neo()
     infAgent = InferenceAgentPartial(
         cameraPath="assets/reefscapevid.mp4",

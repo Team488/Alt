@@ -9,7 +9,7 @@ Sentinel = getLogger("DepthAiHelper")
 
 
 class DepthAIHelper:
-    def __init__(self, cameraIntrinsics: CameraIntrinsics):
+    def __init__(self, cameraIntrinsics: CameraIntrinsics) -> None:
 
         self.pipeline = dai.Pipeline()
         if self.load_pipeline(self.pipeline, cameraIntrinsics):
@@ -22,7 +22,9 @@ class DepthAIHelper:
                 "Please adjust camera intrinsics to be a valid oakdlite config!"
             )
 
-    def load_pipeline(self, pipeline: dai.Pipeline, cameraIntrinsics: CameraIntrinsics):
+    def load_pipeline(
+        self, pipeline: dai.Pipeline, cameraIntrinsics: CameraIntrinsics
+    ) -> bool:
         # Define color camera
         cam_rgb = pipeline.create(dai.node.ColorCamera)
         xoutVideo = pipeline.create(dai.node.XLinkOut)
@@ -56,7 +58,7 @@ class DepthAIHelper:
         return None
 
     @staticmethod
-    def getCameraIntrinsicDump(res=None):
+    def getCameraIntrinsicDump(res=None) -> None:
         import depthai as dai
 
         device = dai.Device()  # Create device
@@ -73,7 +75,7 @@ class DepthAIHelper:
         finally:
             device.close()  # Ensure the device is closed
 
-    def close(self):
+    def close(self) -> None:
         """Properly release resources."""
         self.color_queue.close()
         self.device.close()

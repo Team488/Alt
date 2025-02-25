@@ -10,7 +10,7 @@ from tools.Constants import CameraIntrinsics
 DEFAULTSAVEPATH = "assets/TMPImages"
 
 
-def __SaveOutput(calibPath, mtx, dist, shape):
+def __SaveOutput(calibPath, mtx, dist, shape) -> None:
     calibrationJSON = {
         "CameraMatrix": mtx.tolist(),
         "DistortionCoeff": dist.tolist(),
@@ -28,7 +28,7 @@ def __SaveOutput(calibPath, mtx, dist, shape):
 
 def chessboard_calibration(
     calibPath, imagesPath=DEFAULTSAVEPATH, chessBoardDim=(7, 10)
-):
+) -> None:
     images = []
     calibshape = None
     for image_file in sorted(os.listdir(imagesPath)):
@@ -71,7 +71,9 @@ def chessboard_calibration(
         print("Failed to find chessboard points!")
 
 
-def charuco_calibration(calibPath, imagesPath=DEFAULTSAVEPATH, arucoboarddim=(15, 15)):
+def charuco_calibration(
+    calibPath, imagesPath=DEFAULTSAVEPATH, arucoboarddim=(15, 15)
+) -> None:
     # Load images from the provided camera path
     images = []
     calibshape = None
@@ -144,7 +146,7 @@ def undistortFrame(frame, mapx, mapy):
 
 def takeCalibrationPhotos(
     cameraPath, photoPath=DEFAULTSAVEPATH, timePerPicture=3, frameShape=(640, 480)
-):
+) -> None:
     windowName = "Calibration View"
 
     timePassed = 0  # ms

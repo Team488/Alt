@@ -2,7 +2,7 @@ import cv2
 from mapinternals.probmap import ProbMap
 
 
-def test_getHighest():
+def test_getHighest() -> None:
     map = ProbMap()
     testX, testY = (100, 100)
     testProb = 1
@@ -13,7 +13,7 @@ def test_getHighest():
     assert abs(y - testY) < 6
 
 
-def test_getSpecificValue():
+def test_getSpecificValue() -> None:
     map = ProbMap()
     testX, testY = (100, 100)
     testProb = 1
@@ -23,7 +23,7 @@ def test_getSpecificValue():
     assert specificVal > 0  # todo why is it not the peak of the detection (testX,testY)
 
 
-def test_prob_max():
+def test_prob_max() -> None:
     map = ProbMap()
     testX, testY = (100, 100)
     testProb = 1
@@ -31,7 +31,8 @@ def test_prob_max():
         map.addDetectedGameObject(testX, testY, testProb)
     assert map.getHighestGameObject()[2] <= 1
 
-def test_AddingOutOfBounds():
+
+def test_AddingOutOfBounds() -> None:
     map = ProbMap()
     map.addDetectedGameObject(-20, -20, 1)
     map.addDetectedGameObject(-2000, -2000, 1)
@@ -42,7 +43,7 @@ def test_AddingOutOfBounds():
     map.addDetectedGameObject(10000, -2000, 1)
     map.addDetectedGameObject(-2000, 10000, 1)
 
-    map.addDetectedGameObject(map.width+5, map.height+5, 1)
+    map.addDetectedGameObject(map.width + 5, map.height + 5, 1)
     map.addDetectedGameObject(10000, 10000, 1)
 
     map.addDetectedRobot(-20, -20, 1)
@@ -54,8 +55,5 @@ def test_AddingOutOfBounds():
     map.addDetectedRobot(10000, -2000, 1)
     map.addDetectedRobot(-2000, 10000, 1)
 
-    map.addDetectedRobot(map.width+5, map.height+5, 1)
+    map.addDetectedRobot(map.width + 5, map.height + 5, 1)
     map.addDetectedRobot(10000, 10000, 1)
-
-
-

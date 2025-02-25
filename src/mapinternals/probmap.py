@@ -25,7 +25,7 @@ class ProbMap:
         robotHeight=MapConstants.robotHeight.value,
         sigma=0.9,
         alpha=0.8,
-    ):
+    ) -> None:
 
         # exposed constants
         self.width = x
@@ -63,21 +63,27 @@ class ProbMap:
         )
 
     """ RC = row,col format | CR = col,row format"""
+
     def getInternalSizeRC(self):
         return (self.__internalWidth, self.__internalHeight)
-    
+
     def getInternalSizeCR(self):
         return (self.__internalHeight, self.__internalWidth)
-    
+
     def __isOutOfMap(self, x, y, obj_x, obj_y):
         # independently check if the added detection is completely out of bounds in any way
-        return x+obj_x/2 < 0 or x-obj_x/2 >= self.__internalWidth or y+obj_y/2 < 0 or y-obj_y >= self.__internalHeight
+        return (
+            x + obj_x / 2 < 0
+            or x - obj_x / 2 >= self.__internalWidth
+            or y + obj_y / 2 < 0
+            or y - obj_y >= self.__internalHeight
+        )
 
     """ Adding detections to the probability maps"""
 
     # After testing speed, see if we need some sort of hashmap to detection patches
     # We could add the center of detections to the hashmap, then on every smooth cycle we traverse each patch in the map and see if the probability has dissipated to zero, if so then we remove from map
-    def __add_detection(self, probmap, x, y, obj_x, obj_y, prob):
+    def __add_detection(self, probmap, x, y, obj_x, obj_y, prob) -> None:
         # print(f"Adding detection at {x},{y} with size {obj_x},{obj_y}")
 
         # not perfect workaround, but transpose fix leads to x and y values being flipped, we can get by this by just flipping before putting in to map
@@ -89,14 +95,14 @@ class ProbMap:
         obj_x = obj_y // self.resolution
         obj_y = tmpX // self.resolution
 
-        if self.__isOutOfMap(x,y,obj_x,obj_y):
+        if self.__isOutOfMap(x, y, obj_x, obj_y):
             print("Error! Detection completely out of map!")
             return
 
         # print(f"internal values :  {x},{y} with size {obj_x},{obj_y}")
         if x >= self.__internalWidth:
             print("Error X too large! clipping")
-            x = self.__internalWidth-1
+            x = self.__internalWidth - 1
             # return
 
         if x < 0:
@@ -106,7 +112,7 @@ class ProbMap:
 
         if y >= self.__internalHeight:
             print("Error y too large! clipping")
-            y = self.__internalHeight-1
+            y = self.__internalHeight - 1
             # return
 
         if y < 0:
@@ -134,7 +140,7 @@ class ProbMap:
         # print('max = ' + str(np.max(gaussian_blob)) + ' (s/b 1.0)')
         # print(gaussian_blob)
 
-        threshold = prob/10
+        threshold = prob / 10
         mask = gaussian_blob >= threshold
 
         # Step 2: Get the coordinates of the values that satisfy the threshold
@@ -146,8 +152,8 @@ class ProbMap:
         y_min, x_min = coords.min(axis=0)
         y_max, x_max = coords.max(axis=0)
 
-        coords[:,0] -= y_min
-        coords[:,1] -= x_min
+        coords[:, 0] -= y_min
+        coords[:, 1] -= x_min
 
         # Step 4: Crop the Gaussian blob
         gaussian_blob = gaussian_blob[y_min : y_max + 1, x_min : x_max + 1]
@@ -211,7 +217,6 @@ class ProbMap:
 
         gaussian_blob = gaussian_blob.astype(np.float64)
 
-        
         # blob_height, blob_width = gaussian_blob.shape[0:2]
         # print("\n" + "gaussian size: " + str(blob_height) + ", " + str(blob_width))
 
@@ -223,13 +228,18 @@ class ProbMap:
         # print("prob map x", probmap[blob_top_edge_loc:blob_bottom_edge_loc].shape)
         # print("prob map y", probmap[blob_left_edge_loc:blob_right_edge_loc].shape)
 
-        adjusted_coords = coords + np.array([blob_left_edge_loc, blob_top_edge_loc]) # adjust coords to go from relative in the meshgrid to absolute relative to the probmap
-        
+        adjusted_coords = coords + np.array(
+            [blob_left_edge_loc, blob_top_edge_loc]
+        )  # adjust coords to go from relative in the meshgrid to absolute relative to the probmap
+
         # some bounds checks
-        valid = (adjusted_coords[:, 0] >= 0) & (adjusted_coords[:, 0] < probmap.shape[0]) & \
-                (adjusted_coords[:, 1] >= 0) & (adjusted_coords[:, 1] < probmap.shape[1])
-        
-    
+        valid = (
+            (adjusted_coords[:, 0] >= 0)
+            & (adjusted_coords[:, 0] < probmap.shape[0])
+            & (adjusted_coords[:, 1] >= 0)
+            & (adjusted_coords[:, 1] < probmap.shape[1])
+        )
+
         adjusted_coords = adjusted_coords[valid]
         valid_coords = coords[valid]
         # blob bounds check
@@ -238,32 +248,26 @@ class ProbMap:
 
         if adjusted_coords.size == 0 or valid_coords.size == 0:
             print("No valid coordinates")
-            return 
+            return
         # averaging out step
-        probmap[
-            adjusted_coords[:,0],
-            adjusted_coords[:,1],
-        ] *= (
+        probmap[adjusted_coords[:, 0], adjusted_coords[:, 1],] *= (
             1 - self.alpha
         )
 
         # Adjusted coordinates for the Gaussian blob
 
         # # Optional: Bounds checking, likely not needed
-        
 
         # Apply the Gaussian blob using the valid coordinates
-        probmap[
-            adjusted_coords[:, 0],
-            adjusted_coords[:, 1]
-        ] += gaussian_blob[valid_coords[:, 0], valid_coords[:, 1]] * self.alpha
-
+        probmap[adjusted_coords[:, 0], adjusted_coords[:, 1]] += (
+            gaussian_blob[valid_coords[:, 0], valid_coords[:, 1]] * self.alpha
+        )
 
     """ Exposed methods for adding detections """
 
     """ Regular detection methods use sizes provided in constructor """
 
-    def addDetectedGameObject(self, x: int, y: int, prob: float):
+    def addDetectedGameObject(self, x: int, y: int, prob: float) -> None:
         """Add a single game object detection to the probability map.
 
         Args:
@@ -280,7 +284,7 @@ class ProbMap:
             prob,
         )
 
-    def addDetectedRobot(self, x: int, y: int, prob: float):
+    def addDetectedRobot(self, x: int, y: int, prob: float) -> None:
         """Add a single robot detection to the probability map.
 
         Args:
@@ -292,7 +296,7 @@ class ProbMap:
             self.probmapRobots, x, y, self.__internalRobotX, self.__internalRobotY, prob
         )
 
-    def addDetectedGameObjectCoords(self, coords: list[tuple]):
+    def addDetectedGameObjectCoords(self, coords: list[tuple]) -> None:
         """Add multiple game object detections to the probability map.
 
         Args:
@@ -309,7 +313,7 @@ class ProbMap:
                 prob,
             )
 
-    def addDetectedRobotCoords(self, coords: list[tuple]):
+    def addDetectedRobotCoords(self, coords: list[tuple]) -> None:
         """Add multiple robot detections to the probability map.
 
         Args:
@@ -335,7 +339,7 @@ class ProbMap:
         objX: int,
         objY: int,
         prob: float,
-    ):
+    ) -> None:
         """Add a game object detection with custom size to the probability map.
 
         Args:
@@ -354,7 +358,7 @@ class ProbMap:
         objX: int,
         objY: int,
         prob: float,
-    ):
+    ) -> None:
         """Add a robot detection with custom size to the probability map.
 
         Args:
@@ -386,22 +390,22 @@ class ProbMap:
 
     """ Displaying heat maps"""
 
-    def __displayHeatMap(self, probmap, name: str):
+    def __displayHeatMap(self, probmap, name: str) -> None:
         cv2.imshow(name, self.__getHeatMap(probmap))
 
     """ Exposed display heatmap method"""
 
-    def displayHeatMaps(self):
+    def displayHeatMaps(self) -> None:
         # self.__displayHeatMap(self.probmapGameObj, self.gameObjWindowName)
         """Display visualization of both probability maps using OpenCV windows."""
         self.__displayHeatMap(self.probmapGameObj, self.gameObjWindowName)
         self.__displayHeatMap(self.probmapRobots, self.robotWindowName)
 
-    def displayGameObjMap(self):
+    def displayGameObjMap(self) -> None:
         """Display visualization of game object probability map using OpenCV window."""
         self.__displayHeatMap(self.probmapGameObj, self.gameObjWindowName)
 
-    def displayRobotObjMap(self):
+    def displayRobotObjMap(self) -> None:
         """Display visualization of robot probability map using OpenCV window."""
         self.__displayHeatMap(self.probmapRobots, self.robotWindowName)
 
@@ -790,7 +794,7 @@ class ProbMap:
             self.probmapRobots, posX, posY, rangeX, rangeY, threshold
         )
 
-    def __setChunkOfMap(self, probmap, x, y, chunkX, chunkY, chunk):
+    def __setChunkOfMap(self, probmap, x, y, chunkX, chunkY, chunk) -> None:
         # also need to invert coords here
         tmp = x
         x = y // self.resolution
@@ -909,7 +913,7 @@ class ProbMap:
     """ Used in dissipating over time, need to find best smoothing function"""
 
     def __smooth(self, probmap, timeParam):
-        kernel = self.sigma**round(timeParam/100) * np.array(
+        kernel = self.sigma ** round(timeParam / 100) * np.array(
             [0.05, 0.2, 0.5, 0.2, 0.05]
         )
         kernel = kernel / kernel.sum()  # Normalize

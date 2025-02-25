@@ -5,7 +5,7 @@ import numpy as np
 
 # Define the Cell class
 class Cell:
-    def __init__(self):
+    def __init__(self) -> None:
         self.parent_i = 0  # Parent cell's row index
         self.parent_j = 0  # Parent cell's column index
         self.f = float("inf")  # Total cost of the cell (g + h)
@@ -38,7 +38,7 @@ def calculate_h_value(row, col, dest):
 
 
 # Trace the path from source to destination
-def trace_path(cell_details, dest):
+def trace_path(cell_details, dest) -> None:
     print("The Path is ")
     path = []
     row = dest[0]
@@ -67,7 +67,7 @@ def trace_path(cell_details, dest):
 
 
 # Implement the A* search algorithm
-def a_star_search(grid, src, dest):
+def a_star_search(grid, src, dest) -> None:
     # Check if the source and destination are valid
     if not is_valid(src[0], src[1]) or not is_valid(dest[0], dest[1]):
         print("Source or destination is invalid")
@@ -172,7 +172,7 @@ def a_star_search(grid, src, dest):
         print("Failed to find the destination cell")
 
 
-def main():
+def main() -> None:
     # Define the grid (1 for unblocked, 0 for blocked)
     grid = np.ones((500, 500), dtype=int)
 

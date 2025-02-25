@@ -12,7 +12,7 @@ Sentinel = getLogger("rknn_inferencer")
 
 
 class rknnInferencer(InferencerBackend):
-    def initialize(self):
+    def initialize(self) -> None:
         # # export needed rknpu .so
         # so_path = os.getcwd() + "/assets/"
 
@@ -65,9 +65,8 @@ class rknnInferencer(InferencerBackend):
         else:
             boxes, classes, scores = yolo11RknnUtils.post_process(results, frame.shape)
             if boxes is not None:
-                return list(zip(boxes,classes,scores))
+                return list(zip(boxes, classes, scores))
             return []
-
 
 
 if __name__ == "__main__":

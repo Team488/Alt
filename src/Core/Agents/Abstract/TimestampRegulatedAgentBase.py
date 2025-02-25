@@ -2,6 +2,7 @@ import cv2
 from Core.Agents.Abstract.CameraUsingAgentBase import CameraUsingAgentBase
 from Core.Agents.Abstract.PositionLocalizingAgentBase import PositionLocalizingAgentBase
 
+
 class TimestampRegulatedAgentBase(CameraUsingAgentBase, PositionLocalizingAgentBase):
     """Agent -> (CameraUsingAgentBase, PositionLocalizingAgentBase) -> TimestampRegulatedAgentBase
 
@@ -9,13 +10,12 @@ class TimestampRegulatedAgentBase(CameraUsingAgentBase, PositionLocalizingAgentB
     NOTE: this class should always be extended
     """
 
-    BINSIZE = 5 # whatever the timestamp units are in, likely MS but todo figure out
-    def __init__(
-        self, **kwargs
-    ):
+    BINSIZE = 5  # whatever the timestamp units are in, likely MS but todo figure out
+
+    def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
         self.binnedMap = {}
 
-    def runPeriodic(self):
+    def runPeriodic(self) -> None:
         super().runPeriodic()
         """Put binning code here TODO"""

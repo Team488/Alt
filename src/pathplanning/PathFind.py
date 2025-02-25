@@ -5,7 +5,7 @@ import numpy as np
 
 
 class PathFinder:
-    def __init__(self, map_size_x, map_size_y):
+    def __init__(self, map_size_x, map_size_y) -> None:
         self.start = None
         self.goal = None
         self.obstacles = set()  # Store blocked points
@@ -31,7 +31,9 @@ class PathFinder:
                 return True, t, collision_position, distance
         return False, None, None, None
 
-    def mark_collision_zone_on_grid(grid, P_B_predicted, d_min, inches_per_point):
+    def mark_collision_zone_on_grid(
+        grid, P_B_predicted, d_min, inches_per_point
+    ) -> None:
         radius = int(d_min / inches_per_point)
         x_center, y_center = int(P_B_predicted[0]), int(P_B_predicted[1])
 
@@ -43,7 +45,7 @@ class PathFinder:
 
     def update_values(
         self, start=None, goal=None, obstacles=None, max_path_length=None
-    ):
+    ) -> None:
         if start:
             self.start = start
         if goal:
@@ -55,7 +57,7 @@ class PathFinder:
 
     def update_path_with_values(
         self, start=None, goal=None, obstacles=None, max_path_length=None
-    ):
+    ) -> None:
         if (
             self.start != start
             or self.goal != goal
@@ -65,7 +67,7 @@ class PathFinder:
             self.update_values(start, goal, obstacles, max_path_length)
             self.update()
 
-    def reset(self):
+    def reset(self) -> None:
         self.start = None
         self.goal = None
         self.path = []
@@ -174,7 +176,7 @@ class PathFinder:
 
         return []
 
-    def update(self):
+    def update(self) -> None:
         if self.start and self.goal:
             self.path = self.a_star_search(
                 self.start, self.goal, self.obstacles, self.map_size_x, self.map_size_y

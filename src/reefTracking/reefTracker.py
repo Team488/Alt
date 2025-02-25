@@ -288,7 +288,7 @@ class ReefTracker:
         cameraIntrinsics: CameraIntrinsics,
         isLocalAT=False,
         cameraExtrinsics: CameraExtrinsics = None,
-    ):
+    ) -> None:
         """
         Creates a reef post estimator, that using april tag results will detect coral slots and probabilistically measure if they are occupied\n
         This works by using a color camera along with known extrinsics/intrinsics and known extrinsics for the april tag camera

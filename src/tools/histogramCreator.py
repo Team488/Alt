@@ -29,7 +29,7 @@ class Window(QMainWindow):
 
     """Main Window."""
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None) -> None:
         """Initializer."""
         super().__init__(parent)
         self.setWindowTitle("Histogram Creation")
@@ -39,7 +39,7 @@ class Window(QMainWindow):
         self.createToolBar()
         self.createUndo()
 
-    def createUI(self):
+    def createUI(self) -> None:
         self.stack = QStackedWidget()
 
         self.selectImageButton = QPushButton()
@@ -82,7 +82,7 @@ class Window(QMainWindow):
         self.stack.addWidget(self.tabWidget)
         self.setCentralWidget(self.stack)
 
-    def createMenuBar(self):
+    def createMenuBar(self) -> None:
         menuBar = QMenuBar(self)
         self.setMenuBar(menuBar)
         fileMenu = menuBar.addMenu("&File")
@@ -92,7 +92,7 @@ class Window(QMainWindow):
         fileMenu.addAction(self.cameraAction)
         fileMenu.addAction(self.clearAction)
 
-    def createToolBar(self):
+    def createToolBar(self) -> None:
         fileToolBar = self.addToolBar("File")
         fileToolBar.addAction(self.openAction)
         fileToolBar.addAction(self.saveAction)
@@ -100,7 +100,7 @@ class Window(QMainWindow):
         fileToolBar.addAction(self.closeAction)
         fileToolBar.addAction(self.cameraAction)
 
-    def createActions(self):
+    def createActions(self) -> None:
         self.openAction = QAction("&Open Image...", self)
         self.openAction.triggered.connect(self.onOpen)
         self.clearAction = QAction("Clear Image", self)
@@ -112,7 +112,7 @@ class Window(QMainWindow):
         self.cameraAction = QAction("&Open Camera", self)
         self.cameraAction.triggered.connect(self.onCamera)
 
-    def createUndo(self):
+    def createUndo(self) -> None:
         self.undoStack = QUndoStack(self)
         self.undoAction = self.undoStack.createUndoAction(self, self.tr("Undo"))
         self.undoAction.setShortcuts(QKeySequence.Undo)
@@ -121,7 +121,7 @@ class Window(QMainWindow):
         self.addAction(self.undoAction)
         self.addAction(self.redoAction)
 
-    def onOpen(self):
+    def onOpen(self) -> None:
         path = QFileDialog.getOpenFileName(
             self,
             "Open Image",
@@ -131,7 +131,7 @@ class Window(QMainWindow):
         if path:
             self.openImage(path)
 
-    def openImage(self, path):
+    def openImage(self, path) -> None:
         foundImage = False
         for image in self.images:
             if image.path == path:
@@ -143,7 +143,7 @@ class Window(QMainWindow):
         if not foundImage:
             self.imageReader.queue.put(path)
 
-    def onImageRead(self, newImage):
+    def onImageRead(self, newImage) -> None:
         newImage.maskUpdatedSignal.connect(self.onUpdateMask)
         self.images.append(newImage)
         self.refreshImageList()
@@ -162,7 +162,7 @@ class Window(QMainWindow):
 
         self.undoStack.clear()
 
-    def onTabClosed(self, index):
+    def onTabClosed(self, index) -> None:
         del self.images[index]
         self.refreshImageList()
         self.undoStack.clear()
@@ -172,7 +172,7 @@ class Window(QMainWindow):
             self.maskedAbHist = None
             self.stack.setCurrentIndex(0)
 
-    def onTabChanged(self):
+    def onTabChanged(self) -> None:
         currentTab = self.tabs.currentWidget()
         if currentTab is not None:
             index = self.tabs.currentIndex()
@@ -181,13 +181,13 @@ class Window(QMainWindow):
                 modelIndex, QItemSelectionModel.Select
             )
 
-    def onImageSelectionChanged(self):
+    def onImageSelectionChanged(self) -> None:
         selectedIndexes = self.imageNamesList.selectionModel().selectedIndexes()
         if len(selectedIndexes) > 0:
             index = selectedIndexes[0].row()
             self.tabs.setCurrentIndex(index)
 
-    def onImageDeletePressed(self):
+    def onImageDeletePressed(self) -> None:
         selectedIndexes = self.imageNamesList.selectionModel().selectedIndexes()
         if len(selectedIndexes) > 0:
             index = selectedIndexes[0].row()
@@ -198,14 +198,14 @@ class Window(QMainWindow):
                 self.tabs.setCurrentIndex(0 if index == 0 else index - 1)
                 self.onTabChanged()
 
-    def onSave(self):
+    def onSave(self) -> None:
         if self.maskedAbHist is not None:
             fileName = QFileDialog.getSaveFileName(
                 self, "Save Histogram", QDir.currentPath(), "Numpy Files (*.npy)"
             )[0]
             np.save(fileName, self.maskedAbHist)
 
-    def onClose(self):
+    def onClose(self) -> None:
         if self.tabs.currentWidget() is not None:
             index = self.tabs.currentIndex()
             self.tabs.removeTab(index)
@@ -215,41 +215,41 @@ class Window(QMainWindow):
                 self.tabs.setCurrentIndex(0 if index == 0 else index - 1)
                 self.onTabChanged()
 
-    def onCamera(self):
+    def onCamera(self) -> None:
         self.cameraWindow = CameraWindow(maskedAbHist=self.maskedAbHist)
         self.cameraWindow.frameSignal.connect(self.onFrameReceived)
         self.cameraWindow.show()
 
-    def onClear(self):
+    def onClear(self) -> None:
         currentTab = self.tabs.currentWidget()
         if currentTab is not None:
             currentTab.widget().clearMask()
             self.undoStack.clear()
 
-    def onUpdateMask(self, image):
+    def onUpdateMask(self, image) -> None:
         self.imageMaskedHistogramCalculator.queue.put(copy.copy(self.images))
 
-    def onCalculateMaskedHistogram(self, result):
+    def onCalculateMaskedHistogram(self, result) -> None:
         (maskedAbHist, maskedAbHistPixmap) = result
         self.maskedAbHist = maskedAbHist
         self.lastMaskedAbHistPixmap = maskedAbHistPixmap
         self.onTotalAbHistogramPixmapSignal.emit(maskedAbHistPixmap)
 
-    def refreshImageList(self):
+    def refreshImageList(self) -> None:
         self.imageNamesModel.setStringList(
             [os.path.basename(image.path) for image in self.images]
         )
         self.imageNamesList.setMaximumWidth(self.imageNamesList.sizeHintForColumn(0))
 
-    def onFrameReceived(self, frame):
+    def onFrameReceived(self, frame) -> None:
         self.imageWriter = ImageWriter(frame)
         self.imageWriter.imageWriteSignal.connect(self.onImageWrite)
         self.imageWriter.start()
 
-    def onImageWrite(self, path):
+    def onImageWrite(self, path) -> None:
         self.openImage(path)
 
-    def closeEvent(self, event):
+    def closeEvent(self, event) -> None:
         self.imageReader.queue.put(None)
         self.imageMaskedHistogramCalculator.queue.put(None)
         event.accept()
@@ -259,7 +259,7 @@ class Image(QObject):
     maskUpdatedSignal = pyqtSignal(QObject)
     backprojectPixmapSignal = pyqtSignal(QPixmap)
 
-    def __init__(self, path):
+    def __init__(self, path) -> None:
         QObject.__init__(self)
         self.path = path
         self.bgr = cv2.imread(path)
@@ -281,7 +281,7 @@ class Image(QObject):
         self.clearMask()
         self.calcMaskedHist()
 
-    def calcMaskedHist(self):
+    def calcMaskedHist(self) -> None:
         self.maskedAbHist = cv2.calcHist(
             cv2.split(self.lab), [1, 2], self.mask, [numBins, numBins], [0, 256, 0, 256]
         )
@@ -293,7 +293,7 @@ class Image(QObject):
             QImage(frame.data, width, height, bytesPerLine, QImage.Format_BGR888)
         )
 
-    def updateMask(self, rect, val):
+    def updateMask(self, rect, val) -> None:
         top = rect.top()
         left = rect.left()
         height = rect.height()
@@ -307,7 +307,7 @@ class Image(QObject):
         painter.drawRect(rect)
         self.maskUpdatedSignal.emit(self)
 
-    def clearMask(self):
+    def clearMask(self) -> None:
         self.mask.fill(0)
         self.renderMask.fill(QColor(0, 0, 0, 0))
         self.maskUpdatedSignal.emit(self)
@@ -330,7 +330,7 @@ class Image(QObject):
 
         return pixmapFromFig(fig)
 
-    def createBackprojectPreview(self, maskedAbHist):
+    def createBackprojectPreview(self, maskedAbHist) -> None:
         if maskedAbHist is not None:
             self.maskedAbHist = maskedAbHist
             backproj = cv2.calcBackProject(
@@ -344,11 +344,11 @@ class Image(QObject):
 class ImageWriter(QThread):
     imageWriteSignal = pyqtSignal(str)
 
-    def __init__(self, image):
+    def __init__(self, image) -> None:
         QThread.__init__(self)
         self.image = image
 
-    def run(self):
+    def run(self) -> None:
         picsDirectory = "pics"
         if not (os.path.exists(picsDirectory)):
             os.makedirs(picsDirectory)
@@ -368,11 +368,11 @@ class ImageWriter(QThread):
 class ImageReader(QThread):
     imageReadSignal = pyqtSignal(Image)
 
-    def __init__(self):
+    def __init__(self) -> None:
         QThread.__init__(self)
         self.queue = Queue()
 
-    def run(self):
+    def run(self) -> None:
         for path in iter(self.queue.get, None):
             image = Image(path)
             self.imageReadSignal.emit(image)
@@ -383,12 +383,12 @@ class ImageReader(QThread):
 class ImageMaskedHistogramCalculator(QThread):
     calculatedMaskedHistogramSignal = pyqtSignal(tuple)
 
-    def __init__(self, images):
+    def __init__(self, images) -> None:
         QThread.__init__(self)
         self.queue = Queue()
         self.images = images
 
-    def run(self):
+    def run(self) -> None:
         for images in iter(self.queue.get, None):
             hist = None
             for image in images:
@@ -431,30 +431,30 @@ class ImageMaskedHistogramCalculator(QThread):
 class ImageHistogramRenderer(QThread):
     renderedHistogramSignal = pyqtSignal(QPixmap)
 
-    def __init__(self):
+    def __init__(self) -> None:
         QThread.__init__(self)
         self.queue = Queue()
 
-    def run(self):
+    def run(self) -> None:
         for imageTab in iter(self.queue.get, None):
             pixmap = imageTab.renderImageLabHistograms()
             # self.renderedHistogramSignal.emit(pixmap)
 
 
 class ImageListView(QListView):
-    def __init__(self, parent):
+    def __init__(self, parent) -> None:
         QListView.__init__(self)
         self.parent = parent
         self.setEditTriggers(QAbstractItemView.NoEditTriggers)
 
-    def keyPressEvent(self, event):
+    def keyPressEvent(self, event) -> None:
         key = event.key()
         if key == Qt.Key_Delete or key == Qt.Key_Backspace:
             self.parent.onImageDeletePressed()
 
 
 class ImageTab(QWidget):
-    def __init__(self, parent, image):
+    def __init__(self, parent, image) -> None:
         QWidget.__init__(self)
         self.parent = parent
         self.image = image
@@ -501,25 +501,25 @@ class ImageTab(QWidget):
 
         self.setLayout(self.layout)
 
-    def changeMask(self, rect, val):
+    def changeMask(self, rect, val) -> None:
         self.image.updateMask(rect, val)
 
-    def clearMask(self):
+    def clearMask(self) -> None:
         self.image.clearMask()
 
-    def onTotalAbHistogramReceived(self, pixmap):
+    def onTotalAbHistogramReceived(self, pixmap) -> None:
         self.totalAbHistogramLabel.setPixmap(pixmap)
         self.totalAbHistogramLabel.setFixedWidth(pixmap.width())
         self.totalAbHistogramLabel.setFixedHeight(pixmap.height())
 
-    def onBackprojectPixmapReceived(self, pixmap):
+    def onBackprojectPixmapReceived(self, pixmap) -> None:
         self.backprojectPreviewLabel.setPixmap(pixmap)
         self.backprojectPreviewLabel.setFixedWidth(pixmap.width())
         self.backprojectPreviewLabel.setFixedHeight(pixmap.height())
 
 
 class PixmapImageLabel(QLabel):
-    def __init__(self, parent, pixmap, mask=None, selectable=True):
+    def __init__(self, parent, pixmap, mask=None, selectable=True) -> None:
         QLabel.__init__(self)
         self.selectable = selectable
         self.mask = mask
@@ -533,7 +533,7 @@ class PixmapImageLabel(QLabel):
         if selectable:
             self.setMouseTracking(True)
 
-    def paintEvent(self, event):
+    def paintEvent(self, event) -> None:
         QLabel.paintEvent(self, event)
         painter = QPainter(self)
         painter.setPen(Qt.red)
@@ -542,7 +542,7 @@ class PixmapImageLabel(QLabel):
         if self.mask is not None:
             painter.drawImage(0, 0, self.mask)
 
-    def mousePressEvent(self, event):
+    def mousePressEvent(self, event) -> None:
         if self.selectable:
             x = event.x()
             y = event.y()
@@ -551,7 +551,7 @@ class PixmapImageLabel(QLabel):
             self.selectedRect = QRect(x, y, 0, 0)
             self.update()
 
-    def mouseReleaseEvent(self, event):
+    def mouseReleaseEvent(self, event) -> None:
         if self.selectable and self.selectedRect is not None:
             self.parent.parent.undoStack.push(
                 PixelChangeCommand(self.parent, self.selectedRect)
@@ -559,7 +559,7 @@ class PixmapImageLabel(QLabel):
             self.selectedRect = None
             self.update()
 
-    def mouseMoveEvent(self, event):
+    def mouseMoveEvent(self, event) -> None:
         if self.selectable and self.selectedRect is not None:
             x = event.x()
             y = event.y()
@@ -571,34 +571,34 @@ class PixmapImageLabel(QLabel):
             )
             self.update()
 
-    def onUpdateMask(self, image):
+    def onUpdateMask(self, image) -> None:
         self.update()
 
 
 class PixelChangeCommand(QUndoCommand):
-    def __init__(self, imageWidget, rect):
+    def __init__(self, imageWidget, rect) -> None:
         QUndoCommand.__init__(self)
         self.imageWidget = imageWidget
         self.rect = rect
 
-    def undo(self):
+    def undo(self) -> None:
         self.imageWidget.changeMask(self.rect, 0)
 
-    def redo(self):
+    def redo(self) -> None:
         self.imageWidget.changeMask(self.rect, 255)
 
 
 class CameraWindow(QWidget):
     frameSignal = pyqtSignal(np.ndarray)
 
-    def __init__(self, parent=None, maskedAbHist=None):
+    def __init__(self, parent=None, maskedAbHist=None) -> None:
         super().__init__(parent)
         self.maskedAbHist = maskedAbHist
         self.setWindowTitle("Camera")
         self.createUI()
         self.setupCameraWorker()
 
-    def createUI(self):
+    def createUI(self) -> None:
         self.imageLabel = QLabel()
         self.imageLabel.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         self.imageLabel.setScaledContents(False)
@@ -615,7 +615,7 @@ class CameraWindow(QWidget):
         self.layout.addWidget(self.backprojectLabel, 2, 1, Qt.AlignTop)
         self.setLayout(self.layout)
 
-    def setupCameraWorker(self):
+    def setupCameraWorker(self) -> None:
         self.lastFrame = None
         self.cameraWorker = CameraWorker(maskedAbHist=self.maskedAbHist)
         self.cameraWorker.frameSignal.connect(self.onFrameReceived)
@@ -625,20 +625,20 @@ class CameraWindow(QWidget):
         )
         self.cameraWorker.start()
 
-    def onFrameReceived(self, frame):
+    def onFrameReceived(self, frame) -> None:
         self.lastFrame = frame
 
-    def onFramePixmapReceived(self, pixmap):
+    def onFramePixmapReceived(self, pixmap) -> None:
         self.imageLabel.setPixmap(pixmap)
 
-    def onBackprojectPixmapReceived(self, pixmap):
+    def onBackprojectPixmapReceived(self, pixmap) -> None:
         self.backprojectLabel.setPixmap(pixmap)
 
-    def onPicButtonPressed(self):
+    def onPicButtonPressed(self) -> None:
         if self.lastFrame is not None:
             self.frameSignal.emit(self.lastFrame)
 
-    def closeEvent(self, event):
+    def closeEvent(self, event) -> None:
         self.cameraWorker.interrupt()
         event.accept()
 
@@ -648,7 +648,7 @@ class CameraWorker(QThread):
     framePixmapSignal = pyqtSignal(QPixmap)
     backprojectPixmapSignal = pyqtSignal(QPixmap)
 
-    def __init__(self, maskedAbHist=None):
+    def __init__(self, maskedAbHist=None) -> None:
         QThread.__init__(self)
         self.image_files = [
             os.path.join("images", f)
@@ -659,7 +659,7 @@ class CameraWorker(QThread):
         self.active = True
         self.imgIndex = 0
 
-    def run(self):
+    def run(self) -> None:
         while self.active:
             # Check if 'q' key is pressed
             frame = cv2.imread(self.image_files[self.imgIndex])
@@ -677,7 +677,7 @@ class CameraWorker(QThread):
             elif key == ord(" "):
                 self.imgIndex += 1
 
-    def interrupt(self):
+    def interrupt(self) -> None:
         self.active = False
 
     def backprojectPreviewFromFrame(self, frame):
@@ -709,7 +709,7 @@ def pixmapFromFig(fig):
     return pixmap
 
 
-def main():
+def main() -> None:
     app = QApplication(sys.argv)
     main = Window()
     main.show()

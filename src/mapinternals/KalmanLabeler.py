@@ -18,7 +18,7 @@ from tools import Calculator
 class KalmanLabeler:
     def __init__(
         self, kalmanCacheRobots: KalmanCache, kalmanCacheGameObjects: KalmanCache
-    ):
+    ) -> None:
         self.kalmanCacheRobots: KalmanCache = kalmanCacheRobots
         self.kalmanCacheGameObjects: KalmanCache = kalmanCacheGameObjects
         pass
@@ -30,7 +30,7 @@ class KalmanLabeler:
         singleCameraResults: list[list[int, tuple[int, int, int], float, bool]],
         cameraIdOffset: CameraIdOffsets,
         timeStepSeconds: float,
-    ):
+    ) -> None:
         robotKeys: set = self.kalmanCacheRobots.getKeySet()
         gameObjectKeys: set = self.kalmanCacheGameObjects.getKeySet()
         markedIndexs = []
@@ -39,7 +39,9 @@ class KalmanLabeler:
             singleCameraResult[0] += cameraIdOffset.getIdOffset()
             # adjust id by a fixed camera offset, so that id collisions dont happen
             (realId, (x, y, z), conf, isRobot) = singleCameraResult[:4]
-            cacheOfChoice: KalmanCache = self.kalmanCacheRobots if isRobot else self.kalmanCacheGameObjects
+            cacheOfChoice: KalmanCache = (
+                self.kalmanCacheRobots if isRobot else self.kalmanCacheGameObjects
+            )
             keySetOfChoice = robotKeys if isRobot else gameObjectKeys
             data = cacheOfChoice.getSavedKalmanData(realId)
             if data is None:
@@ -52,7 +54,9 @@ class KalmanLabeler:
         # todo add robot color as a matching factor
 
         for index in markedIndexs:
-            (realId, (detectionX, detectionY, z), conf, isRobot) = singleCameraResults[index][:4]
+            (realId, (detectionX, detectionY, z), conf, isRobot) = singleCameraResults[
+                index
+            ][:4]
             keySetOfChoice = robotKeys if isRobot else gameObjectKeys
             cacheOfChoice: KalmanCache = (
                 self.kalmanCacheRobots if isRobot else self.kalmanCacheGameObjects
@@ -81,7 +85,7 @@ class KalmanLabeler:
                 # remove id from possible options and update result entry
                 singleCameraResults[index][0] = closestId
                 keySetOfChoice.remove(closestId)
-        
+
         for remainingKey in robotKeys:
             out: KalmanEntry = self.kalmanCacheRobots.getSavedKalmanData(remainingKey)
             out.incrementNotSeen()

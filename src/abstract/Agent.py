@@ -1,7 +1,7 @@
 # agents, otherwise known as tasks will be long running "processes"
-# lifespan: 1. create 2. run until shutdown/task finished 2.5 possibly shutdown 3. cleanup. 
+# lifespan: 1. create 2. run until shutdown/task finished 2.5 possibly shutdown 3. cleanup.
 # For the most part there will be only one agent running for the whole time
-# NOTE: agents will get objects passed into them via the init. There are the "shared" objects across the whole process. 
+# NOTE: agents will get objects passed into them via the init. There are the "shared" objects across the whole process.
 # For objects pertaining only to agent, create them in the create method
 
 from abc import ABC, abstractmethod
@@ -15,15 +15,23 @@ from Core.TimeOperator import Timer
 
 
 class Agent(ABC):
-    DEFAULT_LOOP_TIME = 0 # 0 ms
-    def __init__(self, **kwargs):
+    DEFAULT_LOOP_TIME = 0  # 0 ms
+
+    def __init__(self, **kwargs) -> None:
         # nothing should go here
         pass
 
-    def inject(self, central : Central, xclient : XTablesClient, propertyOperator : PropertyOperator,
-                        configOperator : ConfigOperator, shareOperator : ShareOperator, logger : Logger, timer : Timer):
-        """ "Injects" arguments into agent, should not be modified in any classes
-        """
+    def inject(
+        self,
+        central: Central,
+        xclient: XTablesClient,
+        propertyOperator: PropertyOperator,
+        configOperator: ConfigOperator,
+        shareOperator: ShareOperator,
+        logger: Logger,
+        timer: Timer,
+    ) -> None:
+        """ "Injects" arguments into agent, should not be modified in any classes"""
         self.central = central
         self.xclient = xclient
         self.propertyOperator = propertyOperator
@@ -32,29 +40,28 @@ class Agent(ABC):
         self.Sentinel = logger
         self.timer = timer
         # other than setting variables, nothing should go here
-    
+
     def getTimer(self):
-        """ Use only when needed, and only when associated with agent"""
+        """Use only when needed, and only when associated with agent"""
         return self.timer
 
     # ----- Required Implementations -----
-    
+
     @abstractmethod
-    def create(self):        
-        """ Runs once when the agent is created"""
+    def create(self):
+        """Runs once when the agent is created"""
         # perform agent init here (eg open camera or whatnot)
         pass
 
     @abstractmethod
     def runPeriodic(self):
-        """ Runs continously until the agent ends"""
+        """Runs continously until the agent ends"""
         # agent periodic loop here
         pass
 
-
     @abstractmethod
     def isRunning(self) -> bool:
-        """ Return a boolean value denoting whether the agent should still be running"""
+        """Return a boolean value denoting whether the agent should still be running"""
         # condition to keep agent running here
         pass
 
@@ -62,31 +69,31 @@ class Agent(ABC):
 
     @abstractmethod
     def getName(self):
-        """ Please tell me your name"""
+        """Please tell me your name"""
         # agent name here
         pass
 
     @abstractmethod
     def getDescription(self):
-        """ Sooo, what do you do for a "living" """
+        """Sooo, what do you do for a "living" """
         # agent description here
         pass
 
     # ----- optional methods -----
-    
+
     def getIntervalMs(self):
-        """ how long to wait between each run call
-            default is 0, eg no waiting
+        """how long to wait between each run call
+        default is 0, eg no waiting
         """
         # can leave as None, will use default time of 1 ms
         return self.DEFAULT_LOOP_TIME
-    
-    def forceShutdown(self):
-        """ Handle any abrupt shutdown tasks here"""
+
+    def forceShutdown(self) -> None:
+        """Handle any abrupt shutdown tasks here"""
         # optional code to kill agent immediately here
         pass
 
-    def onClose(self):
-        """ Runs once when the agent is finished"""
+    def onClose(self) -> None:
+        """Runs once when the agent is finished"""
         # optional agent cleanup here
         pass

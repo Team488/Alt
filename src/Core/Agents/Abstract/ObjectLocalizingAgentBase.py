@@ -21,13 +21,13 @@ class ObjectLocalizingAgentBase(TimestampRegulatedAgentBase):
 
     DETECTIONPOSTFIX = "Detections"
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs) -> None:
         self.cameraIntrinsics = kwargs.get("cameraIntrinsics", None)
         self.cameraExtrinsics = kwargs.get("cameraExtrinsics", None)
         self.inferenceMode = kwargs.get("inferenceMode", None)
         super().__init__(**kwargs)
 
-    def create(self):
+    def create(self) -> None:
         super().create()
         # self.xdashDebugger = XDashDebugger()
         self.Sentinel.info("Creating Frame Processor...")
@@ -40,7 +40,7 @@ class ObjectLocalizingAgentBase(TimestampRegulatedAgentBase):
             self.DETECTIONPOSTFIX, b""
         )
 
-    def runPeriodic(self):
+    def runPeriodic(self) -> None:
         super().runPeriodic()
         sendFrame = self.sendFrame.get()
         with self.timer.run("frame-processing"):
@@ -81,13 +81,13 @@ class ObjectLocalizingAgentBase(TimestampRegulatedAgentBase):
 
         self.Sentinel.info("Processed frame!")
 
-    def getName(self):
+    def getName(self) -> str:
         return "Object_Localizer"
 
-    def getDescription(self):
+    def getDescription(self) -> str:
         return "Inference_Then_Localize"
 
-    def getIntervalMs(self):
+    def getIntervalMs(self) -> int:
         return 0
 
 

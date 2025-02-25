@@ -10,7 +10,7 @@ class Tracker:
     encoder = None
     tracks = None
 
-    def __init__(self):
+    def __init__(self) -> None:
         max_cosine_distance = 0.4
         nn_budget = None
 
@@ -22,7 +22,7 @@ class Tracker:
         self.tracker = DeepSortTracker(metric)
         self.encoder = gdet.create_box_encoder(encoder_model_filename, batch_size=1)
 
-    def update(self, frame, detections):
+    def update(self, frame, detections) -> None:
 
         if len(detections) == 0:
             self.tracker.predict()
@@ -44,7 +44,7 @@ class Tracker:
         self.tracker.update(dets)
         self.update_tracks()
 
-    def update_tracks(self):
+    def update_tracks(self) -> None:
         tracks = []
         for track in self.tracker.tracks:
             if not track.is_confirmed() or track.time_since_update > 1:
@@ -62,6 +62,6 @@ class Track:
     track_id = None
     bbox = None
 
-    def __init__(self, id, bbox):
+    def __init__(self, id, bbox) -> None:
         self.track_id = id
         self.bbox = bbox

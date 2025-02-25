@@ -13,7 +13,7 @@ import json
 
 
 class AprilTagLocal:
-    def __init__(self, cameraIntrinsic: CameraIntrinsics):
+    def __init__(self, cameraIntrinsic: CameraIntrinsics) -> None:
         self.detector = AprilTagDetector()
         self.detectorConfig = AprilTagDetector.Config()
         self.detectorConfig.quadDecimate = 1
@@ -36,7 +36,7 @@ class AprilTagLocal:
 
         self.estimator = AprilTagPoseEstimator(config)
 
-    def loadConfig(self, config_file):
+    def loadConfig(self, config_file) -> None:
         try:
             with open(config_file) as PV_config:
                 data = json.load(PV_config)

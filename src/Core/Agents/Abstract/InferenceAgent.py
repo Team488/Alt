@@ -1,4 +1,5 @@
 import os
+from typing import Optional
 import cv2
 import time
 from functools import partial
@@ -18,11 +19,11 @@ class InferenceAgent(CameraUsingAgentBase):
     Adds inference capabilites to an agent, processing frames
     NOTE: Requires extra arguments passed in somehow, for example using Functools partial or extending the class"""
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
         self.inferenceMode = kwargs.get("inferenceMode", None)
 
-    def create(self):
+    def create(self) -> None:
         super().create()
         self.Sentinel.info("Creating Frame Processor...")
         self.inf = MultiInferencer(
@@ -33,7 +34,7 @@ class InferenceAgent(CameraUsingAgentBase):
         )
         self.drawBoxes = self.propertyOperator.createProperty("Draw_Boxes", True)
 
-    def runPeriodic(self):
+    def runPeriodic(self) -> None:
         super().runPeriodic()
 
         with self.timer.run("inference"):
@@ -41,16 +42,16 @@ class InferenceAgent(CameraUsingAgentBase):
                 self.latestFrame, self.confidence.get(), self.drawBoxes.get()
             )
 
-    def getName(self):
+    def getName(self) -> str:
         return "Inference_Agent_Process"
 
-    def getDescription(self):
+    def getDescription(self) -> str:
         return "Ingest_Camera_Run_Ai_Model"
 
 
 def InferenceAgentPartial(
     cameraPath,
-    cameraIntrinsics: CameraIntrinsics,
+    cameraIntrinsics: Optional[CameraIntrinsics],
     inferenceMode: InferenceMode,
     showFrames: bool = False,
 ):

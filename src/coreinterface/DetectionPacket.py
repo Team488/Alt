@@ -59,7 +59,7 @@ class DetectionPacket:
         with detectionNetPacket_capnp.DataPacket.from_bytes(decoded_bytestr) as packet:
             return packet
         return None
-    
+
     @staticmethod
     def fromBytes(bytes):
         with detectionNetPacket_capnp.DataPacket.from_bytes(bytes) as packet:
@@ -104,7 +104,8 @@ class DetectionPacket:
 
         return detections
 
-def test_packet():
+
+def test_packet() -> None:
     packet = DetectionPacket.createPacket(
         [[10, (1, 2, 3), 0.6, True, np.array([1, 2, 3, 4])]], "HELLO", 12345
     )
@@ -114,6 +115,7 @@ def test_packet():
     outPacket = DetectionPacket.fromBase64(b64)
     print(outPacket)
     print(DetectionPacket.toDetections(outPacket))
+
 
 if __name__ == "__main__":
     DetectionPacket.test_packet()

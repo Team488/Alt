@@ -5,31 +5,30 @@ from tools.Constants import MapConstants
 isLButtonDown = False
 
 
-def startGeneration():
+def startGeneration() -> None:
     mapPath = "assets/obstacleMap.npy"
     fieldPath = "assets/fieldTopDown.png"
     fieldMap = None
     try:
         fieldMap = cv2.imread(fieldPath)
-        fieldMap = cv2.resize(fieldMap,(MapConstants.fieldWidth.value, MapConstants.fieldHeight.value))
+        fieldMap = cv2.resize(
+            fieldMap, (MapConstants.fieldWidth.value, MapConstants.fieldHeight.value)
+        )
     except Exception:
         print("failed to load any saved field map")
         fieldMap = (
             np.ones(
                 (MapConstants.fieldHeight.value, MapConstants.fieldWidth.value),
-                dtype=np.uint8
+                dtype=np.uint8,
             )
             * 255
         )
-    
 
     windowName = "Map Generator"
     brushTrackbarName = "Brush Size"
     draw_map = np.zeros(
-            (MapConstants.fieldHeight.value, MapConstants.fieldWidth.value),
-            dtype=bool
-        )
-    
+        (MapConstants.fieldHeight.value, MapConstants.fieldWidth.value), dtype=bool
+    )
 
     try:
         draw_map = np.load(mapPath)
@@ -37,15 +36,14 @@ def startGeneration():
     except Exception:
         print("failed to load any saved map")
 
-
     cv2.namedWindow(windowName)
 
-    def n(x):
+    def n(x) -> None:
         pass
 
     cv2.createTrackbar(brushTrackbarName, windowName, 6, 40, n)
 
-    def displayCallback(event, x, y, flags, param):
+    def displayCallback(event, x, y, flags, param) -> None:
         global isLButtonDown
         nonlocal draw_map
         if event == cv2.EVENT_LBUTTONDOWN:
@@ -66,9 +64,15 @@ def startGeneration():
     cv2.setMouseCallback(windowName, displayCallback)
 
     while True:
-        mapCopy = cv2.merge((draw_map.copy().astype(dtype=np.uint8)*255, draw_map.copy().astype(dtype=np.uint8)*255, draw_map.copy().astype(dtype=np.uint8)*255))
+        mapCopy = cv2.merge(
+            (
+                draw_map.copy().astype(dtype=np.uint8) * 255,
+                draw_map.copy().astype(dtype=np.uint8) * 255,
+                draw_map.copy().astype(dtype=np.uint8) * 255,
+            )
+        )
         print(f"Map Shape: {mapCopy.shape} FieldMap Shape: {fieldMap.shape}")
-        mapCopy = cv2.bitwise_or(mapCopy,fieldMap)
+        mapCopy = cv2.bitwise_or(mapCopy, fieldMap)
         cv2.putText(
             mapCopy, "S-> Save | R-> Reset | Q-> Quit", (5, 25), 1, 2, (0, 255, 0), 1
         )
@@ -77,11 +81,9 @@ def startGeneration():
         if key == ord("q"):
             break
         elif key == ord("r"):
-            draw_map = (
-                np.zeros(
-                    (MapConstants.fieldHeight.value, MapConstants.fieldWidth.value),
-                    dtype=bool
-                )
+            draw_map = np.zeros(
+                (MapConstants.fieldHeight.value, MapConstants.fieldWidth.value),
+                dtype=bool,
             )
         elif key == ord("s"):
             try:

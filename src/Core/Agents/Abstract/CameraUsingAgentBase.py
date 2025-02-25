@@ -25,7 +25,7 @@ class CameraUsingAgentBase(Agent):
     NOTE: This means you cannot run this class as is
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
         self.cameraIntrinsics = kwargs.get("cameraIntrinsics", None)
         self.cameraPath = kwargs.get("cameraPath", None)
@@ -35,7 +35,7 @@ class CameraUsingAgentBase(Agent):
         self.WINDOWNAME = "frame"
         self.primaryMonitor = getPrimary()
 
-    def create(self):
+    def create(self) -> None:
         super().create()
         # self.xdashDebugger = XDashDebugger()
         self.oakMode = self.cameraPath == "oakdlite"
@@ -43,7 +43,7 @@ class CameraUsingAgentBase(Agent):
             self.cap = DepthAIHelper(self.cameraIntrinsics)
         else:
             self.cap = cv2.VideoCapture(self.cameraPath)
-            if CameraIntrinsics is not None:
+            if self.cameraIntrinsics is not None:
                 fourcc = cv2.VideoWriter_fourcc(*"MJPG")  # or 'XVID', 'MP4V'
                 self.cap.set(cv2.CAP_PROP_FOURCC, fourcc)
                 CameraIntrinsics.setCapRes(self.cameraIntrinsics, self.cap)
@@ -132,7 +132,7 @@ class CameraUsingAgentBase(Agent):
 
             self.latestFrame = self.preprocessFrame(frame)
 
-    def onClose(self):
+    def onClose(self) -> None:
         super().onClose()
         if self.oakMode:
             self.cap.close()
@@ -143,7 +143,7 @@ class CameraUsingAgentBase(Agent):
         if self.showFrames:
             cv2.destroyAllWindows()
 
-    def isRunning(self):
+    def isRunning(self) -> bool:
         if not self.oakMode and not self.cap.isOpened():
             self.Sentinel.fatal("Camera cant be opened!")
             return False
@@ -152,6 +152,6 @@ class CameraUsingAgentBase(Agent):
             return False
         return True
 
-    def forceShutdown(self):
+    def forceShutdown(self) -> None:
         super().forceShutdown()
         self.cap.release()

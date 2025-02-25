@@ -12,7 +12,7 @@ Sentinel = getLogger("Reef_State")
 
 
 class ReefState:
-    def __init__(self, DISSIPATIONFACTOR=0.999):
+    def __init__(self, DISSIPATIONFACTOR=0.999) -> None:
         (
             self.idx_flip,
             self.idx_to_apriltag,
@@ -33,7 +33,9 @@ class ReefState:
 
         cols = len(idx_to_apriltag)
         rows = len(ReefBranches)
-        reef_map = np.full((rows, cols),  0.5, dtype=np.float64) # Initialize to 50% as "unknown"
+        reef_map = np.full(
+            (rows, cols), 0.5, dtype=np.float64
+        )  # Initialize to 50% as "unknown"
 
         return idx_flip, idx_to_apriltag, apriltag_to_idx, reef_map
 
@@ -43,39 +45,51 @@ class ReefState:
         algae_map = np.zeros((numAlgae), dtype=np.float64)
         return algae_map
 
-    def dissipateOverTime(self, timeFactor: int):
+    def dissipateOverTime(self, timeFactor: int) -> None:
         """This operates under the assumtion that as time passed, the chance of slots being taken increases. So if there are no updates, as t grows, the openness confidence should go to zero"""
-        
-        reef_dissipation_factor = np.power(self.DISSIPATIONFACTOR, round(timeFactor / 100))
+
+        reef_dissipation_factor = np.power(
+            self.DISSIPATIONFACTOR, round(timeFactor / 100)
+        )
 
         """ Reef Map Dissipation"""
         # Create a mask for slots that are not locked (not -1) and above 0.5 to dissipate
         # That way we can keep "unknown" states
         mask = (self.reef_map != -1) & (self.reef_map > 0.5)
-        
+
         # Only update slots that fall under the mask conditions and normalize to 0.5
-        self.reef_map[mask] = 0.5 + (self.reef_map[mask] - 0.5) * reef_dissipation_factor # discrete dissipation
+        self.reef_map[mask] = (
+            0.5 + (self.reef_map[mask] - 0.5) * reef_dissipation_factor
+        )  # discrete dissipation
 
         """ Algae Map Dissipation"""
-        algae_dissipation_factor = np.power(self.DISSIPATIONFACTOR, round(timeFactor / 100))
+        algae_dissipation_factor = np.power(
+            self.DISSIPATIONFACTOR, round(timeFactor / 100)
+        )
         self.algae_map *= np.power(algae_dissipation_factor)  # discrete dissipation
 
     def addObservationCoral(
         self, apriltagid, branchid, opennessconfidence, weighingfactor=0.85
-    ):
+    ) -> None:
         if apriltagid not in self.apriltag_to_idx or (
             branchid < 0 or branchid >= self.reef_map.shape[0]
         ):
             Sentinel.warning(
                 f"Invalid apriltagid or branchid! {apriltagid=} {branchid=}"
             )
-    
-    def addObservation(self, apriltagid, branchid, opennessconfidence, weighingfactor = 0.85):
-        #print(f"AddingObservation", apriltagid, branchid, opennessconfidence)
-        if apriltagid not in self.apriltag_to_idx or (branchid < 0 or branchid >= self.reef_map.shape[0]):
-            Sentinel.warning(f"Invalid apriltagid or branchid! {apriltagid=} {branchid=}")
+
+    def addObservation(
+        self, apriltagid, branchid, opennessconfidence, weighingfactor=0.85
+    ) -> None:
+        # print(f"AddingObservation", apriltagid, branchid, opennessconfidence)
+        if apriltagid not in self.apriltag_to_idx or (
+            branchid < 0 or branchid >= self.reef_map.shape[0]
+        ):
+            Sentinel.warning(
+                f"Invalid apriltagid or branchid! {apriltagid=} {branchid=}"
+            )
             return
-        
+
         col_idx = self.apriltag_to_idx.get(apriltagid)
         row_idx = branchid
 
@@ -83,14 +97,16 @@ class ReefState:
         # Stop updating to that particular observation. It becomes "locked".
         # TODO: Add this in if necesary
 
-        #if self.reef_map[row_idx, col_idx] < 0.1:
-            #self.reef_map[row_idx, col_idx] = -1.0
-            #return
-        
-        self.reef_map[row_idx, col_idx] *= (1-weighingfactor)
+        # if self.reef_map[row_idx, col_idx] < 0.1:
+        # self.reef_map[row_idx, col_idx] = -1.0
+        # return
+
+        self.reef_map[row_idx, col_idx] *= 1 - weighingfactor
         self.reef_map[row_idx, col_idx] += opennessconfidence * weighingfactor
 
-    def addObservationAlgae(self, apriltagid, opennessconfidence, weighingfactor=0.85):
+    def addObservationAlgae(
+        self, apriltagid, opennessconfidence, weighingfactor=0.85
+    ) -> None:
         if apriltagid not in self.apriltag_to_idx:
             Sentinel.warning(f"Invalid apriltagid{apriltagid=}")
             return
@@ -110,7 +126,6 @@ class ReefState:
         offset_col, mapbacking = self.__getMapBacking(team)
         row_idxs, col_idxs = np.where(mapbacking > threshold)
 
-        
         open_slots = []
         for row, col in zip(row_idxs, col_idxs):
             at_idx = self.idx_to_apriltag[col + offset_col]
@@ -146,10 +161,12 @@ class ReefState:
         openness = mapbacking[row, col]
 
         return at_idx, branch_idx, openness
-    
+
     # Helper
-    def getReefMapState_as_dictionary(self, team: TEAM = None) -> dict[(int, int) : float]: 
-        """ Returns the entire map state as a dictionary """
+    def getReefMapState_as_dictionary(
+        self, team: TEAM = None
+    ) -> dict[(int, int):float]:
+        """Returns the entire map state as a dictionary"""
         offset_col, mapbacking = self.__getMapBacking(team)
         reefMap_state = {}
         rows, cols = mapbacking.shape
@@ -158,10 +175,12 @@ class ReefState:
                 at_id = self.idx_to_apriltag[col + offset_col]
                 openness = mapbacking[row, col]
                 reefMap_state[(int(at_id), int(row))] = float(openness)
-        
+
         return reefMap_state
 
-    def getReefMapState_as_ReefPacket(self, team: TEAM = None, timestamp=0) -> reefStatePacket_capnp.ReefPacket:
+    def getReefMapState_as_ReefPacket(
+        self, team: TEAM = None, timestamp=0
+    ) -> reefStatePacket_capnp.ReefPacket:
         offset_col, mapbacking = self.__getMapBacking(team)
         reefTrackerOutput = {}
         rows, cols = mapbacking.shape
@@ -176,7 +195,7 @@ class ReefState:
         message = "Reef State Update"
         return ReefPacket.createPacket(reefTrackerOutput, message, timestamp)
 
-    def __getMapBacking(self, team : TEAM):
+    def __getMapBacking(self, team: TEAM):
         mapbacking = self.reef_map
         offset_col = 0
         if team is not None:
