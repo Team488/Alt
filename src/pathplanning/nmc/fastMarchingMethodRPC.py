@@ -345,11 +345,30 @@ MAX_ROBOT_SIZE_DIAGONAL_INCHES = int(
 PIXELS_PER_METER_X = grid_width / fieldWidthMeters
 PIXELS_PER_METER_Y = grid_height / fieldHeightMeters
 
+low_hanging_red_far_active = True
+low_hanging_red_mid_active = False
+low_hanging_red_close_active = True
+low_hanging_blue_far_active = True
+low_hanging_blue_mid_active = False
+low_hanging_blue_close_active = True
+
+print("Loading pre-set static obstacles...")
+static_obs_array = get_static_obstacles("static_obstacles_inch.json")
+static_hang_obs_red_far = get_static_obstacles("static_obstacles_inch_red_far.json")
+static_hang_obs_red_mid = get_static_obstacles("static_obstacles_inch_red_mid.json")
+static_hang_obs_red_close = get_static_obstacles("static_obstacles_inch_red_close.json")
+static_hang_obs_blue_far = get_static_obstacles("static_obstacles_inch_blue_far.json")
+static_hang_obs_blue_mid = get_static_obstacles("static_obstacles_inch_blue_mid.json")
+static_hang_obs_blue_close = get_static_obstacles(
+    "static_obstacles_inch_blue_close.json"
+)
+print("Finished loading pre-set static obstacles...")
+
 
 class VisionCoprocessorServicer(XTableGRPC.VisionCoprocessorServicer):
     def RequestBezierPathWithOptions(self, request, context):
         print(f"Received request with option: {request}")
-
+        base_grid = np.ones((grid_height, grid_width), dtype=float)
         start = (request.start.x, request.start.y)
         goal = (request.end.x, request.end.y)
         SAFE_DISTANCE_INCHES = (
@@ -357,12 +376,23 @@ class VisionCoprocessorServicer(XTableGRPC.VisionCoprocessorServicer):
             if request.HasField("safeDistanceInches")
             else DEFAULT_SAFE_DISTANCE_INCHES
         )
-        TOTAL_SAFE_DISTANCE = int(MAX_ROBOT_SIZE_DIAGONAL_INCHES + SAFE_DISTANCE_INCHES)
 
-        base_grid = np.ones((grid_height, grid_width), dtype=float)
-        static_obs_array = get_static_obstacles("static_obstacles_inch.json")
+        TOTAL_SAFE_DISTANCE = int(MAX_ROBOT_SIZE_DIAGONAL_INCHES + SAFE_DISTANCE_INCHES)
+        modified_static_obs = static_obs_array.copy()
+        if low_hanging_red_far_active:
+            modified_static_obs.extend(static_hang_obs_red_far)
+        if low_hanging_red_mid_active:
+            modified_static_obs.extend(static_hang_obs_red_mid)
+        if low_hanging_red_close_active:
+            modified_static_obs.extend(static_hang_obs_red_close)
+        if low_hanging_blue_far_active:
+            modified_static_obs.extend(static_hang_obs_blue_far)
+        if low_hanging_blue_mid_active:
+            modified_static_obs.extend(static_hang_obs_blue_mid)
+        if low_hanging_blue_close_active:
+            modified_static_obs.extend(static_hang_obs_blue_close)
         static_grid = apply_and_inflate_all_static_obstacles(
-            base_grid, static_obs_array, TOTAL_SAFE_DISTANCE
+            base_grid, modified_static_obs, TOTAL_SAFE_DISTANCE
         )
 
         # add prob map detections to static_grid here
