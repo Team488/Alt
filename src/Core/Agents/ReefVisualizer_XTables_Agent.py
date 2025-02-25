@@ -50,9 +50,9 @@ class ReefVisualizerAgent(Agent):
         # List w/ tuple (April tag id, branch id, openness confidence)
         bytes = ret.value
         decoded = ReefPacket.fromBytes(bytes)
-        flattenedOutput = ReefPacket.getFlattenedObservations(decoded)
+        flattenedCoralOutput = ReefPacket.getFlattenedObservations(decoded)[0]
         
-        for atID_x, branchID_x, confidence in flattenedOutput:
+        for atID_x, branchID_x, confidence in flattenedCoralOutput:
             if (atID_x == 17):
                 print(atID_x, branchID_x, confidence)
             branch_index = branchID_x % 2 # Index Left or Right side of AT (0, 1)

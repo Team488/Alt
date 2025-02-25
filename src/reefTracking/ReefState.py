@@ -58,7 +58,7 @@ class ReefState:
 
         """ Algae Map Dissipation"""
         algae_dissipation_factor = np.power(self.DISSIPATIONFACTOR, round(timeFactor / 100))
-        self.algae_map *= np.power(algae_dissipation_factor)  # discrete dissipation
+        self.algae_map *= algae_dissipation_factor  # discrete dissipation
 
     def addObservationCoral(
         self, apriltagid, branchid, opennessconfidence, weighingfactor=0.85
@@ -162,19 +162,25 @@ class ReefState:
         return reefMap_state
 
     def getReefMapState_as_ReefPacket(self, team: TEAM = None, timestamp=0) -> reefStatePacket_capnp.ReefPacket:
+        # Create the Coral Map Output       
         offset_col, mapbacking = self.__getMapBacking(team)
-        reefTrackerOutput = {}
+        coralTrackerOutput = {}
         rows, cols = mapbacking.shape
         for col in range(cols):
             for row in range(rows):
                 at_id = self.idx_to_apriltag[col + offset_col]
                 openness = mapbacking[row, col]
-                if at_id not in reefTrackerOutput:
-                    reefTrackerOutput[at_id] = {}
-                reefTrackerOutput[at_id][row] = openness
-
+                if at_id not in coralTrackerOutput:
+                    coralTrackerOutput[at_id] = {}
+                coralTrackerOutput[at_id][row] = openness
+        # Create the Algae Map Output       
+        algaeTrackerOutput = {}
+        for apriltag in self.idx_to_apriltag:
+            algae_idx = self.apriltag_to_idx.get(apriltag)
+            algaeTrackerOutput[apriltag] = self.algae_map[algae_idx]
+ 
         message = "Reef State Update"
-        return ReefPacket.createPacket(reefTrackerOutput, message, timestamp)
+        return ReefPacket.createPacket(coralTrackerOutput, algaeTrackerOutput, message, timestamp)
 
     def __getMapBacking(self, team : TEAM):
         mapbacking = self.reef_map
