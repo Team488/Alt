@@ -9,7 +9,7 @@ import numpy as np
 
 from Core.Agents.Abstract.CameraUsingAgentBase import CameraUsingAgentBase
 from inference.MultiInferencer import MultiInferencer
-from tools.Constants import InferenceMode
+from tools.Constants import CameraIntrinsics, InferenceMode
 from coreinterface.FramePacket import FramePacket
 
 
@@ -18,14 +18,9 @@ class InferenceAgent(CameraUsingAgentBase):
     Adds inference capabilites to an agent, processing frames
     NOTE: Requires extra arguments passed in somehow, for example using Functools partial or extending the class"""
 
-    FRAMEPOSTFIX = "Frame"
-
-    def __init__(
-        self,
-        **kwargs
-    ):
+    def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.inferenceMode = kwargs.get("inferenceMode",None)
+        self.inferenceMode = kwargs.get("inferenceMode", None)
 
     def create(self):
         super().create()
@@ -33,22 +28,18 @@ class InferenceAgent(CameraUsingAgentBase):
         self.inf = MultiInferencer(
             inferenceMode=self.inferenceMode,
         )
-        self.confidence = self.propertyOperator.createProperty("Confidence_Threshold",0.7)
-        self.drawBoxes = self.propertyOperator.createProperty("Draw_Boxes",True)
-
-        self.frameProp = self.propertyOperator.createCustomReadOnlyProperty(
-            self.FRAMEPOSTFIX, b""
+        self.confidence = self.propertyOperator.createProperty(
+            "Confidence_Threshold", 0.7
         )
+        self.drawBoxes = self.propertyOperator.createProperty("Draw_Boxes", True)
 
     def runPeriodic(self):
         super().runPeriodic()
-        
-        with self.timer.run("inference"):
-            self.results = self.inf.run(self.latestFrame,self.confidence.get(),self.drawBoxes.get())
-        
-        framepkt = FramePacket.createPacket(time.time(),"helooo",self.latestFrame)
-        self.frameProp.set(framepkt.to_bytes())
 
+        with self.timer.run("inference"):
+            self.results = self.inf.run(
+                self.latestFrame, self.confidence.get(), self.drawBoxes.get()
+            )
 
     def getName(self):
         return "Inference_Agent_Process"
@@ -58,11 +49,16 @@ class InferenceAgent(CameraUsingAgentBase):
 
 
 def InferenceAgentPartial(
-    cameraPath, inferenceMode : InferenceMode
+    cameraPath,
+    cameraIntrinsics: CameraIntrinsics,
+    inferenceMode: InferenceMode,
+    showFrames: bool = False,
 ):
     """Returns a partially completed frame processing agent. All you have to do is pass it into neo"""
     return partial(
         InferenceAgent,
         cameraPath=cameraPath,
+        cameraIntrinsics=cameraIntrinsics,
         inferenceMode=inferenceMode,
+        showFrames=showFrames,
     )

@@ -10,27 +10,59 @@ from assets.schemas import reefStatePacket_capnp
 
 class ReefPacket:
     @staticmethod
-    def createPacket(reefTrackerOutput : Dict[int,Dict[int,float]], message, timeStamp) -> reefStatePacket_capnp.ReefPacket:
+    def createPacket(
+        reefTrackerOutputCoral: Dict[int, Dict[int, float]],
+        reefTrackerOutputAlgae: Dict[int, float],
+        message,
+        timeStamp,
+    ) -> reefStatePacket_capnp.ReefPacket:
         packet = reefStatePacket_capnp.ReefPacket.new_message()
         packet.message = message
         packet.timestamp = timeStamp
-        flattenedOutput = ReefPacket.__flattenDict(reefTrackerOutput)
-        packet_observations = packet.init("observations", len(flattenedOutput))
+        flattenedOutputCoral = ReefPacket.__flattenDictCoral(reefTrackerOutputCoral)
 
-        for i in range(len(flattenedOutput)):
-            observation = flattenedOutput[i]
-            packet_detection = packet_observations[i]
+        packet_observations_reef = packet.init(
+            "observationsReef", len(flattenedOutputCoral)
+        )
+
+        for i in range(len(flattenedOutputCoral)):
+            observation = flattenedOutputCoral[i]
+            packet_detection = packet_observations_reef[i]
             packet_detection.apriltagid = observation[0]
             packet_detection.branchindex = observation[1]
             packet_detection.openconfidence = float(observation[2])
+
+        flattenedOutputAlgae = ReefPacket.__flattenDictAlgae(reefTrackerOutputAlgae)
+
+        packet_observations_algae = packet.init(
+            "observationsAlgae", len(flattenedOutputAlgae)
+        )
+
+        for i in range(len(flattenedOutputAlgae)):
+            observation = flattenedOutputAlgae[i]
+            packet_detection = packet_observations_algae[i]
+            packet_detection.apriltagid = observation[0]
+            packet_detection.occupiedconfidence = float(observation[1])
+
         return packet
-    
+
     @staticmethod
-    def __flattenDict(reefTrackerOutput : Dict[int,Dict[int,float]]) -> list[tuple[int,int,float]]:
+    def __flattenDictCoral(
+        reefTrackerOutputCoral: Dict[int, Dict[int, float]]
+    ) -> list[tuple[int, int, float]]:
         flattened = []
-        for atId, dict in reefTrackerOutput.items():
+        for atId, dict in reefTrackerOutputCoral.items():
             for branchIdx, openconfidence in dict.items():
-                flattened.append((atId,branchIdx,openconfidence))
+                flattened.append((atId, branchIdx, openconfidence))
+        return flattened
+
+    @staticmethod
+    def __flattenDictAlgae(
+        reefTrackerOutputAlgae: Dict[int, float]
+    ) -> list[tuple[int, float]]:
+        flattened = []
+        for atId, occupiedconfidence in reefTrackerOutputAlgae.items():
+            flattened.append((atId, occupiedconfidence))
         return flattened
 
     @staticmethod
@@ -57,21 +89,34 @@ class ReefPacket:
 
         return None
 
-    def getFlattenedObservations(packet)-> list[tuple[int,int,float]]:
-        """ Observations as a list of (april tag id, branch index, confidence)"""
+    def getFlattenedObservations(packet) -> list[tuple[int, int, float]]:
+        """Observations as a list of (april tag id, branch index, confidence)"""
         # Decompress the JPEG data
-        flattenedOutput = []
-        for observation in packet.observations:
-            flattenedOutput.append((observation.apriltagid,observation.branchindex,observation.openconfidence))
-        return flattenedOutput
+        flattenedOutputReef = []
+        for observation in packet.observationsReef:
+            flattenedOutputReef.append(
+                (
+                    observation.apriltagid,
+                    observation.branchindex,
+                    observation.openconfidence,
+                )
+            )
+
+        flattenedOutputAlgae = []
+        for observation in packet.observationsAlgae:
+            flattenedOutputAlgae.append(
+                (observation.apriltagid, observation.occupiedconfidence)
+            )
+
+        return flattenedOutputReef, flattenedOutputAlgae
 
 
 def test_packet():
-    observations = {5 : {1 : .80, 2: .30}}
-    packet = ReefPacket.createPacket(observations,"test",0)
+    observations = {5: {1: 0.80, 2: 0.30}}
+    packet = ReefPacket.createPacket(observations, {}, "test", 0)
     bytes = packet.to_bytes()
     decoded = ReefPacket.fromBytes(bytes)
-    flattenedOutput = ReefPacket.getFlattenedObservations(packet)
+    flattenedOutput = ReefPacket.getFlattenedObservations(packet)[0]
     print(flattenedOutput)
 
 

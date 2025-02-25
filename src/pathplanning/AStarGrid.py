@@ -1,11 +1,10 @@
 import heapq
-from typing import Any
+from typing import Any, Optional
 
 import cv2
 import numpy as np
 
 import math
-from tools.Constants import MapConstants
 
 
 class Cell:
@@ -20,7 +19,7 @@ class Cell:
 class AStarPathfinder:
     def __init__(
         self,
-        grid: Any,
+        grid: np.ndarray,
         obstacleWidth: float,
         obstacleHeight: float,
         gridSizeCol: int,
@@ -70,7 +69,9 @@ class AStarPathfinder:
         return ((col - dest[0]) ** 2 + (row - dest[1]) ** 2) ** 0.5
 
     @staticmethod
-    def trace_path(cell_details: list[list[Any]], dest: tuple[int, int]) -> Any:
+    def trace_path(
+        cell_details: list[list[Any]], dest: tuple[int, int]
+    ) -> list[tuple[int, int]]:
         path = []
         row, col = dest
         while not (
@@ -84,11 +85,11 @@ class AStarPathfinder:
 
         path.append((row, col))
         path.reverse()
-        return np.array(path)
+        return path
 
     def a_star_search(
-        self, src: list[int], dest: list[int], extraObstacles: Any = None
-    ):
+        self, src: list[int], dest: list[int], extraObstacles: np.ndarray = None
+    ) -> Optional[list[tuple[int, int]]]:
         grid = self.grid
         print(self.grid.shape)
         if extraObstacles is not None:

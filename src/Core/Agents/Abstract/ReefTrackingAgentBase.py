@@ -21,8 +21,6 @@ class ReefTrackingAgentBase(CameraUsingAgentBase):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.cameraIntrinsics = kwargs.get("cameraIntrinsics", None)
-        print(kwargs)
-        print(type(self.cameraIntrinsics))
 
     def create(self):
         super().create()
@@ -38,9 +36,12 @@ class ReefTrackingAgentBase(CameraUsingAgentBase):
 
     def runPeriodic(self):
         super().runPeriodic()
-
-        out = self.tracker.getAllTracks(self.latestFrame, drawBoxes=self.showFrames)
-        reefPkt = ReefPacket.createPacket(out, "helloo", time.time() * 1000)
+        outCoral, outAlgae = self.tracker.getAllTracks(
+            self.latestFrame, drawBoxes=self.showFrames
+        )
+        reefPkt = ReefPacket.createPacket(
+            outCoral, outAlgae, "helloo", time.time() * 1000
+        )
         self.reefProp.set(reefPkt.to_bytes())
 
         # if self.c < 50:

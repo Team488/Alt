@@ -17,7 +17,7 @@ class AprilTagLocal:
         self.detector = AprilTagDetector()
         self.detectorConfig = AprilTagDetector.Config()
         self.detectorConfig.quadDecimate = 1
-        self.detectorConfig.quadSigma = 0.4
+        self.detectorConfig.quadSigma = 0.8
         self.detector.setConfig(self.detectorConfig)
         self.detector.addFamily("tag36h11")
 

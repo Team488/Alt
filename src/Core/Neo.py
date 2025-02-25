@@ -5,6 +5,7 @@ import signal
 import socket
 import sys
 import time
+from typing import Callable
 from JXTABLES.XTablesClient import XTablesClient
 from Core.TimeOperator import TimeOperator
 from Core.ConfigOperator import ConfigOperator
@@ -24,7 +25,7 @@ Sentinel = LogManager.Sentinel
 
 
 class Neo:
-    def __init__(self):
+    def __init__(self) -> None:
         self.__printInit()
         Sentinel.info("Creating Config operator")
         Sentinel.info("Loading configs")
@@ -87,12 +88,12 @@ class Neo:
         self.__logMap = {}
         self.__getBasePrefix = lambda agentName: f"active_agents.{agentName}"
 
-    def __handleArchitectKill(self, sig, frame):
+    def __handleArchitectKill(self, sig, frame) -> None:
         Sentinel.info("The architect has caused our demise! Shutting down any agent")
         self.shutDown()
         os._exit(1)
 
-    def shutDown(self):
+    def shutDown(self) -> None:
         if not self.__isShutdown:
             self.__agentOp.stopPermanent()
             self.__printAndCleanup()
@@ -100,29 +101,26 @@ class Neo:
         else:
             Sentinel.debug("Already shut down")
 
-    def addOrderTrigger(self, orderTriggerName: str, orderToRun: type[Order]):
+    def addOrderTrigger(self, orderTriggerName: str, orderToRun: type[Order]) -> None:
         if not self.isShutdown():
             order = orderToRun()
             childPropOp = self.__propertyOp.getChild(order.getName())
             timer = self.__timeOp.getTimer(order.getName())
             order.inject(
-                    self.__central,
-                    self.__xclient,
-                    childPropOp,
-                    self.__configOp,
-                    self.__shareOp,
-                    timer
+                self.__central,
+                self.__xclient,
+                childPropOp,
+                self.__configOp,
+                self.__shareOp,
+                timer,
             )
-            self.__orderOp.createOrderTrigger(
-                orderTriggerName,
-                order
-            )
+            self.__orderOp.createOrderTrigger(orderTriggerName, order)
         else:
             Sentinel.warning("Neo is already shutdown!")
 
     def __handleLog(
         self, logProperty: ReadonlyProperty, newLog: str, maxLogLength: int = 3
-    ):
+    ) -> None:
         table = logProperty.getTable()
         lastlogs = self.__logMap.get(table, [])
 
@@ -133,10 +131,10 @@ class Neo:
         logProperty.set(msg)
         self.__logMap[table] = lastlogs
 
-    def wakeAgent(self, agent: type[Agent], isMainThread=False):
+    def wakeAgent(self, agentClass: type[Agent], isMainThread=False) -> None:
         """NOTE: if isMainThread=True, this will threadblock indefinitely"""
         if not self.isShutdown():
-            agent = agent()
+            agent = agentClass()
             agentName = agent.getName()
 
             childPropertyOp = self.__propertyOp.getChild(
@@ -173,23 +171,23 @@ class Neo:
         else:
             Sentinel.warning("Neo is already shutdown!")
 
-    def startXDashLoop(self):
+    def startXDashLoop(self) -> None:
         while True:
             self.__xdOp.run()
             time.sleep(0.001)  # 1ms
 
-    def __printAndCleanup(self):
+    def __printAndCleanup(self) -> None:
         self.__printFinish()
         self.__cleanup()
 
-    def waitForAgentsFinished(self):
+    def waitForAgentsFinished(self) -> None:
         """Thread blocking method that waits for a running agent (if any is running)"""
         if not self.isShutdown():
             self.__agentOp.waitForAgentsToFinish()
         else:
             self.Sentinel.warning("Neo has already been shut down!")
 
-    def setOnAgentFinished(self, runOnFinish):
+    def setOnAgentFinished(self, runOnFinish: Callable[[], None]) -> None:
         if not self.isShutdown():
             self.__agentOp.setOnAgentFinished(runOnFinish)
         else:

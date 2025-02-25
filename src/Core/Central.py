@@ -14,13 +14,15 @@ from Core.PropertyOperator import PropertyOperator
 
 
 class Central:
-    def __init__(self, logger: Logger, configOp : ConfigOperator, propertyOp : PropertyOperator):
+    def __init__(
+        self, logger: Logger, configOp: ConfigOperator, propertyOp: PropertyOperator
+    ):
         self.Sentinel = logger
         self.configOp = configOp
         self.propertyOp = propertyOp
 
-        self.useObstacles = self.propertyOp.createProperty("Use_Obstacles",True)
-        
+        self.useObstacles = self.propertyOp.createProperty("Use_Obstacles", True)
+
         self.kalmanCacheRobots: KalmanCache = KalmanCache()
         self.kalmanCacheGameObjects: KalmanCache = KalmanCache()
         self.objectmap = ProbMap()
@@ -29,7 +31,6 @@ class Central:
         self.labler = KalmanLabeler(self.kalmanCacheRobots, self.kalmanCacheGameObjects)
         self.obstacleMap = self.__tryLoadObstacleMap()
         self.pathGenerator = PathGenerator(self.objectmap, self.obstacleMap)
-        
 
     def __tryLoadObstacleMap(self):
         defaultMap = np.zeros(
@@ -41,19 +42,30 @@ class Central:
                 return obstacleMap
             else:
                 # this will never happen, as we have the obstaclemap in assets too
-                self.Sentinel.warning("Failed to load obstacles, defaulting to empty map")
+                self.Sentinel.warning(
+                    "Failed to load obstacles, defaulting to empty map"
+                )
 
         return defaultMap
 
-    def processReefUpdate(self, reefResults: list[list[tuple[int,int,float]]], timeStepMs):
+    def processReefUpdate(
+        self,
+        reefResults: tuple[list[tuple[int, int, float]], list[tuple[int, float]]],
+        timeStepMs,
+    ):
         self.reefState.dissipateOverTime(timeStepMs)
-        print(f"{timeStepMs=}")
 
         for reefResult in reefResults:
-            for apriltagid, branchid, opennessconfidence in reefResult:
-                self.reefState.addObservation(apriltagid,branchid,opennessconfidence)
-    
-    
+            print(reefResult)
+            coralObservation, algaeObservation = reefResult
+            for apriltagid, branchid, opennessconfidence in coralObservation:
+                self.reefState.addObservationCoral(
+                    apriltagid, branchid, opennessconfidence
+                )
+
+            for apriltagid, opennessconfidence in algaeObservation:
+                self.reefState.addObservationAlgae(apriltagid, opennessconfidence)
+
     def processFrameUpdate(
         self,
         cameraResults: list[
@@ -96,7 +108,9 @@ class Central:
                     self.kalmanCacheGameObjects.saveKalmanData(id, self.ukf)
                 # input new estimated state into the map
                 if isRobot:
-                    self.objectmap.addDetectedRobot(int(newState[0]), int(newState[1]), prob)
+                    self.objectmap.addDetectedRobot(
+                        int(newState[0]), int(newState[1]), prob
+                    )
                 else:
                     self.objectmap.addDetectedGameObject(
                         int(newState[0]), int(newState[1]), prob

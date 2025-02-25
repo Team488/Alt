@@ -9,15 +9,23 @@ from coreinterface.ReefPacket import ReefPacket
 from assets.schemas import reefStatePacket_capnp
 
 Sentinel = getLogger("Reef_State")
+
+
 class ReefState:
-    def __init__(self, DISSIPATIONFACTOR = 0.8):
-        self.idx_flip, self.idx_to_apriltag, self.apriltag_to_idx, self.reef_map = self.__createReefMap()
+    def __init__(self, DISSIPATIONFACTOR=0.999):
+        (
+            self.idx_flip,
+            self.idx_to_apriltag,
+            self.apriltag_to_idx,
+            self.reef_map,
+        ) = self.__createReefMap()
+        self.algae_map = self.__createAlgaeMap()
         self.DISSIPATIONFACTOR = DISSIPATIONFACTOR
 
-    def __createReefMap(self) -> tuple[int, list[int], Dict[int,int], np.ndarray]:
+    def __createReefMap(self) -> tuple[int, list[int], Dict[int, int], np.ndarray]:
         idx_to_apriltag_blue = ATLocations.getReefBasedIds(TEAM.BLUE)
         idx_to_apriltag_red = ATLocations.getReefBasedIds(TEAM.RED)
-        idx_flip = len(idx_to_apriltag_blue) # index of team flip
+        idx_flip = len(idx_to_apriltag_blue)  # index of team flip
         idx_to_apriltag = idx_to_apriltag_blue + idx_to_apriltag_red
         apriltag_to_idx = {}
         for idx, apriltag in enumerate(idx_to_apriltag):
@@ -25,22 +33,43 @@ class ReefState:
 
         cols = len(idx_to_apriltag)
         rows = len(ReefBranches)
-        reef_map = np.full((rows,cols), 0.5, dtype=np.float64) # Initialize to 50% as "unknown"
+        reef_map = np.full((rows, cols),  0.5, dtype=np.float64) # Initialize to 50% as "unknown"
 
         return idx_flip, idx_to_apriltag, apriltag_to_idx, reef_map
 
-    
-    def dissipateOverTime(self, timeFactor : int):
-        """ This operates under the assumtion that as time passed, the chance of slots being taken increases. So if there are no updates, as t grows, the openness confidence should go to zero"""
-        factor = np.power(self.DISSIPATIONFACTOR, round(timeFactor / 100))
+    def __createAlgaeMap(self):
+        idx_to_apriltag = ATLocations.getReefBasedIds()
+        numAlgae = len(idx_to_apriltag)
+        algae_map = np.zeros((numAlgae), dtype=np.float64)
+        return algae_map
+
+    def dissipateOverTime(self, timeFactor: int):
+        """This operates under the assumtion that as time passed, the chance of slots being taken increases. So if there are no updates, as t grows, the openness confidence should go to zero"""
         
-        # Create a mask for slots that are not locked (not 0) and above 50 to dissipate
+        reef_dissipation_factor = np.power(self.DISSIPATIONFACTOR, round(timeFactor / 100))
+
+        """ Reef Map Dissipation"""
+        # Create a mask for slots that are not locked (not -1) and above 0.5 to dissipate
         # That way we can keep "unknown" states
         mask = (self.reef_map != -1) & (self.reef_map > 0.5)
         
-        # Only update those slots: they will decay toward 0.5
-        self.reef_map[mask] = 0.5 + (self.reef_map[mask] - 0.5) * factor
+        # Only update slots that fall under the mask conditions and normalize to 0.5
+        self.reef_map[mask] = 0.5 + (self.reef_map[mask] - 0.5) * reef_dissipation_factor # discrete dissipation
 
+        """ Algae Map Dissipation"""
+        algae_dissipation_factor = np.power(self.DISSIPATIONFACTOR, round(timeFactor / 100))
+        self.algae_map *= np.power(algae_dissipation_factor)  # discrete dissipation
+
+    def addObservationCoral(
+        self, apriltagid, branchid, opennessconfidence, weighingfactor=0.85
+    ):
+        if apriltagid not in self.apriltag_to_idx or (
+            branchid < 0 or branchid >= self.reef_map.shape[0]
+        ):
+            Sentinel.warning(
+                f"Invalid apriltagid or branchid! {apriltagid=} {branchid=}"
+            )
+    
     def addObservation(self, apriltagid, branchid, opennessconfidence, weighingfactor = 0.85):
         #print(f"AddingObservation", apriltagid, branchid, opennessconfidence)
         if apriltagid not in self.apriltag_to_idx or (branchid < 0 or branchid >= self.reef_map.shape[0]):
@@ -51,8 +80,9 @@ class ReefState:
         row_idx = branchid
 
         # We know 100% that the space is filled.
-        # Stop updating to that particular observation. It is "locked".
-        # TODO: Add this in if necessary
+        # Stop updating to that particular observation. It becomes "locked".
+        # TODO: Add this in if necesary
+
         #if self.reef_map[row_idx, col_idx] < 0.1:
             #self.reef_map[row_idx, col_idx] = -1.0
             #return
@@ -60,31 +90,60 @@ class ReefState:
         self.reef_map[row_idx, col_idx] *= (1-weighingfactor)
         self.reef_map[row_idx, col_idx] += opennessconfidence * weighingfactor
 
-    def getOpenSlotsAboveT(self, team : TEAM = None, threshold = 0.5) -> list[tuple[int,int,float]]:
-        """ Returns open slots in the form of a tuple with (April tag id, branch id, openness confidence)"""
+    def addObservationAlgae(self, apriltagid, opennessconfidence, weighingfactor=0.85):
+        if apriltagid not in self.apriltag_to_idx:
+            Sentinel.warning(f"Invalid apriltagid{apriltagid=}")
+            return
+
+        algae_idx = self.apriltag_to_idx.get(apriltagid)
+        self.algae_map[algae_idx] *= 1 - weighingfactor
+        self.algae_map[algae_idx] += opennessconfidence * weighingfactor
+
+    def getOpenSlotsAboveT(
+        self,
+        team: TEAM = None,
+        threshold=0.5,
+        algaeThreshold=0.5,
+        considerAlgaeBlocking=True,
+    ) -> list[tuple[int, int, float]]:
+        """Returns open slots in the form of a tuple with (April tag id, branch id, openness confidence)"""
         offset_col, mapbacking = self.__getMapBacking(team)
         row_idxs, col_idxs = np.where(mapbacking > threshold)
 
+        
         open_slots = []
         for row, col in zip(row_idxs, col_idxs):
+            at_idx = self.idx_to_apriltag[col + offset_col]
             branch_idx = row
-            at_idx = self.idx_to_apriltag[col+offset_col]
-            openness = mapbacking[row,col]
-            open_slots.append((int(at_idx),int(branch_idx), float(openness)))
+
+            blockedBranchIdxs = ATLocations.getBlockedBranchIdxs(at_idx)
+            algaeOccupancy = self.algae_map[self.apriltag_to_idx[at_idx]]
+
+            openness = mapbacking[row, col]
+
+            # if we are checking for algae blocking and the branch is one that could be blocked,
+            # if we meet an algae occupance threshold ignore it
+            if considerAlgaeBlocking and (
+                algaeOccupancy > algaeThreshold and branch_idx in blockedBranchIdxs
+            ):
+                Sentinel.debug(f"Blocked algae at {at_idx=} {row=} {blockedBranchIdxs}")
+                continue
+
+            open_slots.append((int(at_idx), int(branch_idx), float(openness)))
 
         return open_slots
 
-    def getHighestSlot(self, team : TEAM = None) -> Optional[tuple[int,int,float]]:
-        """ Returns open slots in the form of a tuple with (April tag id, branch id, openness confidence)"""
+    def getHighestSlot(self, team: TEAM = None) -> Optional[tuple[int, int, float]]:
+        """Returns open slots in the form of a tuple with (April tag id, branch id, openness confidence)"""
         offset_col, mapbacking = self.__getMapBacking(team)
-        if not (mapbacking>0).any():
+        if not (mapbacking > 0).any():
             return None
-        
+
         max = np.argmax(mapbacking)
-        row, col = np.unravel_index(max,mapbacking.shape)
+        row, col = np.unravel_index(max, mapbacking.shape)
         branch_idx = row
-        at_idx = self.idx_to_apriltag[col+offset_col]
-        openness = mapbacking[row,col]
+        at_idx = self.idx_to_apriltag[col + offset_col]
+        openness = mapbacking[row, col]
 
         return at_idx, branch_idx, openness
     
@@ -122,20 +181,28 @@ class ReefState:
         offset_col = 0
         if team is not None:
             if team == TEAM.BLUE:
-                mapbacking = mapbacking[:, :self.idx_flip]
+                mapbacking = mapbacking[:, : self.idx_flip]
             elif team == TEAM.RED:
-                mapbacking = mapbacking[:, self.idx_flip:]
+                mapbacking = mapbacking[:, self.idx_flip :]
                 offset_col = self.idx_flip
         return offset_col, mapbacking
-    
-    def __getDist(self, robotPos2CMRAd : tuple[float,float,float], atId : int):
+
+    def __getDist(self, robotPos2CMRAd: tuple[float, float, float], atId: int):
         atPoseXYCM = ATLocations.get_pose_by_id(atId, length=LengthType.CM)[0][:2]
         robotXYCm = robotPos2CMRAd[:2]
-        return np.linalg.norm((np.subtract(atPoseXYCM,robotXYCm)))
+        return np.linalg.norm((np.subtract(atPoseXYCM, robotXYCm)))
 
-    
-    def getClosestOpen(self, robotPos2CMRAd : tuple[float,float,float], team : TEAM = None, threshold = 0.75):
-        open_slots = self.getOpenSlotsAboveT(team,threshold)
+    def getClosestOpen(
+        self,
+        robotPos2CMRAd: tuple[float, float, float],
+        team: TEAM = None,
+        threshold=0.5,
+        algaeThreshold=0.2,
+        considerAlgaeBlocking=True,
+    ):
+        open_slots = self.getOpenSlotsAboveT(
+            team, threshold, algaeThreshold, considerAlgaeBlocking
+        )
         closestAT = None
         closestBranch = None
         closestDist = 1e6
@@ -146,6 +213,6 @@ class ReefState:
                 if d < closestDist:
                     closestAT = atid
                     closestBranch = branchid
-                    closestDist = d 
+                    closestDist = d
 
         return closestAT, closestBranch

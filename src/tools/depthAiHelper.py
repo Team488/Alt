@@ -2,30 +2,52 @@ import numpy as np
 import cv2
 import depthai as dai
 
+from tools.Constants import CameraIntrinsics, CameraIntrinsicsPredefined
+from Core import getLogger
+
+Sentinel = getLogger("DepthAiHelper")
+
 
 class DepthAIHelper:
-    def __init__(self):
-        
-        self.pipeline = dai.Pipeline()
-        self.load_pipeline(self.pipeline)
-        self.device = dai.Device(self.pipeline)
-        self.color_queue = self.device.getOutputQueue(
-            name="video", maxSize=4, blocking=False
-        )
+    def __init__(self, cameraIntrinsics: CameraIntrinsics):
 
-    def load_pipeline(self, pipeline):
+        self.pipeline = dai.Pipeline()
+        if self.load_pipeline(self.pipeline, cameraIntrinsics):
+            self.device = dai.Device(self.pipeline)
+            self.color_queue = self.device.getOutputQueue(
+                name="video", maxSize=4, blocking=False
+            )
+        else:
+            Sentinel.warning(
+                "Please adjust camera intrinsics to be a valid oakdlite config!"
+            )
+
+    def load_pipeline(self, pipeline: dai.Pipeline, cameraIntrinsics: CameraIntrinsics):
         # Define color camera
         cam_rgb = pipeline.create(dai.node.ColorCamera)
-        cam_rgb.setBoardSocket(dai.CameraBoardSocket.RGB)
-        cam_rgb.setResolution(
-            dai.ColorCameraProperties.SensorResolution.THE_1080_P
-        )  # Change as needed
-        cam_rgb.setFps(30)  # Adjust FPS as required
+        xoutVideo = pipeline.create(dai.node.XLinkOut)
+        xoutVideo.setStreamName("video")
 
+        cam_rgb.setBoardSocket(dai.CameraBoardSocket.CAM_A)  # rgb (b,c is stereo)
+
+        res = None
+        if cameraIntrinsics == CameraIntrinsicsPredefined.OAKDLITE1080P:
+            res = dai.ColorCameraProperties.SensorResolution.THE_1080_P
+        elif cameraIntrinsics == CameraIntrinsicsPredefined.OAKDLITE4K:
+            res = dai.ColorCameraProperties.SensorResolution.THE_4_K
+        if res == None:
+            Sentinel.fatal(
+                "Invalid depth ai camera intrinsics passed in! Must be one of the ones with oakdlite in it"
+            )
+            return False
+
+        cam_rgb.setResolution(res)
+        cam_rgb.setFps(60)  # will max out whatever the max of the res is
+        cam_rgb.setVideoSize(cameraIntrinsics.getHres(), cameraIntrinsics.getVres())
         # Create an XLink output to send the frames to the host
-        xout = pipeline.create(dai.node.XLinkOut)
-        xout.setStreamName("video")
-        cam_rgb.video.link(xout.input)
+        cam_rgb.video.link(xoutVideo.input)
+
+        return True
 
     def getFrame(self) -> np.ndarray:
         frame = self.color_queue.get()
@@ -35,7 +57,7 @@ class DepthAIHelper:
 
     @staticmethod
     def getCameraIntrinsicDump(res=None):
-        import depthaiTest as dai
+        import depthai as dai
 
         device = dai.Device()  # Create device
         try:
@@ -55,4 +77,3 @@ class DepthAIHelper:
         """Properly release resources."""
         self.color_queue.close()
         self.device.close()
-

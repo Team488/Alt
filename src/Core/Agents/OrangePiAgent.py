@@ -1,8 +1,9 @@
 from enum import Enum
 import socket
-from Core.Agents.ReefAndObjectLocalizer import ReefAndObjectLocalizer
+from Core.Agents.Abstract.ReefTrackingAgentBase import ReefTrackingAgentBase
 from tools import calibration
-from tools.Constants import InferenceMode, getCameraValues
+from tools.Constants import getCameraValues
+
 
 class CameraName(Enum):
     REARRIGHT = "photonvisionrearright"
@@ -16,22 +17,20 @@ def getCameraName():
     return CameraName(name)
 
 
-class OrangePiAgent(ReefAndObjectLocalizer):
-    """Agent -> LocalizingAgentBase -> FrameProcessingAgentBase -> OrangePiAgent
+class OrangePiAgent(ReefTrackingAgentBase):
+    """Agent -> CameraUsingAgentBase -> ReefTrackingAgentBase -> OrangePiAgent
 
     Agent to be run on the orange pis"""
 
     def __init__(self):
         self.device_name = CameraName.getCameraName().name
         # camera values
-        cameraIntrinsics, cameraExtrinsics, _ = getCameraValues(self.device_name)
+        cameraIntrinsics, _, _ = getCameraValues(self.device_name)
 
         super().__init__(
             cameraPath="/dev/color_camera",
             showFrames=False,
             cameraIntrinsics=cameraIntrinsics,
-            cameraExtrinsics=cameraExtrinsics,
-            inferenceMode=InferenceMode.RKNN2025INT8,
         )
 
     def create(self):

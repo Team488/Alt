@@ -442,28 +442,28 @@ class ATLocations(Enum):
     def getDefaultRotationType():
         return Units.RotationType.Deg
 
-    TAG_1 = ((1), (657.37, 25.80, 58.50), (126, 0), None)
-    TAG_2 = ((2), (657.37, 291.20, 58.50), (234, 0), None)
-    TAG_3 = ((3), (455.15, 317.15, 51.25), (270, 0), None)
-    TAG_4 = ((4), (365.20, 241.64, 73.54), (0, 30), None)
-    TAG_5 = ((5), (365.20, 75.39, 73.54), (0, 30), None)
-    TAG_6 = ((6), (530.49, 130.17, 12.13), (300, 0), TEAM.RED)
-    TAG_7 = ((7), (546.87, 158.50, 12.13), (0, 0), TEAM.RED)
-    TAG_8 = ((8), (530.49, 186.83, 12.13), (60, 0), TEAM.RED)
-    TAG_9 = ((9), (497.77, 186.83, 12.13), (120, 0), TEAM.RED)
-    TAG_10 = ((10), (481.39, 158.50, 12.13), (180, 0), TEAM.RED)
-    TAG_11 = ((11), (497.77, 130.17, 12.13), (240, 0), TEAM.RED)
-    TAG_12 = ((12), (33.51, 25.80, 58.50), (54, 0), None)
-    TAG_13 = ((13), (33.51, 291.20, 58.50), (306, 0), None)
-    TAG_14 = ((14), (325.68, 241.64, 73.54), (180, 30), None)
-    TAG_15 = ((15), (325.68, 75.39, 73.54), (180, 30), None)
-    TAG_16 = ((16), (235.73, -0.15, 51.25), (90, 0), None)
-    TAG_17 = ((17), (160.39, 130.17, 12.13), (240, 0), TEAM.BLUE)
-    TAG_18 = ((18), (144.00, 158.50, 12.13), (180, 0), TEAM.BLUE)
-    TAG_19 = ((19), (160.39, 186.83, 12.13), (120, 0), TEAM.BLUE)
-    TAG_20 = ((20), (193.10, 186.83, 12.13), (60, 0), TEAM.BLUE)
-    TAG_21 = ((21), (209.49, 158.50, 12.13), (0, 0), TEAM.BLUE)
-    TAG_22 = ((22), (193.10, 130.17, 12.13), (300, 0), TEAM.BLUE)
+    TAG_1 = ((1), (657.37, 25.80, 58.50), (126, 0), None, None)
+    TAG_2 = ((2), (657.37, 291.20, 58.50), (234, 0), None, None)
+    TAG_3 = ((3), (455.15, 317.15, 51.25), (270, 0), None, None)
+    TAG_4 = ((4), (365.20, 241.64, 73.54), (0, 30), None, None)
+    TAG_5 = ((5), (365.20, 75.39, 73.54), (0, 30), None, None)
+    TAG_6 = ((6), (530.49, 130.17, 12.13), (300, 0), TEAM.RED, 1)
+    TAG_7 = ((7), (546.87, 158.50, 12.13), (0, 0), TEAM.RED, 2)
+    TAG_8 = ((8), (530.49, 186.83, 12.13), (60, 0), TEAM.RED, 1)
+    TAG_9 = ((9), (497.77, 186.83, 12.13), (120, 0), TEAM.RED, 2)
+    TAG_10 = ((10), (481.39, 158.50, 12.13), (180, 0), TEAM.RED, 1)
+    TAG_11 = ((11), (497.77, 130.17, 12.13), (240, 0), TEAM.RED, 2)
+    TAG_12 = ((12), (33.51, 25.80, 58.50), (54, 0), None, None)
+    TAG_13 = ((13), (33.51, 291.20, 58.50), (306, 0), None, None)
+    TAG_14 = ((14), (325.68, 241.64, 73.54), (180, 30), None, None)
+    TAG_15 = ((15), (325.68, 75.39, 73.54), (180, 30), None, None)
+    TAG_16 = ((16), (235.73, -0.15, 51.25), (90, 0), None, None)
+    TAG_17 = ((17), (160.39, 130.17, 12.13), (240, 0), TEAM.BLUE, 1)
+    TAG_18 = ((18), (144.00, 158.50, 12.13), (180, 0), TEAM.BLUE, 2)
+    TAG_19 = ((19), (160.39, 186.83, 12.13), (120, 0), TEAM.BLUE, 1)
+    TAG_20 = ((20), (193.10, 186.83, 12.13), (60, 0), TEAM.BLUE, 2)
+    TAG_21 = ((21), (209.49, 158.50, 12.13), (0, 0), TEAM.BLUE, 1)
+    TAG_22 = ((22), (193.10, 130.17, 12.13), (300, 0), TEAM.BLUE, 2)
 
     @property
     def id(self):
@@ -481,6 +481,10 @@ class ATLocations(Enum):
     def team(self):
         return self.value[3]
 
+    @property
+    def blockingAlgaeLevel(self):
+        return self.value[4]
+
     @classmethod
     def get_by_id(cls, tag_id):
         """Retrieve an ATLocation by its ID."""
@@ -490,7 +494,12 @@ class ATLocations(Enum):
         return None
 
     @classmethod
-    def get_pose_by_id(cls, tag_id, length: Units.LengthType = Units.LengthType.CM, rotation : Units.RotationType = Units.RotationType.Rad):
+    def get_pose_by_id(
+        cls,
+        tag_id,
+        length: Units.LengthType = Units.LengthType.CM,
+        rotation: Units.RotationType = Units.RotationType.Rad,
+    ):
         """Retrieve the position and rotation for a given tag ID."""
         tag = cls.get_by_id(tag_id)
 
@@ -514,7 +523,7 @@ class ATLocations(Enum):
         pose = cls.get_pose_by_id(tag_id, length=units)
         if pose is None:
             return None
-        
+
         translation, rotation = pose
         rotMatrix = Rotation.from_euler("ZY", rotation, degrees=False).as_matrix()
 
@@ -526,8 +535,9 @@ class ATLocations(Enum):
     @classmethod
     def getReefBasedIds(cls, team: TEAM = None) -> list[int]:
         if not team:
-            return ATLocations.getReefBasedIds(TEAM.BLUE) + ATLocations.getReefBasedIds(TEAM.RED)
-            
+            return ATLocations.getReefBasedIds(TEAM.BLUE) + ATLocations.getReefBasedIds(
+                TEAM.RED
+            )
 
         ids = []
         for tag in cls:
@@ -535,7 +545,27 @@ class ATLocations(Enum):
                 ids.append(tag.id)
 
         return ids
-    
+
+    @classmethod
+    def getAlgaeLevel(cls, atId):
+        tag = cls.get_by_id(atId)
+
+        if tag is None:
+            return None
+
+        return tag.blockingAlgaeLevel
+
+    @classmethod
+    def getBlockedBranchIdxs(cls, atId):
+        level = cls.getAlgaeLevel(atId)
+
+        if level is None:
+            return None
+
+        if level == 1:
+            return 0, 1, 2, 3
+        if level == 2:
+            return 2, 3, 4, 5
 
 
 class ReefBranches(Enum):
@@ -557,19 +587,17 @@ class ReefBranches(Enum):
     @property
     def branchname(self):
         return self[1]
-    
+
     def getAprilTagOffset(self, units: Units.LengthType = Units.LengthType.CM):
         return UnitConversion.convertLength(self[2], self.getDefaultLengthType(), units)
-    
+
     @classmethod
-    def getByID(cls, branchid : int):
+    def getByID(cls, branchid: int):
         for branch in cls:
             if branch.branchid == branchid:
                 return branch
-            
-        return None
 
-    
+        return None
 
 
 class Landmarks(Enum):

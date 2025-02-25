@@ -57,14 +57,21 @@ class CentralAgentBase(PositionLocalizingAgentBase):
             "BESTOPENREEFBRANCH", None, addBasePrefix=False
         )
         self.brx = self.propertyOperator.createCustomReadOnlyProperty(
-            "BESTROBOTXaa", None, addBasePrefix=False
+            "BESTROBOTX", None, addBasePrefix=False
         )
         self.bry = self.propertyOperator.createCustomReadOnlyProperty(
-            "BESTROBOTYaa", None, addBasePrefix=False
+            "BESTROBOTY", None, addBasePrefix=False
         )
 
+<<<<<<< HEAD
         self.reefmap_states = self.propertyOperator.createCustomReadOnlyProperty("REEFMAP_STATES", None, addBasePrefix=False)
         self.debug_ct = 0
+=======
+        self.reefmap_states = self.propertyOperator.createCustomReadOnlyProperty(
+            "REEFMAP_STATES", None, addBasePrefix=False
+        )
+
+>>>>>>> da4edb4879205f4c1475192c5eac57840e732db0
     # handles a subscriber update from one of the cameras
     def __handleObjectUpdate(self, key, ret):
         val = ret.value
@@ -133,7 +140,6 @@ class CentralAgentBase(PositionLocalizingAgentBase):
         self.putBestNetworkValues()
 
     def putBestNetworkValues(self):
-
         # Send the ReefPacket for the entire map
         import time
         timestamp = time.time()

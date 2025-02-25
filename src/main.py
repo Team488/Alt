@@ -1,15 +1,6 @@
-from JXTABLES.TempConnectionManager import TempConnectionManager as tcm
-from Core.Neo import Neo
-from Core.Agents.Abstract.CentralAgentBase import CentralAgentBase
-from tools.Constants import CameraIntrinsicsPredefined, ColorCameraExtrinsics2024
+from tools.calibration import charuco_calibration, takeCalibrationPhotos
 
-# removes the temp ip for testing in main
-tcm.invalidate()
-
-reefAgent = ReefTrackingAgentPartial("http://localhost:3000/Robot_FrontRight%20Camera?dummy=param.mjpg",cameraIntrinsics=CameraIntrinsicsPredefined.SIMULATIONCOLOR,showFrames=True)
-
-n = Neo()
-n.wakeAgent(reefAgent, isMainThread=True)
-n.shutDown()
-# from demos import reefPointDemo
-# reefPointDemo.startDemo()
+takeCalibrationPhotos(
+    cameraPath=1, photoPath="calib", timePerPicture=2, frameShape=(800, 600)
+)
+charuco_calibration(calibPath="calibout.json", imagesPath="calib")

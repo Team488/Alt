@@ -33,10 +33,10 @@ class PathPlanningAgentBase(PositionLocalizingAgentBase):
             self.Sentinel.info("Generated path")
             xcoords = XTutils.getCoordinatesAXCoords(path)
             self.xclient.putCoordinates(self.pathTable.get(), xcoords)
-        else:
-            # instead of leaving old path, i think its best to make it clear we dont have a path
-            self.Sentinel.info("Failed to generate path")
-            # self.xclient.putCoordinates(self.pathTable.get(), [])
+        # else:
+        # instead of leaving old path, i think its best to make it clear we dont have a path
+        # self.Sentinel.info("Failed to generate path")
+        # self.xclient.putCoordinates(self.pathTable.get(), [])
 
     def runPeriodic(self):
         super().runPeriodic()
@@ -58,14 +58,14 @@ class PathPlanningAgentBase(PositionLocalizingAgentBase):
 
         if self.path:
             for point in self.path:
-                cv2.circle(frame, tuple(map(int, point)), 5, (255, 255, 255), -1)
+                cv2.circle(frame, point, 5, (255, 255, 255), -1)
         frame = cv2.flip(frame, 0)
         # add debug message
         if not self.path:
             cv2.putText(
                 frame,
                 f"No path! Localization Connected?: {self.connectedToLoc}",
-                (int(frame.shape[1] / 2), int(frame.shape[0] / 2)),
+                (int(frame.shape[0] / 2), int(frame.shape[0] / 2)),
                 0,
                 1,
                 (255, 255, 255),

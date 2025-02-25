@@ -258,13 +258,13 @@ def apply_and_inflate_all_static_obstacles(grid, static_obs_array, safe_distance
     for coord in static_obs_array:
         x, y = coord
         if 0 <= x < grid.shape[1] and 0 <= y < grid.shape[0]:
-            grid[y, x] = 100000
+            grid[y, x] = 1000000
     # Inflate static obstacles using dilation.
     binary_static = (grid > 1).astype(np.uint8)
     kernel_size = int(safe_distance)
     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (kernel_size, kernel_size))
     inflated_static = cv2.dilate(binary_static, kernel, iterations=1)
-    grid[inflated_static == 1] = 100000
+    grid[inflated_static == 1] = 101
     return grid
 
 
