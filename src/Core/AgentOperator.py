@@ -77,6 +77,7 @@ class AgentOperator:
         self.Sentinel.info("The agent is alive!")
 
     def __startAgentLoop(self, agent: Agent, futurePtr: Optional[int]) -> None:
+        failed = False
 
         """Main part #1 Creation and running"""
         try:
@@ -106,6 +107,7 @@ class AgentOperator:
                         time.sleep(sleepTime)
 
         except Exception as e:
+            failed = True
             self.__handleException(progressStr, agent.getName(), e)
 
         """ Main part #2 possible shutdown"""
@@ -119,13 +121,18 @@ class AgentOperator:
             try:
                 agent.forceShutdown()
             except Exception as e:
+                failed = True
                 self.__handleException("shutdown", agent.getName(), e)
 
-        else:
+        elif not failed:
             self.__setStatus(
                 agent.getName(), f"agent isRunning returned false (Not an error)"
             )
             self.Sentinel.debug(f"agent isRunning returned false (Not an error)")
+
+        else:
+            self.__setStatus(agent.getName(), f"agent failed during {progressStr}")
+            self.Sentinel.debug(f"agent failed during {progressStr}")
 
         """ Main part #3 Cleanup"""
         try:

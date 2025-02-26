@@ -91,9 +91,6 @@ class Neo:
         self.__logMap = {}
         self.__getBasePrefix = lambda agentName: f"active_agents.{agentName}"
 
-        # put inference mode on xtables, so local observers can assert they are running the same model type
-        self.__xclient.putString(COREMODELTABLE, COREINFERENCEMODE.getName())
-
     def __handleArchitectKill(self, sig, frame) -> None:
         Sentinel.info("The architect has caused our demise! Shutting down any agent")
         self.shutDown()

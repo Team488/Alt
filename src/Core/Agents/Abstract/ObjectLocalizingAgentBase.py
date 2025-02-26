@@ -1,4 +1,5 @@
 import os
+from typing import Union
 import cv2
 import time
 from functools import partial
@@ -114,7 +115,11 @@ class ObjectLocalizingAgentBase(TimestampRegulatedAgentBase):
 
 
 def ObjectLocalizingAgentPartial(
-    cameraPath, cameraIntrinsics, cameraExtrinsics, inferenceMode
+    cameraPath: Union[str, int],
+    cameraIntrinsics: CameraIntrinsics,
+    cameraExtrinsics: CameraExtrinsics,
+    inferenceMode: InferenceMode,
+    showFrames: bool = False,
 ):
     """Returns a partially completed frame processing agent. All you have to do is pass it into neo"""
     return partial(
@@ -123,4 +128,5 @@ def ObjectLocalizingAgentPartial(
         cameraIntrinsics=cameraIntrinsics,
         cameraExtrinsics=cameraExtrinsics,
         inferenceMode=inferenceMode,
+        showFrames=showFrames,
     )

@@ -2,4 +2,4 @@ from tools.Constants import InferenceMode
 from .LogManager import getLogger
 
 COREMODELTABLE = "MainProcessInferenceMODE"
-COREINFERENCEMODE = InferenceMode.ONNXMEDIUM2025
+COREINFERENCEMODE = InferenceMode.ALCOROULTRALYTICSSMALL2025BAD

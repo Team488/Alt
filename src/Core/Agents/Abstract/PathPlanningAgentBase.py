@@ -48,13 +48,9 @@ class PathPlanningAgentBase(PositionLocalizingAgentBase):
         # emit the path to shared mem and network
         self.__emitPath(self.path)
 
-        frame = cv2.merge(
-            (
-                self.central.objectmap.getGameObjectHeatMap(),
-                np.zeros_like(self.central.objectmap.getGameObjectHeatMap()),
-                self.central.objectmap.getRobotHeatMap(),
-            )
-        )
+        maps = self.central.objectmap.getHeatMaps()
+        maps.append(np.zeros_like(self.central.objectmap.getHeatMap(0)))
+        frame = cv2.merge(maps)
 
         if self.path:
             for point in self.path:

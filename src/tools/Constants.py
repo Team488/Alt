@@ -117,7 +117,7 @@ class InferenceMode(Enum):
     ALCOROULTRALYTICSSMALL2025BAD = (
         "assets/yolov8s_fp32_BADDD.pt",
         "verybad-yolov8s-pytorch-medium-fp32",
-        (Label.ROBOT, Label.ALGAE, Label.CORAL),
+        (Label.ALGAE, Label.CORAL, Label.ROBOT),
         2025,
         Backend.ULTRALYTICS,
         YOLOTYPE.V8,

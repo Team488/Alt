@@ -1,4 +1,5 @@
 import time
+from Core import COREMODELTABLE, COREINFERENCEMODE
 from tools.Constants import CameraIdOffsets2024, ATLocations, Units, TEAM
 from coreinterface.DetectionPacket import DetectionPacket
 from coreinterface.ReefPacket import ReefPacket
@@ -15,6 +16,9 @@ class CentralAgentBase(PositionLocalizingAgentBase):
     """
 
     def create(self) -> None:
+        # put inference mode on xtables, so local observers can assert they are running the same model type
+        self.xclient.putString(COREMODELTABLE, COREINFERENCEMODE.getName())
+
         super().create()
         # perform agent init here (eg open camera or whatnot)
         self.keys = ["REARRIGHT", "REARLEFT", "FRONTLEFT", "FRONTRIGHT", "Johnny"]

@@ -41,8 +41,10 @@ class PathGenerator:
     def generateWStaticRobots(
         self, start, goal, threshold=0.5
     ) -> Optional[list[tuple[int, int]]]:
-        robotobstacles = self.map.getAllRobotsAboveThreshold(threshold)
-        robotObstacleMap = np.zeros_like(self.map.getMap(), dtype=np.uint8)
+        robotobstacles = self.map.getAllObjectsAboveThreshold(
+            class_idx=0, threshold=threshold
+        )
+        robotObstacleMap = np.zeros_like(self.map.getMap(class_idx=0), dtype=np.uint8)
         for obstacle in robotobstacles:
             cv2.circle(
                 robotObstacleMap,

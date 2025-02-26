@@ -358,7 +358,7 @@ class ProbMap:
 
     """ Getting heatmaps """
 
-    def __getHeatMap(self, probmap):
+    def __getHeatMap(self, probmap) -> np.ndarray:
         heatmap = np.copy(probmap)
         heatmap = cv2.resize(
             heatmap, (self.width, self.height)
@@ -366,7 +366,6 @@ class ProbMap:
         heatmap = heatmap * 255.0
         heatmap = np.clip(heatmap, a_min=0.0, a_max=255.0)
         heatmap = np.rint(heatmap).astype(np.uint8)
-        # dont know if this line is neccesary, we can just reduce the clip value above
         heatmap = np.where(heatmap > 255, 255, heatmap).astype(np.uint8)
 
         return heatmap
