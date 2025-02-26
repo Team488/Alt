@@ -43,7 +43,7 @@ class CameraUsingAgentBase(Agent):
             self.cap = DepthAIHelper(self.cameraIntrinsics)
         else:
             self.cap = cv2.VideoCapture(self.cameraPath)
-            if CameraIntrinsics is not None:
+            if self.cameraIntrinsics is not None:
                 fourcc = cv2.VideoWriter_fourcc(*"MJPG")  # or 'XVID', 'MP4V'
                 self.cap.set(cv2.CAP_PROP_FOURCC, fourcc)
                 CameraIntrinsics.setCapRes(self.cameraIntrinsics, self.cap)

@@ -29,7 +29,7 @@ class Central:
         self.useObstacles = self.propertyOp.createProperty("Use_Obstacles", True)
 
         self.kalmanCaches = [KalmanCache() for _ in self.labels]
-        self.objectmap = ProbMap()
+        self.objectmap = ProbMap(self.labels)
         self.reefState = ReefState()
         self.ukf = Ukf()
         self.labler = KalmanLabeler(self.kalmanCaches, self.labels)

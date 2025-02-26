@@ -35,7 +35,7 @@ class DetectionPacket:
 
             packet_detection.confidence = float(detection[2])
 
-            packet_detection.class_idx = int(detection[3])
+            packet_detection.classidx = int(detection[3])
 
             features = detection[4]
             packet_features = packet_detection.init("features")
@@ -91,7 +91,7 @@ class DetectionPacket:
             confidence = float(packet_detection.confidence)
 
             # Extract the class_idx flag
-            class_idx = int(packet_detection.class_idx)
+            class_idx = int(packet_detection.classidx)
 
             # Extract the features
             packet_features = packet_detection.features

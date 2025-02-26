@@ -10,7 +10,7 @@ struct Detection {
     id @0 :Int16;                          # Deep sort local id
     coordinates @1 :XYZ;                  # Tuple of integers for detection coordinates
     confidence @2 :Float64;                      # detection confidence
-    class_idx @3 :Int8;                          # class_idx flag
+    classidx @3 :Int8;                          # class_idx flag
     features @4 :DataArray;                    # NumPy-like array for extracted features
 }
 
