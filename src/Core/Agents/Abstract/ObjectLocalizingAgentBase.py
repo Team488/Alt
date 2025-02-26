@@ -1,4 +1,5 @@
 import os
+from typing import Union
 import cv2
 import time
 from functools import partial
@@ -22,7 +23,7 @@ class ObjectLocalizingAgentBase(TimestampRegulatedAgentBase):
 
     DETECTIONPOSTFIX = "Detections"
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs) -> None:
         self.cameraIntrinsics = kwargs.get("cameraIntrinsics", None)
         self.cameraExtrinsics = kwargs.get("cameraExtrinsics", None)
         self.inferenceMode = kwargs.get("inferenceMode", None)
@@ -62,7 +63,7 @@ class ObjectLocalizingAgentBase(TimestampRegulatedAgentBase):
             self.DETECTIONPOSTFIX, b""
         )
 
-    def runPeriodic(self):
+    def runPeriodic(self) -> None:
         super().runPeriodic()
         sendFrame = self.sendFrame.get()
         with self.timer.run("frame-processing"):
@@ -103,18 +104,22 @@ class ObjectLocalizingAgentBase(TimestampRegulatedAgentBase):
 
         self.Sentinel.info("Processed frame!")
 
-    def getName(self):
+    def getName(self) -> str:
         return "Object_Localizer"
 
-    def getDescription(self):
+    def getDescription(self) -> str:
         return "Inference_Then_Localize"
 
-    def getIntervalMs(self):
+    def getIntervalMs(self) -> int:
         return 0
 
 
 def ObjectLocalizingAgentPartial(
-    cameraPath, cameraIntrinsics, cameraExtrinsics, inferenceMode
+    cameraPath: Union[str, int],
+    cameraIntrinsics: CameraIntrinsics,
+    cameraExtrinsics: CameraExtrinsics,
+    inferenceMode: InferenceMode,
+    showFrames: bool = False,
 ):
     """Returns a partially completed frame processing agent. All you have to do is pass it into neo"""
     return partial(
@@ -123,4 +128,5 @@ def ObjectLocalizingAgentPartial(
         cameraIntrinsics=cameraIntrinsics,
         cameraExtrinsics=cameraExtrinsics,
         inferenceMode=inferenceMode,
+        showFrames=showFrames,
     )

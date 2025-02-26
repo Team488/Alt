@@ -31,7 +31,7 @@ class Label(Enum):
     def getDefaultLengthType():
         return Units.LengthType.CM
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.value[0]
 
     def getSize(self, lengthType: Units.LengthType):
@@ -114,6 +114,15 @@ class InferenceMode(Enum):
         YOLOTYPE.V11,
         ModelType.CORO,
     )
+    ALCOROULTRALYTICSSMALL2025BAD = (
+        "assets/yolov8s_fp32_BADDD.pt",
+        "verybad-yolov8s-pytorch-medium-fp32",
+        (Label.ALGAE, Label.CORAL, Label.ROBOT),
+        2025,
+        Backend.ULTRALYTICS,
+        YOLOTYPE.V8,
+        ModelType.ALCORO,
+    )
 
     # TORCH todo!
 
@@ -124,7 +133,7 @@ class InferenceMode(Enum):
         return self.value[1]
 
     def getLabelsAsStr(self):
-        return list[map(str, self.value[2])]
+        return list(map(str, self.value[2]))
 
     def getLabels(self):
         return self.value[2]

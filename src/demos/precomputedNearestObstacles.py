@@ -16,7 +16,7 @@ class PrecomputeNearest:
         self,
         fieldX=MapConstants.fieldWidth.value,
         fieldY=MapConstants.fieldHeight.value,
-    ):
+    ) -> None:
         # "Constants"
         self.fieldX = fieldX
         self.fieldY = fieldY
@@ -108,7 +108,7 @@ class PrecomputeNearest:
 mouse_position = (0, 0)
 
 # Mouse callback function to update the observation
-def mouse_callback(event, x, y, flags, param):
+def mouse_callback(event, x, y, flags, param) -> None:
     global mouse_position
     if event == cv2.EVENT_MOUSEMOVE:
         mouse_position = np.array([x, y])

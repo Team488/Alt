@@ -6,32 +6,42 @@ from Core.PropertyOperator import PropertyOperator
 from Core.ConfigOperator import ConfigOperator
 from Core.ShareOperator import ShareOperator
 
+
 class XDashOperator:
-    """ Telemetry manager for XDash  """
-    def __init__(self, central : Central, xclient : XTablesClient, propertyOperator : PropertyOperator, configOperator : ConfigOperator, shareOperator : ShareOperator, logger : Logger):
+    """Telemetry manager for XDash"""
+
+    def __init__(
+        self,
+        central: Central,
+        xclient: XTablesClient,
+        propertyOperator: PropertyOperator,
+        configOperator: ConfigOperator,
+        shareOperator: ShareOperator,
+        logger: Logger,
+    ) -> None:
         self.central = central
         self.xclient = xclient
         self.propertyOperator = propertyOperator
         self.configOperator = configOperator
         self.shareOp = shareOperator
         self.Sentinel = logger
-        
-        # telemetry properties
-        self.mapProp = self.propertyOperator.createCustomReadOnlyProperty("Probmap","")
-        self.pathProp = self.propertyOperator.createCustomReadOnlyProperty("Best_Path","")
 
-    def __sendMapUpdate(self):
+        # telemetry properties
+        self.mapProp = self.propertyOperator.createCustomReadOnlyProperty("Probmap", "")
+        self.pathProp = self.propertyOperator.createCustomReadOnlyProperty(
+            "Best_Path", ""
+        )
+
+    def __sendMapUpdate(self) -> None:
         # do stuff
         self.mapProp.set("value here")
 
-    def __sendPathUpdate(self):
-         # do stuff
+    def __sendPathUpdate(self) -> None:
+        # do stuff
         self.mapProp.set("path here")
 
-    def run(self):
+    def run(self) -> None:
         # loop
         self.__sendMapUpdate()
         self.__sendPathUpdate()
         # etc etc
-
-

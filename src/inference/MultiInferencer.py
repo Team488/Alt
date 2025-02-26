@@ -10,7 +10,7 @@ Sentinel = getLogger("Multi_Inferencer")
 
 
 class MultiInferencer:
-    def __init__(self, inferenceMode: InferenceMode):
+    def __init__(self, inferenceMode: InferenceMode) -> None:
         self.inferenceMode = inferenceMode
         self.backend = self.__getBackend(self.inferenceMode)
         self.backend.initialize()

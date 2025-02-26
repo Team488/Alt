@@ -20,7 +20,7 @@ Sentinel = getLogger("Kalman_Labler")
 
 
 class KalmanLabeler:
-    def __init__(self, kalmanCaches: list[KalmanCache], labels: list[Label]):
+    def __init__(self, kalmanCaches: list[KalmanCache], labels: list[Label]) -> None:
         self.kalmanCaches = kalmanCaches
         self.labels = labels
 

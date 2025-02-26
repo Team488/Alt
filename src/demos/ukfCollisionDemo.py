@@ -4,7 +4,9 @@ from filterpy.kalman import UnscentedKalmanFilter as UKF
 from filterpy.kalman import MerweScaledSigmaPoints
 
 
-def __addFieldBoundsAsObstacles(obstacles, fieldX, fieldY, fieldObstacleDepth=10):
+def __addFieldBoundsAsObstacles(
+    obstacles, fieldX, fieldY, fieldObstacleDepth=10
+) -> None:
     # add obstacles to represent field bounds
     # offset field bounds so its visible
     topRightCorner = (fieldObstacleDepth, fieldObstacleDepth)
@@ -92,7 +94,7 @@ def __adjustCollisionToClosestSide(
     return collisionPoint
 
 
-def redrawScene(frame, oldX, oldY, newX, newY, obstacles):
+def redrawScene(frame, oldX, oldY, newX, newY, obstacles) -> None:
     cv2.arrowedLine(frame, (oldX, oldY), (newX, newY), (0, 255, 0), 2)
 
     # Check for obstacle avoidance
@@ -120,7 +122,7 @@ def getNewFrame(fieldX, fieldY):
     return np.zeros((fieldX, fieldY, 3), dtype=np.int8)
 
 
-def startDemo():
+def startDemo() -> None:
     # Example usage:
     obstacles = [((100, 100), (50, 50))]
     fieldX = 200
@@ -137,7 +139,7 @@ def startDemo():
     lastX2 = int(fieldX / 2.4)
     lastY2 = int(fieldY / 2.4)
 
-    def updateX1(val):
+    def updateX1(val) -> None:
         frame = getNewFrame(
             fieldX + 2 * fieldObstacleDepth, fieldY + 2 * fieldObstacleDepth
         )
@@ -150,7 +152,7 @@ def startDemo():
         lastX1 = val
         redrawScene(frame, lastX1, lastY1, lastX2, lastY2, obstacles)
 
-    def updateY1(val):
+    def updateY1(val) -> None:
         frame = getNewFrame(
             fieldX + 2 * fieldObstacleDepth, fieldY + 2 * fieldObstacleDepth
         )
@@ -163,7 +165,7 @@ def startDemo():
         lastY1 = val
         redrawScene(frame, lastX1, lastY1, lastX2, lastY2, obstacles)
 
-    def updateX2(val):
+    def updateX2(val) -> None:
         frame = getNewFrame(
             fieldX + 2 * fieldObstacleDepth, fieldY + 2 * fieldObstacleDepth
         )
@@ -176,7 +178,7 @@ def startDemo():
         lastX2 = val
         redrawScene(frame, lastX1, lastY1, lastX2, lastY2, obstacles)
 
-    def updateY2(val):
+    def updateY2(val) -> None:
         frame = getNewFrame(
             fieldX + 2 * fieldObstacleDepth, fieldY + 2 * fieldObstacleDepth
         )

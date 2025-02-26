@@ -15,7 +15,7 @@ class PathPlanningAgentBase(PositionLocalizingAgentBase):
 
     SHAREDPATHNAME = "createdPath"
 
-    def create(self):
+    def create(self) -> None:
         super().create()
         self.pathTable = self.propertyOperator.createProperty(
             "Path_Name", "target_waypoints"
@@ -25,7 +25,7 @@ class PathPlanningAgentBase(PositionLocalizingAgentBase):
     def getPath(self):
         pass
 
-    def __emitPath(self, path):
+    def __emitPath(self, path) -> None:
         # put in shared memory (regardless if not created Eg. None)
         self.shareOp.put(PathPlanningAgentBase.SHAREDPATHNAME, path)
         # put on network if path was sucessfully created
@@ -38,7 +38,7 @@ class PathPlanningAgentBase(PositionLocalizingAgentBase):
         # self.Sentinel.info("Failed to generate path")
         # self.xclient.putCoordinates(self.pathTable.get(), [])
 
-    def runPeriodic(self):
+    def runPeriodic(self) -> None:
         super().runPeriodic()
         if self.connectedToLoc:
             self.path = self.getPath()
@@ -48,13 +48,9 @@ class PathPlanningAgentBase(PositionLocalizingAgentBase):
         # emit the path to shared mem and network
         self.__emitPath(self.path)
 
-        frame = cv2.merge(
-            (
-                self.central.objectmap.getGameObjectHeatMap(),
-                np.zeros_like(self.central.objectmap.getGameObjectHeatMap()),
-                self.central.objectmap.getRobotHeatMap(),
-            )
-        )
+        maps = self.central.objectmap.getHeatMaps()
+        maps.append(np.zeros_like(self.central.objectmap.getHeatMap(0)))
+        frame = cv2.merge(maps)
 
         if self.path:
             for point in self.path:

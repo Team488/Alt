@@ -8,7 +8,7 @@ import math
 
 
 class Cell:
-    def __init__(self):
+    def __init__(self) -> None:
         self.parent_i = 0  # Parent cell's row index
         self.parent_j = 0  # Parent cell's column index
         self.f = float("inf")  # Total cost of the cell (g + h)
@@ -25,7 +25,7 @@ class AStarPathfinder:
         gridSizeCol: int,
         gridSizeRow: int,
         mapResolution: float,
-    ):
+    ) -> None:
         self.original_grid = grid
         self.obstacle_radius = math.ceil(
             np.linalg.norm((obstacleWidth, obstacleHeight))

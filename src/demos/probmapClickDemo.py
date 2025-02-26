@@ -9,7 +9,7 @@ isMouseDownG = False
 isMouseDownR = False
 
 
-def mouseDownCallbackGameObj(event, x, y, flags, param):
+def mouseDownCallbackGameObj(event, x, y, flags, param) -> None:
     global isMouseDownG
     if event == cv2.EVENT_LBUTTONDOWN:
         isMouseDownG = True
@@ -23,7 +23,7 @@ def mouseDownCallbackGameObj(event, x, y, flags, param):
         isMouseDownG = False
 
 
-def mouseDownCallbackRobot(event, x, y, flags, param):
+def mouseDownCallbackRobot(event, x, y, flags, param) -> None:
     global isMouseDownR
     if event == cv2.EVENT_LBUTTONDOWN:
         isMouseDownR = True
@@ -37,7 +37,7 @@ def mouseDownCallbackRobot(event, x, y, flags, param):
         isMouseDownR = False
 
 
-def startDemo():
+def startDemo() -> None:
     cv2.namedWindow(map.gameObjWindowName)
     cv2.setMouseCallback(map.gameObjWindowName, mouseDownCallbackGameObj)
 

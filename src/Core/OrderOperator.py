@@ -8,19 +8,23 @@ from Core.PropertyOperator import PropertyOperator
 class OrderOperator:
     def __init__(
         self, xclient: XTablesClient, propertyOp: PropertyOperator, logger: Logger
-    ):
+    ) -> None:
         self.Sentinel = logger
         self.propertyOp = propertyOp
         self.triggers = set()
         self.__xclient: XTablesClient = xclient
         self.__setTriggerDescription = lambda orderTriggerName, description: self.propertyOp.createCustomReadOnlyProperty(
             f"active_triggers.{orderTriggerName}.Description", description
-        ).set(description)
+        ).set(
+            description
+        )
         self.__setTriggerStatus = lambda orderTriggerName, status: self.propertyOp.createCustomReadOnlyProperty(
             f"active_triggers.{orderTriggerName}.Status", status
-        ).set(status)
+        ).set(
+            status
+        )
 
-    def __runOrder(self, order : Order, ret):
+    def __runOrder(self, order: Order, ret) -> None:
         orderTriggerName = ret.key
         self.__setTriggerStatus(orderTriggerName, "running!")
         self.Sentinel.info(f"Starting order that does: {order.getDescription()}")
@@ -44,17 +48,19 @@ class OrderOperator:
             tb = traceback.format_exc()
             self.Sentinel.error(tb)
 
-    def createOrderTrigger(self, orderTriggerName: str, orderToRun: Order):
+    def createOrderTrigger(self, orderTriggerName: str, orderToRun: Order) -> None:
         # broadcast order and what it does
         self.__setTriggerDescription(orderTriggerName, orderToRun.getDescription())
         self.__setTriggerStatus(orderTriggerName, "waiting to run")
 
         # running create
         with orderToRun.getTimer().run("create"):
-                orderToRun.create()
-        
+            orderToRun.create()
+
         # subscribing to trigger
-        self.__xclient.subscribe(orderTriggerName, lambda ret : self.__runOrder(orderToRun, ret))
+        self.__xclient.subscribe(
+            orderTriggerName, lambda ret: self.__runOrder(orderToRun, ret)
+        )
         self.triggers.add(orderTriggerName)
         # assign the order order
         self.Sentinel.info(

@@ -18,11 +18,11 @@ class ReefTrackingAgentBase(CameraUsingAgentBase):
         If showFrames is True, you must run this agent as main
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
         self.cameraIntrinsics = kwargs.get("cameraIntrinsics", None)
 
-    def create(self):
+    def create(self) -> None:
         super().create()
         self.tracker = ReefTracker(
             cameraIntrinsics=self.cameraIntrinsics, isLocalAT=True
@@ -34,7 +34,7 @@ class ReefTrackingAgentBase(CameraUsingAgentBase):
             CameraIntrinsics.setCapRes(self.cameraIntrinsics, self.cap)
         self.c = 0
 
-    def runPeriodic(self):
+    def runPeriodic(self) -> None:
         super().runPeriodic()
         outCoral, outAlgae = self.tracker.getAllTracks(
             self.latestFrame, drawBoxes=self.showFrames
@@ -49,10 +49,10 @@ class ReefTrackingAgentBase(CameraUsingAgentBase):
         #     self.c+=1
         # time.sleep(1)
 
-    def getName(self):
+    def getName(self) -> str:
         return "Reef_Tracking_Agent"
 
-    def getDescription(self):
+    def getDescription(self) -> str:
         return "Gets_Reef_State"
 
 

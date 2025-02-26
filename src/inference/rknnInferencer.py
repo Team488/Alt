@@ -12,7 +12,7 @@ Sentinel = getLogger("rknn_inferencer")
 
 
 class rknnInferencer(InferencerBackend):
-    def initialize(self):
+    def initialize(self) -> None:
         # # export needed rknpu .so
         # so_path = os.getcwd() + "/assets/"
 
@@ -69,7 +69,7 @@ class rknnInferencer(InferencerBackend):
             return []
 
 
-def startDemo():
+def startDemo() -> None:
     from inference.MultiInferencer import MultiInferencer
     from tools.Constants import InferenceMode
 

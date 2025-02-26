@@ -24,7 +24,7 @@ lastX = -1
 lastY = -1
 
 
-def __isolateRangeHighest(x, y):
+def __isolateRangeHighest(x, y) -> None:
     (px, py, prob) = fieldMap.getHighestObjectWithinRange(x, y, wX, wY)
     (objMap, robtMap) = fieldMap.getHeatMaps()
     cv2.rectangle(
@@ -44,7 +44,7 @@ def __isolateRangeHighest(x, y):
     cv2.imshow(fieldMap.gameObjWindowName, objMap)
 
 
-def __isolateRangeCallback(event, x, y, flags, param):
+def __isolateRangeCallback(event, x, y, flags, param) -> None:
     global isdown
     if event == cv2.EVENT_LBUTTONDOWN:
         isdown = True
@@ -62,7 +62,7 @@ cv2.namedWindow(fieldMap.gameObjWindowName)
 cv2.setMouseCallback(fieldMap.gameObjWindowName, __isolateRangeCallback)
 
 
-def startDemo():
+def startDemo() -> None:
 
     for i in range(20000):
         if i % 5 == 0:
@@ -89,7 +89,7 @@ def startDemo():
         # fieldMap.clear_map()
 
 
-def __test_randomization_ranges(map: ProbMap, width, height):
+def __test_randomization_ranges(map: ProbMap, width, height) -> None:
     # for i in range(1):
     x = random.randrange(0, width)
     y = random.randrange(0, height)

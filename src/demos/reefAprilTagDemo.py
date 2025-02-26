@@ -13,7 +13,7 @@ targetPoseFL = targetPoseFL.getEntry("targetPose")
 
 # Start Capture and Calibrate Camera
 # video_path = "video/2.mkv" # or do int 0 for /dev/video0
-def startDemo(videoPath=0):
+def startDemo(videoPath=0) -> None:
     cap = cv2.VideoCapture(videoPath)  # /dev/video0
     reefEstimator = ReefPixelEstimator()
     inf = MultiInferencer(inferenceMode=InferenceMode.ONNXSMALL2025)

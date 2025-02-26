@@ -35,7 +35,7 @@ if os.path.exists(json_filename):
 # Define the PathPlanner Class
 # ---------------------------
 class PathPlanner:
-    def __init__(self, grid_size, raw_obstacles, safety_radius):
+    def __init__(self, grid_size, raw_obstacles, safety_radius) -> None:
         self.grid_size = grid_size
         self.safety_radius = safety_radius
         self.dynamic_obstacles = []
@@ -56,7 +56,7 @@ class PathPlanner:
             f"Static obstacle inflation completed in {time.monotonic() - t:.2f} seconds."
         )
 
-    def setSafetyRadius(self, new_safety_radius):
+    def setSafetyRadius(self, new_safety_radius) -> None:
         if new_safety_radius == self.safety_radius:
             return
         self.obstacles = self.inflate_obstacles(self.grid, new_safety_radius)
@@ -166,7 +166,7 @@ class PathPlanner:
             curve += np.outer(bernstein_poly, control_points[i])
         return curve
 
-    def check_collision(self, curve):
+    def check_collision(self, curve) -> bool:
         """Check if any point on the Bézier curve collides with an obstacle."""
         for px, py in curve:
             if (round(px), round(py)) in self.obstacles:
@@ -256,7 +256,7 @@ class PathPlanner:
                     return candidate_segment
         return None
 
-    def set_dynamic_obstacles(self, dynamic_obstacles, safety_radius):
+    def set_dynamic_obstacles(self, dynamic_obstacles, safety_radius) -> None:
         """Update the grid with dynamic obstacles and apply inflation."""
         pixelsPerMeterX = self.grid_size[0] / fieldWidthMeters
         pixelsPerMeterY = self.grid_size[1] / fieldHeightMeters

@@ -91,9 +91,6 @@ class Neo:
         self.__logMap = {}
         self.__getBasePrefix = lambda agentName: f"active_agents.{agentName}"
 
-        # put inference mode on xtables, so local observers can assert they are running the same model type
-        self.__xclient.putString(COREMODELTABLE, COREINFERENCEMODE.getName())
-
     def __handleArchitectKill(self, sig, frame) -> None:
         Sentinel.info("The architect has caused our demise! Shutting down any agent")
         self.shutDown()
@@ -199,7 +196,7 @@ class Neo:
         else:
             self.Sentinel.warning("Neo has already been shut down!")
 
-    def __cleanup(self):
+    def __cleanup(self) -> None:
         # xtables operations. need to go before xclient shutdown
         Sentinel.info(f"Properties removed: {self.__propertyOp.deregisterAll()}")
         Sentinel.info(f"Orders removed: {self.__orderOp.deregister()}")
@@ -215,7 +212,7 @@ class Neo:
     def isShutdown(self) -> bool:
         return self.__isShutdown
 
-    def __printInit(self):
+    def __printInit(self) -> None:
         message = """ /$$$$$$$$ /$$   /$$ /$$$$$$$$       /$$      /$$  /$$$$$$  /$$$$$$$$ /$$$$$$$  /$$$$$$ /$$   /$$
 |__  $$__/| $$  | $$| $$_____/      | $$$    /$$$ /$$__  $$|__  $$__/| $$__  $$|_  $$_/| $$  / $$
    | $$   | $$  | $$| $$            | $$$$  /$$$$| $$  \\ $$   | $$   | $$  \\ $$  | $$  |  $$/ $$/
@@ -259,7 +256,7 @@ class Neo:
    |__/   |__/     |__/      |______/ \\______/  \\______/  \\______/"""
         Sentinel.info(f"\n\n{message}\n\n")
 
-    def __printFinish(self):
+    def __printFinish(self) -> None:
         message = """⠀⠀⠀⠀⠀⠀⣀⣤⣴⣶⣶⣦⣤⡀⠀⠀⠀⠀⠀⠀⠀
 ⠀⠀⠀⢀⣴⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣦⣄⠀⠀⠀
 ⠀⠀⢀⣾⣿⣿⣿⠿⣿⣿⣿⣿⣿⣿⠿⣿⣿⣿⣷⡀⠀

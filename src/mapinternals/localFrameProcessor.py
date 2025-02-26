@@ -113,7 +113,7 @@ class LocalFrameProcessor:
                 cv2.putText(
                     frame,
                     f"Id:{id} Conf{conf:.2f} Label: {label}",
-                    UnitConversion.toint(np.add(bbox[:2], bbox[2:4]), 2),
+                    UnitConversion.toint(np.add(bbox[:2], bbox[2:4]) / 2),
                     0,
                     1,
                     color,

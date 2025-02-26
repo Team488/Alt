@@ -5,7 +5,7 @@ from abstract.inferencerBackend import InferencerBackend
 
 
 class ultralyticsInferencer(InferencerBackend):
-    def initialize(self):
+    def initialize(self) -> None:
         self.model = YOLO(self.mode.getModelPath())
 
     def preprocessFrame(self, frame):
@@ -27,7 +27,7 @@ class ultralyticsInferencer(InferencerBackend):
         return []
 
 
-def startDemo():
+def startDemo() -> None:
     from inference.MultiInferencer import MultiInferencer
     from tools.Constants import InferenceMode
 

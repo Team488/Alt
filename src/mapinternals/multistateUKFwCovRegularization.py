@@ -17,7 +17,7 @@ class MultistateUkf:
         numStates,
         fieldX=MapConstants.fieldWidth.value,
         fieldY=MapConstants.fieldHeight.value,
-    ):
+    ) -> None:
         # "Constants"
         self.NUMSIMULATEDSTATES = numStates
         self.SINGLESTATELEN = 4
@@ -139,10 +139,10 @@ class MultistateUkf:
 
         return (-1, -1)
 
-    def reset_P(self):
+    def reset_P(self) -> None:
         self.baseUKF.P = np.eye(self.STATELEN)
 
-    def set_state(self, x, y, vx, vy):
+    def set_state(self, x, y, vx, vy) -> None:
         newState = [x, y, vx, vy] * self.NUMSIMULATEDSTATES
         self.baseUKF.x = newState
 

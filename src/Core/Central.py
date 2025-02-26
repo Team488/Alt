@@ -19,7 +19,7 @@ class Central:
         configOp: ConfigOperator,
         propertyOp: PropertyOperator,
         inferenceMode: InferenceMode,
-    ):
+    ) -> None:
         self.Sentinel = logger
         self.configOp = configOp
         self.propertyOp = propertyOp
@@ -29,7 +29,7 @@ class Central:
         self.useObstacles = self.propertyOp.createProperty("Use_Obstacles", True)
 
         self.kalmanCaches = [KalmanCache() for _ in self.labels]
-        self.objectmap = ProbMap()
+        self.objectmap = ProbMap(self.labels)
         self.reefState = ReefState()
         self.ukf = Ukf()
         self.labler = KalmanLabeler(self.kalmanCaches, self.labels)
@@ -56,7 +56,7 @@ class Central:
         self,
         reefResults: tuple[list[tuple[int, int, float]], list[tuple[int, float]]],
         timeStepMs,
-    ):
+    ) -> None:
         self.reefState.dissipateOverTime(timeStepMs)
 
         for reefResult in reefResults:
@@ -81,7 +81,7 @@ class Central:
             ]
         ],
         timeStepMs,
-    ):
+    ) -> None:
         # dissipate at start of iteration
         self.objectmap.disspateOverTime(timeStepMs)
 
