@@ -19,7 +19,7 @@ class Central:
         configOp: ConfigOperator,
         propertyOp: PropertyOperator,
         inferenceMode: InferenceMode,
-    ):
+    ) -> None:
         self.Sentinel = logger
         self.configOp = configOp
         self.propertyOp = propertyOp
@@ -56,7 +56,7 @@ class Central:
         self,
         reefResults: tuple[list[tuple[int, int, float]], list[tuple[int, float]]],
         timeStepMs,
-    ):
+    ) -> None:
         self.reefState.dissipateOverTime(timeStepMs)
 
         for reefResult in reefResults:
@@ -81,7 +81,7 @@ class Central:
             ]
         ],
         timeStepMs,
-    ):
+    ) -> None:
         # dissipate at start of iteration
         self.objectmap.disspateOverTime(timeStepMs)
 

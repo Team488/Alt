@@ -12,7 +12,7 @@ import json
 
 
 class FastMarchingPathfinder:
-    def __init__(self, grid_cost):
+    def __init__(self, grid_cost) -> None:
         """
         grid_cost: 2D numpy array of base traversal costs.
                    Free cells: cost 1; obstacles: higher cost (e.g., 30, 100, 1000).
@@ -439,7 +439,7 @@ class VisionCoprocessorServicer(XTableGRPC.VisionCoprocessorServicer):
         return response
 
 
-def serve():
+def serve() -> None:
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     XTableGRPC.add_VisionCoprocessorServicer_to_server(
         VisionCoprocessorServicer(), server

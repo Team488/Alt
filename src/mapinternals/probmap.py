@@ -23,7 +23,7 @@ class ProbMap:
         resolution=MapConstants.res.value,
         sigma=0.9,
         alpha=0.8,
-    ):
+    ) -> None:
 
         # exposed constants
         self.width = x
@@ -70,7 +70,7 @@ class ProbMap:
 
     # After testing speed, see if we need some sort of hashmap to detection patches
     # We could add the center of detections to the hashmap, then on every smooth cycle we traverse each patch in the map and see if the probability has dissipated to zero, if so then we remove from map
-    def __add_detection(self, probmap, x, y, obj_x, obj_y, prob):
+    def __add_detection(self, probmap, x, y, obj_x, obj_y, prob) -> None:
         # print(f"Adding detection at {x},{y} with size {obj_x},{obj_y}")
 
         # not perfect workaround, but transpose fix leads to x and y values being flipped, we can get by this by just flipping before putting in to map
@@ -254,7 +254,7 @@ class ProbMap:
 
     """ Regular detection methods use sizes provided in constructor """
 
-    def addDetectedObject(self, class_idx: int, x: int, y: int, prob: float):
+    def addDetectedObject(self, class_idx: int, x: int, y: int, prob: float) -> None:
         """Add a single object detection of class to the probability map.
 
         Args:
@@ -281,7 +281,7 @@ class ProbMap:
             prob,
         )
 
-    def addDetectedCoords(self, coords: list[tuple[int, int, int, float]]):
+    def addDetectedCoords(self, coords: list[tuple[int, int, int, float]]) -> None:
         """Add multiple game object detections to the probability map.
 
         Args:
@@ -301,7 +301,7 @@ class ProbMap:
         objX: int,
         objY: int,
         prob: float,
-    ):
+    ) -> None:
         """Add a game object detection with custom size to the probability map.
 
         Args:
@@ -335,18 +335,18 @@ class ProbMap:
 
     """ Displaying heat maps"""
 
-    def __displayHeatMap(self, probmap, name: str):
+    def __displayHeatMap(self, probmap, name: str) -> None:
         cv2.imshow(name, self.__getHeatMap(probmap))
 
     """ Exposed display heatmap method"""
 
-    def displayHeatMaps(self):
+    def displayHeatMaps(self) -> None:
         # self.__displayHeatMap(self.probmapGameObj, self.gameObjWindowName)
         """Display visualization of both probability maps using OpenCV windows."""
         for probmap, label in zip(self.probmaps, self.labels):
             self.__displayHeatMap(probmap, str(label))
 
-    def displayMap(self, class_idx):
+    def displayMap(self, class_idx) -> None:
         """Display visualization of game object probability map using OpenCV window."""
         if class_idx < 0 or class_idx > len(self.probmaps):
             Sentinel.warning(
@@ -700,7 +700,7 @@ class ProbMap:
             self.probmaps[class_idx], posX, posY, rangeX, rangeY, threshold
         )
 
-    def __setChunkOfMap(self, probmap, x, y, chunkX, chunkY, chunk):
+    def __setChunkOfMap(self, probmap, x, y, chunkX, chunkY, chunk) -> None:
         # also need to invert coords here
         tmp = x
         x = y // self.resolution

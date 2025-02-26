@@ -18,7 +18,7 @@ from Core.PropertyOperator import PropertyOperator
 class AgentOperator:
     def __init__(
         self, propertyOp: PropertyOperator, timeOp: TimeOperator, logger: Logger
-    ):
+    ) -> None:
         self.Sentinel = logger
         self.propertyOp = propertyOp
         self.timeOp = timeOp
@@ -44,15 +44,15 @@ class AgentOperator:
             ).set(description)
         )
 
-    def stopAndWait(self):
+    def stopAndWait(self) -> None:
         self.__stop = True
         self.waitForAgentsToFinish()
         self.__stop = False
 
-    def stopPermanent(self):
+    def stopPermanent(self) -> None:
         self.__stop = True
 
-    def wakeAgentMain(self, agent: Agent):
+    def wakeAgentMain(self, agent: Agent) -> None:
         """Starts agent on whatever thread this is called from. Eg Likely Main"""
         self.Sentinel.info(
             f"Waking agent! | Name: {agent.getName()} Description : {agent.getDescription()}"
@@ -63,7 +63,7 @@ class AgentOperator:
 
         self.__startAgentLoop(agent, futurePtr=None)
 
-    def wakeAgent(self, agent: Agent):
+    def wakeAgent(self, agent: Agent) -> None:
         self.Sentinel.info(
             f"Waking agent! | Name: {agent.getName()} Description : {agent.getDescription()}"
         )
@@ -76,7 +76,7 @@ class AgentOperator:
         # grace period for thread to start
         self.Sentinel.info("The agent is alive!")
 
-    def __startAgentLoop(self, agent: Agent, futurePtr: Optional[int]):
+    def __startAgentLoop(self, agent: Agent, futurePtr: Optional[int]) -> None:
 
         """Main part #1 Creation and running"""
         try:
@@ -147,20 +147,20 @@ class AgentOperator:
             with self.__futureLock:
                 self.__futures.pop(futurePtr)
 
-    def __handleException(self, task: str, agentName: str, exception):
+    def __handleException(self, task: str, agentName: str, exception) -> None:
         message = f"Failed! | During {task}: {exception}"
         self.__setStatus(agentName, message)
         tb = traceback.format_exc()
         self.__setErrorLog(agentName, tb)
         self.Sentinel.error(tb)
 
-    def setOnAgentFinished(self, runOnFinish):
+    def setOnAgentFinished(self, runOnFinish) -> None:
         if self.__futures:
             self.__runOnFinish = runOnFinish
         else:
             self.Sentinel.warning("Neo has no agents yet!")
 
-    def waitForAgentsToFinish(self):
+    def waitForAgentsToFinish(self) -> None:
         """Thread blocking method that waits for any running agents"""
         if self.__futures:
             self.Sentinel.info("Waiting for agent to finish...")
@@ -173,6 +173,6 @@ class AgentOperator:
         else:
             self.Sentinel.warning("No agents to wait for!")
 
-    def shutDownNow(self):
+    def shutDownNow(self) -> None:
         """Threadblocks until executor is finished"""
         self.__executor.shutdown(wait=True, cancel_futures=True)

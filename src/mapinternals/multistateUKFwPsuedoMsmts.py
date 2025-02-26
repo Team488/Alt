@@ -16,7 +16,7 @@ class MultistateUkf:
         numStates,
         fieldX=MapConstants.fieldWidth.value,
         fieldY=MapConstants.fieldHeight.value,
-    ):
+    ) -> None:
         # "Constants"
         self.obstacles = staticLoad("obstacleMap.npy")
         self.NUMSIMULATEDSTATES = numStates
@@ -55,10 +55,10 @@ class MultistateUkf:
         self.baseUKF.Q = self.Q
         self.baseUKF.R = self.R
 
-    def reset_P(self):
+    def reset_P(self) -> None:
         self.baseUKF.P = np.eye(self.STATELEN)
 
-    def set_state(self, x, y, vx, vy):
+    def set_state(self, x, y, vx, vy) -> None:
         newState = [x, y, vx, vy] * self.NUMSIMULATEDSTATES
         self.baseUKF.x = newState
 
@@ -84,7 +84,7 @@ class MultistateUkf:
         return x
 
     # Check if a position is valid (within bounds and not an obstacle)
-    def is_valid_position(self, x, y, robotHeight):
+    def is_valid_position(self, x, y, robotHeight) -> bool:
         if x < 0 or x > self.fieldX or y < 0 or y > self.fieldY:
             return False  # Outside the bounds
         if self.obstacles[int(y), int(x)] <= robotHeight:
@@ -104,7 +104,9 @@ class MultistateUkf:
     def getMeanEstimate(self):
         return self.hx(self.baseUKF.x)
 
-    def pseudo_measurement_update(self, pseudo_measurement_noise=1e-3, robotHeight=35):
+    def pseudo_measurement_update(
+        self, pseudo_measurement_noise=1e-3, robotHeight=35
+    ) -> None:
         sigmas = self.baseUKF.sigmas_f
         h_sigmas = np.array([self.pseudo_measurement(s, robotHeight) for s in sigmas])
         h_sigmas = np.vstack(h_sigmas)

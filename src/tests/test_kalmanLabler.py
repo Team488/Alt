@@ -4,7 +4,7 @@ from mapinternals.KalmanLabeler import KalmanLabeler
 from tools.Constants import CameraIdOffsets2024
 
 
-def test_lablerReassignment():
+def test_lablerReassignment() -> None:
     cache = KalmanCache()
     ukf = Ukf()
     labler = KalmanLabeler(cache, cache)

@@ -4,7 +4,7 @@ from Core.ConfigOperator import staticLoad
 
 
 class ParticleFilter:
-    def __init__(self, numParticles=1000):
+    def __init__(self, numParticles=1000) -> None:
         self.obstacles = staticLoad("obstacleMap.npy")
         self.NUM_PARTICLES = numParticles
         self.STATE_DIM = 4  # [x, y, vx, vy]
@@ -24,7 +24,7 @@ class ParticleFilter:
 
         self.weights = np.ones(self.NUM_PARTICLES) / self.NUM_PARTICLES
 
-    def state_transition(self, dt=1):
+    def state_transition(self, dt=1) -> None:
         max_speed = 10000
         max_accel = 10000
 
@@ -46,7 +46,7 @@ class ParticleFilter:
         # Update positions with velocity and noise
         self.particles[:, :2] += self.particles[:, 2:] * dt + pos_noise
 
-    def apply_constraints(self, currentRobotHeight=0):
+    def apply_constraints(self, currentRobotHeight=0) -> None:
         for i, particle in enumerate(self.particles):
             x, y, vx, vy = particle
 
@@ -72,7 +72,7 @@ class ParticleFilter:
         # self.weights += 1e-300
         self.weights /= np.sum(self.weights)
 
-    def update_weights(self, observationPosition, observationVelocity):
+    def update_weights(self, observationPosition, observationVelocity) -> None:
         print(len(self.particles))
         # Normalize state and observation values by field dimensions
         norm_positions = self.particles[:, :2] / [

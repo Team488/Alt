@@ -17,7 +17,7 @@ class PropertyOperator:
         logger: Logger,
         basePrefix="",
         prefix="",
-    ):
+    ) -> None:
         self.__xclient: XTablesClient = xclient
         self.__configOp = configOp
         self.Sentinel = logger
@@ -47,11 +47,13 @@ class PropertyOperator:
 
         self.__children = []
 
-    def __updatePropertyCallback(self, ret):
+    def __updatePropertyCallback(self, ret) -> None:
         self.__propertyValueMap[ret.key] = self.__getRealType(ret.type, ret.value)
         self.Sentinel.debug(f"Property updated | Name: {ret.key} Value : {ret.value}")
 
-    def createProperty(self, propertyName: str, propertyDefault, loadIfSaved=True) -> "Property":
+    def createProperty(
+        self, propertyName: str, propertyDefault, loadIfSaved=True
+    ) -> "Property":
         propertyTable = self.__getPropertyTable(
             propertyName
         )  # store properties in known place
@@ -89,12 +91,18 @@ class PropertyOperator:
         self.__properties[propertyTable] = property
         return property
 
-    def createReadOnlyProperty(self, propertyName, propertyValue=None) -> "ReadonlyProperty":
+    def createReadOnlyProperty(
+        self, propertyName, propertyValue=None
+    ) -> "ReadonlyProperty":
         propertyTable = self.__getReadOnlyPropertyTable(propertyName)
         return self.__createReadOnly(propertyTable, propertyValue)
 
     def createCustomReadOnlyProperty(
-        self, propertyTable, propertyValue=None, addBasePrefix: bool = True, addOperatorPrefix: bool = False
+        self,
+        propertyTable,
+        propertyValue=None,
+        addBasePrefix: bool = True,
+        addOperatorPrefix: bool = False,
     ) -> "ReadonlyProperty":
         """Overrides any extra prefixes that might have been added by getting child property operators
         NOTE: by default addBasePrefix is True, and will add a base prefix to this property\n
@@ -105,13 +113,13 @@ class PropertyOperator:
             propertyTable = self.__addFullPrefix(propertyTable)
         elif addBasePrefix:
             propertyTable = self.__addBasePrefix(propertyTable)
-            
+
         return self.__createReadOnly(propertyTable, propertyValue)
 
     def __createReadOnly(self, propertyTable, propertyValue=None):
         if propertyTable in self.__readOnlyProperties:
             return self.__readOnlyProperties.get(propertyTable)
-        
+
         if not self.__setNetworkValue(propertyTable, propertyValue, mute=True):
             self.Sentinel.debug(f"Initial network value cannot be set: {propertyValue}")
 
@@ -144,7 +152,7 @@ class PropertyOperator:
             return False
         return True
 
-    def __setNetworkIterable(self, propertyTable, propertyIterable: Iterable):
+    def __setNetworkIterable(self, propertyTable, propertyIterable: Iterable) -> bool:
         if propertyIterable is None:
             return False
 
@@ -246,7 +254,7 @@ class PropertyOperator:
 
 
 class Property:
-    def __init__(self, getFunc, propertyTable):  # lambda to get the property
+    def __init__(self, getFunc, propertyTable) -> None:  # lambda to get the property
         self.__getFunc = getFunc
         self.__propertyTable = propertyTable
 
@@ -258,7 +266,9 @@ class Property:
 
 
 class ReadonlyProperty:
-    def __init__(self, setFunc, propertyTable):  # lambda to set the read only property
+    def __init__(
+        self, setFunc, propertyTable
+    ) -> None:  # lambda to set the read only property
         self.__setFunc = setFunc
         self.__propertyTable = propertyTable
 
@@ -270,10 +280,10 @@ class ReadonlyProperty:
 
 
 class LambdaHandler(logging.Handler):
-    def __init__(self, func):
+    def __init__(self, func) -> None:
         super().__init__()
         self.func = func  # This function will be executed on each log message
 
-    def emit(self, record):
+    def emit(self, record) -> None:
         log_entry = self.format(record)  # Format log message
         self.func(log_entry)  # Call the lambda with the log entry

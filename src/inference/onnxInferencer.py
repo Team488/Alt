@@ -10,7 +10,7 @@ Sentinel = getLogger("onnx_inferencer")
 
 
 class onnxInferencer(InferencerBackend):
-    def initialize(self):
+    def initialize(self) -> None:
         providers = ort.get_available_providers()
         Sentinel.info(f"Using provider {providers[0]}")
         session_options = ort.SessionOptions()
@@ -39,7 +39,7 @@ class onnxInferencer(InferencerBackend):
         return nmsResults
 
 
-def startDemo():
+def startDemo() -> None:
     from inference.MultiInferencer import MultiInferencer
     from tools.Constants import InferenceMode
 

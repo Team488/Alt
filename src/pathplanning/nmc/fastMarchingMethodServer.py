@@ -13,7 +13,7 @@ import JXTABLES.XTableValues_pb2 as XTableValues
 
 
 class FastMarchingPathfinder:
-    def __init__(self, grid_cost):
+    def __init__(self, grid_cost) -> None:
         """
         grid_cost: 2D numpy array of base traversal costs.
                    Free cells: cost 1; obstacles: higher cost (e.g., 30, 100, 1000).
@@ -363,7 +363,7 @@ def build_bezier_curves_proto(final_segments):
     return bezier_curves_msg
 
 
-def server():
+def server() -> None:
     context = zmq.Context()
     socket = context.socket(zmq.REP)
     bind = "tcp://127.0.0.1:8531"

@@ -15,7 +15,7 @@ class Ukf:
         ] = MapConstants.mapObstacles.value.copy(),
         fieldX=MapConstants.fieldWidth.value,
         fieldY=MapConstants.fieldHeight.value,
-    ):
+    ) -> None:
         self.obstacles = Obstacles
         self.__addFieldBoundsAsObstacles(fieldX, fieldY)
 
@@ -49,7 +49,9 @@ class Ukf:
         self.baseUKF.Q = self.Q
         self.baseUKF.R = self.R
 
-    def __addFieldBoundsAsObstacles(self, fieldX, fieldY, fieldObstacleDepth=10):
+    def __addFieldBoundsAsObstacles(
+        self, fieldX, fieldY, fieldObstacleDepth=10
+    ) -> None:
         # add obstacles to represent field bounds
         topRightCorner = (0, 0)
         topLeftCorner = (fieldX, 0)

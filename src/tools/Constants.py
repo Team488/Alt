@@ -31,7 +31,7 @@ class Label(Enum):
     def getDefaultLengthType():
         return Units.LengthType.CM
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.value[0]
 
     def getSize(self, lengthType: Units.LengthType):

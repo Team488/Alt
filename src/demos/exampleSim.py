@@ -9,7 +9,7 @@ from tools.Constants import (
 )
 
 
-def startDemo():
+def startDemo() -> None:
     n = Neo()
     frameAgent = ReefAndObjectLocalizerPartial(
         cameraPath="http://localhost:3000/Robot_FrontRight%20Camera?dummy=param.mjpg",

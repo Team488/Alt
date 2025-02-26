@@ -110,7 +110,7 @@ class DetectionPacket:
         return detections
 
 
-def test_packet():
+def test_packet() -> None:
     packet = DetectionPacket.createPacket(
         [[10, (1, 2, 3), 0.6, 1, np.array([1, 2, 3, 4])]], "HELLO", 12345
     )

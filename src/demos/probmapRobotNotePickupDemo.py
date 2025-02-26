@@ -112,7 +112,7 @@ def getRandomMove(robotX, robotY, fieldX, fieldY, maxDistance) -> tuple[int, int
     return (int(randDx), int(randDy))
 
 
-def startDemo():
+def startDemo() -> None:
     # default starting position for robot is half the field
     robotX = int(fieldX / 2)
     robotY = int(fieldY / 2)
@@ -146,7 +146,7 @@ def startDemo():
             fieldMap.clear_maps()
 
 
-def test_randomization_ranges(map: ProbMap, width, height):
+def test_randomization_ranges(map: ProbMap, width, height) -> None:
     for _ in range(2):
         x = random.randrange(0, width)
         y = random.randrange(0, height)

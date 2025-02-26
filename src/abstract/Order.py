@@ -13,21 +13,19 @@ from Core.TimeOperator import Timer
 
 
 class Order(ABC):
-    def __init__(self):
+    def __init__(self) -> None:
         pass
 
     def inject(
-            self,
-            central: Central,
-            xclient: XTablesClient,
-            propertyOperator: PropertyOperator,
-            configOperator: ConfigOperator,
-            shareOperator: ShareOperator,
-            timer : Timer
-    ):
-        """ "Injects" arguments into the order. Should not be modified in any subclasses 
-        
-        """
+        self,
+        central: Central,
+        xclient: XTablesClient,
+        propertyOperator: PropertyOperator,
+        configOperator: ConfigOperator,
+        shareOperator: ShareOperator,
+        timer: Timer,
+    ) -> None:
+        """ "Injects" arguments into the order. Should not be modified in any subclasses"""
         self.central = central
         self.xclient = xclient
         self.propertyOperator = propertyOperator
@@ -36,7 +34,7 @@ class Order(ABC):
         self.timer = timer
 
     def getTimer(self):
-        """ Use only when needed, and only when associated with order"""
+        """Use only when needed, and only when associated with order"""
         return self.timer
 
     @abstractmethod
@@ -47,21 +45,18 @@ class Order(ABC):
 
     @abstractmethod
     def run(self, input):
-        """ Put your run once code here"""
+        """Put your run once code here"""
         pass
 
     @abstractmethod
     def getDescription(self) -> str:
-        """ Return Concise Order Description"""
+        """Return Concise Order Description"""
         pass
 
     def getName(self) -> str:
-        """ Return Order Name"""
+        """Return Order Name"""
         pass
 
-    def cleanup(self):
-        """ Optional Method: Cleanup after running order"""
+    def cleanup(self) -> None:
+        """Optional Method: Cleanup after running order"""
         pass
-
-    
-    

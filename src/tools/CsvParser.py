@@ -63,7 +63,7 @@ class CsvParser:
                     pass
         return values
 
-    def removeZeroEntriesAtStart(self):
+    def removeZeroEntriesAtStart(self) -> None:
         for i in range(len(self.keys)):
             values = self.values[i]
             for j in range(len(values)):

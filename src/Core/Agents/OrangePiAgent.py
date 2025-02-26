@@ -22,7 +22,7 @@ class OrangePiAgent(ReefTrackingAgentBase):
 
     Agent to be run on the orange pis"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.device_name = CameraName.getCameraName().name
         # camera values
         cameraIntrinsics, _, _ = getCameraValues2024(self.device_name)
@@ -33,7 +33,7 @@ class OrangePiAgent(ReefTrackingAgentBase):
             cameraIntrinsics=cameraIntrinsics,
         )
 
-    def create(self):
+    def create(self) -> None:
         super().create()
         self.Sentinel.info(f"Camera Name: {self.device_name}")
 
@@ -48,11 +48,11 @@ class OrangePiAgent(ReefTrackingAgentBase):
     def preprocessFrame(self, frame):
         return calibration.undistortFrame(frame, self.mapx, self.mapy)
 
-    def getName(self):
+    def getName(self) -> str:
         return "Orange_Pi_Process"
 
-    def getDescription(self):
+    def getDescription(self) -> str:
         return "Ingest_Camera_Run_Ai_Model_Return_Localized_Detections_And_NowAlsoTrackReef"
 
-    def getIntervalMs(self):
+    def getIntervalMs(self) -> int:
         return 0
