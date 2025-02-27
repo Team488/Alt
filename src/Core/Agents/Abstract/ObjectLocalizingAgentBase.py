@@ -9,6 +9,7 @@ import numpy as np
 # from JXTABLES.XDashDebugger import XDashDebugger
 
 from Core.Agents.Abstract.TimestampRegulatedAgentBase import TimestampRegulatedAgentBase
+from abstract.Capture import ConfigurableCapture
 from coreinterface.DetectionPacket import DetectionPacket
 from tools.Constants import InferenceMode, CameraExtrinsics, CameraIntrinsics
 from mapinternals.localFrameProcessor import LocalFrameProcessor
@@ -115,8 +116,7 @@ class ObjectLocalizingAgentBase(TimestampRegulatedAgentBase):
 
 
 def ObjectLocalizingAgentPartial(
-    cameraPath: Union[str, int],
-    cameraIntrinsics: CameraIntrinsics,
+    capture: ConfigurableCapture,
     cameraExtrinsics: CameraExtrinsics,
     inferenceMode: InferenceMode,
     showFrames: bool = False,
@@ -124,8 +124,8 @@ def ObjectLocalizingAgentPartial(
     """Returns a partially completed frame processing agent. All you have to do is pass it into neo"""
     return partial(
         ObjectLocalizingAgentBase,
-        cameraPath=cameraPath,
-        cameraIntrinsics=cameraIntrinsics,
+        capture=capture,
+        cameraIntrinsics=capture.getIntrinsics(),
         cameraExtrinsics=cameraExtrinsics,
         inferenceMode=inferenceMode,
         showFrames=showFrames,

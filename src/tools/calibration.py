@@ -123,7 +123,7 @@ def charuco_calibration(
         print("Failed to find calibration values")
 
 
-def createMapXYForUndistortion(w, h, loadedCalibration):
+def createMapXYForUndistortionFromCalib(w, h, loadedCalibration):
     cameraMatrix = np.array(loadedCalibration["CameraMatrix"])
     distCoeffs = np.array(loadedCalibration["DistortionCoeff"])
     # print(cameraMatrix)
@@ -135,6 +135,38 @@ def createMapXYForUndistortion(w, h, loadedCalibration):
     # Generate undistortion and rectification maps
     mapx, mapy = cv2.initUndistortRectifyMap(
         cameraMatrix, distCoeffs, None, newCameraMatrix, (w, h), cv2.CV_32FC1
+    )
+
+    return mapx, mapy
+
+
+def createMapXYForUndistortion(distCoeffs, cameraIntrinsics: CameraIntrinsics):
+    cameraMatrix = np.array(
+        [
+            [cameraIntrinsics.getFx(), 0, cameraIntrinsics.getCx()],
+            [0, cameraIntrinsics.getFy(), cameraIntrinsics.getCy()],
+            [0, 0, 1],
+        ],
+        dtype=np.float32,
+    )
+
+    # Compute the optimal new camera matrix
+    newCameraMatrix, roi = cv2.getOptimalNewCameraMatrix(
+        cameraMatrix,
+        distCoeffs,
+        (cameraIntrinsics.getHres(), cameraIntrinsics.getVres()),
+        1,
+        (cameraIntrinsics.getHres(), cameraIntrinsics.getVres()),
+    )
+
+    # Generate undistortion and rectification maps
+    mapx, mapy = cv2.initUndistortRectifyMap(
+        cameraMatrix,
+        distCoeffs,
+        None,
+        newCameraMatrix,
+        (cameraIntrinsics.getHres(), cameraIntrinsics.getVres()),
+        cv2.CV_32FC1,
     )
 
     return mapx, mapy

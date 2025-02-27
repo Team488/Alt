@@ -16,7 +16,7 @@ def startDemo() -> None:
         # cameraPath="assets/reefscapevid.mp4",
         cameraIntrinsics=CameraIntrinsicsPredefined.SIMULATIONCOLOR,
         cameraExtrinsics=ColorCameraExtrinsics2024.FRONTRIGHT,
-        inferenceMode=InferenceMode.ONNXSMALL2025,
+        inferenceMode=InferenceMode.ALCOROULTRALYTICSSMALL2025BAD,
         showFrames=True,
     )
 

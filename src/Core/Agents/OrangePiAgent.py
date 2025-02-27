@@ -41,7 +41,7 @@ class OrangePiAgent(ReefTrackingAgentBase):
         self.calib = self.configOperator.getContent("camera_calib.json")
 
         # frame undistortion maps from calibration
-        self.mapx, self.mapy = calibration.createMapXYForUndistortion(
+        self.mapx, self.mapy = calibration.createMapXYForUndistortionFromCalib(
             self.cameraIntrinsics.getHres(), self.cameraIntrinsics.getVres(), self.calib
         )
 

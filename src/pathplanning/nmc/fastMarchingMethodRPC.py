@@ -1,4 +1,5 @@
 import math
+from typing import Union
 
 import grpc
 from concurrent import futures
@@ -9,6 +10,8 @@ import cv2
 import numpy as np
 import skfmm
 import json
+
+from tools.Units import LengthType
 
 
 class FastMarchingPathfinder:
@@ -374,8 +377,18 @@ static_hang_obs_blue_close = get_static_obstacles(
 )
 print("Finished loading pre-set static obstacles...")
 
+from Core.Central import Central
+from tools.Constants import Label
+from tools import UnitConversion
+
 
 class VisionCoprocessorServicer(XTableGRPC.VisionCoprocessorServicer):
+    OBSTACLELABELS = [Label.ALGAE, Label.ROBOT]
+    THRESHOLD = 0.3
+
+    def setCentral(self, central: Central):
+        self.central: Central = central
+
     def RequestBezierPathWithOptions(self, request, context):
         print(f"Received request with option: {request}")
         base_grid = np.ones((grid_height, grid_width), dtype=float)
@@ -401,12 +414,20 @@ class VisionCoprocessorServicer(XTableGRPC.VisionCoprocessorServicer):
             modified_static_obs.extend(static_hang_obs_blue_mid)
         if low_hanging_blue_close_active:
             modified_static_obs.extend(static_hang_obs_blue_close)
+
         static_grid = apply_and_inflate_all_static_obstacles(
             base_grid, modified_static_obs, TOTAL_SAFE_DISTANCE
         )
 
-        # add prob map detections to static_grid here
-        # static_grid.copy() # Copy so can add dynamic obs without affecting static grid
+        if self.central is not None:
+            for idx, label in enumerate(self.central.labels):
+                if label in self.OBSTACLELABELS:
+                    map = self.central.objectmap.getMap(idx)
+                    map *= 1000  # scale from 0-1 -> 0-1000
+
+                    reshaped = cv2.resize(map, static_grid.shape)
+
+                    static_grid = np.add(static_grid, reshaped)
 
         pathfinder = FastMarchingPathfinder(static_grid)
         START = (int(start[0] * PIXELS_PER_METER_X), int(start[1] * PIXELS_PER_METER_Y))
@@ -439,11 +460,11 @@ class VisionCoprocessorServicer(XTableGRPC.VisionCoprocessorServicer):
         return response
 
 
-def serve() -> None:
+def serve(central: Union[Central, None]) -> None:
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
-    XTableGRPC.add_VisionCoprocessorServicer_to_server(
-        VisionCoprocessorServicer(), server
-    )
+    servicer = VisionCoprocessorServicer()
+    servicer.setCentral(central)
+    XTableGRPC.add_VisionCoprocessorServicer_to_server(servicer, server)
 
     server.add_insecure_port("[::]:9281")  # Listen on all interfaces
     server.start()
@@ -459,4 +480,4 @@ def serve() -> None:
 
 
 if __name__ == "__main__":
-    serve()
+    serve(None)

@@ -82,6 +82,7 @@ class Central:
         ],
         timeStepMs,
     ) -> None:
+        print(cameraResults)
         # dissipate at start of iteration
         self.objectmap.disspateOverTime(timeStepMs)
 

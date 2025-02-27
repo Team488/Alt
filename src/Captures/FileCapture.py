@@ -1,0 +1,41 @@
+import numpy as np
+from abstract.Capture import Capture
+import cv2
+
+
+class FileCapture(Capture):
+    def __init__(self, videoFilePath: str) -> None:
+        self.cap = cv2.VideoCapture(videoFilePath)
+        if not self.__testCapture(self.cap):
+            raise BrokenPipeError(f"Failed to open video camera! {videoFilePath=}")
+
+    def __testCapture(self, cap: cv2.VideoCapture) -> bool:
+        retTest = True
+        if cap.isOpened():
+            retTest, _ = cap.read()
+        else:
+            retTest = False
+        return retTest
+
+    def getColorFrame(self) -> np.ndarray:
+        return self.cap.read()[1]
+
+    def isOpen(self) -> bool:
+        return self.cap.isOpened()
+
+    def close(self) -> None:
+        self.cap.release()
+
+
+def startDemo(videoFilePath: str):
+    cap = FileCapture(videoFilePath)
+
+    while cap.isOpen():
+        frame = cap.getColorFrame()
+
+        cv2.imshow("Video", frame)
+
+        if cv2.waitKey(1) & 0xFF == ord("q"):
+            break
+
+    cap.close()

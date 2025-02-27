@@ -8,6 +8,7 @@ import numpy as np
 # from JXTABLES.XDashDebugger import XDashDebugger
 
 from Core.Agents.Abstract.CameraUsingAgentBase import CameraUsingAgentBase
+from abstract.Capture import Capture
 from inference.MultiInferencer import MultiInferencer
 from tools.Constants import CameraIntrinsics, InferenceMode
 from coreinterface.FramePacket import FramePacket
@@ -49,7 +50,7 @@ class InferenceAgent(CameraUsingAgentBase):
 
 
 def InferenceAgentPartial(
-    cameraPath,
+    capture: Capture,
     cameraIntrinsics: CameraIntrinsics,
     inferenceMode: InferenceMode,
     showFrames: bool = False,
@@ -57,7 +58,7 @@ def InferenceAgentPartial(
     """Returns a partially completed frame processing agent. All you have to do is pass it into neo"""
     return partial(
         InferenceAgent,
-        cameraPath=cameraPath,
+        capture=capture,
         cameraIntrinsics=cameraIntrinsics,
         inferenceMode=inferenceMode,
         showFrames=showFrames,

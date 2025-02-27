@@ -21,14 +21,14 @@ class CentralAgentBase(PositionLocalizingAgentBase):
 
         super().create()
         # perform agent init here (eg open camera or whatnot)
-        self.keys = ["REARRIGHT", "REARLEFT", "FRONTLEFT", "FRONTRIGHT", "Johnny"]
+        self.keys = ["REARRIGHT", "REARLEFT", "FRONTLEFT", "FRONTRIGHT"]
         self.keyToHost = {
             "REARRIGHT": "photonvisionrearright",
             "REARLEFT": "photonvisionrearleft",
             "FRONTLEFT": "photonvisionfrontleft",
-            "FRONTRIGHT": "photonvisionfrontright",
-            "FRONTRIGHT": "Adem-Laptop",
-            "Johnny": "archlinux",
+            # "FRONTRIGHT": "photonvisionfrontright",
+            "FRONTRIGHT": "Adem-GamingPc",
+            # "Johnny": "archlinux",
         }
         print("CREATED HOST")
         self.getDetectionTable = (

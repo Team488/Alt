@@ -6,6 +6,7 @@ import cv2
 import numpy as np
 
 from Core.Agents.Abstract.CameraUsingAgentBase import CameraUsingAgentBase
+from abstract.Capture import ConfigurableCapture
 from reefTracking.reefTracker import ReefTracker
 from tools.Constants import CameraExtrinsics, CameraIntrinsics
 from coreinterface.ReefPacket import ReefPacket
@@ -30,8 +31,6 @@ class ReefTrackingAgentBase(CameraUsingAgentBase):
         self.reefProp = self.propertyOperator.createCustomReadOnlyProperty(
             self.OBSERVATIONPOSTFIX, b""
         )
-        if not self.oakMode:
-            CameraIntrinsics.setCapRes(self.cameraIntrinsics, self.cap)
         self.c = 0
 
     def runPeriodic(self) -> None:
@@ -56,11 +55,11 @@ class ReefTrackingAgentBase(CameraUsingAgentBase):
         return "Gets_Reef_State"
 
 
-def ReefTrackingAgentPartial(cameraPath, cameraIntrinsics, showFrames=False):
+def ReefTrackingAgentPartial(capture: ConfigurableCapture, showFrames=False):
     """Returns a partially completed ReefTrackingAgent agent. All you have to do is pass it into neo"""
     return partial(
         ReefTrackingAgentBase,
-        cameraPath=cameraPath,
-        cameraIntrinsics=cameraIntrinsics,
+        capture=capture,
+        cameraIntrinsics=capture.getIntrinsics(),
         showFrames=showFrames,
     )

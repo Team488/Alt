@@ -53,7 +53,7 @@ class KalmanLabeler:
             data = cache.getSavedKalmanData(realId)
 
             if data is None:
-                markedIndexs.append(i)
+                allmarkedIndexs[class_idx].append(i)
             else:
                 # we want to isolate entries not seen
                 keySetOfChoice.remove(realId)

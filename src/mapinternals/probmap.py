@@ -29,7 +29,7 @@ class ProbMap:
         self.width = x
         self.height = y
         self.labels = labels
-        self.sizes = [label.getSizeCm for label in self.labels]
+        self.sizes = [label.getSizeCm() for label in self.labels]
 
         # flip values due to numpy using row,col (y,x)
         # internal values (some resolution adjusted)
@@ -133,8 +133,10 @@ class ProbMap:
         # Step 2: Get the coordinates of the values that satisfy the threshold
         coords = np.argwhere(mask)
 
-        if coords.size == 0:
+        if coords.size <= 0:
             print("Failed to extract smaller mask!")
+            print(f"{mask=} \n {threshold=} \n {gaussian_blob=} {prob=}")
+            return
 
         y_min, x_min = coords.min(axis=0)
         y_max, x_max = coords.max(axis=0)
@@ -323,7 +325,8 @@ class ProbMap:
 
     def getMap(self, class_idx) -> np.ndarray:
         """Get a copy the raw probability map for a class_idx.
-
+        Args:
+            class_idx: Class_id of detection, must match inference mode
         Returns:
             2D numpy array containing probability values
         """
@@ -347,7 +350,10 @@ class ProbMap:
             self.__displayHeatMap(probmap, str(label))
 
     def displayMap(self, class_idx) -> None:
-        """Display visualization of game object probability map using OpenCV window."""
+        """Display visualization of game object probability map using OpenCV window.
+        Args:
+            class_idx: Class_id of detection, must match inference mode
+        """
         if class_idx < 0 or class_idx > len(self.probmaps):
             Sentinel.warning(
                 f"Out of bounds class id provided to displayMap!: {class_idx}"
@@ -383,7 +389,8 @@ class ProbMap:
 
     def getHeatMap(self, class_idx) -> np.ndarray:
         """Get visualization of robot probability map.
-
+        Args:
+            class_idx: Class_id of detection, must match inference mode
         Returns:
             heatmap as uint8 numpy array
         """
@@ -490,7 +497,8 @@ class ProbMap:
 
     def getHighestObject(self, class_idx: int) -> tuple[int, int, np.float64]:
         """Get coordinates and probability of highest probability game object detection.
-
+        Args:
+            class_idx: Class_id of detection, must match inference mode
         Returns:
             Tuple of (x, y, probability) for the highest probability location
         """
@@ -510,6 +518,7 @@ class ProbMap:
         """Get coordinates and probability of highest probability game object detection above threshold.
 
         Args:
+            class_idx: Class_id of detection, must match inference mode
             threshold: Minimum probability threshold (0-1)
 
         Returns:
@@ -531,6 +540,7 @@ class ProbMap:
         """Get coordinates and probability of highest probability game object detection within a rectangular range.
 
         Args:
+            class_idx: Class_id of detection, must match inference mode
             posX: X coordinate of rectangle center
             posY: Y coordinate of rectangle center
             rangeX: Width of search rectangle
@@ -563,6 +573,7 @@ class ProbMap:
         """Get coordinates and probability of highest probability game object detection within range and above threshold.
 
         Args:
+            class_idx: Class_id of detection, must match inference mode
             posX: X coordinate of rectangle center
             posY: Y coordinate of rectangle center
             rangeX: Width of search rectangle
@@ -655,6 +666,7 @@ class ProbMap:
         """Get all game object detections above probability threshold.
 
         Args:
+            class_idx: Class_id of detection, must match inference mode
             threshold: Minimum probability threshold (0-1)
 
         Returns:
@@ -680,6 +692,7 @@ class ProbMap:
         """Get all game object detections within range and above threshold.
 
         Args:
+            class_idx: Class_id of detection, must match inference mode
             posX: X coordinate of rectangle center
             posY: Y coordinate of rectangle center
             rangeX: Width of search rectangle
@@ -871,7 +884,12 @@ class ProbMap:
 
         return map[i_X][i_Y]
 
-    def getSpecificRobotValue(self, class_idx: int, x: int, y: int):
+    def getSpecificMapValue(self, class_idx: int, x: int, y: int):
+        """
+        Args:
+            class_idx: Class_id of detection, must match inference mode
+
+        """
         if class_idx < 0 or class_idx > len(self.probmaps):
             Sentinel.warning(
                 f"Out of bounds class id provided to getSpecificRobotValue!: {class_idx}"

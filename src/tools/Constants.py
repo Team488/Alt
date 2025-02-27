@@ -441,17 +441,49 @@ class CameraIntrinsicsPredefined:
         320,
         240,  # Calibrated Cx, Cy
     )
-    OAKDLITE4K = CameraIntrinsics(
-        3840,
-        2160,  # Resolution
-        fx_pix=2986.8527832,
-        fy_pix=2986.8527832,  # Calibrated Fx, Fy
-        cx_pix=1787.41931152,
-        cy_pix=1037.04040527,  # Calibrated Cx, Cy
-    )
-    OAKDLITE1080P = CameraIntrinsics(
-        1920, 1080, fx_pix=1493.4263, fy_pix=1493.4263, cx_pix=893.709, cy_pix=518.52
-    )
+
+
+class OAKDLITEResolution(Enum):
+    OAK4K = (3840, 2160, 30)
+    OAK1080P = (1920, 1080, 60)
+
+    @property
+    def fps(self):
+        return self.value[2]
+
+    @property
+    def w(self):
+        return self.value[0]
+
+    @property
+    def h(self):
+        return self.value[1]
+
+
+class D435IResolution(Enum):
+    RS720P = (1280, 720, 30)
+    RS480P = (640, 480, 60)
+
+    @property
+    def fps(self):
+        return self.value[2]
+
+    @property
+    def w(self):
+        return self.value[0]
+
+    @property
+    def h(self):
+        return self.value[1]
+
+
+class CommonVideos(Enum):
+    ReefscapeCompilation = "assets/reefscapevid.mp4"
+    Comp2024Clip = "assets/video12qual25clipped.mp4"
+
+    @property
+    def path(self):
+        return self.value
 
 
 class ObjectReferences(Enum):

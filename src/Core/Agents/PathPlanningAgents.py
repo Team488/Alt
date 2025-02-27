@@ -1,6 +1,6 @@
 import cv2
 from Core.Agents.Abstract.PathPlanningAgentBase import PathPlanningAgentBase
-from Core.Agents.Abstract.CentralAgentBase import CentralAgentBase
+from Core.Agents.CentralAgentBase import CentralAgentBase
 from Core.Orders import TargetUpdatingOrder
 
 
