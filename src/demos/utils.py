@@ -1,7 +1,10 @@
 import math
 import cv2
 import random
+
+import numpy as np
 from mapinternals.probmap import ProbMap
+from tools import UnitConversion
 from tools.Constants import CameraExtrinsics, CameraIntrinsics
 
 
@@ -213,3 +216,29 @@ def drawRobot(
     cv2.line(frame, (BLx, BLy), (BRx, BRy), (255, 0, 0), 2)
     cv2.line(frame, (BLx, BLy), (FLx, FLy), (255, 255, 255), 2)
     cv2.line(frame, (BRx, BRy), (FRx, FRy), (255, 255, 255), 2)
+
+
+def drawBox(frame, bboxXYXY, class_str, conf, color=(10, 100, 255), buffer=8):
+    p1 = np.array(UnitConversion.toint(bboxXYXY[:2]))
+    p2 = np.array(UnitConversion.toint(bboxXYXY[2:]))
+    text = f"{class_str} Conf:{conf:.2f}"
+    cv2.rectangle(frame, p1, p2, color, 3, 0)
+
+    font = cv2.FONT_HERSHEY_PLAIN
+    font_scale = 3
+    thickness = 3
+    (text_width, text_height), _ = cv2.getTextSize(text, font, font_scale, thickness)
+
+    textStart = UnitConversion.toint(p1 - np.array([0, text_height + buffer]))
+    textEnd = UnitConversion.toint(p1 + np.array([text_width + buffer, 0]))
+    cv2.rectangle(frame, textStart, textEnd, color, -1)
+
+    cv2.putText(
+        frame,
+        text,
+        p1 + np.array([int(buffer / 2), -int(buffer / 2)]),
+        font,
+        font_scale,
+        (255, 255, 255),
+        thickness,
+    )

@@ -5,6 +5,7 @@ from abstract.inferencerBackend import InferencerBackend
 from tools.Constants import ConfigConstants, InferenceMode, Backend
 from tools import UnitConversion
 from Core.LogManager import getLogger
+from demos import utils
 
 Sentinel = getLogger("Multi_Inferencer")
 
@@ -77,16 +78,19 @@ class MultiInferencer:
 
             for (bbox, conf, class_id) in processed:
                 # try to get label
+
                 label = f"Id out of range!: {class_id}"
                 if len(self.backend.labels) > class_id:
                     label = self.backend.labels[class_id]
 
-                p1 = UnitConversion.toint(bbox[:2])  # Convert to integer tuple
-                p2 = UnitConversion.toint(bbox[2:4])  # Convert to integer tuple
-                m = UnitConversion.toint(np.add(bbox[:2], bbox[2:4]) / 2)
-                cv2.rectangle(frame, p1, p2, (0, 0, 255), 3)  # Drawing the rectangle
-                cv2.putText(
-                    frame, f"Label: {label} Conf: {conf:.2f}", m, 1, 1, (0, 255, 0), 1
-                )
+                utils.drawBox(frame, bbox, label, conf)
+
+                # p1 = UnitConversion.toint(bbox[:2])  # Convert to integer tuple
+                # p2 = UnitConversion.toint(bbox[2:4])  # Convert to integer tuple
+                # m = UnitConversion.toint(np.add(bbox[:2], bbox[2:4]) / 2)
+                # cv2.rectangle(frame, p1, p2, (0, 0, 255), 3)  # Drawing the rectangle
+                # cv2.putText(
+                #     frame, f"Label: {label} Conf: {conf:.2f}", m, 1, 1, (0, 255, 0), 1
+                # )
 
         return processed
