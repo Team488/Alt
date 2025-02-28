@@ -3,20 +3,26 @@ import math
 import cv2
 import numpy as np
 from mapinternals.NumberMapper import NumberMapper
-from tools.Constants import CameraIntrinsics, InferenceMode, Object, ObjectReferences
-from tools import configLoader
+from tools.Constants import CameraIntrinsics, InferenceMode, Label, ObjectReferences
+from Core.ConfigOperator import staticLoad
+from Core import getLogger
+
+
+Sentinel = getLogger("Position_Estimator")
 
 
 class PositionEstimator:
-    def __init__(self, isSimulationMode = False, tryocr=False) -> None:
+    def __init__(self, isSimulationMode=False, tryocr=False) -> None:
         self.tryocr = tryocr
-        self.numMapper = NumberMapper(["6328"], ["6328"])
+        self.numMapper = NumberMapper(["6328"], ["6328"])  # update teams
         if tryocr:
             import pytesseract
             from sys import platform
 
             if platform == "win32":
-                pytesseract.pytesseract.tesseract_cmd = r"C:\\Program Files\\Tesseract-OCR\\tesseract.exe"
+                pytesseract.pytesseract.tesseract_cmd = (
+                    r"C:\\Program Files\\Tesseract-OCR\\tesseract.exe"
+                )
             else:
                 try:
                     # if this fails, the pytesseract executable has not been installed
@@ -29,11 +35,13 @@ class PositionEstimator:
         self.__minPerc = 0.005  # minimum percentage of bounding box with bumper color
         # simulation currently only has blue robots
         if isSimulationMode:
-            self.__blueRobotHist = configLoader.loadNumpyConfig("simulationBlueRobotCinematicHist.npy")
+            self.__blueRobotHist = staticLoad(
+                "histograms/simulationBlueRobotCinematicHist.npy"
+            )
         else:
-            self.__blueRobotHist = configLoader.loadBlueRobotHistogram()
+            self.__blueRobotHist = staticLoad("histograms/blueRobotHist.npy")
 
-        self.__redRobotHist = configLoader.loadRedRobotHistogram()
+        self.__redRobotHist = staticLoad("histograms/redRobotHist.npy")
         self.__MAXRATIO = 3  # max ratio between number width/height or vice versa
 
     """ Extract a rectangular slice of the image, given a bounding box. This is axis aligned"""
@@ -172,10 +180,10 @@ class PositionEstimator:
         if y < 2 or x < 2:
             print("Invalid bbox!")
             return None
-        
+
         # Cutting the frame: bumper is in the bottom portion
         croppedframe = self.__crop_image(croppedframe, (0, int(y / 2)), (x, y))
-        
+
         # Convert to LAB color space
         labFrame = cv2.cvtColor(croppedframe, cv2.COLOR_BGR2LAB)
         processed, isBlue = self.__backprojCheck(
@@ -185,7 +193,7 @@ class PositionEstimator:
             return None
         small_frame_threshold = 3000
         # Adjust kernel size and iterations based on frame size
-        small_frame = (y * x) < small_frame_threshold 
+        small_frame = (y * x) < small_frame_threshold
         bumperKernel = np.ones((1, 1) if small_frame else (2, 2), np.uint8)
         iterations_close = 1 if small_frame else 2
         iterations_open = 1 if small_frame else 2
@@ -232,9 +240,7 @@ class PositionEstimator:
             close, cv2.MORPH_OPEN, kerneltwobytwo, iterations=1
         )
 
-        _, threshNumbers = cv2.threshold(
-            final_open, 50, 255, cv2.THRESH_BINARY
-        )
+        _, threshNumbers = cv2.threshold(final_open, 50, 255, cv2.THRESH_BINARY)
         contoursNumbers, _ = cv2.findContours(
             threshNumbers, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE
         )
@@ -251,15 +257,23 @@ class PositionEstimator:
                     acceptableContours.append(contour)
 
             if acceptableContours:
-                sorted_contours = sorted(acceptableContours, key=cv2.contourArea, reverse=True)
+                sorted_contours = sorted(
+                    acceptableContours, key=cv2.contourArea, reverse=True
+                )
                 drawn_final_contours = cv2.drawContours(
-                    np.zeros_like(final_open, dtype=np.uint8), sorted_contours, -1, (255), -1
+                    np.zeros_like(final_open, dtype=np.uint8),
+                    sorted_contours,
+                    -1,
+                    (255),
+                    -1,
                 )
                 final_number_image = cv2.morphologyEx(
                     drawn_final_contours, cv2.MORPH_DILATE, kerneltwobytwo, iterations=1
                 )
                 largest_acceptable_contour = max(
-                    cv2.findContours(final_number_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)[0],
+                    cv2.findContours(
+                        final_number_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE
+                    )[0],
                     key=cv2.contourArea,
                 )
 
@@ -270,7 +284,9 @@ class PositionEstimator:
                     cv2.drawContours(final_open, [box], 0, (255), 2)
                     numberWidth, numberHeight = min_area_rect[1]
                     targetheight = min(numberHeight, numberWidth)
-                    print(f"HEIGHT----------------------------{targetheight}----------------------------")
+                    print(
+                        f"HEIGHT----------------------------{targetheight}----------------------------"
+                    )
                     return targetheight, isBlue, nums
 
             else:
@@ -279,7 +295,6 @@ class PositionEstimator:
             logging.warning("Failed to extract number from contour!")
 
         return None
-
 
     """ Method takes in a frame, where you have already run your model. It crops out bounding boxes for each robot detection and runs a height estimation.
         If it does not fail to estimate a height, it then takes that information, along with a calculated bearing to estimate a relative position
@@ -313,11 +328,11 @@ class PositionEstimator:
 
             return estCoords
         return None
-    
+
     def __estimateRelativeCoralPosition(
         self, frame, boundingBox, cameraIntrinsics: CameraIntrinsics
     ) -> tuple[float, float]:
-        #TODO!
+        # TODO!
         return None
 
     """ This current method estimates the position of a note, by using the same method as a robot. However it is slightly simplified, as we can take avantage of the circular nature of a note
@@ -349,7 +364,7 @@ class PositionEstimator:
         print(f"{bearing=}")
         estCoords = self.componentizeHDistAndBearing(distance, bearing)
         return estCoords
-    
+
     def __estimateRelativeAlgaePosition(
         self, frame, boundingBox, cameraIntrinsics: CameraIntrinsics
     ) -> tuple[float, float]:
@@ -374,40 +389,51 @@ class PositionEstimator:
         estCoords = self.componentizeHDistAndBearing(distance, bearing)
         return estCoords
 
+    def __estimateRelativePosition(
+        self,
+        class_idx: int,
+        frame: np.ndarray,
+        bbox: list,
+        cameraIntrinsics: CameraIntrinsics,
+        inferenceMode: InferenceMode,
+    ):
+        labels = inferenceMode.getLabels()
+        if class_idx < 0 or class_idx >= len(labels):
+            Sentinel.warning(
+                f"Estimate relative position got an out of bounds class_idx: {class_idx}"
+            )
+            return None
+
+        label = labels[class_idx]
+        if label == Label.ROBOT:
+            return self.__estimateRelativeRobotPosition(frame, bbox, cameraIntrinsics)
+        if label == Label.NOTE:
+            return self.__estimateRelativeNotePosition(frame, bbox, cameraIntrinsics)
+        if label == Label.ALGAE:
+            return self.__estimateRelativeAlgaePosition(frame, bbox, cameraIntrinsics)
+        Sentinel.warning(
+            f"Label: {str(label)} is not supported for position estimation!"
+        )
+        return None
+
     def estimateDetectionPositions(
-        self, frame, labledResults, cameraIntrinsics: CameraIntrinsics, inferenceMode: InferenceMode
+        self,
+        frame,
+        labledResults,
+        cameraIntrinsics: CameraIntrinsics,
+        inferenceMode: InferenceMode,
     ):
         estimatesOut = []
         for result in labledResults:
-            isClass1 = result[3]
+            class_idx = result[3]
             bbox = result[1]
-            estimate = None
-            if isClass1:
-                if inferenceMode.getYear() == 2024:
-                    estimate = self.__estimateRelativeRobotPosition(
-                        frame, bbox, cameraIntrinsics
-                    )
-                else:
-                    estimate = self.__estimateRelativeAlgaePosition(
-                        frame, bbox, cameraIntrinsics
-                    )
+            estimate = self.__estimateRelativePosition(
+                class_idx, frame, bbox, cameraIntrinsics, inferenceMode
+            )
 
-            else:
-                if inferenceMode.getYear() == 2024:
-                    estimate = self.__estimateRelativeNotePosition(
-                        frame, bbox, cameraIntrinsics
-                    )
-                else:
-                    # not created yet!
-                    # estimate = self.__estimateRelativeCoralPosition(
-                    #     frame, bbox, cameraIntrinsics
-                    # )
-                    print("Coral Localization Not implemented yet!")
-                    pass
-                    
             if estimate is not None:
                 estimatesOut.append(
-                    [result[0], estimate, result[2], isClass1, result[4]]
+                    [result[0], estimate, result[2], class_idx, result[4]]
                 )  # replace local bbox with estimated position
             # else we dont include this result
             # todo keep a metric of failed estimations
@@ -424,7 +450,7 @@ class PositionEstimator:
         x = hDist
         y = math.tan(bearing) * hDist
         return x, y
-    
+
     def componentizeMagnitudeAndBearing(self, magnitude, bearing):
         x = math.cos(bearing) * magnitude
         y = math.sin(bearing) * magnitude

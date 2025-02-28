@@ -2,8 +2,7 @@ import numpy as np
 import cv2
 from logging import Logger
 from mapinternals.UKF import Ukf
-from tools import configLoader
-from tools.Constants import MapConstants, CameraIdOffsets
+from tools.Constants import InferenceMode, MapConstants, CameraIdOffsets2024
 from mapinternals.probmap import ProbMap
 from mapinternals.KalmanLabeler import KalmanLabeler
 from mapinternals.KalmanCache import KalmanCache
@@ -15,20 +14,25 @@ from Core.PropertyOperator import PropertyOperator
 
 class Central:
     def __init__(
-        self, logger: Logger, configOp: ConfigOperator, propertyOp: PropertyOperator
-    ):
+        self,
+        logger: Logger,
+        configOp: ConfigOperator,
+        propertyOp: PropertyOperator,
+        inferenceMode: InferenceMode,
+    ) -> None:
         self.Sentinel = logger
         self.configOp = configOp
         self.propertyOp = propertyOp
+        self.inferenceMode = inferenceMode
+        self.labels = self.inferenceMode.getLabels()
 
         self.useObstacles = self.propertyOp.createProperty("Use_Obstacles", True)
 
-        self.kalmanCacheRobots: KalmanCache = KalmanCache()
-        self.kalmanCacheGameObjects: KalmanCache = KalmanCache()
-        self.objectmap = ProbMap()
+        self.kalmanCaches = [KalmanCache() for _ in self.labels]
+        self.objectmap = ProbMap(self.labels)
         self.reefState = ReefState()
         self.ukf = Ukf()
-        self.labler = KalmanLabeler(self.kalmanCacheRobots, self.kalmanCacheGameObjects)
+        self.labler = KalmanLabeler(self.kalmanCaches, self.labels)
         self.obstacleMap = self.__tryLoadObstacleMap()
         self.pathGenerator = PathGenerator(self.objectmap, self.obstacleMap)
 
@@ -52,7 +56,7 @@ class Central:
         self,
         reefResults: tuple[list[tuple[int, int, float]], list[tuple[int, float]]],
         timeStepMs,
-    ):
+    ) -> None:
         self.reefState.dissipateOverTime(timeStepMs)
 
         for reefResult in reefResults:
@@ -72,13 +76,13 @@ class Central:
             tuple[
                 list[
                     list[int, tuple[int, int, int], float, bool, np.ndarray],
-                    CameraIdOffsets,
+                    CameraIdOffsets2024,
                 ]
             ]
         ],
         timeStepMs,
-        positionOffset=(0, 0, 0),
-    ):
+    ) -> None:
+        print(cameraResults)
         # dissipate at start of iteration
         self.objectmap.disspateOverTime(timeStepMs)
 
@@ -88,30 +92,21 @@ class Central:
         for singleCamResult, idOffset in cameraResults:
             if singleCamResult:
                 self.labler.updateRealIds(singleCamResult, idOffset, timeStepMs)
-                (id, coord, prob, isRobot, features) = singleCamResult[0]
+                (id, coord, prob, class_idx, features) = singleCamResult[0]
                 # todo add feature deduping here
-                coord = tuple(np.add(coord, positionOffset))
                 (x, y, z) = coord
+
                 # first load in to ukf, (if completely new ukf will load in as new state)
-                if isRobot:
-                    self.kalmanCacheRobots.LoadInKalmanData(id, x, y, self.ukf)
-                else:
-                    self.kalmanCacheGameObjects.LoadInKalmanData(id, x, y, self.ukf)
+                # index will be filtered out by labler
+                self.kalmanCaches[class_idx].LoadInKalmanData(id, x, y, self.ukf)
 
                 newState = self.ukf.predict_and_update([x, y])
 
                 # now we have filtered data, so lets store it. First thing we do is cache the new ukf data
+                self.kalmanCaches[class_idx].saveKalmanData(id, self.ukf)
 
-                if isRobot:
-                    self.kalmanCacheRobots.saveKalmanData(id, self.ukf)
-                else:
-                    self.kalmanCacheGameObjects.saveKalmanData(id, self.ukf)
                 # input new estimated state into the map
-                if isRobot:
-                    self.objectmap.addDetectedRobot(
-                        int(newState[0]), int(newState[1]), prob
-                    )
-                else:
-                    self.objectmap.addDetectedGameObject(
-                        int(newState[0]), int(newState[1]), prob
-                    )
+
+                self.objectmap.addDetectedObject(
+                    class_idx, int(newState[0]), int(newState[1]), prob
+                )

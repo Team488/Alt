@@ -109,11 +109,11 @@ reefBoxOffsets = [  # in to m                                                   
 
 
 class ReefPixelEstimator:
-    def __init__(self, config_file="assets/config/640x480v2.json"):
+    def __init__(self, config_file="assets/config/640x480v2.json") -> None:
         self.helper = AprilTagLocal(config_file)
         self.loadConfig(config_file)
 
-    def loadConfig(self, config_file):
+    def loadConfig(self, config_file) -> None:
         try:
             with open(config_file) as PV_config:
                 data = json.load(PV_config)

@@ -3,6 +3,7 @@ import cv2
 import time
 from Core.LogManager import getLogger
 from tools.Constants import YOLOTYPE
+from tools.Constants import YOLOTYPE, Backend
 
 Sentinel = getLogger("Inference_Utils")
 
@@ -11,10 +12,10 @@ def letterbox_image(image, target_size=(640, 640)):
     # dont do if not needed
     if image.shape[:2] == target_size:
         return image
-    
+
     # Get original dimensions
     h, w = image.shape[:2]
-    
+
     target_width, target_height = target_size
 
     # Calculate the scaling factor and new size
@@ -83,8 +84,6 @@ def non_max_suppression(predictions, conf_threshold=0.6, iou_threshold=0.4):
     scores = []
     class_ids = []
     for x in predictions:
-        # Convert from [center_x, center_y, width, height] to [x1, y1, x2, y2]
-
         boxes.append(x[0])  # The first 4 elements are the bounding box coordinates
         scores.append(x[1])  # The 5th element is the confidence score
         class_ids.append(x[2])  # The 6th element is the class ID
@@ -95,7 +94,6 @@ def non_max_suppression(predictions, conf_threshold=0.6, iou_threshold=0.4):
     print(indices)
     # Return selected boxes and class IDs
     return [(boxes[i], scores[i], class_ids[i]) for i in indices]
-
 
 
 def sigmoid(x):
@@ -109,7 +107,9 @@ def softmaxx(values):
 
 
 def adjustBoxesV5(outputs, imgShape, minConf=0.7, printDebug=False):
-    predictions = outputs[0]  # Model's predictions = 1 x 25200 x 7 (x,y,w,h + objectness score + 2 classes)
+    predictions = outputs[
+        0
+    ]  # Model's predictions = 1 x 25200 x 7 (x,y,w,h + objectness score + 2 classes)
     objectness_scores = predictions[:, 4]
     class_scores = predictions[:, 5:]
     class_ids = np.argmax(class_scores, axis=1)
@@ -123,7 +123,9 @@ def adjustBoxesV5(outputs, imgShape, minConf=0.7, printDebug=False):
     filtered_class_ids = class_ids[high_score_indices]
 
     adjusted_boxes = []
-    for pred, score, class_id in zip(filtered_predictions, filtered_scores, filtered_class_ids):
+    for pred, score, class_id in zip(
+        filtered_predictions, filtered_scores, filtered_class_ids
+    ):
         x, y, width, height = pred[:4]
         x1, x2 = x - width / 2, x + width / 2
         y1, y2 = y - height / 2, y + height / 2
@@ -132,14 +134,17 @@ def adjustBoxesV5(outputs, imgShape, minConf=0.7, printDebug=False):
         if printDebug:
             print(f"X {x} Y {y} w {width} h {height} classid {class_id}")
             time.sleep(1)
-    adjusted_boxes.append([scaledBox, score, class_id])
-    
+        adjusted_boxes.append([scaledBox, score, class_id])
+
     return adjusted_boxes
+
 
 def adjustBoxesV11ONNX(outputs, imgShape, minConf=0.7, printDebug=False):
     #  Model's predictions = 1 x 6 x 8400
-    predictions = outputs[0] # extract 6 x 8400
-    predictions = np.transpose(predictions, (1,0)) # transpose to 8400 x 6 (x,y,w,h + 2 classes)
+    predictions = outputs[0]  # extract 6 x 8400
+    predictions = np.transpose(
+        predictions, (1, 0)
+    )  # transpose to 8400 x 6 (x,y,w,h + 2 classes)
     class_scores = predictions[:, 4:]
     class_ids = np.argmax(class_scores, axis=1)
     confidences = class_scores[np.arange(class_scores.shape[0]), class_ids]
@@ -151,7 +156,9 @@ def adjustBoxesV11ONNX(outputs, imgShape, minConf=0.7, printDebug=False):
     filtered_class_ids = class_ids[high_score_indices]
 
     adjusted_boxes = []
-    for pred, score, class_id in zip(filtered_predictions, filtered_scores, filtered_class_ids):
+    for pred, score, class_id in zip(
+        filtered_predictions, filtered_scores, filtered_class_ids
+    ):
         x, y, width, height = pred[:4]
         x1, x2 = x - width / 2, x + width / 2
         y1, y2 = y - height / 2, y + height / 2
@@ -161,11 +168,11 @@ def adjustBoxesV11ONNX(outputs, imgShape, minConf=0.7, printDebug=False):
             print(f"X {x} Y {y} w {width} h {height} classid {class_id}")
             time.sleep(1)
         adjusted_boxes.append([scaledBox, score, class_id])
-    
+
     return adjusted_boxes
 
 
-def getAdjustBoxesMethod(yoloType):
+def getAdjustBoxesMethod(yoloType: YOLOTYPE, backend: Backend):
     if yoloType == YOLOTYPE.V5:
         return adjustBoxesV5
     elif yoloType == YOLOTYPE.V11:

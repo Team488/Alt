@@ -10,7 +10,7 @@ from tools.Constants import CameraIntrinsics
 DEFAULTSAVEPATH = "assets/TMPImages"
 
 
-def __SaveOutput(calibPath, mtx, dist, shape):
+def __SaveOutput(calibPath, mtx, dist, shape) -> None:
     calibrationJSON = {
         "CameraMatrix": mtx.tolist(),
         "DistortionCoeff": dist.tolist(),
@@ -28,7 +28,7 @@ def __SaveOutput(calibPath, mtx, dist, shape):
 
 def chessboard_calibration(
     calibPath, imagesPath=DEFAULTSAVEPATH, chessBoardDim=(7, 10)
-):
+) -> None:
     images = []
     calibshape = None
     for image_file in sorted(os.listdir(imagesPath)):
@@ -71,7 +71,9 @@ def chessboard_calibration(
         print("Failed to find chessboard points!")
 
 
-def charuco_calibration(calibPath, imagesPath=DEFAULTSAVEPATH, arucoboarddim=(15, 15)):
+def charuco_calibration(
+    calibPath, imagesPath=DEFAULTSAVEPATH, arucoboarddim=(15, 15)
+) -> None:
     # Load images from the provided camera path
     images = []
     calibshape = None
@@ -121,7 +123,7 @@ def charuco_calibration(calibPath, imagesPath=DEFAULTSAVEPATH, arucoboarddim=(15
         print("Failed to find calibration values")
 
 
-def createMapXYForUndistortion(w, h, loadedCalibration):
+def createMapXYForUndistortionFromCalib(w, h, loadedCalibration):
     cameraMatrix = np.array(loadedCalibration["CameraMatrix"])
     distCoeffs = np.array(loadedCalibration["DistortionCoeff"])
     # print(cameraMatrix)
@@ -138,13 +140,45 @@ def createMapXYForUndistortion(w, h, loadedCalibration):
     return mapx, mapy
 
 
+def createMapXYForUndistortion(distCoeffs, cameraIntrinsics: CameraIntrinsics):
+    cameraMatrix = np.array(
+        [
+            [cameraIntrinsics.getFx(), 0, cameraIntrinsics.getCx()],
+            [0, cameraIntrinsics.getFy(), cameraIntrinsics.getCy()],
+            [0, 0, 1],
+        ],
+        dtype=np.float32,
+    )
+
+    # Compute the optimal new camera matrix
+    newCameraMatrix, roi = cv2.getOptimalNewCameraMatrix(
+        cameraMatrix,
+        distCoeffs,
+        (cameraIntrinsics.getHres(), cameraIntrinsics.getVres()),
+        1,
+        (cameraIntrinsics.getHres(), cameraIntrinsics.getVres()),
+    )
+
+    # Generate undistortion and rectification maps
+    mapx, mapy = cv2.initUndistortRectifyMap(
+        cameraMatrix,
+        distCoeffs,
+        None,
+        newCameraMatrix,
+        (cameraIntrinsics.getHres(), cameraIntrinsics.getVres()),
+        cv2.CV_32FC1,
+    )
+
+    return mapx, mapy
+
+
 def undistortFrame(frame, mapx, mapy):
     return cv2.remap(frame, mapx, mapy, cv2.INTER_LINEAR)
 
 
 def takeCalibrationPhotos(
     cameraPath, photoPath=DEFAULTSAVEPATH, timePerPicture=3, frameShape=(640, 480)
-):
+) -> None:
     windowName = "Calibration View"
 
     timePassed = 0  # ms

@@ -8,19 +8,19 @@ from abstract.Order import Order
 
 class OrderExample(Order):
     # this example will print information
-    def create(self):
+    def create(self) -> None:
         # here i will get my info
-        self.projectInput = self.propertyOperator.createReadOnlyProperty("input","")
+        self.projectInput = self.propertyOperator.createReadOnlyProperty("input", "")
 
-    def run(self, input):
+    def run(self, input) -> None:
         print(f"Order input is: {input}")
         self.projectInput.set(input)
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         print(f"Cleaning up!")
 
-    def getDescription(self):
+    def getDescription(self) -> str:
         return "displays_input"
-    
-    def getName(self):
+
+    def getName(self) -> str:
         return "order_example"

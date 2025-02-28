@@ -6,7 +6,7 @@ Sentinel = logging.getLogger(f"Core[{UniqueId}]")
 Sentinel.setLevel(level=logging.DEBUG)
 
 
-def setLogLevel(level):
+def setLogLevel(level) -> None:
     Sentinel.setLevel(level)
 
 

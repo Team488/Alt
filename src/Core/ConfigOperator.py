@@ -7,6 +7,26 @@ import numpy as np
 from enum import Enum
 
 
+def staticLoad(fileName: str):
+    for path in ConfigOperator.SAVEPATHS:
+        try:
+            filePath = os.path.join(path, fileName)
+            for (ending, filetype) in ConfigOperator.knownFileEndings:
+                if filePath.endswith(ending):
+                    content = filetype.load(filePath)
+                    return content
+
+            print(
+                f"Invalid file ending. Options are: {[ending[0] for ending in ConfigOperator.knownFileEndings]}"
+            )
+        except Exception as agentSmith:
+            # override config path dosent exist
+            print(agentSmith)
+            print(f"{path} does not exist!")
+
+    return None
+
+
 class ConfigType(Enum):
     NUMPY = "numpy"
     JSON = "json"
@@ -42,7 +62,7 @@ class ConfigOperator:
     ]
     knownFileEndings = ((".npy", ConfigType.NUMPY), (".json", ConfigType.JSON))
 
-    def __init__(self, logger: Logger):
+    def __init__(self, logger: Logger) -> None:
         self.Sentinel = logger
         self.configMap = {}
         for path in self.READPATHS:
@@ -50,7 +70,7 @@ class ConfigOperator:
         # loading override second means that it will overwrite anything set by default.
         # NOTE: if you only specify a subset of the .json file in the override, you will loose the default values.
 
-    def __loadFromPath(self, path):
+    def __loadFromPath(self, path) -> None:
         try:
             for filename in os.listdir(path):
                 filePath = os.path.join(path, filename)
@@ -65,12 +85,12 @@ class ConfigOperator:
             self.Sentinel.debug(agentSmith)
             self.Sentinel.info(f"{path} does not exist. likely not critical")
 
-    def saveToFileJSON(self, filename, content):
+    def saveToFileJSON(self, filename, content) -> None:
         for path in self.SAVEPATHS:
             filePath = os.path.join(path, filename)
             self.__saveToFileJSON(filePath, content)
 
-    def savePropertyToFileJSON(self, filename, content):
+    def savePropertyToFileJSON(self, filename, content) -> None:
         for path in self.SAVEPATHS:
             filePath = os.path.join(f"{path}/PROPERTIES", filename)
             self.__saveToFileJSON(filePath, content)

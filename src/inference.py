@@ -3,9 +3,9 @@ from Core.Neo import Neo
 from tools.Constants import InferenceMode, CameraIntrinsicsPredefined
 
 agent = InferenceAgentPartial(
-    "oakdlite",
-    CameraIntrinsicsPredefined.OAKDLITE1080P,
-    InferenceMode.ONNXSMALL2025,
+    "assets/reefscapevid.mp4",
+    None,
+    InferenceMode.ALCOROULTRALYTICSSMALL2025BAD,
     showFrames=True,
 )
 n = Neo()

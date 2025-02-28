@@ -1,4 +1,5 @@
 import os
+from typing import Union
 import cv2
 import time
 from functools import partial
@@ -8,9 +9,12 @@ import numpy as np
 # from JXTABLES.XDashDebugger import XDashDebugger
 
 from Core.Agents.Abstract.TimestampRegulatedAgentBase import TimestampRegulatedAgentBase
+from abstract.Capture import Capture, ConfigurableCapture
+from abstract.depthCamera import depthCamera
 from coreinterface.DetectionPacket import DetectionPacket
 from tools.Constants import InferenceMode, CameraExtrinsics, CameraIntrinsics
 from mapinternals.localFrameProcessor import LocalFrameProcessor
+import Core
 
 
 class ObjectLocalizingAgentBase(TimestampRegulatedAgentBase):
@@ -21,7 +25,7 @@ class ObjectLocalizingAgentBase(TimestampRegulatedAgentBase):
 
     DETECTIONPOSTFIX = "Detections"
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs) -> None:
         self.cameraIntrinsics = kwargs.get("cameraIntrinsics", None)
         self.cameraExtrinsics = kwargs.get("cameraExtrinsics", None)
         self.inferenceMode = kwargs.get("inferenceMode", None)
@@ -31,24 +35,47 @@ class ObjectLocalizingAgentBase(TimestampRegulatedAgentBase):
         super().create()
         # self.xdashDebugger = XDashDebugger()
         self.Sentinel.info("Creating Frame Processor...")
+        currentCoreINFName = self.xclient.getString(Core.COREMODELTABLE)
+        currentCoreINFMode = InferenceMode.getFromName(currentCoreINFName, default=None)
+        if currentCoreINFMode is not None:
+            # assert you are running same model type as any current core process
+            isMatch = InferenceMode.assertModelType(
+                currentCoreINFMode, self.inferenceMode
+            )
+            if not isMatch:
+                self.Sentinel.fatal(
+                    f"Model type mismatch!: Core is Running: {currentCoreINFMode.getModelType()} This is running {self.inferenceMode.getModelType()}"
+                )
+                raise Exception(
+                    f"Model type mismatch!: Core is Running: {currentCoreINFMode.getModelType()} This is running {self.inferenceMode.getModelType()}"
+                )
+            else:
+                self.Sentinel.fatal(f"Model type matched!")
+        else:
+            self.Sentinel.warning(
+                "Was not able to get core model type! Make sure you match!"
+            )
+
         self.frameProcessor = LocalFrameProcessor(
             cameraIntrinsics=self.cameraIntrinsics,
             cameraExtrinsics=self.cameraExtrinsics,
             inferenceMode=self.inferenceMode,
+            depthMode=self.depthEnabled,
         )
         self.detectionProp = self.propertyOperator.createCustomReadOnlyProperty(
             self.DETECTIONPOSTFIX, b""
         )
 
-    def runPeriodic(self):
+    def runPeriodic(self) -> None:
         super().runPeriodic()
         sendFrame = self.sendFrame.get()
         with self.timer.run("frame-processing"):
             processedResults = self.frameProcessor.processFrame(
-                self.latestFrame,
-                robotPosXCm=self.robotPose2dMRAD[0] * 100,  # m to cm
-                robotPosYCm=self.robotPose2dMRAD[1] * 100,  # m to cm
-                robotYawRad=self.robotPose2dMRAD[2],
+                self.latestFrameCOLOR,
+                self.latestFrameDEPTH if self.depthEnabled else None,
+                robotPosXCm=self.robotPose2dCMRAD[0],
+                robotPosYCm=self.robotPose2dCMRAD[1],
+                robotYawRad=self.robotPose2dCMRAD[2],
                 drawBoxes=sendFrame
                 or self.showFrames,  # if you are sending frames, you likely want to see bounding boxes aswell
             )
@@ -81,24 +108,28 @@ class ObjectLocalizingAgentBase(TimestampRegulatedAgentBase):
 
         self.Sentinel.info("Processed frame!")
 
-    def getName(self):
+    def getName(self) -> str:
         return "Object_Localizer"
 
-    def getDescription(self):
+    def getDescription(self) -> str:
         return "Inference_Then_Localize"
 
-    def getIntervalMs(self):
+    def getIntervalMs(self) -> int:
         return 0
 
 
 def ObjectLocalizingAgentPartial(
-    cameraPath, cameraIntrinsics, cameraExtrinsics, inferenceMode
+    capture: Union[depthCamera, ConfigurableCapture],
+    cameraExtrinsics: CameraExtrinsics,
+    inferenceMode: InferenceMode,
+    showFrames: bool = False,
 ):
     """Returns a partially completed frame processing agent. All you have to do is pass it into neo"""
     return partial(
         ObjectLocalizingAgentBase,
-        cameraPath=cameraPath,
-        cameraIntrinsics=cameraIntrinsics,
+        capture=capture,
+        cameraIntrinsics=capture.getIntrinsics(),
         cameraExtrinsics=cameraExtrinsics,
         inferenceMode=inferenceMode,
+        showFrames=showFrames,
     )

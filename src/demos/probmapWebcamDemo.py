@@ -2,7 +2,11 @@ import numpy as np
 from mapinternals.probmap import ProbMap
 from mapinternals.localFrameProcessor import LocalFrameProcessor
 from tools.CsvParser import CsvParser
-from tools.Constants import CameraIntrinsicsPredefined, ColorCameraExtrinsics2024, InferenceMode
+from tools.Constants import (
+    CameraIntrinsicsPredefined,
+    ColorCameraExtrinsics2024,
+    InferenceMode,
+)
 from inference.onnxInferencer import onnxInferencer
 import cv2
 import math
@@ -10,7 +14,7 @@ import math
 from tools.Units import UnitMode
 
 
-def startDemo():
+def startDemo() -> None:
     cv2.namedWindow("view", cv2.WINDOW_NORMAL)
     cv2.setWindowProperty("view", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
 
@@ -35,7 +39,9 @@ def startDemo():
     cameraIntr = CameraIntrinsicsPredefined.OV9782COLOR
     cap = cv2.VideoCapture(0)
 
-    frameProcessor = LocalFrameProcessor(cameraIntr, cameraExtr,inferenceMode=InferenceMode.ONNX2024)
+    frameProcessor = LocalFrameProcessor(
+        cameraIntr, cameraExtr, inferenceMode=InferenceMode.ONNX2024
+    )
     while cap.isOpened():
         ret, frame = cap.read()
         if ret:
@@ -43,7 +49,7 @@ def startDemo():
 
             # Run yolov5 on the frame
             out = frameProcessor.processFrame(
-                frame, simMap.width / 2, simMap.height / 2, 0
+                frame, None, simMap.width / 2, simMap.height / 2, 0
             )
 
             for result in out:

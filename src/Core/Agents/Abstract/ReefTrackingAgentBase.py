@@ -6,6 +6,7 @@ import cv2
 import numpy as np
 
 from Core.Agents.Abstract.CameraUsingAgentBase import CameraUsingAgentBase
+from abstract.Capture import ConfigurableCapture
 from reefTracking.reefTracker import ReefTracker
 from tools.Constants import CameraExtrinsics, CameraIntrinsics
 from coreinterface.ReefPacket import ReefPacket
@@ -18,11 +19,11 @@ class ReefTrackingAgentBase(CameraUsingAgentBase):
         If showFrames is True, you must run this agent as main
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
         self.cameraIntrinsics = kwargs.get("cameraIntrinsics", None)
 
-    def create(self):
+    def create(self) -> None:
         super().create()
         self.tracker = ReefTracker(
             cameraIntrinsics=self.cameraIntrinsics, isLocalAT=True
@@ -30,14 +31,12 @@ class ReefTrackingAgentBase(CameraUsingAgentBase):
         self.reefProp = self.propertyOperator.createCustomReadOnlyProperty(
             self.OBSERVATIONPOSTFIX, b""
         )
-        if not self.oakMode:
-            CameraIntrinsics.setCapRes(self.cameraIntrinsics, self.cap)
         self.c = 0
 
-    def runPeriodic(self):
+    def runPeriodic(self) -> None:
         super().runPeriodic()
         outCoral, outAlgae = self.tracker.getAllTracks(
-            self.latestFrame, drawBoxes=self.showFrames
+            self.latestFrameCOLOR, drawBoxes=self.showFrames
         )
         reefPkt = ReefPacket.createPacket(
             outCoral, outAlgae, "helloo", time.time() * 1000
@@ -49,18 +48,18 @@ class ReefTrackingAgentBase(CameraUsingAgentBase):
         #     self.c+=1
         # time.sleep(1)
 
-    def getName(self):
+    def getName(self) -> str:
         return "Reef_Tracking_Agent"
 
-    def getDescription(self):
+    def getDescription(self) -> str:
         return "Gets_Reef_State"
 
 
-def ReefTrackingAgentPartial(cameraPath, cameraIntrinsics, showFrames=False):
+def ReefTrackingAgentPartial(capture: ConfigurableCapture, showFrames=False):
     """Returns a partially completed ReefTrackingAgent agent. All you have to do is pass it into neo"""
     return partial(
         ReefTrackingAgentBase,
-        cameraPath=cameraPath,
-        cameraIntrinsics=cameraIntrinsics,
+        capture=capture,
+        cameraIntrinsics=capture.getIntrinsics(),
         showFrames=showFrames,
     )

@@ -19,7 +19,7 @@ from tools.Constants import (
 from demos.utils import drawRobotWithCams
 
 
-def startDemo():
+def startDemo() -> None:
     processName = "Simulation_Process"
     logger = logging.getLogger(processName)
 

@@ -3,6 +3,7 @@ from enum import Enum
 import math
 from tools import UnitConversion
 
+
 class LengthType(Enum):
     """
     Enum for representing length types.
@@ -10,11 +11,13 @@ class LengthType(Enum):
     - CM: Centimeters
     - IN: Inches
     """
+
     CM = "cm"
     IN = "in"
     FT = "feet"
     M = "meter"
     YARD = "yard"
+
 
 class RotationType(Enum):
     """
@@ -23,8 +26,10 @@ class RotationType(Enum):
     - Deg: Degrees
     - Rad: Radians
     """
+
     Deg = "deg"
     Rad = "rad"
+
 
 class UnitMode:
     """
@@ -33,7 +38,8 @@ class UnitMode:
     - lengthType (LengthType): The unit type for length (CM or IN).
     - rotationType (RotationType): The unit type for rotation (Deg or Rad).
     """
-    def __init__(self, lengthType: LengthType, rotationType: RotationType):
+
+    def __init__(self, lengthType: LengthType, rotationType: RotationType) -> None:
         """
         Initializes a UnitMode instance.
 
@@ -54,17 +60,18 @@ class Length:
     - __cm (float): Length in centimeters (private).
     - __in (float): Length in inches (private).
     """
+
     __cm: float
     __in: float
 
-    def __init__(self):
+    def __init__(self) -> None:
         """
         Prevents direct instantiation of the class.
         Use static constructors like `fromCm`, `fromIn`, etc., to create instances.
         """
         raise AttributeError("Use the Static constructors to create a length")
-    
-    def __repr__(self):
+
+    def __repr__(self) -> str:
         """
         Provides a string representation of the Length instance.
         Returns:
@@ -84,7 +91,6 @@ class Length:
             return abs(self.__in - value.__in) < 1e-6
         return False
 
-    
     @classmethod
     def fromCm(cls, centimeters: float) -> "Length":
         """
@@ -134,9 +140,9 @@ class Length:
         obj.__cm = UnitConversion.ytocm(yards)
         obj.__in = yards * 36
         return obj
-    
+
     @classmethod
-    def fromLengthType(cls, length : float, lengthType: LengthType) -> "Length":
+    def fromLengthType(cls, length: float, lengthType: LengthType) -> "Length":
         if lengthType == LengthType.CM:
             return cls.fromCm(length)
         if lengthType == LengthType.IN:
@@ -181,7 +187,7 @@ class Length:
     def getAsLengthType(self, lengthType: LengthType) -> float:
         """
         Returns the length in the desired unit mode.
-        
+
         Args:
         - unitmode (UnitMode): The unit mode for length.
 
@@ -198,9 +204,10 @@ class Length:
             return self.getYards()
         if lengthType == LengthType.FT:
             return self.getFeet()
-    @classmethod    
-    def convert(cls, value : float, fromL : LengthType, toL : LengthType) -> float:
-        return cls.fromLengthType(value,fromL).getAsLengthType(toL)
+
+    @classmethod
+    def convert(cls, value: float, fromL: LengthType, toL: LengthType) -> float:
+        return cls.fromLengthType(value, fromL).getAsLengthType(toL)
 
 
 @dataclass
@@ -212,17 +219,18 @@ class Rotation:
     - __deg (float): Rotation in degrees (private).
     - __rad (float): Rotation in radians (private).
     """
+
     __deg: float
     __rad: float
 
-    def __init__(self):
+    def __init__(self) -> None:
         """
         Prevents direct instantiation of the class.
         Use static constructors like `fromDegrees` or `fromRadians` to create instances.
         """
         raise AttributeError("Use the Static constructors to create a rotation")
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """
         Provides a string representation of the Rotation instance.
         Returns:
@@ -242,7 +250,6 @@ class Rotation:
             return abs(self.__deg - value.__deg) < 1e-6
         return False
 
-    
     @classmethod
     def fromDegrees(cls, degrees: float):
         """
@@ -264,12 +271,12 @@ class Rotation:
         return obj
 
     @classmethod
-    def fromRotationType(cls, length : float, rotationType: RotationType) -> "Rotation":
+    def fromRotationType(cls, length: float, rotationType: RotationType) -> "Rotation":
         if rotationType == RotationType.Rad:
             return cls.fromRadians(length)
         if rotationType == RotationType.Deg:
             return cls.fromDegrees(length)
-    
+
     def getDegrees(self) -> float:
         """
         Returns the rotation in degrees.
@@ -282,11 +289,10 @@ class Rotation:
         """
         return self.__rad
 
-    
     def getAsRotationType(self, rotationType: RotationType) -> float:
         """
         Returns the length in the desired rotationType.
-        
+
         Args:
         - rotationType (RotationType): The rotationType for rotation.
 
@@ -298,6 +304,6 @@ class Rotation:
         if rotationType == RotationType.Deg:
             return self.getDegrees()
 
-    @classmethod    
-    def convert(cls, value : float, fromR : RotationType, toR : RotationType) -> float:
-        return cls.fromRotationType(value,fromR).getAsRotationType(toR)
+    @classmethod
+    def convert(cls, value: float, fromR: RotationType, toR: RotationType) -> float:
+        return cls.fromRotationType(value, fromR).getAsRotationType(toR)

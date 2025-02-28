@@ -1,11 +1,11 @@
 import cv2
 from Core.Agents.Abstract.PathPlanningAgentBase import PathPlanningAgentBase
-from Core.Agents.Abstract.CentralAgentBase import CentralAgentBase
+from Core.Agents.CentralAgentBase import CentralAgentBase
 from Core.Orders import TargetUpdatingOrder
 
 
 class DriveToTargetAgent(CentralAgentBase, PathPlanningAgentBase):
-    def create(self):
+    def create(self) -> None:
         super().create()
         self.targetConf = self.propertyOperator.createProperty("targetMinConf", 0.3)
         self.bestConf = self.propertyOperator.createReadOnlyProperty(
@@ -15,7 +15,7 @@ class DriveToTargetAgent(CentralAgentBase, PathPlanningAgentBase):
         self.bestY = self.propertyOperator.createReadOnlyProperty("bestTarget.bestY", 0)
 
     def getPath(self):
-        target = self.central.objectmap.getHighestGameObject()
+        target = self.central.objectmap.getHighestObject(class_idx=1)
         conf = target[2]
 
         self.bestX.set(float(target[0]))
@@ -30,21 +30,21 @@ class DriveToTargetAgent(CentralAgentBase, PathPlanningAgentBase):
             )
         return path
 
-    def runPeriodic(self):
+    def runPeriodic(self) -> None:
         super().runPeriodic()
 
-    def isRunning(self):
+    def isRunning(self) -> bool:
         return True
 
-    def getName(self):
+    def getName(self) -> str:
         return "Drive_To_Target_Pathplanning"
 
-    def getDescription(self):
+    def getDescription(self) -> str:
         return "Ingest_Detections_Give_Path"
 
 
 class DriveToFixedPointAgent(PathPlanningAgentBase):
-    def create(self):
+    def create(self) -> None:
         super().create()
         self.targetX = self.propertyOperator.createProperty(
             propertyName="targetX", propertyDefault=2
@@ -62,18 +62,18 @@ class DriveToFixedPointAgent(PathPlanningAgentBase):
             reducePoints=True,
         )
 
-    def isRunning(self):
+    def isRunning(self) -> bool:
         return True
 
-    def getName(self):
+    def getName(self) -> str:
         return "Drive_To_FixedPoint_Pathplanning"
 
-    def getDescription(self):
+    def getDescription(self) -> str:
         return "Get_Target_Give_Path"
 
 
 class DriveToNetworkTargetAgent(PathPlanningAgentBase):
-    def create(self):
+    def create(self) -> None:
         super().create()
         self.hasTarget = self.propertyOperator.createReadOnlyProperty(
             propertyName="hasTarget", propertyValue=False
@@ -96,11 +96,11 @@ class DriveToNetworkTargetAgent(PathPlanningAgentBase):
             reducePoints=True,
         )
 
-    def isRunning(self):
+    def isRunning(self) -> bool:
         return True
 
-    def getName(self):
+    def getName(self) -> str:
         return "Drive_To_NetworkTarget_Pathplanning"
 
-    def getDescription(self):
+    def getDescription(self) -> str:
         return "Get_Target_Give_Path"

@@ -1,3 +1,4 @@
+from abc import abstractmethod
 from enum import Enum
 import json
 from typing import Union, Any
@@ -20,63 +21,107 @@ class Backend(Enum):
     ULTRALYTICS = "ultralytics"
 
 
+class Label(Enum):
+    # name, w,h (cm)
+    ROBOT = ("robot", (75, 75))
+    NOTE = ("note", (35, 35))
+    ALGAE = ("algae", (41, 41))
+    CORAL = ("coral", (30, 12))
+
+    def getDefaultLengthType():
+        return Units.LengthType.CM
+
+    def __str__(self) -> str:
+        return self.value[0]
+
+    def getSize(self, lengthType: Units.LengthType):
+        return UnitConversion.convertLength(
+            self.getSizeCm(), self.getDefaultLengthType(), lengthType
+        )
+
+    def getSizeCm(self):
+        return self.value[1]
+
+
+class ModelType(Enum):
+    ALCORO = (Label.ALGAE, Label.CORAL, Label.ROBOT)
+    CORO = (Label.CORAL, Label.ROBOT)
+    NORO = (Label.NOTE, Label.ROBOT)
+
+
 class InferenceMode(Enum):
     ONNX2024 = (
         "assets/yolov5s_fp32.onnx",
         "yolov5s-onnx-fp32",
-        ("Robot", "Note"),
+        (Label.ROBOT, Label.NOTE),
         2024,
         Backend.ONNX,
         YOLOTYPE.V5,
+        ModelType.NORO,
     )
     ONNXSMALL2025 = (
         "assets/yolov11s_fp32.onnx",
-        "yolov11s-onnx-fp32",
-        ("Algae", "Coral"),
+        "yolov11s-onnx-small-fp32",
+        (Label.ALGAE, Label.CORAL),
         2025,
         Backend.ONNX,
         YOLOTYPE.V11,
+        ModelType.CORO,
     )
     ONNXMEDIUM2025 = (
         "assets/yolov11m_fp32.onnx",
-        "yolov11m-onnx-fp32",
-        ("Algae", "Coral"),
+        "yolov11m-onnx-medium-fp32",
+        (Label.ALGAE, Label.CORAL),
         2025,
         Backend.ONNX,
         YOLOTYPE.V11,
+        ModelType.CORO,
     )
     RKNN2024FP32 = (
         "assets/yolov5s_fp32.rknn",
         "yolov5s-rknn-fp32",
-        ("Robot", "Note"),
+        (Label.ROBOT, Label.NOTE),
         2024,
         Backend.RKNN,
         YOLOTYPE.V5,
+        ModelType.NORO,
     )
     RKNN2025INT8 = (
         "assets/yolov11s_int8.rknn",
         "yolov11s-rknn-int8",
-        ("Algae", "Coral"),
+        (Label.ALGAE, Label.CORAL),
         2025,
         Backend.RKNN,
         YOLOTYPE.V11,
+        ModelType.CORO,
     )
 
     ULTRALYTICSSMALL2025 = (
         "assets/yolov11s_fp32.pt",
-        "yolov11s-pytorch-fp32",
-        ("Algae", "Coral"),
+        "yolov11s-pytorch-small-fp32",
+        (Label.ALGAE, Label.CORAL),
         2025,
         Backend.ULTRALYTICS,
         YOLOTYPE.V11,
+        ModelType.CORO,
     )
     ULTRALYTICSMED2025 = (
         "assets/yolov11m_fp32.pt",
-        "yolov11s-pytorch-fp32",
-        ("Algae", "Coral"),
+        "yolov11s-pytorch-medium-fp32",
+        (Label.ALGAE, Label.CORAL),
         2025,
         Backend.ULTRALYTICS,
         YOLOTYPE.V11,
+        ModelType.CORO,
+    )
+    ALCOROULTRALYTICSSMALL2025BAD = (
+        "assets/yolov8s_fp32_BADDD.pt",
+        "verybad-yolov8s-pytorch-medium-fp32",
+        (Label.ALGAE, Label.CORAL, Label.ROBOT),
+        2025,
+        Backend.ULTRALYTICS,
+        YOLOTYPE.V8,
+        ModelType.ALCORO,
     )
 
     # TORCH todo!
@@ -86,6 +131,9 @@ class InferenceMode(Enum):
 
     def getName(self):
         return self.value[1]
+
+    def getLabelsAsStr(self):
+        return list(map(str, self.value[2]))
 
     def getLabels(self):
         return self.value[2]
@@ -98,6 +146,22 @@ class InferenceMode(Enum):
 
     def getYoloType(self):
         return self.value[5]
+
+    def getModelType(self):
+        return self.value[6]
+
+    @classmethod
+    def getFromName(cls, name: str, default: Any = None):
+        for mode in cls:
+            if mode.getName() == name:
+                return mode
+        return default
+
+    @classmethod
+    def assertModelType(
+        cls, inferenceMode1: "InferenceMode", inferenceMode2: "InferenceMode"
+    ):
+        return inferenceMode1.getModelType() == inferenceMode2.getModelType()
 
 
 class Object(Enum):
@@ -285,6 +349,26 @@ class CameraIntrinsics:
         return self.value[4][1]
 
     @staticmethod
+    def getHfov(cameraIntr: "CameraIntrinsics", radians: bool = True):
+        hres = cameraIntr.getHres()
+        fx = cameraIntr.getFx()
+
+        rad = 2 * math.atan(hres / (2 * fx))
+        if radians:
+            return rad
+        return math.degrees(rad)
+
+    @staticmethod
+    def getVfov(cameraIntr: "CameraIntrinsics", radians: bool = True):
+        vres = cameraIntr.getVres()
+        fy = cameraIntr.getFx()
+
+        rad = 2 * math.atan(vres / (2 * fy))
+        if radians:
+            return rad
+        return math.degrees(rad)
+
+    @staticmethod
     def fromPhotonConfig(photonConfigPath):
         try:
             with open(photonConfigPath) as PV_config:
@@ -377,17 +461,49 @@ class CameraIntrinsicsPredefined:
         320,
         240,  # Calibrated Cx, Cy
     )
-    OAKDLITE4K = CameraIntrinsics(
-        3840,
-        2160,  # Resolution
-        fx_pix=2986.8527832,
-        fy_pix=2986.8527832,  # Calibrated Fx, Fy
-        cx_pix=1787.41931152,
-        cy_pix=1037.04040527,  # Calibrated Cx, Cy
-    )
-    OAKDLITE1080P = CameraIntrinsics(
-        1920, 1080, fx_pix=1493.4263, fy_pix=1493.4263, cx_pix=893.709, cy_pix=518.52
-    )
+
+
+class OAKDLITEResolution(Enum):
+    OAK4K = (3840, 2160, 30)
+    OAK1080P = (1920, 1080, 60)
+
+    @property
+    def fps(self):
+        return self.value[2]
+
+    @property
+    def w(self):
+        return self.value[0]
+
+    @property
+    def h(self):
+        return self.value[1]
+
+
+class D435IResolution(Enum):
+    RS720P = (1280, 720, 30)
+    RS480P = (640, 480, 60)
+
+    @property
+    def fps(self):
+        return self.value[2]
+
+    @property
+    def w(self):
+        return self.value[0]
+
+    @property
+    def h(self):
+        return self.value[1]
+
+
+class CommonVideos(Enum):
+    ReefscapeCompilation = "assets/reefscapevid.mp4"
+    Comp2024Clip = "assets/video12qual25clipped.mp4"
+
+    @property
+    def path(self):
+        return self.value
 
 
 class ObjectReferences(Enum):
@@ -411,12 +527,24 @@ class KalmanConstants:
     R = np.eye(2) * 0.01  # Measurement noise covariance
 
 
-class CameraIdOffsets(Enum):
+class CameraIdOffsets2024(Enum):
     # jump of 30
     FRONTLEFT = 0
     FRONTRIGHT = 30
     REARLEFT = 60
     REARRIGHT = 90
+    DEPTHLEFT = 120
+    DEPTHRIGHT = 150
+
+    def getIdOffset(self) -> int:
+        return self.value
+
+
+class CameraIdOffsets2025(Enum):
+    # jump of 30
+    FRONTLEFT = 0
+    FRONTRIGHT = 30
+    BACK = 60
     DEPTHLEFT = 120
     DEPTHRIGHT = 150
 
@@ -634,6 +762,14 @@ class Landmarks(Enum):
 
 
 class MapConstants(Enum):
+    @staticmethod
+    def getDefaultLengthType():
+        return Units.LengthType.CM
+
+    @staticmethod
+    def getDefaultRotationType():
+        return Units.RotationType.Deg
+
     GameObjectAcceleration = 0  # probably?
     RobotMaxVelocity = 300  # cm/s
     RobotAcceleration = 150  # cm/s^2 this is probably inaccurate?
@@ -655,27 +791,34 @@ class MapConstants(Enum):
 
     coral_width = 30.16  # cm
 
-    def getCM(self):
+    def getCM(self) -> float:
         return self.value
+
+    def getLength(
+        self, lengthType: Units.LengthType = Units.LengthType.CM
+    ) -> Union[tuple[float], float]:
+        return UnitConversion.convertLength(
+            self.getCM(), fromType=self.getDefaultLengthType(), toType=lengthType
+        )
 
 
 class LabelingConstants(Enum):
-    MAXFRAMESNOTSEEN = 15
+    MAXFRAMESNOTSEEN = 60  # around 2-3 sec
 
 
 # todo consolidate camera info into one central enum
 # class CAMERA(Enum):
 
 
-def getCameraIfOffset(cameraName: str):
-    for cameraIdOffset in CameraIdOffsets:
+def getCameraIfOffset2024(cameraName: str):
+    for cameraIdOffset in CameraIdOffsets2024:
         if cameraIdOffset.name == cameraName:
             return cameraIdOffset
 
     return None
 
 
-def getCameraExtrinsics(cameraName):
+def getCameraExtrinsics2024(cameraName):
     for cameraExtrinsic in ColorCameraExtrinsics2024:
         if cameraExtrinsic.name == cameraName:
             return cameraExtrinsic
@@ -683,18 +826,37 @@ def getCameraExtrinsics(cameraName):
     return None
 
 
-def getCameraName(cameraId: int) -> Any:
-    if cameraId == 0:
-        return ...
+def getCameraValues2024(
+    cameraName: str,
+) -> tuple[CameraIntrinsics, CameraExtrinsics, CameraIdOffsets2024]:
+    return (
+        CameraIntrinsicsPredefined.OV9782COLOR,
+        getCameraExtrinsics2024(cameraName),
+        getCameraIfOffset2024(cameraName),
+    )
+
+
+def getCameraIfOffset2025(cameraName: str):
+    for cameraIdOffset in CameraIdOffsets2025:
+        if cameraIdOffset.name == cameraName:
+            return cameraIdOffset
 
     return None
 
 
-def getCameraValues(
+def getCameraExtrinsics2025(cameraName):
+    for cameraExtrinsic in ColorCameraExtrinsics2025:
+        if cameraExtrinsic.name == cameraName:
+            return cameraExtrinsic
+
+    return None
+
+
+def getCameraValues2024(
     cameraName: str,
-) -> tuple[CameraIntrinsics, CameraExtrinsics, CameraIdOffsets]:
+) -> tuple[CameraIntrinsics, CameraExtrinsics, CameraIdOffsets2024]:
     return (
         CameraIntrinsicsPredefined.OV9782COLOR,
-        getCameraExtrinsics(cameraName),
-        getCameraIfOffset(cameraName),
+        getCameraExtrinsics2025(cameraName),
+        getCameraIfOffset2025(cameraName),
     )

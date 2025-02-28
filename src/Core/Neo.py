@@ -14,11 +14,13 @@ from Core.OrderOperator import OrderOperator
 from Core.AgentOperator import AgentOperator
 from Core.ShareOperator import ShareOperator
 from Core.XDashOperator import XDashOperator
-from Core import LogManager
+from Core import LogManager, COREMODELTABLE, COREINFERENCEMODE
 from Core.Central import Central
 from abstract.Agent import Agent
 from abstract.Order import Order
 from JXTABLES.TempConnectionManager import TempConnectionManager as tcm
+
+from tools.Constants import InferenceMode
 
 
 Sentinel = LogManager.Sentinel
@@ -70,6 +72,7 @@ class Neo:
             logger=Sentinel.getChild("Central_Processor"),
             configOp=self.__configOp,
             propertyOp=self.__propertyOp,
+            inferenceMode=COREINFERENCEMODE,
         )
         Sentinel.info("Creating XDASH operator")
         self.__xdOp = XDashOperator(
@@ -193,7 +196,7 @@ class Neo:
         else:
             self.Sentinel.warning("Neo has already been shut down!")
 
-    def __cleanup(self):
+    def __cleanup(self) -> None:
         # xtables operations. need to go before xclient shutdown
         Sentinel.info(f"Properties removed: {self.__propertyOp.deregisterAll()}")
         Sentinel.info(f"Orders removed: {self.__orderOp.deregister()}")
@@ -209,7 +212,7 @@ class Neo:
     def isShutdown(self) -> bool:
         return self.__isShutdown
 
-    def __printInit(self):
+    def __printInit(self) -> None:
         message = """ /$$$$$$$$ /$$   /$$ /$$$$$$$$       /$$      /$$  /$$$$$$  /$$$$$$$$ /$$$$$$$  /$$$$$$ /$$   /$$
 |__  $$__/| $$  | $$| $$_____/      | $$$    /$$$ /$$__  $$|__  $$__/| $$__  $$|_  $$_/| $$  / $$
    | $$   | $$  | $$| $$            | $$$$  /$$$$| $$  \\ $$   | $$   | $$  \\ $$  | $$  |  $$/ $$/
@@ -253,7 +256,7 @@ class Neo:
    |__/   |__/     |__/      |______/ \\______/  \\______/  \\______/"""
         Sentinel.info(f"\n\n{message}\n\n")
 
-    def __printFinish(self):
+    def __printFinish(self) -> None:
         message = """⠀⠀⠀⠀⠀⠀⣀⣤⣴⣶⣶⣦⣤⡀⠀⠀⠀⠀⠀⠀⠀
 ⠀⠀⠀⢀⣴⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣦⣄⠀⠀⠀
 ⠀⠀⢀⣾⣿⣿⣿⠿⣿⣿⣿⣿⣿⣿⠿⣿⣿⣿⣷⡀⠀

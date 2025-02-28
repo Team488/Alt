@@ -9,7 +9,7 @@ class PositionLocalizingAgentBase(Agent):
     NOTE: For changes to properties to take place, the Agent must be restarted
     """
 
-    def create(self):
+    def create(self) -> None:
         super().create()
         # create managing properties
         self.xtablesPosTable = self.propertyOperator.createProperty(
@@ -28,7 +28,7 @@ class PositionLocalizingAgentBase(Agent):
 
         self.xclient.subscribe(self.xtablesPosTable.get(), self.__updateLocation)
 
-    def __updateLocation(self, ret):
+    def __updateLocation(self, ret) -> None:
         try:
             self.robotPose2dMRAD = NtUtils.getPose2dFromBytes(ret.value)
             self.robotPose2dCMRAD = (

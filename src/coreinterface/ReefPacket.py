@@ -111,7 +111,7 @@ class ReefPacket:
         return flattenedOutputReef, flattenedOutputAlgae
 
 
-def test_packet():
+def test_packet() -> None:
     observations = {5: {1: 0.80, 2: 0.30}}
     packet = ReefPacket.createPacket(observations, {}, "test", 0)
     bytes = packet.to_bytes()

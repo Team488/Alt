@@ -1,5 +1,6 @@
 import time
-from tools.Constants import CameraIdOffsets, ATLocations, Units, TEAM
+from Core import COREMODELTABLE, COREINFERENCEMODE
+from tools.Constants import CameraIdOffsets2024, ATLocations, Units, TEAM
 from coreinterface.DetectionPacket import DetectionPacket
 from coreinterface.ReefPacket import ReefPacket
 from abstract.Agent import Agent
@@ -14,17 +15,20 @@ class CentralAgentBase(PositionLocalizingAgentBase):
     Adds automatic ingestion of detection packets into the central process
     """
 
-    def create(self):
+    def create(self) -> None:
+        # put inference mode on xtables, so local observers can assert they are running the same model type
+        self.xclient.putString(COREMODELTABLE, COREINFERENCEMODE.getName())
+
         super().create()
         # perform agent init here (eg open camera or whatnot)
-        self.keys = ["REARRIGHT", "REARLEFT", "FRONTLEFT", "FRONTRIGHT", "Johnny"]
+        self.keys = ["REARRIGHT", "REARLEFT", "FRONTLEFT", "FRONTRIGHT"]
         self.keyToHost = {
             "REARRIGHT": "photonvisionrearright",
             "REARLEFT": "photonvisionrearleft",
             "FRONTLEFT": "photonvisionfrontleft",
-            "FRONTRIGHT": "photonvisionfrontright",
-            "FRONTRIGHT": "Adem-Laptop",
-            "Johnny": "archlinux",
+            # "FRONTRIGHT": "photonvisionfrontright",
+            "FRONTRIGHT": "Adem-GamingPc",
+            # "Johnny": "archlinux",
         }
         print("CREATED HOST")
         self.getDetectionTable = (
@@ -56,21 +60,27 @@ class CentralAgentBase(PositionLocalizingAgentBase):
         self.clBR = self.propertyOperator.createCustomReadOnlyProperty(
             "BESTOPENREEFBRANCH", None, addBasePrefix=False
         )
-        self.brx = self.propertyOperator.createCustomReadOnlyProperty(
-            "BESTROBOTX", None, addBasePrefix=False
-        )
-        self.bry = self.propertyOperator.createCustomReadOnlyProperty(
-            "BESTROBOTY", None, addBasePrefix=False
-        )
+        self.bestObjs = []
+        for label in self.central.labels:
+            boX = self.propertyOperator.createCustomReadOnlyProperty(
+                f"Best.{str(label)}.x", None, addBasePrefix=False
+            )
+            boY = self.propertyOperator.createCustomReadOnlyProperty(
+                f"Best.{str(label)}.y", None, addBasePrefix=False
+            )
+            boP = self.propertyOperator.createCustomReadOnlyProperty(
+                f"Best.{str(label)}.prob", None, addBasePrefix=False
+            )
+            self.bestObjs.append((boX, boY, boP))
 
         self.reefmap_states = self.propertyOperator.createCustomReadOnlyProperty(
             "REEFMAP_STATES", None, addBasePrefix=False
         )
 
     # handles a subscriber update from one of the cameras
-    def __handleObjectUpdate(self, key, ret):
+    def __handleObjectUpdate(self, key, ret) -> None:
         val = ret.value
-        idOffset = CameraIdOffsets[key]
+        idOffset = CameraIdOffsets2024[key]
         lastidx = self.objectupdateMap[key][2]
         lastidx += 1
         if not val or val == b"":
@@ -80,7 +90,7 @@ class CentralAgentBase(PositionLocalizingAgentBase):
         packet = (DetectionPacket.toDetections(det_packet), idOffset, lastidx)
         self.objectupdateMap[key] = packet
 
-    def __handleReefUpdate(self, key, ret):
+    def __handleReefUpdate(self, key, ret) -> None:
         val = ret.value
         lastidx = self.reefupdateMap[key][1]
         lastidx += 1
@@ -91,7 +101,7 @@ class CentralAgentBase(PositionLocalizingAgentBase):
         packet = (ReefPacket.getFlattenedObservations(reef_packet), lastidx)
         self.reefupdateMap[key] = packet
 
-    def __centralUpdate(self):
+    def __centralUpdate(self) -> None:
         currentTime = time.time() * 1000
         if self.lastUpdateTimeMs == -1:
             timePerLoopMS = 50  # random default value
@@ -129,32 +139,37 @@ class CentralAgentBase(PositionLocalizingAgentBase):
             reefResults=accumulatedReefResults, timeStepMs=timePerLoopMS
         )
 
-    def runPeriodic(self):
+    def runPeriodic(self) -> None:
         super().runPeriodic()
         self.__centralUpdate()
         self.putBestNetworkValues()
 
-    def putBestNetworkValues(self):
+    def putBestNetworkValues(self) -> None:
         # Send the ReefPacket for the entire map
         import time
+
         timestamp = time.time()
-        mapstate_packet = self.central.reefState.getReefMapState_as_ReefPacket(team=TEAM.BLUE, timestamp=timestamp)
+        mapstate_packet = self.central.reefState.getReefMapState_as_ReefPacket(
+            team=TEAM.BLUE, timestamp=timestamp
+        )
         bytes = mapstate_packet.to_bytes()
         self.reefmap_states.set(bytes)
-        
+
         # Send the confidence of highest algae
-        highest_algae = self.central.objectmap.getHighestRobot()
-        self.brx.set(highest_algae[0])
-        self.bry.set(highest_algae[1])
+        for idx, (setX, setY, setProb) in enumerate(self.bestObjs):
+            highest = self.central.objectmap.getHighestObject(class_idx=idx)
+            setX.set(highest[0])
+            setY.set(highest[1])
+            setProb.set(float(highest[2]))
 
         closest_At, closest_branch = self.central.reefState.getClosestOpen(
             self.robotPose2dCMRAD, threshold=0.0
         )
-        #print("closeAT and closeBranch", closest_At, closest_branch)
+        # print("closeAT and closeBranch", closest_At, closest_branch)
         self.clAT.set(closest_At)
         self.clBR.set(closest_branch)
 
-    def onClose(self):
+    def onClose(self) -> None:
         super().onClose()
         for key in self.keys:
             self.xclient.unsubscribe(

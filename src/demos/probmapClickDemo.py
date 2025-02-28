@@ -1,53 +1,45 @@
 from mapinternals.probmap import ProbMap
+from tools.Constants import Label
 import cv2
 
-res = 5  # cm
-# object and robot values not necessary here
-map = ProbMap(2000, 1000, res)
 
-isMouseDownG = False
-isMouseDownR = False
+def startDemo() -> None:
 
+    labels = [Label.NOTE, Label.ROBOT, Label.ALGAE]
+    isMouseDown = [False for _ in labels]
 
-def mouseDownCallbackGameObj(event, x, y, flags, param):
-    global isMouseDownG
-    if event == cv2.EVENT_LBUTTONDOWN:
-        isMouseDownG = True
-        #  print("clicked at ", x," ", y)
-        map.addCustomObjectDetection(x, y, 250, 250, 1)
-    elif event == cv2.EVENT_MOUSEMOVE:
-        if isMouseDownG:
-            #   print("dragged at ", x," ", y)
-            map.addCustomObjectDetection(x, y, 250, 250, 1)
-    elif event == cv2.EVENT_LBUTTONUP:
-        isMouseDownG = False
+    res = 5  # cm
+    # object and robot values not necessary here
+    map = ProbMap(labels, 2000, 1000, res)
 
+    def mouseDownCallback(event, label_idx, x, y, flags, param) -> None:
+        nonlocal isMouseDown
+        if event == cv2.EVENT_LBUTTONDOWN:
+            isMouseDown[label_idx] = True
+            #  print("clicked at ", x," ", y)
+            map.addCustomObjectDetection(label_idx, x, y, 15, 14, 0.9)
+        elif event == cv2.EVENT_MOUSEMOVE:
+            if isMouseDown[label_idx]:
+                #   print("dragged at ", x," ", y)
+                map.addCustomObjectDetection(label_idx, x, y, 15, 15, 0.9)
+        elif event == cv2.EVENT_LBUTTONUP:
+            isMouseDown[label_idx] = False
 
-def mouseDownCallbackRobot(event, x, y, flags, param):
-    global isMouseDownR
-    if event == cv2.EVENT_LBUTTONDOWN:
-        isMouseDownR = True
-        #  print("clicked at ", x," ", y)
-        map.addCustomRobotDetection(x, y, 250, 250, 1)
-    elif event == cv2.EVENT_MOUSEMOVE:
-        if isMouseDownR:
-            #   print("dragged at ", x," ", y)
-            map.addCustomRobotDetection(x, y, 250, 250, 1)
-    elif event == cv2.EVENT_LBUTTONUP:
-        isMouseDownR = False
+    for idx, label in enumerate(labels):
+        wname = str(label)
+        cv2.namedWindow(wname)
+        cv2.setMouseCallback(
+            wname,
+            lambda event, x, y, flags, param, idx=idx: mouseDownCallback(
+                event, idx, x, y, flags, param
+            ),
+        )
 
-
-def startDemo():
-    cv2.namedWindow(map.gameObjWindowName)
-    cv2.setMouseCallback(map.gameObjWindowName, mouseDownCallbackGameObj)
-
-    cv2.namedWindow(map.robotWindowName)
-    cv2.setMouseCallback(map.robotWindowName, mouseDownCallbackRobot)  # get mouse event
     while True:
         map.disspateOverTime(1)  # 1s
         map.displayHeatMaps()
-        print("Best game obj:", map.getHighestGameObject())
-        print("Best robot:", map.getHighestRobot())
+        for idx, label in enumerate(labels):
+            print(f"Best {str(label)}:", map.getHighestObject(idx))
 
         k = cv2.waitKey(100) & 0xFF
         if k == ord("q"):

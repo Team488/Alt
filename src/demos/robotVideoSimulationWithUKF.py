@@ -7,7 +7,7 @@ from tools.Constants import (
     CameraExtrinsics,
     CameraIntrinsicsPredefined,
     ColorCameraExtrinsics2024,
-    CameraIdOffsets,
+    CameraIdOffsets2024,
     InferenceMode,
 )
 from inference.onnxInferencer import onnxInferencer
@@ -17,7 +17,7 @@ import math
 from tools.Units import UnitMode
 
 
-def startDemo():
+def startDemo() -> None:
     # cv2.namedWindow("view", cv2.WINDOW_NORMAL)
     # cv2.setWindowProperty("view", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
 
@@ -105,11 +105,11 @@ def startDemo():
             # Run yolov5 on the frame
 
             # local process
-            out = frameProcessor.processFrame(frame, positionX, positionY, 0)
+            out = frameProcessor.processFrame(frame, None, positionX, positionY, 0)
             # imagine a network connection here
             # now central process
             centralProcessor.processFrameUpdate(
-                [(out, CameraIdOffsets.FRONTLEFT)], timePerFrame
+                [(out, CameraIdOffsets2024.FRONTLEFT)], timePerFrame
             )
 
             (gameObjMap, robotMap) = centralProcessor.objectmap.getHeatMaps()
@@ -153,7 +153,7 @@ def __drawRobot(
     rotation,
     cameraIntrinsics: CameraIntrinsicsPredefined,
     cameraExtrinsic: CameraExtrinsics,
-):  # fov 90 deg  | fovLen = 70cm # camera is facing 45 to the left
+) -> None:  # fov 90 deg  | fovLen = 70cm # camera is facing 45 to the left
     # drawing robot
     FrameOffset = math.atan((height / 2) / (width / 2))
     RobotAngLeft = rotation - FrameOffset

@@ -10,7 +10,7 @@ class RobotTracker:
     encoder = None
     tracks = None
 
-    def __init__(self):
+    def __init__(self) -> None:
         max_cosine_distance = 0.4
         nn_budget = None
 
@@ -22,7 +22,7 @@ class RobotTracker:
         self.tracker = DeepSortTracker(metric)
         self.encoder = gdet.create_box_encoder(encoder_model_filename, batch_size=1)
 
-    def update(self, frame, detections):
+    def update(self, frame, detections) -> None:
 
         if len(detections) == 0:
             self.tracker.predict()
@@ -31,9 +31,10 @@ class RobotTracker:
             return
 
         bboxes = np.asarray([d[:-1] for d in detections])
-        bboxes[:, 2:] = bboxes[:, 2:] - bboxes[:, 0:2]
+        bboxes[:, 2:] = bboxes[:, 2:] - bboxes[:, 0:2]  # tlbr to tlwh
         scores = [d[-1] for d in detections]
 
+        """ Feature detection 'not enabled' right now, enable this on orin"""
         # features = self.encoder(frame, bboxes) todo get this on a .rknn way too slow currently
 
         dets = []
@@ -44,10 +45,12 @@ class RobotTracker:
         try:
             self.tracker.update(dets)
         except IndexError:
-            print("Weird deepsort error that happens once a thousand times happened. This is here until you fix it!")
+            print(
+                "Weird deepsort error that happens once a thousand times. This is here until fixed! -Adem"
+            )
         self.update_tracks()
 
-    def update_tracks(self):
+    def update_tracks(self) -> None:
         tracks = []
         for track in self.tracker.tracks:
             if not track.is_confirmed() or track.time_since_update > 1:
@@ -66,7 +69,7 @@ class RobotTrack:
     bbox = None
     currentDetection = None
 
-    def __init__(self, id, bbox, currentDetection):
+    def __init__(self, id, bbox, currentDetection) -> None:
         self.track_id = id
         self.bbox = bbox
         self.currentDetection = currentDetection

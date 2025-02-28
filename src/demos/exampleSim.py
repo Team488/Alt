@@ -9,14 +9,14 @@ from tools.Constants import (
 )
 
 
-def startDemo():
+def startDemo() -> None:
     n = Neo()
     frameAgent = ReefAndObjectLocalizerPartial(
         cameraPath="http://localhost:3000/Robot_FrontRight%20Camera?dummy=param.mjpg",
         # cameraPath="assets/reefscapevid.mp4",
         cameraIntrinsics=CameraIntrinsicsPredefined.SIMULATIONCOLOR,
         cameraExtrinsics=ColorCameraExtrinsics2024.FRONTRIGHT,
-        inferenceMode=InferenceMode.ONNXSMALL2025,
+        inferenceMode=InferenceMode.ALCOROULTRALYTICSSMALL2025BAD,
         showFrames=True,
     )
 

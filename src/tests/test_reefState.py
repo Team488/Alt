@@ -2,7 +2,7 @@ from reefTracking.ReefState import ReefState
 from tools.Constants import TEAM
 
 
-def test_querying_highest():
+def test_querying_highest() -> None:
     state = ReefState()
     state.addObservationCoral(11, 4, 1)
 
@@ -18,7 +18,7 @@ def test_querying_highest():
     assert state.getHighestSlot(team=TEAM.BLUE) == None
 
 
-def test_invalid_input():
+def test_invalid_input() -> None:
     state = ReefState()
     state.addObservationCoral(1000, 1000, 1000)
     assert state.getHighestSlot() == None

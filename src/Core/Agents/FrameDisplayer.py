@@ -2,7 +2,7 @@ import time
 
 import cv2
 from Core.Agents.Abstract.CameraUsingAgentBase import CameraUsingAgentBase
-from tools.Constants import CameraIdOffsets
+from tools.Constants import CameraIdOffsets2024
 from coreinterface.FramePacket import FramePacket
 from abstract.Agent import Agent
 
@@ -14,7 +14,7 @@ class FrameDisplayer(Agent):
     NOTE: Due to openCVs nature this agent must be run in the main thread\n
     """
 
-    def create(self):
+    def create(self) -> None:
         super().create()
         # perform agent init here (eg open camera or whatnot)
         self.keyToHost = {
@@ -44,7 +44,7 @@ class FrameDisplayer(Agent):
         )
 
     # handles a subscriber update from one of the cameras
-    def __handleUpdate(self, key, ret):
+    def __handleUpdate(self, key, ret) -> None:
         val = ret.value
 
         if not val or val == b"":
@@ -54,7 +54,7 @@ class FrameDisplayer(Agent):
         frame = FramePacket.getFrame(frame_pkt)
         self.updateMap[key] = frame
 
-    def __showFrames(self):
+    def __showFrames(self) -> None:
         showedFrames = False
         for key in self.updateMap.keys():
             frame = self.updateMap.get(key)
@@ -67,11 +67,11 @@ class FrameDisplayer(Agent):
         if cv2.waitKey(1) & 0xFF == ord("q"):
             self.runFlag = False
 
-    def runPeriodic(self):
+    def runPeriodic(self) -> None:
         super().runPeriodic()
         self.__showFrames()
 
-    def onClose(self):
+    def onClose(self) -> None:
         super().onClose()
         cv2.destroyAllWindows()
         for key in self.keyToHost.keys():
@@ -82,8 +82,8 @@ class FrameDisplayer(Agent):
     def isRunning(self):
         return self.runFlag
 
-    def getName(self):
+    def getName(self) -> str:
         return "Frame_Displaying_Agent"
 
-    def getDescription(self):
+    def getDescription(self) -> str:
         return "Ingest_Frames_Show_Them"

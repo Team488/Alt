@@ -1,4 +1,5 @@
 import math
+from typing import Union
 
 import grpc
 from concurrent import futures
@@ -10,9 +11,11 @@ import numpy as np
 import skfmm
 import json
 
+from tools.Units import LengthType
+
 
 class FastMarchingPathfinder:
-    def __init__(self, grid_cost):
+    def __init__(self, grid_cost) -> None:
         """
         grid_cost: 2D numpy array of base traversal costs.
                    Free cells: cost 1; obstacles: higher cost (e.g., 30, 100, 1000).
@@ -345,11 +348,54 @@ MAX_ROBOT_SIZE_DIAGONAL_INCHES = int(
 PIXELS_PER_METER_X = grid_width / fieldWidthMeters
 PIXELS_PER_METER_Y = grid_height / fieldHeightMeters
 
+low_hanging_red_far_active = False
+low_hanging_red_mid_active = False
+low_hanging_red_close_active = False
+low_hanging_blue_far_active = False
+low_hanging_blue_mid_active = False
+low_hanging_blue_close_active = False
+
+# ----- SET THIS VALUE TO FALSE WHEN DEPLOYING ON ORIN ----
+isRelativePath = True
+
+print("Loading pre-set static obstacles...")
+pathPrefix = "" if isRelativePath else "pathplanning/nmc/"
+static_obs_array = get_static_obstacles(pathPrefix + "static_obstacles_inch.json")
+static_hang_obs_red_far = get_static_obstacles(
+    pathPrefix + "static_obstacles_inch_red_far.json"
+)
+static_hang_obs_red_mid = get_static_obstacles(
+    pathPrefix + "static_obstacles_inch_red_mid.json"
+)
+static_hang_obs_red_close = get_static_obstacles(
+    pathPrefix + "static_obstacles_inch_red_close.json"
+)
+static_hang_obs_blue_far = get_static_obstacles(
+    pathPrefix + "static_obstacles_inch_blue_far.json"
+)
+static_hang_obs_blue_mid = get_static_obstacles(
+    pathPrefix + "static_obstacles_inch_blue_mid.json"
+)
+static_hang_obs_blue_close = get_static_obstacles(
+    pathPrefix + "static_obstacles_inch_blue_close.json"
+)
+print("Finished loading pre-set static obstacles...")
+
+from Core.Central import Central
+from tools.Constants import Label
+from tools import UnitConversion
+
 
 class VisionCoprocessorServicer(XTableGRPC.VisionCoprocessorServicer):
+    OBSTACLELABELS = [Label.ALGAE, Label.ROBOT]
+    THRESHOLD = 0.3
+
+    def setCentral(self, central: Central):
+        self.central: Central = central
+
     def RequestBezierPathWithOptions(self, request, context):
         print(f"Received request with option: {request}")
-
+        base_grid = np.ones((grid_height, grid_width), dtype=float)
         start = (request.start.x, request.start.y)
         goal = (request.end.x, request.end.y)
         SAFE_DISTANCE_INCHES = (
@@ -357,16 +403,35 @@ class VisionCoprocessorServicer(XTableGRPC.VisionCoprocessorServicer):
             if request.HasField("safeDistanceInches")
             else DEFAULT_SAFE_DISTANCE_INCHES
         )
-        TOTAL_SAFE_DISTANCE = int(MAX_ROBOT_SIZE_DIAGONAL_INCHES + SAFE_DISTANCE_INCHES)
 
-        base_grid = np.ones((grid_height, grid_width), dtype=float)
-        static_obs_array = get_static_obstacles("static_obstacles_inch.json")
+        TOTAL_SAFE_DISTANCE = int(MAX_ROBOT_SIZE_DIAGONAL_INCHES + SAFE_DISTANCE_INCHES)
+        modified_static_obs = static_obs_array.copy()
+        if low_hanging_red_far_active:
+            modified_static_obs.extend(static_hang_obs_red_far)
+        if low_hanging_red_mid_active:
+            modified_static_obs.extend(static_hang_obs_red_mid)
+        if low_hanging_red_close_active:
+            modified_static_obs.extend(static_hang_obs_red_close)
+        if low_hanging_blue_far_active:
+            modified_static_obs.extend(static_hang_obs_blue_far)
+        if low_hanging_blue_mid_active:
+            modified_static_obs.extend(static_hang_obs_blue_mid)
+        if low_hanging_blue_close_active:
+            modified_static_obs.extend(static_hang_obs_blue_close)
+
         static_grid = apply_and_inflate_all_static_obstacles(
-            base_grid, static_obs_array, TOTAL_SAFE_DISTANCE
+            base_grid, modified_static_obs, TOTAL_SAFE_DISTANCE
         )
 
-        # add prob map detections to static_grid here
-        # static_grid.copy() # Copy so can add dynamic obs without affecting static grid
+        if self.central is not None:
+            for idx, label in enumerate(self.central.labels):
+                if label in self.OBSTACLELABELS:
+                    map = self.central.objectmap.getMap(idx)
+                    map *= 1000  # scale from 0-1 -> 0-1000
+
+                    reshaped = cv2.resize(map, static_grid.shape)
+
+                    static_grid = np.add(static_grid, reshaped)
 
         pathfinder = FastMarchingPathfinder(static_grid)
         START = (int(start[0] * PIXELS_PER_METER_X), int(start[1] * PIXELS_PER_METER_Y))
@@ -399,11 +464,11 @@ class VisionCoprocessorServicer(XTableGRPC.VisionCoprocessorServicer):
         return response
 
 
-def serve():
+def serve(central: Union[Central, None]) -> None:
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
-    XTableGRPC.add_VisionCoprocessorServicer_to_server(
-        VisionCoprocessorServicer(), server
-    )
+    servicer = VisionCoprocessorServicer()
+    servicer.setCentral(central)
+    XTableGRPC.add_VisionCoprocessorServicer_to_server(servicer, server)
 
     server.add_insecure_port("[::]:9281")  # Listen on all interfaces
     server.start()
@@ -419,4 +484,4 @@ def serve():
 
 
 if __name__ == "__main__":
-    serve()
+    serve(None)

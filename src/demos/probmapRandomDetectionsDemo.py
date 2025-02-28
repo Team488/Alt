@@ -7,7 +7,7 @@ import traceback
 import numpy as np
 
 # randomizes values for stress testing algorithm
-def startDemo():
+def startDemo() -> None:
     # test sizes all in cm
     robotSizeX = 71  # using max dimensions for this of 28 inch
     robotSizeY = 96  # using max dimensions for this of 38 inch
@@ -27,7 +27,7 @@ def startDemo():
         __test_randomization_ranges(
             fieldMap, int(fieldMap.get_shape()[1]), int(fieldMap.get_shape()[0])
         )
-        coords = fieldMap.getAllGameObjectsAboveThreshold(0.4)  # threshold is .4
+        coords = fieldMap.getAllObjectsAboveThreshold(0.4)  # threshold is .4
         objMap = fieldMap.getGameObjectHeatMap()
         fieldMap.disspateOverTime(0.2)
         if coords:
@@ -62,7 +62,7 @@ def startDemo():
             map.clear_maps()
 
 
-def __test_randomization_ranges(map: probmap.ProbMap, width, height):
+def __test_randomization_ranges(map: probmap.ProbMap, width, height) -> None:
     x = random.randrange(0, width)
     y = random.randrange(0, height)
     confidence = (

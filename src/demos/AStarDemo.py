@@ -42,7 +42,7 @@ def getInterestingRandomTarget(maxX, maxY, currentX, currentY):
     return int(retX), int(retY)
 
 
-def mouseDownCallback(event, x, y, flags, param):
+def mouseDownCallback(event, x, y, flags, param) -> None:
     global isMouseDownL
     global needUpdate
     rX, rY = demoUtils.rescaleCoordsUp(x, y, central.objectmap)
@@ -69,12 +69,12 @@ def mouseDownCallback(event, x, y, flags, param):
         needUpdate = True
 
 
-def n(x):
+def n(x) -> None:
     global needUpdate
     needUpdate = True
 
 
-def startDemo():
+def startDemo() -> None:
     global needUpdate
     global our_location
     trackbarName = "Min Height in CM"

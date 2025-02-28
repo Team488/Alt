@@ -1,10 +1,13 @@
 import time
+from typing import Union
 import cv2
 from abstract.Agent import Agent
+from abstract.Capture import Capture
 from coreinterface.FramePacket import FramePacket
 from tools.Constants import CameraIntrinsics
 from tools.depthAiHelper import DepthAIHelper
 from screeninfo import get_monitors
+from abstract.depthCamera import depthCamera
 
 
 def getPrimary():
@@ -25,32 +28,22 @@ class CameraUsingAgentBase(Agent):
     NOTE: This means you cannot run this class as is
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
         self.cameraIntrinsics = kwargs.get("cameraIntrinsics", None)
-        self.cameraPath = kwargs.get("cameraPath", None)
+        self.capture: Union[Capture, depthCamera] = kwargs.get("capture", None)
+        self.depthEnabled = issubclass(self.capture.__class__, depthCamera)
         self.showFrames = kwargs.get("showFrames", False)
         self.hasIngested = False
         self.exit = False
-        self.WINDOWNAME = "frame"
-        self.primaryMonitor = getPrimary()
+        self.WINDOWNAMEDEPTH = "color_frame"
+        self.WINDOWNAMECOLOR = "depth_frame"
+        # self.primaryMonitor = getPrimary()
+        self.primaryMonitor = None
 
-    def create(self):
+    def create(self) -> None:
         super().create()
         # self.xdashDebugger = XDashDebugger()
-        self.oakMode = self.cameraPath == "oakdlite"
-        if self.oakMode:
-            self.cap = DepthAIHelper(self.cameraIntrinsics)
-        else:
-            self.cap = cv2.VideoCapture(self.cameraPath)
-            if CameraIntrinsics is not None:
-                fourcc = cv2.VideoWriter_fourcc(*"MJPG")  # or 'XVID', 'MP4V'
-                self.cap.set(cv2.CAP_PROP_FOURCC, fourcc)
-                CameraIntrinsics.setCapRes(self.cameraIntrinsics, self.cap)
-            else:
-                self.Sentinel.warning(
-                    "Camera intrinsics is None! Cap properties will not be set."
-                )
 
         self.testCapture()
 
@@ -63,29 +56,21 @@ class CameraUsingAgentBase(Agent):
         )
 
         if self.showFrames:
-            cv2.namedWindow(self.WINDOWNAME, cv2.WINDOW_AUTOSIZE)
+            cv2.namedWindow(self.WINDOWNAMECOLOR)
+
+            if self.depthEnabled:
+                cv2.namedWindow(self.WINDOWNAMEDEPTH)
 
     def testCapture(self):
-        retTest = True
+        if self.capture.isOpen():
+            frame = self.capture.getColorFrame()
+            retTest = frame is not None
 
-        if self.oakMode:
-            try:
-                frame = self.cap.getFrame()
-                if frame is None:
-                    retTest = False
-            except Exception as e:
-                self.Sentinel.debug(e)
         else:
-
-            if self.cap.isOpened():
-                retTest, _ = self.cap.read()
-            else:
-                retTest = False
+            retTest = False
 
         if not retTest:
-            raise BrokenPipeError(
-                f"Failed to read from camera! {self.cameraPath=} {self.oakMode=}"
-            )
+            raise BrokenPipeError(f"Failed to read from camera! {type(self.capture)=}")
 
     def preprocessFrame(self, frame):
         """Optional method you can implement to add preprocessing to a frame"""
@@ -98,11 +83,21 @@ class CameraUsingAgentBase(Agent):
             # local showing of frame
             if self.showFrames:
                 if self.primaryMonitor:
-                    self.latestFrame = cv2.resize(
-                        self.latestFrame,
+                    self.latestFrameCOLOR = cv2.resize(
+                        self.latestFrameCOLOR,
                         (self.primaryMonitor.width, self.primaryMonitor.height),
                     )
-                cv2.imshow(self.WINDOWNAME, self.latestFrame)
+
+                    if self.latestFrameDEPTH is not None:
+                        self.latestFrameDEPTH = cv2.resize(
+                            self.latestFrameDEPTH,
+                            (self.primaryMonitor.width, self.primaryMonitor.height),
+                        )
+
+                cv2.imshow(self.WINDOWNAMECOLOR, self.latestFrameCOLOR)
+
+                if self.latestFrameDEPTH is not None:
+                    cv2.imshow(self.WINDOWNAMEDEPTH, self.latestFrameDEPTH)
 
                 if cv2.waitKey(1) & 0xFF == ord("q"):
                     self.exit = True
@@ -110,41 +105,38 @@ class CameraUsingAgentBase(Agent):
             # network showing of frame
             if self.sendFrame.get():
                 framePacket = FramePacket.createPacket(
-                    time.time() * 1000, "Frame", self.latestFrame
+                    time.time() * 1000, "Frame", self.latestFrameCOLOR
                 )
                 self.frameProp.set(framePacket.to_bytes())
 
         with self.timer.run("cap_read"):
             self.hasIngested = True
-            # stime = time.time()
-            # while self.cap.grab():
-            #     if time.time() - stime > 0.050:  # Timeout after 100ms
-            #         self.Sentinel.warning("Skipping buffer due to timeout.")
-            #         break
 
-            if self.oakMode:
-                frame = self.cap.getFrame()
+            if self.depthEnabled:
+                latestFrames = self.capture.getDepthAndColorFrame()
+                if latestFrames is None:
+                    raise BrokenPipeError("Camera failed to capture with depth!")
+
+                self.latestFrameDEPTH = latestFrames[0]
+                self.latestFrameCOLOR = self.preprocessFrame(latestFrames[1])
+
             else:
-                ret, frame = self.cap.read()
+                frame = self.capture.getColorFrame()
+                if frame is None:
+                    raise BrokenPipeError("Camera failed to capture!")
 
-                if not ret:
-                    raise BrokenPipeError("Camera ret is false!")
+                self.latestFrameCOLOR = self.preprocessFrame(frame)
+                self.latestFrameDEPTH = None
 
-            self.latestFrame = self.preprocessFrame(frame)
-
-    def onClose(self):
+    def onClose(self) -> None:
         super().onClose()
-        if self.oakMode:
-            self.cap.close()
-        else:
-            if self.cap.isOpened():
-                self.cap.release()
+        self.capture.close()
 
         if self.showFrames:
             cv2.destroyAllWindows()
 
-    def isRunning(self):
-        if not self.oakMode and not self.cap.isOpened():
+    def isRunning(self) -> bool:
+        if not self.capture.isOpen():
             self.Sentinel.fatal("Camera cant be opened!")
             return False
         if self.exit:
@@ -152,6 +144,6 @@ class CameraUsingAgentBase(Agent):
             return False
         return True
 
-    def forceShutdown(self):
+    def forceShutdown(self) -> None:
         super().forceShutdown()
-        self.cap.release()
+        self.capture.close()

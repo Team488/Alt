@@ -24,10 +24,10 @@ class KalmanCache:
     def getKeySet(self):
         return set(self.savedKalmanData.keys())
 
-    def saveKalmanData(self, id: int, ukf: Ukf):
+    def saveKalmanData(self, id: int, ukf: Ukf) -> None:
         self.savedKalmanData[id] = KalmanEntry(ukf.baseUKF.x, ukf.baseUKF.P)
 
-    def removeKalmanEntry(self,id : int):
+    def removeKalmanEntry(self, id: int) -> None:
         del self.savedKalmanData[id]
 
     def getSavedKalmanData(self, id: int) -> KalmanEntry:
@@ -36,14 +36,14 @@ class KalmanCache:
 
     """ Tries to get stored kalman data. If id is not found will create new kalman data with the x,y provided and an estimated velocity of zero"""
 
-    def LoadInKalmanData(self, id: int, x: int, y: int, ukf: Ukf):
+    def LoadInKalmanData(self, id: int, x: int, y: int, ukf: Ukf) -> None:
         kalmanData = self.getSavedKalmanData(id)
         if kalmanData is None:
             print(f"Id:{id} is getting new kalman data")
             ukf.baseUKF.x = np.array(
                 [x, y, 0, 0]
             )  # todo maybe add an estimated velocity here
-            ukf.baseUKF.P = np.eye(4)*0.01
+            ukf.baseUKF.P = np.eye(4) * 0.01
         else:
             ukf.baseUKF.x = kalmanData.X
             ukf.baseUKF.P = kalmanData.P

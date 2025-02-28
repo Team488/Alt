@@ -9,7 +9,7 @@ import cv2
 from tools.Units import UnitMode
 
 
-def verifyValidOutput():
+def verifyValidOutput() -> None:
     frameProcessor = LocalFrameProcessor(
         CameraIntrinsicsPredefined.OAKDLITE4K,
         ColorCameraExtrinsics2024.DEPTHLEFT,
