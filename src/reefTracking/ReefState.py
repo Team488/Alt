@@ -86,9 +86,9 @@ class ReefState:
         # Stop updating to that particular observation. It becomes "locked".
         # TODO: Locking Mechanism Commented Out. Add it in if necessary
 
-        #if self.reef_map[row_idx, col_idx] < 0.1:
-            #self.reef_map[row_idx, col_idx] = -1.0
-            #return
+        if self.reef_map[row_idx, col_idx] < 0.1:
+            self.reef_map[row_idx, col_idx] = -1.0
+            return
          
         self.reef_map[row_idx, col_idx] *= 1 - weighingfactor
         self.reef_map[row_idx, col_idx] += opennessconfidence * weighingfactor 
