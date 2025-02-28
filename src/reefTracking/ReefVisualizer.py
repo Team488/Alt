@@ -1,7 +1,6 @@
 import kivy
 
 from enum import Enum
-from reefTracking import Reef
 
 from kivy.app import App
 from kivy.uix.label import Label
@@ -20,6 +19,7 @@ class HexagonLayout(RelativeLayout):
 
         self.init_background()
         self.init_reef_buttons()
+        self.init_algae_buttons()
 
         # Bind resizing event
         Window.bind(on_resize=self.update_layout)
@@ -154,6 +154,40 @@ class HexagonLayout(RelativeLayout):
             self.add_widget(button)
             self.button_dictionary[key] = button
 
+    def init_algae_buttons(self) -> None:
+        algae_buttons = [
+            {"text": "CL", "pos": (1100, 850)},
+            {"text": "CM", "pos": (1050, 760)},
+            {"text": "CR", "pos": (1100, 650)},
+            {"text": "FR", "pos": (1215, 650)},
+            {"text": "FM", "pos": (1250, 760)},
+            {"text": "FR", "pos": (1215, 850)},
+        ]
+
+        for btn in algae_buttons:
+            text = btn["text"]
+            pos = btn["pos"]
+
+            self.init_dictionary[text] = {"button": None, "data": btn}
+
+            # Create the Button widget
+            button = Button(
+                text=text,
+                size_hint=(None, None),
+                size=(40, 40),
+                pos=pos,
+                background_color=(0.2, 0.5, 1, 1),
+                background_normal="",
+                color=(0, 0, 0, 1),
+                font_size=20,
+            )
+
+            self.add_widget(button)
+            self.init_dictionary[text]["button"] = button
+            self.init_dictionary[text]["data"] = button
+
+
+
     def update_layout(self, instance, width, height) -> None:
         # print("Layout updated")
         # Ensure background size matches the window
@@ -213,5 +247,4 @@ class ReefVisualizerApp(App):
 if __name__ == "__main__":
     app = ReefVisualizerApp()
     app_instance = app.build()
-    app_instance.update_button_color("A", (1, 0, 0, 1))
     app.run()
