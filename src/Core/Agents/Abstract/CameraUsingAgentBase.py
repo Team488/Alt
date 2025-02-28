@@ -1,4 +1,5 @@
 import time
+from typing import Union
 import cv2
 from abstract.Agent import Agent
 from abstract.Capture import Capture
@@ -6,6 +7,7 @@ from coreinterface.FramePacket import FramePacket
 from tools.Constants import CameraIntrinsics
 from tools.depthAiHelper import DepthAIHelper
 from screeninfo import get_monitors
+from abstract.depthCamera import depthCamera
 
 
 def getPrimary():
@@ -29,11 +31,13 @@ class CameraUsingAgentBase(Agent):
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
         self.cameraIntrinsics = kwargs.get("cameraIntrinsics", None)
-        self.capture: Capture = kwargs.get("capture", None)
+        self.capture: Union[Capture, depthCamera] = kwargs.get("capture", None)
+        self.depthEnabled = issubclass(self.capture.__class__, depthCamera)
         self.showFrames = kwargs.get("showFrames", False)
         self.hasIngested = False
         self.exit = False
-        self.WINDOWNAME = "frame"
+        self.WINDOWNAMEDEPTH = "color_frame"
+        self.WINDOWNAMECOLOR = "depth_frame"
         # self.primaryMonitor = getPrimary()
         self.primaryMonitor = None
 
@@ -52,8 +56,10 @@ class CameraUsingAgentBase(Agent):
         )
 
         if self.showFrames:
-            cv2.namedWindow(self.WINDOWNAME)
-            # cv2.namedWindow(self.WINDOWNAME, cv2.WINDOW_AUTOSIZE)
+            cv2.namedWindow(self.WINDOWNAMECOLOR)
+
+            if self.depthEnabled:
+                cv2.namedWindow(self.WINDOWNAMEDEPTH)
 
     def testCapture(self):
         if self.capture.isOpen():
@@ -77,11 +83,21 @@ class CameraUsingAgentBase(Agent):
             # local showing of frame
             if self.showFrames:
                 if self.primaryMonitor:
-                    self.latestFrame = cv2.resize(
-                        self.latestFrame,
+                    self.latestFrameCOLOR = cv2.resize(
+                        self.latestFrameCOLOR,
                         (self.primaryMonitor.width, self.primaryMonitor.height),
                     )
-                cv2.imshow(self.WINDOWNAME, self.latestFrame)
+
+                    if self.latestFrameDEPTH is not None:
+                        self.latestFrameDEPTH = cv2.resize(
+                            self.latestFrameDEPTH,
+                            (self.primaryMonitor.width, self.primaryMonitor.height),
+                        )
+
+                cv2.imshow(self.WINDOWNAMECOLOR, self.latestFrameCOLOR)
+
+                if self.latestFrameDEPTH is not None:
+                    cv2.imshow(self.WINDOWNAMEDEPTH, self.latestFrameDEPTH)
 
                 if cv2.waitKey(1) & 0xFF == ord("q"):
                     self.exit = True
@@ -89,18 +105,28 @@ class CameraUsingAgentBase(Agent):
             # network showing of frame
             if self.sendFrame.get():
                 framePacket = FramePacket.createPacket(
-                    time.time() * 1000, "Frame", self.latestFrame
+                    time.time() * 1000, "Frame", self.latestFrameCOLOR
                 )
                 self.frameProp.set(framePacket.to_bytes())
 
         with self.timer.run("cap_read"):
             self.hasIngested = True
 
-            frame = self.capture.getColorFrame()
-            if frame is None:
-                raise BrokenPipeError("Camera failed to capture!")
+            if self.depthEnabled:
+                latestFrames = self.capture.getDepthAndColorFrame()
+                if latestFrames is None:
+                    raise BrokenPipeError("Camera failed to capture with depth!")
 
-            self.latestFrame = self.preprocessFrame(frame)
+                self.latestFrameDEPTH = latestFrames[0]
+                self.latestFrameCOLOR = self.preprocessFrame(latestFrames[1])
+
+            else:
+                frame = self.capture.getColorFrame()
+                if frame is None:
+                    raise BrokenPipeError("Camera failed to capture!")
+
+                self.latestFrameCOLOR = self.preprocessFrame(frame)
+                self.latestFrameDEPTH = None
 
     def onClose(self) -> None:
         super().onClose()

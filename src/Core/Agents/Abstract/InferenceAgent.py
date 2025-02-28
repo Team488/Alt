@@ -39,7 +39,7 @@ class InferenceAgent(CameraUsingAgentBase):
 
         with self.timer.run("inference"):
             self.results = self.inf.run(
-                self.latestFrame, self.confidence.get(), self.drawBoxes.get()
+                self.latestFrameCOLOR, self.confidence.get(), self.drawBoxes.get()
             )
 
     def getName(self) -> str:

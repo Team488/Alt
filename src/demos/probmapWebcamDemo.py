@@ -49,7 +49,7 @@ def startDemo() -> None:
 
             # Run yolov5 on the frame
             out = frameProcessor.processFrame(
-                frame, simMap.width / 2, simMap.height / 2, 0
+                frame, None, simMap.width / 2, simMap.height / 2, 0
             )
 
             for result in out:

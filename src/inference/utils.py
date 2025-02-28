@@ -134,7 +134,7 @@ def adjustBoxesV5(outputs, imgShape, minConf=0.7, printDebug=False):
         if printDebug:
             print(f"X {x} Y {y} w {width} h {height} classid {class_id}")
             time.sleep(1)
-    adjusted_boxes.append([scaledBox, score, class_id])
+        adjusted_boxes.append([scaledBox, score, class_id])
 
     return adjusted_boxes
 

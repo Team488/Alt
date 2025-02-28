@@ -2,15 +2,19 @@ from Core.Agents.Abstract.ObjectLocalizingAgentBase import ObjectLocalizingAgent
 from Core.Neo import Neo
 from tools.Constants import (
     InferenceMode,
-    CameraIntrinsicsPredefined,
     ColorCameraExtrinsics2024,
+    CameraIntrinsicsPredefined,
+    D435IResolution,
+    CommonVideos,
 )
+from Captures import D435Capture, FileCapture, ConfigurableCameraCapture
 
 agent = ObjectLocalizingAgentPartial(
-    "assets/reefscapevid.mp4",
-    CameraIntrinsicsPredefined.OV9782COLOR,
+    ConfigurableCameraCapture(
+        CommonVideos.Comp2024Clip.path, CameraIntrinsicsPredefined.OV9782COLOR
+    ),
     ColorCameraExtrinsics2024.FRONTRIGHT,
-    InferenceMode.ALCOROULTRALYTICSSMALL2025BAD,
+    InferenceMode.ONNX2024,
     showFrames=True,
 )
 n = Neo()

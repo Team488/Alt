@@ -13,6 +13,7 @@ from tools.Constants import (
 )
 from tools.Units import UnitMode
 from tools.positionEstimator import PositionEstimator
+from tools.depthBasedPositionEstimator import DepthBasedPositionEstimator
 from tools.positionTranslations import CameraToRobotTranslator, transformWithYaw
 from inference.MultiInferencer import MultiInferencer
 from Core import getLogger
@@ -31,20 +32,22 @@ class LocalFrameProcessor:
         cameraIntrinsics: CameraIntrinsics,
         cameraExtrinsics: CameraExtrinsics,
         inferenceMode: InferenceMode,
-        isSimulationMode=False,
-        tryOCR=False,
+        depthMode=False,
     ) -> None:
-        self.inf = self.createInferencer(inferenceMode)
+        self.depthMode = depthMode
         self.inferenceMode = inferenceMode
+        self.inf = self.createInferencer(inferenceMode)
         self.labels = self.inferenceMode.getLabelsAsStr()
+
         self.baseLabler: DeepSortBaseLabler = DeepSortBaseLabler(
             inferenceMode.getLabelsAsStr()
         )
         self.cameraIntrinsics: CameraIntrinsics = cameraIntrinsics
         self.cameraExtrinsics: CameraExtrinsics = cameraExtrinsics
-        self.estimator = PositionEstimator(
-            isSimulationMode=isSimulationMode, tryocr=tryOCR
-        )
+        if self.depthMode:
+            self.estimatorDepth = DepthBasedPositionEstimator()
+        else:
+            self.estimator = PositionEstimator()
         self.translator = CameraToRobotTranslator()
         self.colors = [
             (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
@@ -57,7 +60,8 @@ class LocalFrameProcessor:
 
     def processFrame(
         self,
-        frame,
+        colorFrame,
+        depthFrameMM=None,
         robotPosXCm=0,
         robotPosYCm=0,
         robotPosZCm=0,
@@ -68,6 +72,11 @@ class LocalFrameProcessor:
         customCameraIntrinsics: CameraIntrinsics = None,
         maxDetections=None,
     ) -> list[list[int, tuple[int, int, int], float, bool, np.ndarray]]:
+        if depthFrameMM is None and self.depthMode:
+            raise ValueError(
+                "When depth mode is enabled, you must provide a depth frame!"
+            )
+
         """output is list of id,(absX,absY,absZ),conf,isRobot,features"""
         camIntrinsics = (
             customCameraIntrinsics
@@ -81,7 +90,7 @@ class LocalFrameProcessor:
         )
         startTime = time.time()
         yoloResults = self.inf.run(
-            frame, minConf=ConfigConstants.confThreshold, drawBoxes=False
+            colorFrame, minConf=ConfigConstants.confThreshold, drawBoxes=False
         )  # we will draw deepsort tracked boxes instead
         if maxDetections != None:
             yoloResults = yoloResults[:maxDetections]
@@ -90,11 +99,11 @@ class LocalFrameProcessor:
             if drawBoxes:
                 endTime = time.time()
                 fps = 1 / (endTime - startTime)
-                cv2.putText(frame, f"FPS:{fps}", (10, 20), 0, 1, (0, 255, 0), 2)
+                cv2.putText(colorFrame, f"FPS:{fps}", (10, 20), 0, 1, (0, 255, 0), 2)
             return []
 
         # id(unique),bbox,conf,isrobot,features,
-        labledResults = self.baseLabler.getLocalLabels(frame, yoloResults)
+        labledResults = self.baseLabler.getLocalLabels(colorFrame, yoloResults)
 
         if drawBoxes:
             # draw a box with id,conf and relative estimate
@@ -109,9 +118,9 @@ class LocalFrameProcessor:
                     label = self.labels[classId]
 
                 color = self.colors[id % len(self.colors)]
-                cv2.rectangle(frame, bbox[0:2], bbox[2:4], color)
+                cv2.rectangle(colorFrame, bbox[0:2], bbox[2:4], color)
                 cv2.putText(
-                    frame,
+                    colorFrame,
                     f"Id:{id} Conf{conf:.2f} Label: {label}",
                     UnitConversion.toint(np.add(bbox[:2], bbox[2:4]) / 2),
                     0,
@@ -121,9 +130,18 @@ class LocalFrameProcessor:
                 )
 
         # id(unique),estimated x/y,conf,class_idx,features,
-        relativeResults = self.estimator.estimateDetectionPositions(
-            frame, labledResults.copy(), camIntrinsics, self.inferenceMode
-        )
+        if self.depthMode:
+            relativeResults = self.estimatorDepth.estimateDetectionPositions(
+                colorFrame,
+                depthFrameMM,
+                labledResults.copy(),
+                camIntrinsics,
+                self.inferenceMode,
+            )
+        else:
+            relativeResults = self.estimator.estimateDetectionPositions(
+                colorFrame, labledResults.copy(), camIntrinsics, self.inferenceMode
+            )
 
         # print(f"{robotPosXCm=} {robotPosYCm=} {robotYawRad=}")
         if useAbsolutePosition:
@@ -168,7 +186,7 @@ class LocalFrameProcessor:
 
         if drawBoxes:
             # add final fps
-            cv2.putText(frame, f"FPS:{fps}", (10, 20), 0, 1, (0, 255, 0), 2)
+            cv2.putText(colorFrame, f"FPS:{fps}", (10, 20), 0, 1, (0, 255, 0), 2)
 
         return finalResults
 

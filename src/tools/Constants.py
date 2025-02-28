@@ -349,6 +349,26 @@ class CameraIntrinsics:
         return self.value[4][1]
 
     @staticmethod
+    def getHfov(cameraIntr: "CameraIntrinsics", radians: bool = True):
+        hres = cameraIntr.getHres()
+        fx = cameraIntr.getFx()
+
+        rad = 2 * math.atan(hres / (2 * fx))
+        if radians:
+            return rad
+        return math.degrees(rad)
+
+    @staticmethod
+    def getVfov(cameraIntr: "CameraIntrinsics", radians: bool = True):
+        vres = cameraIntr.getVres()
+        fy = cameraIntr.getFx()
+
+        rad = 2 * math.atan(vres / (2 * fy))
+        if radians:
+            return rad
+        return math.degrees(rad)
+
+    @staticmethod
     def fromPhotonConfig(photonConfigPath):
         try:
             with open(photonConfigPath) as PV_config:

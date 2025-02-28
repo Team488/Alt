@@ -9,7 +9,8 @@ import numpy as np
 # from JXTABLES.XDashDebugger import XDashDebugger
 
 from Core.Agents.Abstract.TimestampRegulatedAgentBase import TimestampRegulatedAgentBase
-from abstract.Capture import ConfigurableCapture
+from abstract.Capture import Capture, ConfigurableCapture
+from abstract.depthCamera import depthCamera
 from coreinterface.DetectionPacket import DetectionPacket
 from tools.Constants import InferenceMode, CameraExtrinsics, CameraIntrinsics
 from mapinternals.localFrameProcessor import LocalFrameProcessor
@@ -59,6 +60,7 @@ class ObjectLocalizingAgentBase(TimestampRegulatedAgentBase):
             cameraIntrinsics=self.cameraIntrinsics,
             cameraExtrinsics=self.cameraExtrinsics,
             inferenceMode=self.inferenceMode,
+            depthMode=self.depthEnabled,
         )
         self.detectionProp = self.propertyOperator.createCustomReadOnlyProperty(
             self.DETECTIONPOSTFIX, b""
@@ -69,10 +71,11 @@ class ObjectLocalizingAgentBase(TimestampRegulatedAgentBase):
         sendFrame = self.sendFrame.get()
         with self.timer.run("frame-processing"):
             processedResults = self.frameProcessor.processFrame(
-                self.latestFrame,
-                robotPosXCm=self.robotPose2dMRAD[0] * 100,  # m to cm
-                robotPosYCm=self.robotPose2dMRAD[1] * 100,  # m to cm
-                robotYawRad=self.robotPose2dMRAD[2],
+                self.latestFrameCOLOR,
+                self.latestFrameDEPTH if self.depthEnabled else None,
+                robotPosXCm=self.robotPose2dCMRAD[0],
+                robotPosYCm=self.robotPose2dCMRAD[1],
+                robotYawRad=self.robotPose2dCMRAD[2],
                 drawBoxes=sendFrame
                 or self.showFrames,  # if you are sending frames, you likely want to see bounding boxes aswell
             )
@@ -116,7 +119,7 @@ class ObjectLocalizingAgentBase(TimestampRegulatedAgentBase):
 
 
 def ObjectLocalizingAgentPartial(
-    capture: ConfigurableCapture,
+    capture: Union[depthCamera, ConfigurableCapture],
     cameraExtrinsics: CameraExtrinsics,
     inferenceMode: InferenceMode,
     showFrames: bool = False,

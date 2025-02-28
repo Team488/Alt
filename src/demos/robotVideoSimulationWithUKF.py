@@ -105,7 +105,7 @@ def startDemo() -> None:
             # Run yolov5 on the frame
 
             # local process
-            out = frameProcessor.processFrame(frame, positionX, positionY, 0)
+            out = frameProcessor.processFrame(frame, None, positionX, positionY, 0)
             # imagine a network connection here
             # now central process
             centralProcessor.processFrameUpdate(

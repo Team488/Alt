@@ -100,7 +100,7 @@ def startDemo() -> None:
             positionY = fieldHeight - positionY
 
             # Run yolov5 on the frame
-            out = frameProcessor.processFrame(frame, positionX, positionY, 0)
+            out = frameProcessor.processFrame(frame, None, positionX, positionY, 0)
 
             for result in out:
                 id = result[0]
