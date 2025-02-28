@@ -79,11 +79,15 @@ class DepthBasedPositionEstimator:
                 Sentinel.debug(f"Blue fail perc : {bluePerc}")
                 return (None, None)
 
-    def __getCentralDepthEstimateCM(self, depthFrameMM: np.ndarray, bbox):
+    def __getCentralDepthEstimateCM(self, depthFrameMM: np.ndarray, bbox, batch=5):
         # todo find calibrated values for other cams
         centerPoint = np.divide(np.add(bbox[:2], bbox[2:]), 2)
         x, y = map(int, centerPoint)
-        return depthFrameMM[y][x] / 10
+        mx = max(0, x - batch)
+        my = max(0, y - batch)
+        lx = min(depthFrameMM.shape[1], y + batch)
+        ly = min(depthFrameMM.shape[0], y + batch)
+        return np.mean(depthFrameMM[my:ly][mx:lx]) / 10
 
     """ calculates angle change per pixel, and multiplies by number of pixels off you are. Dimensions either rad or deg depending on ivput fov
 
@@ -93,14 +97,14 @@ class DepthBasedPositionEstimator:
         fovperPixel = fov / res
         return -pixelDiff * fovperPixel
 
-    def __getRobotDepthCM(
+    def __getRobotDepthCMCOLOR(
         self, depthFrameMM: np.ndarray, colorFrame: np.ndarray, bbox
     ) -> tuple[float, bool]:
         """Isolates robot bumper based on color, and then gets the horizontal center of the bumper"""
         # Convert to LAB color space
         labFrame = cv2.cvtColor(colorFrame, cv2.COLOR_BGR2LAB)
         processed, isBlue = self.__backprojCheck(
-            labFrame, self.__redRobotHist, self.__blueRobotHist
+            labFrame, self.__redRobotHist, self.__blueRobotHist, bbox
         )
         if isBlue is None:
             return None
@@ -125,6 +129,28 @@ class DepthBasedPositionEstimator:
         average_depth = np.mean(depth_masked) / 10 if depth_masked.size > 0 else None
         return average_depth
 
+    def __getRobotDepthCM(self, depthFrameMM: np.ndarray, bbox) -> tuple[float, bool]:
+        """Isolates robot bumper based on color, and then gets the horizontal center of the bumper"""
+        x1, y1, x2, y2 = bbox
+        midX = int((x1 + x2) / 2)
+        botY = y2 - 1
+        step = -1
+
+        deltas = np.diff(depthFrameMM[:, midX])
+
+        diffThresh = 10  # looking for less than 10 mm change in direction
+
+        selectedDepth = None
+        while botY >= 0:
+            delta = deltas[botY]
+            if abs(delta) < diffThresh:
+                selectedDepth = depthFrameMM[botY, midX]
+                break
+
+            botY += step
+
+        return selectedDepth
+
     def __estimateRelativeRobotPosition(
         self,
         colorFrame: np.ndarray,
@@ -134,7 +160,7 @@ class DepthBasedPositionEstimator:
     ) -> tuple[float, float]:
         x1, _, x2, _ = boundingBox
         centerX = (x2 + x1) / 2
-        depthCM = self.__getRobotDepthCM(depthFrameMM, colorFrame, boundingBox)
+        depthCM = self.__getRobotDepthCM(depthFrameMM, boundingBox)
         if depthCM is not None:
             bearing = self.__calcBearing(
                 CameraIntrinsics.getVfov(cameraIntrinsics, radians=True),
@@ -142,7 +168,7 @@ class DepthBasedPositionEstimator:
                 int(centerX - cameraIntrinsics.getCx()),
             )
             Sentinel.debug(f"{depthCM=} {bearing=}")
-            estCoords = self.componentizeHDistAndBearing(depthCM, bearing)
+            estCoords = self.componentizeMagnitudeAndBearing(depthCM, bearing)
 
             return estCoords
         return None
@@ -162,7 +188,7 @@ class DepthBasedPositionEstimator:
             int(centerX - cameraIntrinsics.getCx()),
         )
         Sentinel.debug(f"{depthCM=} {bearing=}")
-        estCoords = self.componentizeHDistAndBearing(depthCM, bearing)
+        estCoords = self.componentizeMagnitudeAndBearing(depthCM, bearing)
         return estCoords
 
     def __estimateRelativePosition(
@@ -201,7 +227,7 @@ class DepthBasedPositionEstimator:
         cameraIntrinsics: CameraIntrinsics,
         inferenceMode: InferenceMode,
     ):
-        if colorFrame.shape != depthframeMM.shape:
+        if colorFrame.shape[:2] != depthframeMM.shape[:2]:
             Sentinel.fatal(
                 f"colorFrame and depth frame shape must match! {colorFrame.shape=} {depthframeMM.shape=}"
             )

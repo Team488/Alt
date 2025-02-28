@@ -10,10 +10,8 @@ from tools.Constants import (
 from Captures import D435Capture, FileCapture, ConfigurableCameraCapture
 
 agent = ObjectLocalizingAgentPartial(
-    ConfigurableCameraCapture(
-        CommonVideos.Comp2024Clip.path, CameraIntrinsicsPredefined.OV9782COLOR
-    ),
-    ColorCameraExtrinsics2024.FRONTRIGHT,
+    D435Capture(D435IResolution.RS720P),
+    ColorCameraExtrinsics2024.NONE,
     InferenceMode.ONNX2024,
     showFrames=True,
 )

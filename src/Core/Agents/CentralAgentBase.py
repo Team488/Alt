@@ -27,7 +27,7 @@ class CentralAgentBase(PositionLocalizingAgentBase):
             "REARLEFT": "photonvisionrearleft",
             "FRONTLEFT": "photonvisionfrontleft",
             # "FRONTRIGHT": "photonvisionfrontright",
-            "FRONTRIGHT": "Adem-GamingPc",
+            "FRONTRIGHT": "Adem-Laptop",
             # "Johnny": "archlinux",
         }
         print("CREATED HOST")
