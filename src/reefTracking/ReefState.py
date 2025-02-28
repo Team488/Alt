@@ -46,16 +46,24 @@ class ReefState:
     def dissipateOverTime(self, timeFactor: int):
         """This operates under the assumtion that as time passed, the chance of slots being taken increases. So if there are no updates, as t grows, the openness confidence should go to zero"""
         
-        reef_dissipation_factor = np.power(self.DISSIPATIONFACTOR, round(timeFactor / 100))
+        reef_dissipation_factor = np.power(self.DISSIPATIONFACTOR, round(timeFactor / 5))
 
         """ Reef Map Dissipation"""
         # Create a mask for slots that are not locked (not -1) and above 0.5 to dissipate
         # That way we can keep "unknown" states
         mask = (self.reef_map != -1) & (self.reef_map > 0.5)
-        
-        # Only update slots that fall under the mask conditions and normalize to 0.5
-        self.reef_map[mask] = 0.5 + (self.reef_map[mask] - 0.5) * reef_dissipation_factor # discrete dissipation
 
+        # Apply the new dissipation
+        new_values = 0.5 + (self.reef_map[mask] - 0.5) * reef_dissipation_factor # discrete dissipation
+
+        # Epislon Threshold to reset detections approach 0.5
+        epsilon = 1e-1
+        new_values[np.abs(new_values - 0.5) < epsilon] = 0.5 
+        
+        # Update the reef map:
+        self.reef_map[mask] = new_values
+
+        # TODO: Make changes to algae map later
         """ Algae Map Dissipation"""
         algae_dissipation_factor = np.power(self.DISSIPATIONFACTOR, round(timeFactor / 100))
         self.algae_map *= algae_dissipation_factor  # discrete dissipation

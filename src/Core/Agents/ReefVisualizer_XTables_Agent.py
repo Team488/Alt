@@ -36,10 +36,7 @@ class ReefVisualizerAgent(Agent):
         super().runPeriodic()
 
     def runVisualizer(self):
-        print("Running Visualizer Updates")
-
         if self.visualizer is not None:
-            print("Visualizer is not none. Procesisng Color Updates")
             for key, value in self.visualizer_map_render.items():
                 self.visualizer.queue_color_update(key, value) # queue and update the U
         else:
@@ -53,7 +50,7 @@ class ReefVisualizerAgent(Agent):
         flattenedCoralOutput = ReefPacket.getFlattenedObservations(decoded)[0]
         
         for atID_x, branchID_x, confidence in flattenedCoralOutput:
-            if (atID_x == 17):
+            if confidence != 0.5:
                 print(atID_x, branchID_x, confidence)
             branch_index = branchID_x % 2 # Index Left or Right side of AT (0, 1)
             branch_level = branchID_x // 2 # Index for L2, L3, L4 (0, 1, 2)
