@@ -11,8 +11,6 @@ import numpy as np
 import skfmm
 import json
 
-from tools.Units import LengthType
-
 
 class FastMarchingPathfinder:
     def __init__(self, grid_cost) -> None:
@@ -337,7 +335,7 @@ grid_width = 690
 grid_height = 316
 ROBOT_SIZE_LENGTH_INCHES = 35
 ROBOT_SIZE_WIDTH_INCHES = 35
-DEFAULT_SAFE_DISTANCE_INCHES = 15
+DEFAULT_SAFE_DISTANCE_INCHES = 5
 # ----------- CONSTANTS (DO NOT CHANGE UNLESS KNOWN) -------------
 
 
