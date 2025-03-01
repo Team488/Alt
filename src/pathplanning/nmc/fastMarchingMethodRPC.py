@@ -392,7 +392,7 @@ class VisionCoprocessorServicer(XTableGRPC.VisionCoprocessorServicer):
         self.central: Central = central
 
     def RequestBezierPathWithOptions(self, request, context):
-        print(f"Received request with option: {request}")
+        print("RequestBezierPathWithOptions")
         base_grid = np.ones((grid_height, grid_width), dtype=float)
         start = (request.start.x, request.start.y)
         goal = (request.end.x, request.end.y)
