@@ -132,7 +132,7 @@ class DepthBasedPositionEstimator:
     def __getRobotDepthCM(self, depthFrameMM: np.ndarray, bbox) -> tuple[float, bool]:
         """Isolates robot bumper based on color, and then gets the horizontal center of the bumper"""
         x1, y1, x2, y2 = bbox
-        midX = int((x1 + x2) / 2)
+        midX = min(int((x1 + x2) / 2), depthFrameMM.shape[1] - 1)
         botY = y2 - 1
         step = -1
 
@@ -145,11 +145,41 @@ class DepthBasedPositionEstimator:
             delta = deltas[botY]
             if abs(delta) < diffThresh:
                 selectedDepth = depthFrameMM[botY, midX]
+                cv2.circle(
+                    depthFrameMM,
+                    center=(midX, botY),
+                    radius=2,
+                    color=99999,
+                    thickness=-1,
+                )
+
+                # add depth line here
+                dirs = (1, -1)
+                deltasHorizontal = np.diff(depthFrameMM[botY, :])
+                for dir in dirs:
+                    nx = midX + dir
+                    while (
+                        0 <= nx < len(deltasHorizontal)
+                        and abs(deltasHorizontal[nx]) < diffThresh
+                    ):
+                        cv2.circle(
+                            depthFrameMM,
+                            center=(nx, botY),
+                            radius=2,
+                            color=99999,
+                            thickness=-1,
+                        )
+
+                        depthProbe = depthFrameMM[botY, nx]
+
+                        selectedDepth = min(selectedDepth, depthProbe)
+                        nx += dir
+
                 break
 
             botY += step
 
-        return selectedDepth
+        return selectedDepth / 10 if selectedDepth is not None else selectedDepth
 
     def __estimateRelativeRobotPosition(
         self,
@@ -162,6 +192,7 @@ class DepthBasedPositionEstimator:
         centerX = (x2 + x1) / 2
         depthCM = self.__getRobotDepthCM(depthFrameMM, boundingBox)
         import math
+
         if depthCM is not None and depthCM and not math.isnan(depthCM):
             bearing = self.__calcBearing(
                 CameraIntrinsics.getVfov(cameraIntrinsics, radians=True),
@@ -172,6 +203,7 @@ class DepthBasedPositionEstimator:
             estCoords = self.componentizeMagnitudeAndBearing(depthCM, bearing)
 
             return estCoords
+
         return None
 
     def __simpleEstimatePosition(
@@ -184,6 +216,7 @@ class DepthBasedPositionEstimator:
             boundingBox,
         )
         import math
+
         if depthCM is not None and depthCM and not math.isnan(depthCM):
             bearing = self.__calcBearing(
                 CameraIntrinsics.getVfov(cameraIntrinsics, radians=True),
