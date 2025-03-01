@@ -2,11 +2,11 @@ from typing import Any, Optional
 import cv2
 import numpy as np
 from Core.Agents.Abstract.PathPlanningAgentBase import PathPlanningAgentBase
-from Core.Agents.CentralAgentBase import CentralAgentBase
+from Core.Agents.CentralAgent import CentralAgent
 from tools import UnitConversion
 
 
-class InteractivePathPlanner(CentralAgentBase, PathPlanningAgentBase):
+class InteractivePathPlanner(CentralAgent, PathPlanningAgentBase):
     """Agent -> LocalizingAgentBase -> PathPlanningAgentBase -> InteractivePathPlanner
 
     NOTE: due to the nature of opencv, this agent must be run on main thread

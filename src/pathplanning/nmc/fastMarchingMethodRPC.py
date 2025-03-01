@@ -356,7 +356,7 @@ low_hanging_blue_mid_active = False
 low_hanging_blue_close_active = False
 
 # ----- SET THIS VALUE TO FALSE WHEN DEPLOYING ON ORIN ----
-isRelativePath = True
+isRelativePath = False
 
 print("Loading pre-set static obstacles...")
 pathPrefix = "" if isRelativePath else "pathplanning/nmc/"
@@ -496,15 +496,13 @@ class VisionCoprocessorServicer(XTableGRPC.VisionCoprocessorServicer):
 
         return response
 
-    def getATCameraFromBranch(
-        self, branch_idx: int
-    ) -> Union[XTableValues.AprilTagCamera, None]:
+    def getATCameraFromBranch(self, branch_idx: int):
         if branch_idx % 2 == 0:
             return XTableValues.AprilTagCamera.FRONT_LEFT
         else:
             return XTableValues.AprilTagCamera.FRONT_RIGHT
 
-    def getBranchLevel(self, branch_idx: int) -> Union[XTableValues.BranchLevel, None]:
+    def getBranchLevel(self, branch_idx: int):
         lvl = branch_idx // 2 + 2
 
         if lvl == 2:

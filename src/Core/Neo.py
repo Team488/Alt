@@ -91,6 +91,9 @@ class Neo:
         self.__logMap = {}
         self.__getBasePrefix = lambda agentName: f"active_agents.{agentName}"
 
+    def getCentral(self) -> Central:
+        return self.__central
+
     def __handleArchitectKill(self, sig, frame) -> None:
         Sentinel.info("The architect has caused our demise! Shutting down any agent")
         self.shutDown()
