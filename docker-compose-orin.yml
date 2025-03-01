@@ -10,4 +10,5 @@ services:
       - "/xbot/config:/xbot/config"
       - "/dev:/dev"
       - "/home/xbot/Alt:/xbot/Alt"
-    command: ["python", "pathplanning/nmc/fastMarchingMethodRPC.py"]
+    # command: ["python", "pathplanning/nmc/fastMarchingMethodRPC.py"]
+    command: ["python", "orinProcess.py"]

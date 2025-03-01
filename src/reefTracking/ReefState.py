@@ -1,5 +1,6 @@
 import math
 from typing import Dict, Optional
+import json
 
 import numpy as np
 from tools.Constants import ATLocations, ReefBranches, TEAM
@@ -47,10 +48,10 @@ class ReefState:
 
     def dissipateOverTime(self, timeFactor: int) -> None:
         """This operates under the assumtion that as time passed, the chance of slots being taken increases. So if there are no updates, as t grows, the openness confidence should go to zero"""
-        
+
         """ Reef Map Dissipation"""
         coral_dissipation_factor = np.power(
-             self.DISSIPATIONFACTOR, round(timeFactor / 5)
+            self.DISSIPATIONFACTOR, round(timeFactor / 5)
         )
 
         # Create a mask for slots that are not locked (not -1) and above 0.5 to dissipate
@@ -58,12 +59,14 @@ class ReefState:
         mask = (self.reef_map != -1) & (self.reef_map > 0.5)
 
         # Apply the new dissipation
-        new_coral_map = 0.5 + (self.reef_map[mask] - 0.5) * coral_dissipation_factor # discrete dissipation
+        new_coral_map = (
+            0.5 + (self.reef_map[mask] - 0.5) * coral_dissipation_factor
+        )  # discrete dissipation
 
         # Epislon Threshold to reset detections approach 0.5
         epsilon = 1e-1
-        new_coral_map[np.abs(new_coral_map - 0.5) < epsilon] = 0.5 
-        
+        new_coral_map[np.abs(new_coral_map - 0.5) < epsilon] = 0.5
+
         # Update the reef map:
         self.reef_map[mask] = new_coral_map
 
@@ -94,7 +97,7 @@ class ReefState:
         if self.reef_map[row_idx, col_idx] < 0.1:
             self.reef_map[row_idx, col_idx] = -1.0
             return
-         
+
         self.reef_map[row_idx, col_idx] *= 1 - weighingfactor
         self.reef_map[row_idx, col_idx] += opennessconfidence * weighingfactor
 
@@ -104,7 +107,7 @@ class ReefState:
         if apriltagid not in self.apriltag_to_idx:
             Sentinel.warning(f"Invalid apriltagid{apriltagid=}")
             return
-        
+
         # Locking mechanism for the algae (we only care when it's off)
         if self.algae_map[algae_idx] > 0.95:
             self.algae_map[algae_idx] = 1.0
@@ -112,7 +115,7 @@ class ReefState:
         # Skip if locked
         if self.algae_map[algae_idx] == 1.0:
             return
-        
+
         algae_idx = self.apriltag_to_idx.get(apriltagid)
         self.algae_map[algae_idx] *= 1 - weighingfactor
         self.algae_map[algae_idx] += opennessconfidence * weighingfactor
@@ -204,6 +207,29 @@ class ReefState:
         return ReefPacket.createPacket(
             coralTrackerOutput, algaeTrackerOutput, message, timestamp
         )
+
+    def getReefMapState_as_ReefPacket(
+        self, team: TEAM = None, timestamp=0
+    ) -> reefStatePacket_capnp.ReefPacket:
+        # Create the Coral Map Output
+        offset_col, mapbacking = self.__getMapBacking(team)
+        coralTrackerOutput = {}
+        rows, cols = mapbacking.shape
+        for col in range(cols):
+            for row in range(rows):
+                at_id = self.idx_to_apriltag[col + offset_col]
+                openness = mapbacking[row, col]
+                if at_id not in coralTrackerOutput:
+                    coralTrackerOutput[at_id] = {}
+                coralTrackerOutput[at_id][row] = openness
+        # Create the Algae Map Output
+        algaeTrackerOutput = {}
+        for apriltag in self.idx_to_apriltag:
+            algae_idx = self.apriltag_to_idx.get(apriltag)
+            algaeTrackerOutput[apriltag] = self.algae_map[algae_idx]
+
+        jsonstr = json.dump((coralTrackerOutput, algaeTrackerOutput))
+        return jsonstr
 
     def __getMapBacking(self, team: TEAM):
         mapbacking = self.reef_map

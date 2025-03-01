@@ -1,2 +1,3 @@
 # put new requirements here (non-base) :
 pyrealsense2
+scikit-fmm

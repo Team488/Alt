@@ -115,12 +115,23 @@ class InferenceMode(Enum):
         ModelType.CORO,
     )
     ALCOROULTRALYTICSSMALL2025BAD = (
-        "assets/yolov8s_fp32_BADDD.pt",
-        "verybad-yolov8s-pytorch-medium-fp32",
+        (
+            "assets/yolov8s_fp32_BADDD.pt",
+            "verybad-yolov8s-pytorch-medium-fp32",
+            (Label.ALGAE, Label.CORAL, Label.ROBOT),
+            2025,
+            Backend.ULTRALYTICS,
+            YOLOTYPE.V8,
+            ModelType.ALCORO,
+        ),
+    )
+    ALCOROBEST2025 = (
+        "assets/yolo11sBestTensorRT.engine",
+        "yolov11s-best-tensorrt",
         (Label.ALGAE, Label.CORAL, Label.ROBOT),
         2025,
         Backend.ULTRALYTICS,
-        YOLOTYPE.V8,
+        YOLOTYPE.V11,
         ModelType.ALCORO,
     )
 
