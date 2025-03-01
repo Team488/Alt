@@ -161,7 +161,8 @@ class DepthBasedPositionEstimator:
         x1, _, x2, _ = boundingBox
         centerX = (x2 + x1) / 2
         depthCM = self.__getRobotDepthCM(depthFrameMM, boundingBox)
-        if depthCM is not None:
+        import math
+        if depthCM is not None and depthCM and not math.isnan(depthCM):
             bearing = self.__calcBearing(
                 CameraIntrinsics.getVfov(cameraIntrinsics, radians=True),
                 cameraIntrinsics.getHres(),
@@ -182,14 +183,17 @@ class DepthBasedPositionEstimator:
             depthFrameMM,
             boundingBox,
         )
-        bearing = self.__calcBearing(
-            CameraIntrinsics.getVfov(cameraIntrinsics, radians=True),
-            cameraIntrinsics.getHres(),
-            int(centerX - cameraIntrinsics.getCx()),
-        )
-        Sentinel.debug(f"{depthCM=} {bearing=}")
-        estCoords = self.componentizeMagnitudeAndBearing(depthCM, bearing)
-        return estCoords
+        import math
+        if depthCM is not None and depthCM and not math.isnan(depthCM):
+            bearing = self.__calcBearing(
+                CameraIntrinsics.getVfov(cameraIntrinsics, radians=True),
+                cameraIntrinsics.getHres(),
+                int(centerX - cameraIntrinsics.getCx()),
+            )
+            Sentinel.debug(f"{depthCM=} {bearing=}")
+            estCoords = self.componentizeMagnitudeAndBearing(depthCM, bearing)
+            return estCoords
+        return None
 
     def __estimateRelativePosition(
         self,
