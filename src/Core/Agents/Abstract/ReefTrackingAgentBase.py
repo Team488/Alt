@@ -8,8 +8,10 @@ import numpy as np
 from Core.Agents.Abstract.CameraUsingAgentBase import CameraUsingAgentBase
 from abstract.Capture import ConfigurableCapture
 from reefTracking.reefTracker import ReefTracker
-from tools.Constants import CameraExtrinsics, CameraIntrinsics
+from reefTracking.poseSolver import poseSolver
+from tools.Constants import ATLocations, CameraExtrinsics, CameraIntrinsics
 from coreinterface.ReefPacket import ReefPacket
+from tools.Units import LengthType
 
 
 class ReefTrackingAgentBase(CameraUsingAgentBase):
@@ -25,9 +27,8 @@ class ReefTrackingAgentBase(CameraUsingAgentBase):
 
     def create(self) -> None:
         super().create()
-        self.tracker = ReefTracker(
-            cameraIntrinsics=self.cameraIntrinsics, isLocalAT=True
-        )
+        self.poseSolver = poseSolver()
+        self.tracker = ReefTracker(cameraIntrinsics=self.cameraIntrinsics)
         self.reefProp = self.propertyOperator.createCustomReadOnlyProperty(
             self.OBSERVATIONPOSTFIX, b""
         )
@@ -35,9 +36,12 @@ class ReefTrackingAgentBase(CameraUsingAgentBase):
 
     def runPeriodic(self) -> None:
         super().runPeriodic()
-        outCoral, outAlgae = self.tracker.getAllTracks(
+        outCoral, outAlgae, atOutput = self.tracker.getAllTracks(
             self.latestFrameCOLOR, drawBoxes=self.showFrames
         )
+        self.latestPoseREEF = self.poseSolver.getLatestPoseEstimate(atOutput)
+        # print(self.latestPoseREEF)
+
         reefPkt = ReefPacket.createPacket(
             outCoral, outAlgae, "helloo", time.time() * 1000
         )

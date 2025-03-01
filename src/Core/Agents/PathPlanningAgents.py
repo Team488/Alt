@@ -1,10 +1,10 @@
 import cv2
 from Core.Agents.Abstract.PathPlanningAgentBase import PathPlanningAgentBase
-from Core.Agents.CentralAgentBase import CentralAgentBase
+from Core.Agents.CentralAgent import CentralAgent
 from Core.Orders import TargetUpdatingOrder
 
 
-class DriveToTargetAgent(CentralAgentBase, PathPlanningAgentBase):
+class DriveToTargetAgent(CentralAgent, PathPlanningAgentBase):
     def create(self) -> None:
         super().create()
         self.targetConf = self.propertyOperator.createProperty("targetMinConf", 0.3)

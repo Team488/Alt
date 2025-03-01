@@ -11,6 +11,8 @@ import numpy as np
 import skfmm
 import json
 
+from tools.Units import LengthType
+
 
 class FastMarchingPathfinder:
     def __init__(self, grid_cost) -> None:
@@ -354,7 +356,7 @@ low_hanging_blue_mid_active = False
 low_hanging_blue_close_active = False
 
 # ----- SET THIS VALUE TO FALSE WHEN DEPLOYING ON ORIN ----
-isRelativePath = True
+isRelativePath = False
 
 print("Loading pre-set static obstacles...")
 pathPrefix = "" if isRelativePath else "pathplanning/nmc/"
@@ -380,7 +382,7 @@ static_hang_obs_blue_close = get_static_obstacles(
 print("Finished loading pre-set static obstacles...")
 
 from Core.Central import Central
-from tools.Constants import Label
+from tools.Constants import Label, TEAM, ATLocations
 from tools import UnitConversion
 
 
@@ -396,6 +398,29 @@ class VisionCoprocessorServicer(XTableGRPC.VisionCoprocessorServicer):
         base_grid = np.ones((grid_height, grid_width), dtype=float)
         start = (request.start.x, request.start.y)
         goal = (request.end.x, request.end.y)
+        isReef = request.arguments.goalToBestReef
+        # isAlgae = request.arguments.goalToBestReef
+        isBlue = request.arguments.alliance == XTableValues.Alliance.BLUE
+
+        team = TEAM.BLUE if isBlue else TEAM.RED
+        foundReefMatch = False
+        closestBranch = None
+        closestAT = None
+        if self.central is not None:
+            robotPosCM = (start[0] * 100, start[1] * 100, 0)
+            if isReef:
+                closestAT, closestBranch = self.central.reefState.getClosestOpen(
+                    robotPosCM,
+                    team,
+                    threshold=0.7,
+                    algaeThreshold=0.7,
+                    considerAlgaeBlocking=True,
+                )
+                if closestAT is not None:
+                    atPose = ATLocations.get_pose_by_id(closestAT, LengthType.M)
+                    goal = atPose[:2]  # just x,y meters
+                    foundReefMatch = True
+
         SAFE_DISTANCE_INCHES = (
             max(DEFAULT_SAFE_DISTANCE_INCHES, request.safeDistanceInches)
             if request.HasField("safeDistanceInches")
@@ -459,7 +484,35 @@ class VisionCoprocessorServicer(XTableGRPC.VisionCoprocessorServicer):
         response = build_bezier_curves_proto(
             safe_bezier_segments_poses, request.options
         )
+
+        if isReef and foundReefMatch:
+            camera = self.getATCameraFromBranch(closestBranch)
+            lvl = self.getBranchLevel(closestBranch)
+            id = closestAT
+
+            response.alignToReefAprilTagOptions.camera = camera
+            response.alignToReefAprilTagOptions.branchLevel = lvl
+            response.alignToReefAprilTagOptions.aprilTagID = id
+
         return response
+
+    def getATCameraFromBranch(self, branch_idx: int):
+        if branch_idx % 2 == 0:
+            return XTableValues.AprilTagCamera.FRONT_LEFT
+        else:
+            return XTableValues.AprilTagCamera.FRONT_RIGHT
+
+    def getBranchLevel(self, branch_idx: int):
+        lvl = branch_idx // 2 + 2
+
+        if lvl == 2:
+            return XTableValues.BranchLevel.LEVEL_2
+        if lvl == 3:
+            return XTableValues.BranchLevel.LEVEL_3
+        if lvl == 4:
+            return XTableValues.BranchLevel.LEVEL_4
+
+        # print(f"WARNING: Invalid branch level {lvl=} {branch_idx=}")
 
 
 def serve(central: Union[Central, None]) -> None:

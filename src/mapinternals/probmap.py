@@ -1,7 +1,8 @@
+from typing import Union
 import numpy as np
 import cv2
 from decimal import Decimal, ROUND_FLOOR
-from tools.Constants import Label, MapConstants
+from tools.Constants import TEAM, Label, MapConstants
 from Core import getLogger
 
 largeValue = 10000000000000000000  # for cv2 thresholding
@@ -901,3 +902,30 @@ class ProbMap:
             return
 
         return self.__getSpecificValue(self.probmaps[class_idx], x, y)
+
+    def getNearestAboveThreshold(
+        self,
+        class_idx: int,
+        robotXYCM: tuple[Union[float, int], Union[float, int]],
+        threshold,
+        team: TEAM = None,
+    ):
+        allPoints = self.getAllObjectsAboveThreshold(class_idx, threshold=threshold)
+        isOk = lambda x: True
+        if team is not None:
+            if team == TEAM.BLUE:
+                isOk = lambda x: x <= MapConstants.fieldWidth.getCM() / 2
+            else:
+                isOk = lambda x: x >= MapConstants.fieldWidth.getCM() / 2
+        okPoints = [point for point in allPoints if isOk(point[0])]
+
+        nearest = None
+        ndist = 1e5
+        for point in okPoints:
+            XYCM = point[:2]
+            dist = np.linalg.norm(np.subtract(XYCM, robotXYCM))
+            if dist < ndist:
+                nearest = point
+                ndist = dist
+
+        return nearest

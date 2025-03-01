@@ -9,7 +9,7 @@ from Core.Agents.Abstract.ReefTrackingAgentBase import ReefTrackingAgentBase
 from Core.Agents.Abstract.PositionLocalizingAgentBase import PositionLocalizingAgentBase
 
 
-class CentralAgentBase(PositionLocalizingAgentBase):
+class CentralAgent(PositionLocalizingAgentBase):
     """Agent -> CentralAgentBase
 
     Adds automatic ingestion of detection packets into the central process
@@ -63,15 +63,25 @@ class CentralAgentBase(PositionLocalizingAgentBase):
         self.bestObjs = []
         for label in self.central.labels:
             boX = self.propertyOperator.createCustomReadOnlyProperty(
-                f"Best.{str(label)}.x", None, addBasePrefix=False
+                f"Best.{str(label)}.x", -1, addBasePrefix=False
             )
             boY = self.propertyOperator.createCustomReadOnlyProperty(
-                f"Best.{str(label)}.y", None, addBasePrefix=False
+                f"Best.{str(label)}.y", -1, addBasePrefix=False
             )
             boP = self.propertyOperator.createCustomReadOnlyProperty(
-                f"Best.{str(label)}.prob", None, addBasePrefix=False
+                f"Best.{str(label)}.prob", -1, addBasePrefix=False
             )
-            self.bestObjs.append((boX, boY, boP))
+
+            nX = self.propertyOperator.createCustomReadOnlyProperty(
+                f"Nearest.{str(label)}.x", -1, addBasePrefix=False
+            )
+            nY = self.propertyOperator.createCustomReadOnlyProperty(
+                f"Nearest.{str(label)}.y", -1, addBasePrefix=False
+            )
+            nP = self.propertyOperator.createCustomReadOnlyProperty(
+                f"Nearest.{str(label)}.prob", -1, addBasePrefix=False
+            )
+            self.bestObjs.append((boX, boY, boP, nX, nY, nP))
 
         self.reefmap_states = self.propertyOperator.createCustomReadOnlyProperty(
             "REEFMAP_STATES", None, addBasePrefix=False
@@ -156,15 +166,27 @@ class CentralAgentBase(PositionLocalizingAgentBase):
         self.reefmap_states.set(bytes)
 
         # Send the confidence of highest algae
-        for idx, (setX, setY, setProb) in enumerate(self.bestObjs):
+        for idx, (bX, bY, bP, nX, nY, nP) in enumerate(self.bestObjs):
             highest = self.central.objectmap.getHighestObject(class_idx=idx)
-            setX.set(highest[0])
-            setY.set(highest[1])
-            setProb.set(float(highest[2]))
+            bX.set(highest[0])
+            bY.set(highest[1])
+            bP.set(float(highest[2]))
+
+            nearest = self.central.objectmap.getNearestAboveThreshold(
+                idx, self.robotPose2dCMRAD[:2], threshold=0.3, team=None
+            )  # update
+            if nearest is not None:
+                nX.set(float(nearest[0]))
+                nY.set(float(nearest[1]))
+                nP.set(float(nearest[3]))
 
         closest_At, closest_branch = self.central.reefState.getClosestOpen(
             self.robotPose2dCMRAD, threshold=0.0
         )
+        if closest_At is None:
+            closest_At = -1
+        if closest_branch is None:
+            closest_branch = -1
         # print("closeAT and closeBranch", closest_At, closest_branch)
         self.clAT.set(closest_At)
         self.clBR.set(closest_branch)
@@ -175,3 +197,12 @@ class CentralAgentBase(PositionLocalizingAgentBase):
             self.xclient.unsubscribe(
                 self.getDetectionTable(key), consumer=self.__handleObjectUpdate
             )
+
+    def getDescription(self):
+        return "Central-Process-Accumulate-Results-Broadcast-Them"
+
+    def getName(self):
+        return "The-Central-Agent"
+
+    def isRunning(self):
+        return True

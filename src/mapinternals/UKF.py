@@ -27,7 +27,7 @@ class Ukf:
         # Initial state
         self.Dim = 4
         self.x_initial = np.array(
-            [50, 50, 10, 10]
+            [50, 50, 0, 0]
         )  # Example initial state (position_x, position_y, velocity_x, velocity_y)
 
         # Covariance matrices

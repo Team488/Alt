@@ -60,7 +60,7 @@ class Central:
         self.reefState.dissipateOverTime(timeStepMs)
 
         for reefResult in reefResults:
-            #print(reefResult)
+            # print(reefResult)
             coralObservation, algaeObservation = reefResult
             for apriltagid, branchid, opennessconfidence in coralObservation:
                 self.reefState.addObservationCoral(
@@ -82,7 +82,6 @@ class Central:
         ],
         timeStepMs,
     ) -> None:
-        print(cameraResults)
         # dissipate at start of iteration
         self.objectmap.disspateOverTime(timeStepMs)
 
