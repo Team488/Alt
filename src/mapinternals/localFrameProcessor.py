@@ -16,6 +16,7 @@ from tools.positionEstimator import PositionEstimator
 from tools.depthBasedPositionEstimator import DepthBasedPositionEstimator
 from tools.positionTranslations import CameraToRobotTranslator, transformWithYaw
 from inference.MultiInferencer import MultiInferencer
+from demos import utils
 from Core import getLogger
 
 
@@ -115,19 +116,10 @@ class LocalFrameProcessor:
 
                 label = "INVALID"  # technically redundant, as the deepsort step filters out any invalid class_idxs
                 if 0 <= classId < len(self.labels):
-                    label = self.labels[classId]
+                    label = f"{self.labels[classId]} Id:{id}"
 
                 color = self.colors[id % len(self.colors)]
-                cv2.rectangle(colorFrame, bbox[0:2], bbox[2:4], color)
-                cv2.putText(
-                    colorFrame,
-                    f"Id:{id} Conf{conf:.2f} Label: {label}",
-                    UnitConversion.toint(np.add(bbox[:2], bbox[2:4]) / 2),
-                    0,
-                    1,
-                    color,
-                    1,
-                )
+                utils.drawBox(colorFrame, bbox, label, conf, color)
 
         # id(unique),estimated x/y,conf,class_idx,features,
         if self.depthMode:

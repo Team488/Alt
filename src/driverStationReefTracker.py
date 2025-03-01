@@ -1,6 +1,11 @@
 from Core.Neo import Neo
 from Core.Agents.Abstract import ReefTrackingAgentPartial
-from tools.Constants import CameraIntrinsicsPredefined, OAKDLITEResolution, CommonVideos
+from tools.Constants import (
+    CameraIntrinsicsPredefined,
+    OAKDLITEResolution,
+    CommonVideos,
+    SimulationEndpoints,
+)
 from Captures import ConfigurableCameraCapture, OAKCapture
 
 # removes the temp ip for testing in main
@@ -9,7 +14,8 @@ from Captures import ConfigurableCameraCapture, OAKCapture
 
 ReefTracker = ReefTrackingAgentPartial(
     capture=ConfigurableCameraCapture(
-        CommonVideos.Comp2024Clip.path, CameraIntrinsicsPredefined.OV9782COLOR
+        SimulationEndpoints.FRONTRIGHTSIM.path,
+        CameraIntrinsicsPredefined.SIMULATIONCOLOR,
     ),
     showFrames=True,
 )

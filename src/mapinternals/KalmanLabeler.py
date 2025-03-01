@@ -101,4 +101,4 @@ class KalmanLabeler:
                 out.incrementNotSeen()
                 if out.framesNotSeen > LabelingConstants.MAXFRAMESNOTSEEN.value:
                     # too many frames being not seen
-                    self.kalmanCacheRobots.removeKalmanEntry(remainingKey)
+                    cache.removeKalmanEntry(remainingKey)

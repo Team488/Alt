@@ -506,6 +506,17 @@ class CommonVideos(Enum):
         return self.value
 
 
+class SimulationEndpoints(Enum):
+    FRONTRIGHTSIM = "http://localhost:3000/Robot_FrontRight%20Camera?dummy=param.mjpg"
+    FRONTLEFTSIM = "http://localhost:3000/Robot_FrontLeft%20Camera?dummy=param.mjpg"
+    REARRIGHTSIM = "http://localhost:3000/Robot_RearRight%20Camera?dummy=param.mjpg"
+    REARLEFTSIM = "http://localhost:3000/Robot_RearLeft%20Camera?dummy=param.mjpg"
+
+    @property
+    def path(self):
+        return self.value
+
+
 class ObjectReferences(Enum):
     NOTE = (35.56, 14)  # cm , in
     BUMPERHEIGHT = (12.7, 5)  # cm, in
@@ -639,7 +650,7 @@ class ATLocations(Enum):
         )
 
         rotation = UnitConversion.convertRotation(
-            tag.position, cls.getDefaultRotationType(), rotation
+            tag.rotation, cls.getDefaultRotationType(), rotation
         )
 
         return position, rotation

@@ -11,10 +11,10 @@ from Captures import D435Capture, FileCapture, ConfigurableCameraCapture
 
 agent = ObjectLocalizingAgentPartial(
     ConfigurableCameraCapture(
-        CommonVideos.Comp2024Clip.path, CameraIntrinsicsPredefined.OV9782COLOR
+        CommonVideos.ReefscapeCompilation.path, CameraIntrinsicsPredefined.OV9782COLOR
     ),
-    ColorCameraExtrinsics2024.FRONTRIGHT,
-    InferenceMode.ONNX2024,
+    ColorCameraExtrinsics2024.NONE,
+    InferenceMode.ONNXSMALL2025,
     showFrames=True,
 )
 n = Neo()

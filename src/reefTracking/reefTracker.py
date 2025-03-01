@@ -4,7 +4,6 @@ import json
 import numpy as np
 from typing import Dict, Optional
 from wpimath.geometry import Transform3d
-from reefTracking.aprilTagSolver import AprilTagSover
 from reefTracking.aprilTagHelper import AprilTagLocal
 from tools.Constants import (
     ATLocations,
@@ -286,92 +285,49 @@ class ReefTracker:
     def __init__(
         self,
         cameraIntrinsics: CameraIntrinsics,
-        isLocalAT=False,
-        cameraExtrinsics: CameraExtrinsics = None,
     ) -> None:
         """
         Creates a reef post estimator, that using april tag results will detect coral slots and probabilistically measure if they are occupied\n
         This works by using a color camera along with known extrinsics/intrinsics and known extrinsics for the april tag camera
 
-        Args:
-            cameraIntrinsics (`CameraIntrinsics`) : The color camera's intrinsics
-            cameraExtrinsics (`CameraExtrinsics`) : The color camera's extrinsics
-            atCameraToExtrinsics (`Dict[str,CameraExtrinsics]`) : A mapping of each april tag cameras photonvision name, to the extrinsics of that camera
-            photonCommunicator (`PhotonVisionCommunicator`) : An optional field, the class that allows network communication to grab the photonvision april tag results
-
         """
-        self.isLocalAT = isLocalAT
         self.camIntr = cameraIntrinsics
-        if not isLocalAT and (cameraExtrinsics is None):
-            raise Exception(
-                "If you are operating in driverStationMode = False, you must provide camera Extrinsics and april tag camera extrinsics!"
-            )
-
-        if isLocalAT:
-            self.ATPoseGetter = AprilTagLocal(cameraIntrinsics)
-        else:
-            self.ATPoseGetter = AprilTagSover(
-                camExtr=cameraExtrinsics, camIntr=cameraIntrinsics
-            )
+        self.ATPoseGetter = AprilTagLocal(cameraIntrinsics)
 
     def __isInFrame(self, u, v):
         return 0 <= u < self.camIntr.getHres() and 0 <= v < self.camIntr.getVres()
 
-    def getAllTracks(self, colorframe, robotPose2dCMRad=None, drawBoxes=True):
-        if not self.isLocalAT and robotPose2dCMRad is None:
-            raise Exception(
-                "If you are operating in driverStationMode = False, you must provide robotPose2dCMRad!"
-            )
+    def getAllTracks(self, colorframe, drawBoxes=True):
 
         allTracksCoral = {}
         allTracksAlgae = {}
-        if self.isLocalAT:
-            greyFrame = cv2.cvtColor(colorframe, cv2.COLOR_BGR2GRAY)
-            atDetections = self.ATPoseGetter.getDetections(greyFrame)
-            atPoses = self.ATPoseGetter.getOrthogonalEstimates(atDetections)
-            for detection, pose in zip(atDetections, atPoses):
-                tracks = self.__getTracksForPost(
-                    colorframe, pose.pose1.toMatrix(), drawBoxes, detection.getId()
+        greyFrame = cv2.cvtColor(colorframe, cv2.COLOR_BGR2GRAY)
+        atDetections = self.ATPoseGetter.getDetections(greyFrame)
+        atPoses = self.ATPoseGetter.getOrthogonalEstimates(atDetections)
+        for detection, pose in zip(atDetections, atPoses):
+            tracks = self.__getTracksForPost(
+                colorframe, pose.pose1.toMatrix(), drawBoxes, detection.getId()
+            )
+            centerX = detection.getCenter().x
+            centerY = detection.getCenter().y
+            if drawBoxes:
+                cv2.putText(
+                    colorframe,
+                    f"{pose.pose1.toMatrix()}",
+                    tuple(map(int, (centerX, centerY))),
+                    1,
+                    1,
+                    (255, 255, 255),
+                    1,
                 )
-                centerX = detection.getCenter().x
-                centerY = detection.getCenter().y
-                if drawBoxes:
-                    cv2.putText(
-                        colorframe,
-                        f"{pose.pose1.toMatrix()}",
-                        tuple(map(int, (centerX, centerY))),
-                        1,
-                        1,
-                        (255, 255, 255),
-                        1,
-                    )
 
-                if tracks is not None:
-                    coralTracks, algaeOccuppancy = tracks
-                    allTracksCoral[detection.getId()] = coralTracks
-                    if algaeOccuppancy is not None:
-                        allTracksAlgae[detection.getId()] = algaeOccuppancy
+            if tracks is not None:
+                coralTracks, algaeOccuppancy = tracks
+                allTracksCoral[detection.getId()] = coralTracks
+                if algaeOccuppancy is not None:
+                    allTracksAlgae[detection.getId()] = algaeOccuppancy
 
-        else:
-            ret = self.ATPoseGetter.getNearestAtPose(robotPose2dCMRad)
-            print(ret)
-            if ret:
-                for nearestTagPose, nearestTagId in ret:
-                    print(f"{nearestTagId=}")
-                    print(f"PRE: {nearestTagPose=}")
-                    nearestTagPose = transform_basis_from_frc_toimg(nearestTagPose)
-                    print(f"POST: {nearestTagPose=}")
-                    nearestTagPose[:3, 3] *= 0.01  # cm -> m
-                    tracks = self.__getTracksForPost(
-                        colorframe, nearestTagPose, drawBoxes, nearestTagId
-                    )
-                    if tracks is not None:
-                        coralTracks, algaeOccuppancy = tracks
-                        allTracksCoral[nearestTagId] = coralTracks
-                        if algaeOccuppancy is not None:
-                            allTracksAlgae[nearestTagId] = algaeOccuppancy
-
-        return allTracksCoral, allTracksAlgae
+        return allTracksCoral, allTracksAlgae, list(zip(atDetections, atPoses))
 
     def __getTracksForPost(self, colorframe, tagPoseMatrix, drawBoxes, atId):
         if (

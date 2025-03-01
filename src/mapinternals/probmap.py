@@ -1,7 +1,8 @@
+from typing import Union
 import numpy as np
 import cv2
 from decimal import Decimal, ROUND_FLOOR
-from tools.Constants import Label, MapConstants
+from tools.Constants import TEAM, Label, MapConstants
 from Core import getLogger
 
 largeValue = 10000000000000000000  # for cv2 thresholding
@@ -118,8 +119,10 @@ class ProbMap:
         # gauss_x, gauss_y = np.meshgrid(np.linspace(-2.5, 2.5, obj_x), np.linspace(-2.5, 2.5, obj_y))
 
         # print("gauss_x", gauss_x, "gauss_y", gauss_y)
-        gaussian_blob = prob * np.exp(-0.5 * (gauss_x**2 + gauss_y**2) / sigma**2)
+        gaussian_blob = np.exp(-0.5 * (gauss_x**2 + gauss_y**2) / sigma**2)
+        gaussian_blob /= np.sum(gaussian_blob)  # Normalize so that sum equals 1
         gaussian_blob *= prob
+        # gaussian_blob = prob * np.exp(-0.5 * (gauss_x**2 + gauss_y**2) / sigma**2)
         # print('\n' + 'gaussian_bQlob before: ')
         # print(gaussian_blob.dtype)
         # print(gaussian_blob.shape)
@@ -135,7 +138,9 @@ class ProbMap:
 
         if coords.size <= 0:
             print("Failed to extract smaller mask!")
-            print(f"{mask=} \n {threshold=} \n {gaussian_blob=} {prob=}")
+            print(
+                f"{mask=} \n {threshold=} \n {gaussian_blob=} \n {prob=} \n {gauss_x=} \n {gauss_y=} \n {scale=} \n {sigma=}"
+            )
             return
 
         y_min, x_min = coords.min(axis=0)
@@ -897,3 +902,30 @@ class ProbMap:
             return
 
         return self.__getSpecificValue(self.probmaps[class_idx], x, y)
+
+    def getNearestAboveThreshold(
+        self,
+        class_idx: int,
+        robotXYCM: tuple[Union[float, int], Union[float, int]],
+        threshold,
+        team: TEAM = None,
+    ):
+        allPoints = self.getAllObjectsAboveThreshold(class_idx, threshold=threshold)
+        isOk = lambda x: True
+        if team is not None:
+            if team == TEAM.BLUE:
+                isOk = lambda x: x <= MapConstants.fieldWidth.getCM() / 2
+            else:
+                isOk = lambda x: x >= MapConstants.fieldWidth.getCM() / 2
+        okPoints = [point for point in allPoints if isOk(point[0])]
+
+        nearest = None
+        ndist = 1e5
+        for point in okPoints:
+            XYCM = point[:2]
+            dist = np.linalg.norm(np.subtract(XYCM, robotXYCM))
+            if dist < ndist:
+                nearest = point
+                ndist = dist
+
+        return nearest

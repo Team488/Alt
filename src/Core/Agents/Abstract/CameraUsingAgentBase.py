@@ -36,8 +36,8 @@ class CameraUsingAgentBase(Agent):
         self.showFrames = kwargs.get("showFrames", False)
         self.hasIngested = False
         self.exit = False
-        self.WINDOWNAMEDEPTH = "color_frame"
-        self.WINDOWNAMECOLOR = "depth_frame"
+        self.WINDOWNAMEDEPTH = "depth_frame"
+        self.WINDOWNAMECOLOR = "color_frame"
         # self.primaryMonitor = getPrimary()
         self.primaryMonitor = None
 

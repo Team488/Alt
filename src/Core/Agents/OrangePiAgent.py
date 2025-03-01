@@ -2,7 +2,8 @@ from enum import Enum
 import socket
 from Core.Agents.Abstract.ReefTrackingAgentBase import ReefTrackingAgentBase
 from tools import calibration
-from tools.Constants import getCameraValues2024
+from tools.Constants import getCameraValues2024, CommonVideos
+from Captures import ConfigurableCameraCapture
 
 
 class CameraName(Enum):
@@ -28,7 +29,9 @@ class OrangePiAgent(ReefTrackingAgentBase):
         cameraIntrinsics, _, _ = getCameraValues2024(self.device_name)
 
         super().__init__(
-            cameraPath="/dev/color_camera",
+            capture=ConfigurableCameraCapture(
+                CommonVideos.Comp2024Clip.path, cameraIntrinsics
+            ),
             showFrames=False,
             cameraIntrinsics=cameraIntrinsics,
         )
