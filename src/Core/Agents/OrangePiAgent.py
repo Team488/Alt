@@ -29,9 +29,7 @@ class OrangePiAgent(ReefTrackingAgentBase):
         cameraIntrinsics, _, _ = getCameraValues2024(self.device_name)
 
         super().__init__(
-            capture=ConfigurableCameraCapture(
-                CommonVideos.Comp2024Clip.path, cameraIntrinsics
-            ),
+            capture=ConfigurableCameraCapture("/dev/color_camera", cameraIntrinsics),
             showFrames=False,
             cameraIntrinsics=cameraIntrinsics,
         )

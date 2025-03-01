@@ -5,7 +5,7 @@ class AgentExample(Agent):
     def create(self) -> None:
         # for example here i can create a propery to configure what to call myself
         self.nameProp = self.propertyOperator.createProperty(
-            propertyName="agent_name", propertyDefault="Bob"
+            propertyTable="agent_name", propertyDefault="Bob"
         )
         self.projectNameProp = self.propertyOperator.createReadOnlyProperty(
             propertyName="agent_name_readonly", propertyValue="bob"

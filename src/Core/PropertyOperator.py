@@ -52,11 +52,23 @@ class PropertyOperator:
         self.Sentinel.debug(f"Property updated | Name: {ret.key} Value : {ret.value}")
 
     def createProperty(
-        self, propertyName: str, propertyDefault, loadIfSaved=True
+        self,
+        propertyTable: str,
+        propertyDefault,
+        loadIfSaved=True,
+        isCustom: bool = False,
+        addBasePrefix: bool = True,
+        addOperatorPrefix: bool = False,
     ) -> "Property":
-        propertyTable = self.__getPropertyTable(
-            propertyName
-        )  # store properties in known place
+        if isCustom:
+            if addBasePrefix and addOperatorPrefix:
+                propertyTable = self.__addFullPrefix(propertyTable)
+            elif addBasePrefix:
+                propertyTable = self.__addBasePrefix(propertyTable)
+        else:
+            propertyTable = self.__getPropertyTable(
+                propertyTable
+            )  # store properties in known place
 
         # if this property already has been created, just give that one.
         if propertyTable in self.__properties:

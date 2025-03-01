@@ -47,10 +47,10 @@ class DriveToFixedPointAgent(PathPlanningAgentBase):
     def create(self) -> None:
         super().create()
         self.targetX = self.propertyOperator.createProperty(
-            propertyName="targetX", propertyDefault=2
+            propertyTable="targetX", propertyDefault=2
         )
         self.targetY = self.propertyOperator.createProperty(
-            propertyName="targetY", propertyDefault=2
+            propertyTable="targetY", propertyDefault=2
         )
 
     def getPath(self):

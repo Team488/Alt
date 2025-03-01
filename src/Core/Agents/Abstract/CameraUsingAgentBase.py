@@ -20,6 +20,8 @@ def getPrimary():
 
 class CameraUsingAgentBase(Agent):
     FRAMEPOSTFIX = "Frame"
+    FRAMETOGGLEPOSTFIX = "SendFrame"
+    RUNNINGHOSTNAMES = "RUNNINGHOSTNAMES"
 
     """Agent -> CameraUsingAgentBase
 
@@ -41,18 +43,35 @@ class CameraUsingAgentBase(Agent):
         # self.primaryMonitor = getPrimary()
         self.primaryMonitor = None
 
+    def updateFrameHostnames(self):
+        existingHostnames: list = self.xclient.getStringList(self.RUNNINGHOSTNAMES)
+        if existingHostnames is None:
+            existingHostnames = []  # "default arg"
+        baseHostName = self.propertyOperator.basePrefix
+        if baseHostName not in existingHostnames:
+            existingHostnames.append(baseHostName)
+
+        self.xclient.putStringList(self.RUNNINGHOSTNAMES, existingHostnames)
+
     def create(self) -> None:
         super().create()
+
+        self.updateFrameHostnames()
         # self.xdashDebugger = XDashDebugger()
 
         self.testCapture()
 
         self.sendFrame = self.propertyOperator.createProperty(
-            "Send-Frame", False, loadIfSaved=False
+            "SendFrame",
+            False,
+            loadIfSaved=False,
+            isCustom=True,
+            addBasePrefix=True,
+            addOperatorPrefix=False,
         )  # this is one of those properties that should always be opt-in Eg reset after restart
 
         self.frameProp = self.propertyOperator.createCustomReadOnlyProperty(
-            self.FRAMEPOSTFIX, b""
+            self.FRAMEPOSTFIX, b"", addBasePrefix=True, addOperatorPrefix=False
         )
 
         if self.showFrames:

@@ -13,7 +13,7 @@ class PositionLocalizingAgentBase(Agent):
         super().create()
         # create managing properties
         self.xtablesPosTable = self.propertyOperator.createProperty(
-            propertyName="xtablesPosTable", propertyDefault="PoseSubsystem.RobotPose"
+            propertyTable="xtablesPosTable", propertyDefault="PoseSubsystem.RobotPose"
         )
 
         self.locX = self.propertyOperator.createReadOnlyProperty("Robot.Robot_Loc_X", 0)
