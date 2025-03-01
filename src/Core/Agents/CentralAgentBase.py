@@ -71,6 +71,16 @@ class CentralAgentBase(PositionLocalizingAgentBase):
             boP = self.propertyOperator.createCustomReadOnlyProperty(
                 f"Best.{str(label)}.prob", None, addBasePrefix=False
             )
+
+            nX = self.propertyOperator.createCustomReadOnlyProperty(
+                f"Nearest.{str(label)}.x", None, addBasePrefix=False
+            )
+            nY = self.propertyOperator.createCustomReadOnlyProperty(
+                f"Nearest.{str(label)}.y", None, addBasePrefix=False
+            )
+            nP = self.propertyOperator.createCustomReadOnlyProperty(
+                f"Nearest.{str(label)}.prob", None, addBasePrefix=False
+            )
             self.bestObjs.append((boX, boY, boP))
 
         self.reefmap_states = self.propertyOperator.createCustomReadOnlyProperty(
@@ -156,15 +166,26 @@ class CentralAgentBase(PositionLocalizingAgentBase):
         self.reefmap_states.set(bytes)
 
         # Send the confidence of highest algae
-        for idx, (setX, setY, setProb) in enumerate(self.bestObjs):
+        for idx, (bX, bY, bP, nX, nY, nP) in enumerate(self.bestObjs):
             highest = self.central.objectmap.getHighestObject(class_idx=idx)
-            setX.set(highest[0])
-            setY.set(highest[1])
-            setProb.set(float(highest[2]))
+            bX.set(highest[0])
+            bY.set(highest[1])
+            bP.set(float(highest[2]))
+
+            nearest = self.central.objectmap.getNearestAboveThreshold(
+                idx, self.robotPose2dCMRAD[:2], threshold=0.3, team=None
+            )  # update
+            nX.set(float(nearest[0]))
+            nY.set(float(nearest[1]))
+            nP.set(float(nearest[3]))
 
         closest_At, closest_branch = self.central.reefState.getClosestOpen(
             self.robotPose2dCMRAD, threshold=0.0
         )
+        if closest_At is None:
+            closest_At = -1
+        if closest_branch is None:
+            closest_branch = -1
         # print("closeAT and closeBranch", closest_At, closest_branch)
         self.clAT.set(closest_At)
         self.clBR.set(closest_branch)

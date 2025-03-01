@@ -199,7 +199,7 @@ class Length:
         if lengthType == LengthType.IN:
             return self.getIn()
         if lengthType == LengthType.M:
-            return self.getIn()
+            return self.getM()
         if lengthType == LengthType.YARD:
             return self.getYards()
         if lengthType == LengthType.FT:

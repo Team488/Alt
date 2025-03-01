@@ -6,6 +6,7 @@ from robotpy_apriltag import (
     AprilTagFieldLayout,
     AprilTagDetector,
     AprilTagPoseEstimator,
+    AprilTagPoseEstimate,
 )
 
 from wpimath.geometry import Transform3d
@@ -17,7 +18,7 @@ class AprilTagLocal:
         self.detector = AprilTagDetector()
         self.detectorConfig = AprilTagDetector.Config()
         self.detectorConfig.quadDecimate = 1
-        self.detectorConfig.quadSigma = 0.8
+        self.detectorConfig.quadSigma = 0.5
         self.detector.setConfig(self.detectorConfig)
         self.detector.addFamily("tag36h11")
 
@@ -66,7 +67,7 @@ class AprilTagLocal:
         output = self.detector.detect(grayscale_image)
         return output
 
-    def getOrthogonalEstimates(self, output):
+    def getOrthogonalEstimates(self, output) -> list[AprilTagPoseEstimate]:
         estimates = []
         for detections in output:
             # Retrieve the corners of the AT detection
