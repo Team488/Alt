@@ -159,7 +159,7 @@ class HexagonLayout(RelativeLayout):
             {"text": "CL", "pos": (1100, 850)},
             {"text": "CM", "pos": (1050, 760)},
             {"text": "CR", "pos": (1100, 650)},
-            {"text": "FR", "pos": (1215, 650)},
+            {"text": "FL", "pos": (1215, 650)},
             {"text": "FM", "pos": (1250, 760)},
             {"text": "FR", "pos": (1215, 850)},
         ]
@@ -184,7 +184,7 @@ class HexagonLayout(RelativeLayout):
 
             self.add_widget(button)
             self.init_dictionary[text]["button"] = button
-            self.init_dictionary[text]["data"] = button
+            self.button_dictionary[text] = button
 
 
 
@@ -247,4 +247,5 @@ class ReefVisualizerApp(App):
 if __name__ == "__main__":
     app = ReefVisualizerApp()
     app_instance = app.build()
+    app_instance.queue_color_update("CL", (0.5, 0.5, 0.5, 1))
     app.run()
