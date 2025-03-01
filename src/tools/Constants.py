@@ -125,9 +125,18 @@ class InferenceMode(Enum):
             ModelType.ALCORO,
         ),
     )
-    ALCOROBEST2025 = (
+    ALCOROBEST2025GPUONLY = (
         "assets/yolo11sBestTensorRT.engine",
         "yolov11s-best-tensorrt",
+        (Label.ALGAE, Label.CORAL, Label.ROBOT),
+        2025,
+        Backend.ULTRALYTICS,
+        YOLOTYPE.V11,
+        ModelType.ALCORO,
+    )
+    ALCOROBEST2025 = (
+        "assets/yolo11sBest_fp32.pt",
+        "yolov11s-best-pytorch",
         (Label.ALGAE, Label.CORAL, Label.ROBOT),
         2025,
         Backend.ULTRALYTICS,
