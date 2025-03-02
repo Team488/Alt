@@ -206,8 +206,6 @@ class PropertyOperator:
         return None
 
     def __getRealType(self, type, propertyValue) -> bool:
-        print(XTableProto.XTableMessage.Type.Name(type))
-
         # get real type from xtable bytes
         if (
             type == XTableProto.XTableMessage.Type.UNKNOWN
