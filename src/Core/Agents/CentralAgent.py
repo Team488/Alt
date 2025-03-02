@@ -31,12 +31,12 @@ class CentralAgent(PositionLocalizingAgentBase):
         self.updateOp.subscribeAllGlobalUpdates(
             ReefTrackingAgentBase.OBSERVATIONPOSTFIX,
             self.__handleReefUpdate,
-            runOnNewSubscribe=self.addKeyObject,
+            runOnNewSubscribe=self.addKeyReef,
         )
         self.updateOp.subscribeAllGlobalUpdates(
             ObjectLocalizingAgentBase.DETECTIONPOSTFIX,
             self.__handleObjectUpdate,
-            runOnNewSubscribe=self.addKeyReef,
+            runOnNewSubscribe=self.addKeyObject,
         )
 
         self.clAT = self.propertyOperator.createCustomReadOnlyProperty(
@@ -185,7 +185,7 @@ class CentralAgent(PositionLocalizingAgentBase):
                 nP.set(float(nearest[3]))
 
         closest_At, closest_branch = self.central.reefState.getClosestOpen(
-            self.robotPose2dCMRAD, threshold=0.0
+            self.robotPose2dCMRAD, threshold=0.7
         )
         if closest_At is None:
             closest_At = -1

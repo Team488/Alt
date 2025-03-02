@@ -84,6 +84,7 @@ class Neo:
             shareOperator=self.__shareOp,
             logger=Sentinel.getChild("XDASH_Operator"),
         )
+        self.__updateOperators = []
 
         self.__isShutdown = False  # runnable
         signal.signal(signal.SIGINT, handler=self.__handleArchitectKill)
@@ -148,6 +149,7 @@ class Neo:
                 f"{self.__getBasePrefix(agentName)}"
             )
             updateOperator = UpdateOperator(self.__xclient, childPropertyOp)
+            self.__updateOperators.append(updateOperator)
             childLogger = Sentinel.getChild(f"{agentName}")
 
             logTable = f"{self.__getBasePrefix(agentName)}.log"
@@ -206,6 +208,8 @@ class Neo:
         # xtables operations. need to go before xclient shutdown
         Sentinel.info(f"Properties removed: {self.__propertyOp.deregisterAll()}")
         Sentinel.info(f"Orders removed: {self.__orderOp.deregister()}")
+        for updateOp in self.__updateOperators:
+            updateOp.deregister()
         self.__agentOp.stopPermanent()
         self.__agentOp.shutDownNow()
 

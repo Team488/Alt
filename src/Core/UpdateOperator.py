@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Optional
 from JXTABLES.XTablesClient import XTablesClient
 
 from Core.PropertyOperator import PropertyOperator
@@ -90,7 +90,8 @@ class UpdateOperator:
             self.__xclient.subscribe(fullTable, updateSubscriber)
             self.__subscribedUpdates.add(fullTable)
             newSubscribers.append(fullTable)
-            runOnNewSubscribe(fullTable)
+            if runOnNewSubscribe is not None:
+                runOnNewSubscribe(fullTable)
 
         removedSubscribers = []
         for subscribedPath in self.__subscribedUpdates:
@@ -100,7 +101,8 @@ class UpdateOperator:
 
         for toRemove in removedSubscribers:
             self.__subscribedUpdates.remove(toRemove)
-            runOnRemoveSubscribe(fullTable)
+            if runOnRemoveSubscribe is not None:
+                runOnRemoveSubscribe(fullTable)
 
         return newSubscribers, removedSubscribers
 
@@ -110,3 +112,13 @@ class UpdateOperator:
             fullTable = f"{runningPath}.{updateName}"
 
             self.__xclient.unsubscribe(fullTable, updateSubscriber)
+
+    def deregister(self):
+        existingNames: list = self.__xclient.getStringList(self.ALLRUNNINGAGENTPATHS)
+        if existingNames is None:
+            existingNames = []  # "default arg"
+        else:
+            if self.uniqueUpdateName in existingNames:
+                existingNames.remove(self.uniqueUpdateName)
+
+        self.__xclient.putStringList(self.ALLRUNNINGAGENTPATHS, existingNames)

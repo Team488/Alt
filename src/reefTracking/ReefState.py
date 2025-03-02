@@ -108,6 +108,8 @@ class ReefState:
             Sentinel.warning(f"Invalid apriltagid{apriltagid=}")
             return
 
+        algae_idx = self.apriltag_to_idx.get(apriltagid)
+
         # Locking mechanism for the algae (we only care when it's off)
         if self.algae_map[algae_idx] > 0.95:
             self.algae_map[algae_idx] = 1.0
@@ -116,7 +118,6 @@ class ReefState:
         if self.algae_map[algae_idx] == 1.0:
             return
 
-        algae_idx = self.apriltag_to_idx.get(apriltagid)
         self.algae_map[algae_idx] *= 1 - weighingfactor
         self.algae_map[algae_idx] += opennessconfidence * weighingfactor
 
@@ -124,7 +125,7 @@ class ReefState:
         self,
         team: TEAM = None,
         threshold=0.5,
-        algaeThreshold=0.5,
+        algaeThreshold=0.7,
         considerAlgaeBlocking=True,
     ) -> list[tuple[int, int, float]]:
         """Returns open slots in the form of a tuple with (April tag id, branch id, openness confidence)"""
@@ -208,7 +209,7 @@ class ReefState:
             coralTrackerOutput, algaeTrackerOutput, message, timestamp
         )
 
-    def getReefMapState_as_ReefPacket(
+    def getReefMapState_as_Json(
         self, team: TEAM = None, timestamp=0
     ) -> reefStatePacket_capnp.ReefPacket:
         # Create the Coral Map Output
@@ -228,7 +229,7 @@ class ReefState:
             algae_idx = self.apriltag_to_idx.get(apriltag)
             algaeTrackerOutput[apriltag] = self.algae_map[algae_idx]
 
-        jsonstr = json.dump((coralTrackerOutput, algaeTrackerOutput))
+        jsonstr = json.dumps((coralTrackerOutput, algaeTrackerOutput))
         return jsonstr
 
     def __getMapBacking(self, team: TEAM):
@@ -252,7 +253,7 @@ class ReefState:
         robotPos2CMRAd: tuple[float, float, float],
         team: TEAM = None,
         threshold=0.5,
-        algaeThreshold=0.2,
+        algaeThreshold=0.7,
         considerAlgaeBlocking=True,
     ):
         open_slots = self.getOpenSlotsAboveT(

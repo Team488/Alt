@@ -9,8 +9,8 @@ n = Neo()
 central = n.getCentral()
 alignmentCheck = partialAlignmentCheck(showFrames=False)
 
-n.wakeAgent(CentralAgent, isMainThread=False)
-n.wakeAgent(alignmentCheck, isMainThread=False)
+n.wakeAgent(CentralAgent, isMainThread=True)
+# n.wakeAgent(alignmentCheck, isMainThread=False)
 
 # start pathplanning rpc
-fastMarchingMethodRPC.serve(central)
+# fastMarchingMethodRPC.serve(central)
