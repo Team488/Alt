@@ -47,7 +47,7 @@ class CameraUsingAgentBase(Agent):
         existingHostnames: list = self.xclient.getStringList(self.RUNNINGHOSTNAMES)
         if existingHostnames is None:
             existingHostnames = []  # "default arg"
-        baseHostName = self.propertyOperator.basePrefix
+        baseHostName = self.propertyOperator.getFullPrefix()
         if baseHostName not in existingHostnames:
             existingHostnames.append(baseHostName)
 
@@ -67,11 +67,11 @@ class CameraUsingAgentBase(Agent):
             loadIfSaved=False,
             isCustom=True,
             addBasePrefix=True,
-            addOperatorPrefix=False,
+            addOperatorPrefix=True,
         )  # this is one of those properties that should always be opt-in Eg reset after restart
 
         self.frameProp = self.propertyOperator.createCustomReadOnlyProperty(
-            self.FRAMEPOSTFIX, b"", addBasePrefix=True, addOperatorPrefix=False
+            self.FRAMEPOSTFIX, b"", addBasePrefix=True, addOperatorPrefix=True
         )
 
         if self.showFrames:

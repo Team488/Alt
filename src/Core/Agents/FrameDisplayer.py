@@ -35,7 +35,10 @@ class FrameDisplayer(Agent):
 
     def removeKey(self, key):
         self.xclient.putBoolean(self.getSendEnableTable(key), False)
-        cv2.destroyWindow(key)
+        try:
+            cv2.destroyWindow(key)
+        except Exception:
+            pass
 
     def updateInternal(self, currentHostnames):
         # old keys removed

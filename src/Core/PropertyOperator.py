@@ -47,6 +47,9 @@ class PropertyOperator:
 
         self.__children = []
 
+    def getFullPrefix(self):
+        return self.__addFullPrefix("")
+
     def __updatePropertyCallback(self, ret) -> None:
         self.__propertyValueMap[ret.key] = self.__getRealType(ret.type, ret.value)
         self.Sentinel.debug(f"Property updated | Name: {ret.key} Value : {ret.value}")
