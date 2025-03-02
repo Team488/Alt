@@ -76,7 +76,7 @@ class Central:
             tuple[
                 list[
                     list[int, tuple[int, int, int], float, bool, np.ndarray],
-                    CameraIdOffsets2024,
+                    int,
                 ]
             ]
         ],

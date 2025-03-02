@@ -20,7 +20,6 @@ def getPrimary():
 class CameraUsingAgentBase(Agent):
     FRAMEPOSTFIX = "Frame"
     FRAMETOGGLEPOSTFIX = "SendFrame"
-    RUNNINGHOSTNAMES = "RUNNINGHOSTNAMES"
 
     """Agent -> CameraUsingAgentBase
 
@@ -41,36 +40,15 @@ class CameraUsingAgentBase(Agent):
         # self.primaryMonitor = getPrimary()
         self.primaryMonitor = None
 
-    def updateFrameHostnames(self):
-        existingHostnames: list = self.xclient.getStringList(self.RUNNINGHOSTNAMES)
-        if existingHostnames is None:
-            existingHostnames = []  # "default arg"
-        baseHostName = self.propertyOperator.getFullPrefix()
-        if baseHostName not in existingHostnames:
-            existingHostnames.append(baseHostName)
-
-        self.xclient.putStringList(self.RUNNINGHOSTNAMES, existingHostnames)
-
     def create(self) -> None:
         super().create()
 
-        self.updateFrameHostnames()
         # self.xdashDebugger = XDashDebugger()
 
         self.testCapture()
 
-        self.sendFrame = self.propertyOperator.createProperty(
-            "SendFrame",
-            False,
-            loadIfSaved=False,
-            isCustom=True,
-            addBasePrefix=True,
-            addOperatorPrefix=True,
-        )  # this is one of those properties that should always be opt-in Eg reset after restart
-
-        self.frameProp = self.propertyOperator.createCustomReadOnlyProperty(
-            self.FRAMEPOSTFIX, b"", addBasePrefix=True, addOperatorPrefix=True
-        )
+        self.updateOp.addGlobalUpdate(self.FRAMETOGGLEPOSTFIX, False)
+        self.sendFrame = False
 
         if self.showFrames:
             cv2.namedWindow(self.WINDOWNAMECOLOR)
@@ -95,6 +73,9 @@ class CameraUsingAgentBase(Agent):
 
     def runPeriodic(self):
         super().runPeriodic()
+        self.sendFrame = self.updateOp.readGlobalUpdate(
+            self.FRAMETOGGLEPOSTFIX, default=False, loadIfSaved=False
+        )
         # show last frame if enabled. This allows any drawing that might have been on the frame to be shown
         if self.hasIngested:
             # local showing of frame
@@ -120,11 +101,11 @@ class CameraUsingAgentBase(Agent):
                     self.exit = True
 
             # network showing of frame
-            if self.sendFrame.get():
+            if self.sendFrame:
                 framePacket = FramePacket.createPacket(
                     time.time() * 1000, "Frame", self.latestFrameCOLOR
                 )
-                self.frameProp.set(framePacket.to_bytes())
+                self.updateOp.addGlobalUpdate(self.FRAMEPOSTFIX, framePacket.to_bytes())
 
         with self.timer.run("cap_read"):
             self.hasIngested = True

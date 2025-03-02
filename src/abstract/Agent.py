@@ -7,6 +7,7 @@
 from abc import ABC, abstractmethod
 from logging import Logger
 from JXTABLES.XTablesClient import XTablesClient
+from Core.UpdateOperator import UpdateOperator
 from Core.Central import Central
 from Core.PropertyOperator import PropertyOperator
 from Core.ConfigOperator import ConfigOperator
@@ -28,6 +29,7 @@ class Agent(ABC):
         propertyOperator: PropertyOperator,
         configOperator: ConfigOperator,
         shareOperator: ShareOperator,
+        updateOperator: UpdateOperator,
         logger: Logger,
         timer: Timer,
     ) -> None:
@@ -37,6 +39,7 @@ class Agent(ABC):
         self.propertyOperator = propertyOperator
         self.configOperator = configOperator
         self.shareOp = shareOperator
+        self.updateOp = updateOperator
         self.Sentinel = logger
         self.timer = timer
         # other than setting variables, nothing should go here

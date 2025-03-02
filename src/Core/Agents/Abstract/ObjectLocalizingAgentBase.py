@@ -62,13 +62,10 @@ class ObjectLocalizingAgentBase(TimestampRegulatedAgentBase):
             inferenceMode=self.inferenceMode,
             depthMode=self.depthEnabled,
         )
-        self.detectionProp = self.propertyOperator.createCustomReadOnlyProperty(
-            self.DETECTIONPOSTFIX, b""
-        )
 
     def runPeriodic(self) -> None:
         super().runPeriodic()
-        sendFrame = self.sendFrame.get()
+        sendFrame = self.sendFrame
         with self.timer.run("frame-processing"):
             processedResults = self.frameProcessor.processFrame(
                 self.latestFrameCOLOR,
@@ -102,7 +99,7 @@ class ObjectLocalizingAgentBase(TimestampRegulatedAgentBase):
         detectionPacket = DetectionPacket.createPacket(
             processedResults, "Detection", timestampMs
         )
-        self.detectionProp.set(detectionPacket.to_bytes())
+        self.updateOp.addGlobalUpdate(self.DETECTIONPOSTFIX, detectionPacket.to_bytes())
 
         # optionally send frame
 

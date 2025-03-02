@@ -21,38 +21,23 @@ class CentralAgent(PositionLocalizingAgentBase):
 
         super().create()
         # perform agent init here (eg open camera or whatnot)
-        self.keys = ["REARRIGHT", "REARLEFT", "FRONTLEFT", "FRONTRIGHT"]
-        self.keyToHost = {
-            "REARRIGHT": "photonvisionrearright",
-            "REARLEFT": "photonvisionrearleft",
-            "FRONTLEFT": "photonvisionfrontleft",
-            # "FRONTRIGHT": "photonvisionfrontright",
-            "FRONTRIGHT": "Adem-Laptop",
-            # "Johnny": "archlinux",
-        }
         print("CREATED HOST")
-        self.getDetectionTable = (
-            lambda key: f"{self.keyToHost.get(key)}.{ObjectLocalizingAgentBase.DETECTIONPOSTFIX}"
-        )
-        self.getReefTable = (
-            lambda key: f"{self.keyToHost.get(key)}.{ReefTrackingAgentBase.OBSERVATIONPOSTFIX}"
-        )
-        self.objectupdateMap = {key: ([], 0, 0) for key in self.keys}
-        self.localObjectUpdateMap = {key: 0 for key in self.keys}
-        self.reefupdateMap = {key: ([], 0) for key in self.keys}
-        self.localReefUpdateMap = {key: 0 for key in self.keys}
+        self.objectupdateMap = {}
+        self.localObjectUpdateMap = {}
+        self.reefupdateMap = {}
+        self.localReefUpdateMap = {}
         self.lastUpdateTimeMs = -1
-        for key in self.keys:
-            # subscribe to detection packets
-            self.xclient.subscribe(
-                self.getDetectionTable(key),
-                consumer=lambda ret: self.__handleObjectUpdate(key, ret),
-            )
-            # subscribe to reef packets
-            self.xclient.subscribe(
-                self.getReefTable(key),
-                consumer=lambda ret: self.__handleReefUpdate(key, ret),
-            )
+
+        self.updateOp.subscribeAllGlobalUpdates(
+            ReefTrackingAgentBase.OBSERVATIONPOSTFIX,
+            self.__handleReefUpdate,
+            runOnNewSubscribe=self.addKeyObject,
+        )
+        self.updateOp.subscribeAllGlobalUpdates(
+            ObjectLocalizingAgentBase.DETECTIONPOSTFIX,
+            self.__handleObjectUpdate,
+            runOnNewSubscribe=self.addKeyReef,
+        )
 
         self.clAT = self.propertyOperator.createCustomReadOnlyProperty(
             "BESTOPENREEF_AT", None, addBasePrefix=False
@@ -87,10 +72,27 @@ class CentralAgent(PositionLocalizingAgentBase):
             "REEFMAP_STATES", None, addBasePrefix=False
         )
 
+        self.offsetMap = {}
+        self.offsetLength = 30
+
+    def addKeyObject(self, key):
+        self.objectupdateMap[key] = ([], 0, 0)
+        self.localObjectUpdateMap[key] = 0
+
+    def addKeyReef(self, key):
+        self.reefupdateMap[key] = ([], 0)
+        self.localReefUpdateMap[key] = 0
+
     # handles a subscriber update from one of the cameras
-    def __handleObjectUpdate(self, key, ret) -> None:
+    def __handleObjectUpdate(self, ret) -> None:
         val = ret.value
-        idOffset = CameraIdOffsets2024[key]
+        key = ret.key
+        if key in self.offsetMap:
+            idOffset = self.offsetMap[key]
+        else:
+            idOffset = (len(self.offsetMap) + 1) * self.offsetLength
+            self.offsetMap[key] = idOffset
+
         lastidx = self.objectupdateMap[key][2]
         lastidx += 1
         if not val or val == b"":
@@ -100,8 +102,9 @@ class CentralAgent(PositionLocalizingAgentBase):
         packet = (DetectionPacket.toDetections(det_packet), idOffset, lastidx)
         self.objectupdateMap[key] = packet
 
-    def __handleReefUpdate(self, key, ret) -> None:
+    def __handleReefUpdate(self, ret) -> None:
         val = ret.value
+        key = ret.key
         lastidx = self.reefupdateMap[key][1]
         lastidx += 1
         if not val or val == b"":
@@ -121,7 +124,7 @@ class CentralAgent(PositionLocalizingAgentBase):
 
         accumulatedObjectResults = []
         accumulatedReefResults = []
-        for key in self.keys:
+        for key in self.localObjectUpdateMap.keys():
             # objects
             localidx = self.localObjectUpdateMap[key]
             resultpacket = self.objectupdateMap[key]
@@ -131,7 +134,8 @@ class CentralAgent(PositionLocalizingAgentBase):
                 self.localObjectUpdateMap[key] = packetidx
                 accumulatedObjectResults.append(res)
 
-            # reef
+        # reef
+        for key in self.localReefUpdateMap.keys():
             localidx = self.localReefUpdateMap[key]
             resultpacket = self.reefupdateMap[key]
             res, packetidx = resultpacket[0], resultpacket[1]
@@ -193,10 +197,12 @@ class CentralAgent(PositionLocalizingAgentBase):
 
     def onClose(self) -> None:
         super().onClose()
-        for key in self.keys:
-            self.xclient.unsubscribe(
-                self.getDetectionTable(key), consumer=self.__handleObjectUpdate
-            )
+        self.updateOp.unsubscribeToAllGlobalUpdates(
+            ReefTrackingAgentBase.OBSERVATIONPOSTFIX, self.__handleReefUpdate
+        )
+        self.updateOp.unsubscribeToAllGlobalUpdates(
+            ObjectLocalizingAgentBase.DETECTIONPOSTFIX, self.__handleObjectUpdate
+        )
 
     def getDescription(self):
         return "Central-Process-Accumulate-Results-Broadcast-Them"

@@ -14,6 +14,7 @@ from Core.OrderOperator import OrderOperator
 from Core.AgentOperator import AgentOperator
 from Core.ShareOperator import ShareOperator
 from Core.XDashOperator import XDashOperator
+from Core.UpdateOperator import UpdateOperator
 from Core import LogManager, COREMODELTABLE, COREINFERENCEMODE
 from Core.Central import Central
 from abstract.Agent import Agent
@@ -146,6 +147,7 @@ class Neo:
             childPropertyOp = self.__propertyOp.getChild(
                 f"{self.__getBasePrefix(agentName)}"
             )
+            updateOperator = UpdateOperator(self.__xclient, childPropertyOp)
             childLogger = Sentinel.getChild(f"{agentName}")
 
             logTable = f"{self.__getBasePrefix(agentName)}.log"
@@ -167,6 +169,7 @@ class Neo:
                 propertyOperator=childPropertyOp,
                 configOperator=self.__configOp,
                 shareOperator=self.__shareOp,
+                updateOperator=updateOperator,
                 logger=childLogger,
                 timer=timer,
             )

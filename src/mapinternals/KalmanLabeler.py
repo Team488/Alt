@@ -31,7 +31,7 @@ class KalmanLabeler:
         singleCameraResults: list[
             list[int, tuple[int, int, int], float, int, np.ndarray]
         ],
-        cameraIdOffset: CameraIdOffsets2024,
+        cameraIdOffset: int,
         timeStepSeconds: float,
     ) -> None:
         allkeys: list[set] = [cache.getKeySet() for cache in self.kalmanCaches]
@@ -39,7 +39,7 @@ class KalmanLabeler:
 
         for i in range(len(singleCameraResults)):
             singleCameraResult = singleCameraResults[i]
-            singleCameraResult[0] += cameraIdOffset.getIdOffset()
+            singleCameraResult[0] += cameraIdOffset
             # adjust id by a fixed camera offset, so that id collisions dont happen
             (realId, (x, y, z), conf, class_idx, features) = singleCameraResult
 

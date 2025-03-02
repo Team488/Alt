@@ -29,9 +29,6 @@ class ReefTrackingAgentBase(CameraUsingAgentBase):
         super().create()
         self.poseSolver = poseSolver()
         self.tracker = ReefTracker(cameraIntrinsics=self.cameraIntrinsics)
-        self.reefProp = self.propertyOperator.createCustomReadOnlyProperty(
-            self.OBSERVATIONPOSTFIX, b""
-        )
         self.c = 0
 
     def runPeriodic(self) -> None:
@@ -45,7 +42,7 @@ class ReefTrackingAgentBase(CameraUsingAgentBase):
         reefPkt = ReefPacket.createPacket(
             outCoral, outAlgae, "helloo", time.time() * 1000
         )
-        self.reefProp.set(reefPkt.to_bytes())
+        self.updateOp.addGlobalUpdate(self.OBSERVATIONPOSTFIX, reefPkt.to_bytes())
 
         # if self.c < 50:
         #     cv2.imwrite(f"assets/Frame#{self.c}.jpg",self.latestFrame)
