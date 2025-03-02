@@ -21,8 +21,14 @@ class AlignmentChecker(CameraUsingAgentBase):
     def create(self) -> None:
         super().create()
         self.offAngleProp = self.propertyOperator.createCustomReadOnlyProperty(
-            propertyTable="ALIGNOFF",
+            propertyTable="alignmentOffsetErrorPx",
             propertyValue=-1,
+            addBasePrefix=True,
+            addOperatorPrefix=False,
+        )
+        self.isCenteredConfidently = self.propertyOperator.createCustomReadOnlyProperty(
+            propertyTable="alignedConfidently",
+            propertyValue=False,
             addBasePrefix=True,
             addOperatorPrefix=False,
         )
@@ -79,13 +85,10 @@ class AlignmentChecker(CameraUsingAgentBase):
 
             # Print whether it's centered within 'threshold_pixels'
             if horizontal_offset <= self.threshold_pixels.get():
-                print(
-                    f"Box is centered (horizontal offset = {horizontal_offset:.1f}px)."
-                )
+                self.isCenteredConfidently.set(True)
+
             else:
-                print(
-                    f"Box is NOT centered (horizontal offset = {horizontal_offset:.1f}px)."
-                )
+                self.isCenteredConfidently.set(False)
 
             # Draw bounding box on the main frame
             cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
