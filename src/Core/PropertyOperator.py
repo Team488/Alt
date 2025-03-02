@@ -48,6 +48,7 @@ class PropertyOperator:
         self.__children = []
 
     def __updatePropertyCallback(self, ret) -> None:
+        print("OK")
         self.__propertyValueMap[ret.key] = self.__getRealType(ret.type, ret.value)
         self.Sentinel.debug(f"Property updated | Name: {ret.key} Value : {ret.value}")
 
@@ -59,6 +60,7 @@ class PropertyOperator:
         isCustom: bool = False,
         addBasePrefix: bool = True,
         addOperatorPrefix: bool = False,
+        setDefaultOnNetwork: bool = True,
     ) -> "Property":
         if isCustom:
             if addBasePrefix and addOperatorPrefix:
@@ -77,8 +79,9 @@ class PropertyOperator:
         # init default in map if not saved from previous run, or if you dont want to use a saved value
         if propertyTable not in self.__propertyValueMap or not loadIfSaved:
             # if its an invalid property type return immediately
-            if not self.__setNetworkValue(propertyTable, propertyDefault):
-                return None
+            if setDefaultOnNetwork:
+                if not self.__setNetworkValue(propertyTable, propertyDefault):
+                    return propertyDefault
             # if dosent exist, put default
             self.__propertyValueMap[propertyTable] = propertyDefault
             self.Sentinel.info(
@@ -88,7 +91,10 @@ class PropertyOperator:
             # exists, so put the value that it is onto network
             # NOTE: not checking to see if valid type, as for it to have been saved means it was already valid
             propertyValue = self.__propertyValueMap.get(propertyTable)
-            self.__setNetworkValue(propertyTable, propertyValue)
+            if setDefaultOnNetwork:
+                self.__setNetworkValue(propertyTable, propertyValue)
+            self.__propertyValueMap[propertyTable] = propertyDefault
+
             self.Sentinel.info(
                 f"Attached to saved property | Name: {propertyTable} Saved value: {propertyValue}"
             )
@@ -155,7 +161,7 @@ class PropertyOperator:
         elif type(propertyValue) is bool:
             self.__xclient.putBoolean(propertyTable, propertyValue)
         elif propertyValue is None:
-            self.__xclient.putString(propertyTable, "null")
+            self.__xclient.putString(propertyTable, "NULLVALUE")
         elif type(propertyValue) is Iterable:
             return self.__setNetworkIterable(propertyTable, propertyValue)
         else:
@@ -200,6 +206,8 @@ class PropertyOperator:
         return None
 
     def __getRealType(self, type, propertyValue) -> bool:
+        print(XTableProto.XTableMessage.Type.Name(type))
+
         # get real type from xtable bytes
         if (
             type == XTableProto.XTableMessage.Type.UNKNOWN
@@ -208,17 +216,21 @@ class PropertyOperator:
             return propertyValue
         elif type == XTableProto.XTableMessage.Type.INT64:
             return XTablesByteUtils.to_long(propertyValue)
+        elif type == XTableProto.XTableMessage.Type.INT32:
+            return XTablesByteUtils.to_int(propertyValue)
         elif type == XTableProto.XTableMessage.Type.DOUBLE:
             return XTablesByteUtils.to_double(propertyValue)
         elif type == XTableProto.XTableMessage.Type.BOOL:
             return XTablesByteUtils.to_boolean(propertyValue)
         elif type == XTableProto.XTableMessage.Type.STRING:
             return XTablesByteUtils.to_string(propertyValue)
-
-        # TODO add list methods here -----------------
+        elif type == XTableProto.XTableMessage.Type.DOUBLE_LIST:
+            return XTablesByteUtils.to_double_list(propertyValue)
 
         else:
-            self.Sentinel.error(f"Invalid property type!: {type(propertyValue)}")
+            self.Sentinel.error(
+                f"Invalid property type!: {XTableProto.XTableMessage.Type.Name(type)}"
+            )
             return None
 
     def getChild(self, prefix) -> "PropertyOperator":

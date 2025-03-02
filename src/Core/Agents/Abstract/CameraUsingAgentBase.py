@@ -4,7 +4,6 @@ import cv2
 from abstract.Agent import Agent
 from abstract.Capture import Capture
 from coreinterface.FramePacket import FramePacket
-from tools.Constants import CameraIntrinsics
 from tools.depthAiHelper import DepthAIHelper
 from screeninfo import get_monitors
 from abstract.depthCamera import depthCamera
@@ -32,7 +31,6 @@ class CameraUsingAgentBase(Agent):
 
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
-        self.cameraIntrinsics = kwargs.get("cameraIntrinsics", None)
         self.capture: Union[Capture, depthCamera] = kwargs.get("capture", None)
         self.depthEnabled = issubclass(self.capture.__class__, depthCamera)
         self.showFrames = kwargs.get("showFrames", False)
