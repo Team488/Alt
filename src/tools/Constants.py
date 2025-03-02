@@ -28,6 +28,7 @@ class Label(Enum):
     ALGAE = ("algae", (41, 41))
     CORAL = ("coral", (30, 12))
 
+    @staticmethod
     def getDefaultLengthType():
         return Units.LengthType.CM
 
