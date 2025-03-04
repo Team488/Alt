@@ -2,7 +2,12 @@ from enum import Enum
 import socket
 from Core.Agents.Abstract.ReefTrackingAgentBase import ReefTrackingAgentBase
 from tools import calibration
-from tools.Constants import getCameraValues2024, CommonVideos
+from tools.Constants import (
+    getCameraValues2024,
+    CommonVideos,
+    SimulationEndpoints,
+    CameraIntrinsicsPredefined,
+)
 from Captures import ConfigurableCameraCapture
 
 
@@ -25,29 +30,22 @@ class OrangePiAgent(ReefTrackingAgentBase):
 
     def __init__(self) -> None:
         self.device_name = CameraName.getCameraName().name
-        # camera values
-        cameraIntrinsics, _, _ = getCameraValues2024(self.device_name)
+        # # camera values
+        # cameraIntrinsics, _, _ = getCameraValues2024(self.device_name)
 
         super().__init__(
-            capture=ConfigurableCameraCapture("/dev/color_camera", cameraIntrinsics),
+            capture=ConfigurableCameraCapture(
+                "Orange_Pi_COLOR",
+                "/dev/color_camera",
+                CameraIntrinsicsPredefined.OV9782COLOR,
+            ),
             showFrames=False,
-            cameraIntrinsics=cameraIntrinsics,
+            cameraIntrinsics=CameraIntrinsicsPredefined.OV9782COLOR,
         )
 
     def create(self) -> None:
         super().create()
         self.Sentinel.info(f"Camera Name: {self.device_name}")
-
-        # camera config
-        self.calib = self.configOperator.getContent("camera_calib.json")
-
-        # frame undistortion maps from calibration
-        self.mapx, self.mapy = calibration.createMapXYForUndistortionFromCalib(
-            self.cameraIntrinsics.getHres(), self.cameraIntrinsics.getVres(), self.calib
-        )
-
-    def preprocessFrame(self, frame):
-        return calibration.undistortFrame(frame, self.mapx, self.mapy)
 
     def getName(self) -> str:
         return "Orange_Pi_Process"

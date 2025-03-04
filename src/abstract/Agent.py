@@ -13,6 +13,7 @@ from Core.PropertyOperator import PropertyOperator
 from Core.ConfigOperator import ConfigOperator
 from Core.ShareOperator import ShareOperator
 from Core.TimeOperator import Timer
+from tools.Constants import TEAM
 
 
 class Agent(ABC):
@@ -20,6 +21,8 @@ class Agent(ABC):
 
     def __init__(self, **kwargs) -> None:
         # nothing should go here
+        self.hasShutdown = False
+        self.hasClosed = False
         pass
 
     def inject(
@@ -32,6 +35,7 @@ class Agent(ABC):
         updateOperator: UpdateOperator,
         logger: Logger,
         timer: Timer,
+        isMainThread: bool,
     ) -> None:
         """ "Injects" arguments into agent, should not be modified in any classes"""
         self.central = central
@@ -42,11 +46,23 @@ class Agent(ABC):
         self.updateOp = updateOperator
         self.Sentinel = logger
         self.timer = timer
+        self.isMainThread = isMainThread
         # other than setting variables, nothing should go here
 
     def getTimer(self):
         """Use only when needed, and only when associated with agent"""
         return self.timer
+
+    def getTeam(self):
+        """Fetches team from XTables, dont trust at the start when everything is initializing"""
+        team: str = self.xclient.getString("TEAM")
+        if team is None:
+            return None
+
+        if team.lower() == "blue":
+            return TEAM.BLUE
+        else:
+            return TEAM.RED
 
     # ----- Required Implementations -----
 

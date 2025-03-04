@@ -23,7 +23,7 @@ class PrecomputeNearest:
         self.fixedRobotHeight = 35
 
         print("Loading precomputed nearest positions.... this may take a second")
-        self.obstacles = staticLoad("obstacleMap.npy")
+        self.obstacles, _ = staticLoad("obstacleMap.npy")
         self.obstacles_nearest = self.get_nearest_valid_points(self.obstacles)
 
     def get_nearest_valid_points(self, obstacleMap):

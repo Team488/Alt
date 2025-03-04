@@ -52,7 +52,7 @@ class PropertyOperator:
 
     def __updatePropertyCallback(self, ret) -> None:
         self.__propertyValueMap[ret.key] = self.__getRealType(ret.type, ret.value)
-        self.Sentinel.debug(f"Property updated | Name: {ret.key} Value : {ret.value}")
+        # self.Sentinel.debug(f"Property updated | Name: {ret.key} Value : {ret.value}")
 
     def createProperty(
         self,
@@ -80,10 +80,9 @@ class PropertyOperator:
 
         # init default in map if not saved from previous run, or if you dont want to use a saved value
         if propertyTable not in self.__propertyValueMap or not loadIfSaved:
-            # if its an invalid property type return immediately
             if setDefaultOnNetwork:
-                if not self.__setNetworkValue(propertyTable, propertyDefault):
-                    return propertyDefault
+                self.__setNetworkValue(propertyTable, propertyDefault)
+
             # if dosent exist, put default
             self.__propertyValueMap[propertyTable] = propertyDefault
             self.Sentinel.info(

@@ -174,6 +174,7 @@ class Neo:
                 updateOperator=updateOperator,
                 logger=childLogger,
                 timer=timer,
+                isMainThread=isMainThread,
             )
             if not isMainThread:
                 self.__agentOp.wakeAgent(agent)

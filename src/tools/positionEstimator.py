@@ -35,14 +35,14 @@ class PositionEstimator:
         self.__minPerc = 0.005  # minimum percentage of bounding box with bumper color
         # simulation currently only has blue robots
         if isSimulationMode:
-            self.__blueRobotHist = staticLoad(
+            self.__blueRobotHist, _ = staticLoad(
                 "histograms/simulationBlueRobotCinematicHist.npy"
             )
         else:
-            self.__blueRobotHist = staticLoad("histograms/blueRobotHist.npy")
+            self.__blueRobotHist, _ = staticLoad("histograms/blueRobotHist.npy")
 
-        self.__redRobotHist = staticLoad("histograms/redRobotHist.npy")
-        self.__MAXRATIO = 3  # max ratio between number width/height or vice versa
+        self.__redRobotHist, _ = staticLoad("histograms/redRobotHist.npy")
+        self.__MAXRATIO, _ = 3  # max ratio between number width/height or vice versa
 
     """ Extract a rectangular slice of the image, given a bounding box. This is axis aligned"""
 

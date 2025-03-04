@@ -5,7 +5,7 @@ from Core.ConfigOperator import staticLoad
 
 class ParticleFilter:
     def __init__(self, numParticles=1000) -> None:
-        self.obstacles = staticLoad("obstacleMap.npy")
+        self.obstacles, _ = staticLoad("obstacleMap.npy")
         self.NUM_PARTICLES = numParticles
         self.STATE_DIM = 4  # [x, y, vx, vy]
         self.field_bounds = [

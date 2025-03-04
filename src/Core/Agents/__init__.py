@@ -6,5 +6,6 @@ from .PathPlanningAgents import (
     DriveToNetworkTargetAgent,
 )
 from .FrameDisplayer import FrameDisplayer
+from .CalibrationController import CalibrationController
 from .InteractivePathPlanner import InteractivePathPlanner
 from .ReefAndObjectLocalizer import ReefAndObjectLocalizerPartial

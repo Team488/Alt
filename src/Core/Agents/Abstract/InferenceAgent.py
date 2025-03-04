@@ -8,7 +8,7 @@ import numpy as np
 # from JXTABLES.XDashDebugger import XDashDebugger
 
 from Core.Agents.Abstract.CameraUsingAgentBase import CameraUsingAgentBase
-from abstract.Capture import Capture
+from abstract.Capture import Capture, ConfigurableCapture
 from inference.MultiInferencer import MultiInferencer
 from tools.Constants import CameraIntrinsics, InferenceMode
 from coreinterface.FramePacket import FramePacket
@@ -50,8 +50,7 @@ class InferenceAgent(CameraUsingAgentBase):
 
 
 def InferenceAgentPartial(
-    capture: Capture,
-    cameraIntrinsics: CameraIntrinsics,
+    capture: ConfigurableCapture,
     inferenceMode: InferenceMode,
     showFrames: bool = False,
 ):
@@ -59,7 +58,7 @@ def InferenceAgentPartial(
     return partial(
         InferenceAgent,
         capture=capture,
-        cameraIntrinsics=cameraIntrinsics,
+        cameraIntrinsics=capture.getIntrinsics(),
         inferenceMode=inferenceMode,
         showFrames=showFrames,
     )

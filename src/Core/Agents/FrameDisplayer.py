@@ -23,16 +23,17 @@ class FrameDisplayer(Agent):
         self.updateMap = {}
         self.keys = set()
 
+        self.runFlag = True  # will be used with cv2 waitkey
+        self.displayedFrames = self.propertyOperator.createReadOnlyProperty(
+            "Showed_Frames", False
+        )
+
+    def subscribeFrameUpdate(self):
         self.updateOp.subscribeAllGlobalUpdates(
             CameraUsingAgentBase.FRAMEPOSTFIX,
             updateSubscriber=self.__handleUpdate,
             runOnNewSubscribe=self.addKey,
             runOnRemoveSubscribe=self.removeKey,
-        )
-
-        self.runFlag = True  # will be used with cv2 waitkey
-        self.displayedFrames = self.propertyOperator.createReadOnlyProperty(
-            "Showed_Frames", False
         )
 
     def __handleUpdate(self, ret) -> None:
@@ -62,27 +63,34 @@ class FrameDisplayer(Agent):
         cut = key[: key.rfind(".")]
         full = f"{cut}.{CameraUsingAgentBase.FRAMETOGGLEPOSTFIX}"
         self.xclient.putBoolean(full, True)
-        cv2.namedWindow(key)
+        print(f"{key=} added")
+        print(f"{full=} set to True")
+        # cv2.namedWindow(key)
 
     def removeKey(self, key):
         cut = key[: key.rfind(".")]
         full = f"{cut}.{CameraUsingAgentBase.FRAMETOGGLEPOSTFIX}"
         self.xclient.putBoolean(full, False)
+        print(f"{key=} removed")
+        print(f"{full=} set to False")
         try:
             cv2.destroyWindow(key)
-        except Exception:
+            cv2.waitKey(1)
+        except Exception as e:
+            print(e)
             pass
 
     def runPeriodic(self) -> None:
         super().runPeriodic()
+        self.subscribeFrameUpdate()
         self.__showFrames()
 
     def onClose(self) -> None:
         super().onClose()
-        cv2.destroyAllWindows()
         self.updateOp.unsubscribeToAllGlobalUpdates(
             CameraUsingAgentBase.FRAMEPOSTFIX, self.__handleUpdate
         )
+        cv2.destroyAllWindows()
 
     def isRunning(self):
         return self.runFlag

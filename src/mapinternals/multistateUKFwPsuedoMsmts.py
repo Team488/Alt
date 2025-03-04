@@ -18,7 +18,7 @@ class MultistateUkf:
         fieldY=MapConstants.fieldHeight.value,
     ) -> None:
         # "Constants"
-        self.obstacles = staticLoad("obstacleMap.npy")
+        self.obstacles, _ = staticLoad("obstacleMap.npy")
         self.NUMSIMULATEDSTATES = numStates
         self.SINGLESTATELEN = 4
         self.STATELEN = self.NUMSIMULATEDSTATES * self.SINGLESTATELEN

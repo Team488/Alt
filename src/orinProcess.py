@@ -1,14 +1,14 @@
-# from Core.Neo import Neo
-# from Core.Agents.CentralAgent import CentralAgent
+from Core.Neo import Neo
+from Core.Agents.CentralAgent import CentralAgent
 
 # from Core.Agents.alignmentCheck import partialAlignmentCheck
 
-# n = Neo()
+n = Neo()
 
-# central = n.getCentral()
+central = n.getCentral()
 # alignmentCheck = partialAlignmentCheck(showFrames=False)
 
-# n.wakeAgent(CentralAgent, isMainThread=True)
+n.wakeAgent(CentralAgent, isMainThread=False)
 # # n.wakeAgent(alignmentCheck, isMainThread=False)
 
 # start pathplanning rpc

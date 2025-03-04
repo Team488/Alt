@@ -1,7 +1,8 @@
-from typing import Any, Optional
+from typing import Any, Callable, Optional
 from JXTABLES.XTablesClient import XTablesClient
 
-from Core.PropertyOperator import PropertyOperator
+from Core.PropertyOperator import Property, PropertyOperator
+from collections import defaultdict
 
 
 class UpdateOperator:
@@ -12,7 +13,9 @@ class UpdateOperator:
         self.uniqueUpdateName = propertyOperator.getFullPrefix()[:-1]
         self.addToAllRunning(self.uniqueUpdateName)
         self.__propertyOp = propertyOperator
-        self.__subscribedUpdates = set()
+        self.__subscribedUpdates = defaultdict(set)
+        self.__subscribedRunOnClose = {}
+        self.__subscribedSubscriber = {}
 
     def addToAllRunning(self, uniqueUpdateName):
         existingNames = self.__xclient.getStringList(self.ALLRUNNINGAGENTPATHS)
@@ -23,8 +26,13 @@ class UpdateOperator:
 
         self.__xclient.putStringList(self.ALLRUNNINGAGENTPATHS, existingNames)
 
-    def getAllRunning(self) -> list[str]:
-        return self.__xclient.getStringList(self.ALLRUNNINGAGENTPATHS)
+    def getAllRunning(self, pathFilter: Callable[[str], bool] = None) -> list[str]:
+        runningPaths = [
+            runningPath
+            for runningPath in self.__xclient.getStringList(self.ALLRUNNINGAGENTPATHS)
+            if pathFilter is None or pathFilter(runningPath)
+        ]
+        return runningPaths
 
     def addGlobalUpdate(self, updateName, value) -> None:
         self.__propertyOp.createCustomReadOnlyProperty(
@@ -34,7 +42,9 @@ class UpdateOperator:
             addOperatorPrefix=True,
         ).set(value)
 
-    def readGlobalUpdate(self, updateName, default=None, loadIfSaved=True) -> Any:
+    def createGlobalUpdate(
+        self, updateName, default=None, loadIfSaved=True
+    ) -> Property:
         return self.__propertyOp.createProperty(
             propertyTable=updateName,
             propertyDefault=default,
@@ -43,11 +53,13 @@ class UpdateOperator:
             addBasePrefix=True,
             addOperatorPrefix=True,
             setDefaultOnNetwork=False,
-        ).get()
+        )
 
-    def readAllGlobalUpdates(self, updateName) -> list[str, Any]:
+    def readAllGlobalUpdates(
+        self, updateName, pathFilter: Callable[[str], bool] = None
+    ) -> list[str, Any]:
         updates = []
-        for runningPath in self.getAllRunning():
+        for runningPath in self.getAllRunning(pathFilter):
             value = self.__propertyOp.createProperty(
                 f"{runningPath}.{updateName}",
                 propertyDefault=None,
@@ -58,11 +70,15 @@ class UpdateOperator:
             ).get()
             if value is not None:
                 updates.append((runningPath, value))
-
         return updates
 
-    def setAllGlobalUpdate(self, globalUpdateName, globalUpdateValue):
-        for runningPath in self.getAllRunning():
+    def setAllGlobalUpdate(
+        self,
+        globalUpdateName,
+        globalUpdateValue,
+        pathFilter: Callable[[str], bool] = None,
+    ):
+        for runningPath in self.getAllRunning(pathFilter):
             self.__propertyOp.createCustomReadOnlyProperty(
                 f"{runningPath}.{globalUpdateName}",
                 propertyValue=None,
@@ -76,38 +92,46 @@ class UpdateOperator:
         updateSubscriber,
         runOnNewSubscribe=None,
         runOnRemoveSubscribe=None,
+        pathFilter: Callable[[int], bool] = None,
     ) -> tuple[list[str]]:
         newSubscribers = []
-        runningPaths = self.getAllRunning()
+        runningPaths = self.getAllRunning(pathFilter)
         fullTables = set()
         for runningPath in runningPaths:
             fullTable = f"{runningPath}.{updateName}"
             fullTables.add(fullTable)
-            if fullTable in self.__subscribedUpdates:
+            if fullTable in self.__subscribedUpdates[updateName]:
                 # already subscribed to this
                 continue
 
             self.__xclient.subscribe(fullTable, updateSubscriber)
-            self.__subscribedUpdates.add(fullTable)
+            self.__subscribedUpdates[updateName].add(fullTable)
             newSubscribers.append(fullTable)
             if runOnNewSubscribe is not None:
                 runOnNewSubscribe(fullTable)
 
         removedSubscribers = []
-        for subscribedPath in self.__subscribedUpdates:
+        for subscribedPath in self.__subscribedUpdates[updateName]:
             if subscribedPath not in fullTables:
-                self.__xclient.unsubscribe(fullTable, updateSubscriber)
+                self.__xclient.unsubscribe(subscribedPath, updateSubscriber)
                 removedSubscribers.append(subscribedPath)
 
-        for toRemove in removedSubscribers:
-            self.__subscribedUpdates.remove(toRemove)
+        for toRemovePath in removedSubscribers:
+            self.__subscribedUpdates[updateName].remove(toRemovePath)
             if runOnRemoveSubscribe is not None:
-                runOnRemoveSubscribe(fullTable)
+                runOnRemoveSubscribe(toRemovePath)
+
+        if updateName not in self.__subscribedRunOnClose.keys():
+            self.__subscribedRunOnClose[updateName] = runOnRemoveSubscribe
+
+            self.__subscribedSubscriber[updateName] = updateSubscriber
 
         return newSubscribers, removedSubscribers
 
-    def unsubscribeToAllGlobalUpdates(self, updateName, updateSubscriber):
-        runningPaths = self.getAllRunning()
+    def unsubscribeToAllGlobalUpdates(
+        self, updateName, updateSubscriber, pathFilter: Callable[[str], bool] = None
+    ):
+        runningPaths = self.getAllRunning(pathFilter)
         for runningPath in runningPaths:
             fullTable = f"{runningPath}.{updateName}"
 
@@ -122,3 +146,14 @@ class UpdateOperator:
                 existingNames.remove(self.uniqueUpdateName)
 
         self.__xclient.putStringList(self.ALLRUNNINGAGENTPATHS, existingNames)
+
+        for updateName, fullTables in self.__subscribedUpdates.items():
+            runOnClose = self.__subscribedRunOnClose.get(updateName)
+            subscriber = self.__subscribedSubscriber.get(updateName)
+
+            for fullTable in fullTables:
+
+                self.__xclient.unsubscribe(fullTable, subscriber)
+
+                if runOnClose is not None:
+                    runOnClose(fullTable)

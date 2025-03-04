@@ -2,15 +2,21 @@ import codecs
 import json
 import os
 import time
+from typing import Callable
 import numpy as np
 import cv2
 
+from Captures.CameraCapture import ConfigurableCameraCapture
+from abstract.Capture import ConfigurableCapture
 from tools.Constants import CameraIntrinsics
 
-DEFAULTSAVEPATH = "assets/TMPImages"
+DEFAULTSAVEPATH = "assets/TMPCalibration"
 
 
-def __SaveOutput(calibPath, mtx, dist, shape) -> None:
+def __SaveOutput(calibPath: str, mtx, dist, shape) -> None:
+    if not calibPath.endswith(".json"):
+        calibPath = f"{calibPath}.json"
+    os.makedirs(calibPath, exist_ok=True)
     calibrationJSON = {
         "CameraMatrix": mtx.tolist(),
         "DistortionCoeff": dist.tolist(),
@@ -72,62 +78,76 @@ def chessboard_calibration(
 
 
 def charuco_calibration(
-    calibPath, imagesPath=DEFAULTSAVEPATH, arucoboarddim=(15, 15)
-) -> None:
-    # Load images from the provided camera path
+    calibPath,
+    imagesPath=DEFAULTSAVEPATH,
+    arucoboarddim=(15, 15),
+    runOnLoop: Callable[[np.ndarray, int], None] = None,
+):
     images = []
     calibshape = None
     for image_file in sorted(os.listdir(imagesPath)):
-        if image_file.endswith(".jpg") or image_file.endswith(".png"):
+        if image_file.endswith((".jpg", ".png")):
             img = cv2.imread(os.path.join(imagesPath, image_file))
-            calibshape = img.shape
+            calibshape = img.shape[:2][::-1]  # (width, height)
             images.append(img)
 
-    # Define the Charuco board parameters
     board = cv2.aruco.CharucoBoard(
-        arucoboarddim,  # number of squares in height
-        0.3,  # size of each square
-        0.22,  # marker size
-        cv2.aruco.getPredefinedDictionary(
-            cv2.aruco.DICT_4X4_50
-        ),  # ArUco marker dictionary
+        size=arucoboarddim,
+        squareLength=30,
+        markerLength=22,
+        dictionary=cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_100),
     )
+    arucoParams = cv2.aruco.DetectorParameters()
+    arucoParams.cornerRefinementMethod = cv2.aruco.CORNER_REFINE_SUBPIX
 
-    # Prepare object points and image points
-    obj_points = []  # 3d points in world space
-    img_points = []  # 2d points in image plane
+    detector = cv2.aruco.CharucoDetector(board)
+    detector.setDetectorParameters(arucoParams)
+    obj_points = []
+    img_points = []
+    imgCount = 1
 
-    # Loop through the images and detect ArUco markers
     for img in images:
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        detector = cv2.aruco.CharucoDetector(board)
-        charuco_corners, charuco_ids, aruco_corners, aruco_ids = detector.detectBoard(
-            gray
-        )
-        if charuco_corners is not None and charuco_ids is not None:
+        charuco_corners, charuco_ids, _, _ = detector.detectBoard(gray)
+        print(f"{charuco_corners=} {charuco_ids=}")
+
+        if charuco_corners is not None and len(charuco_corners) > 0:
             obj_pt, img_pt = board.matchImagePoints(charuco_corners, charuco_ids)
-            obj_points.append(obj_pt)
-            img_points.append(img_pt)
+            if len(img_pt) > 0:
+                obj_points.append(obj_pt)
+                img_points.append(img_pt)
+                cv2.aruco.drawDetectedCornersCharuco(img, charuco_corners, charuco_ids)
+
+        if runOnLoop is not None:
+            runOnLoop(img, imgCount)
+        imgCount += 1
+
+    print(f"Found {len(obj_points)} object points and {len(img_points)} image points")
 
     if obj_points and img_points:
-        print(f"Using: {len(img_points)} points")
-        # Camera calibration
+        print(f"Using {len(img_points)} valid images for calibration")
         ret, mtx, dist, rvecs, tvecs = cv2.calibrateCameraExtended(
-            obj_points, img_points, gray.shape[::-1], None, None
+            obj_points, img_points, calibshape, None, None
         )[:5]
 
         __SaveOutput(calibPath, mtx, dist, calibshape)
         print("Calibration saved to", calibPath)
-
+        return True
     else:
-        print("Failed to find calibration values")
+        print("Failed to find enough Charuco points")
+        return False
 
 
-def createMapXYForUndistortionFromCalib(w, h, loadedCalibration):
+def createMapXYForUndistortionFromCalib(loadedCalibration):
+    resolution = loadedCalibration["resolution"]
+
     cameraMatrix = np.array(loadedCalibration["CameraMatrix"])
     distCoeffs = np.array(loadedCalibration["DistortionCoeff"])
     # print(cameraMatrix)
     # Compute the optimal new camera matrix
+    w = resolution["width"]
+    h = resolution["height"]
+
     newCameraMatrix, roi = cv2.getOptimalNewCameraMatrix(
         cameraMatrix, distCoeffs, (w, h), 1, (w, h)
     )
@@ -186,11 +206,17 @@ def takeCalibrationPhotos(
     cap = cv2.VideoCapture(cameraPath)
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, frameShape[0])
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, frameShape[1])
+
+    # opencv might not be able to set the frame shape you want for various reasons
+    realFrameShape = (
+        cap.get(cv2.CAP_PROP_FRAME_WIDTH),
+        cap.get(cv2.CAP_PROP_FRAME_HEIGHT),
+    )
+
     frameRate = cap.get(cv2.CAP_PROP_FPS)
     print(f"fps: {frameRate}")
-    print(
-        f"W: {cap.get(cv2.CAP_PROP_FRAME_WIDTH)} H: {cap.get(cv2.CAP_PROP_FRAME_HEIGHT)}"
-    )
+    print(f"W: {realFrameShape[1]} H: {realFrameShape[1]}")
+
     secondPerFrame = 1 / frameRate
 
     frameIdx = 0
@@ -202,12 +228,12 @@ def takeCalibrationPhotos(
             timePassed += secondPerFrame
 
             if timePassed > timePerPicture:
+                frameIdx += 1
+                timePassed = 0
+                cv2.imwrite(os.path.join(photoPath, f"Frame#{frameIdx}.jpg"), frame)
                 cv2.putText(
                     frame, f"Picture Taken!", (10, 30), 0, 1, (255, 255, 255), 2
                 )
-                cv2.imwrite(os.path.join(photoPath, f"Frame#{frameIdx}.jpg"), frame)
-                frameIdx += 1
-                timePassed = 0
             else:
                 cv2.putText(
                     frame,
@@ -225,3 +251,62 @@ def takeCalibrationPhotos(
 
             if cv2.waitKey(1) & 0xFF == ord("q"):
                 break
+
+
+class CustomCalibrator:
+    def __init__(
+        self,
+        capture: ConfigurableCameraCapture,
+        photoPath=DEFAULTSAVEPATH,
+        timePerPicture=3,
+        targetResolution=(640, 480),
+    ):
+        os.makedirs(photoPath, exist_ok=True)
+        self.capture = capture
+        self.photoPath = photoPath
+        self.timePerPicture = timePerPicture
+        self.targetResolution = targetResolution
+        self.fps = self.initCapture()
+        self.secondPerFrame = 1 / self.fps
+        self.frameIdx = 0
+        self.timeSincePic = 0
+
+    def initCapture(self):
+        self.capture.cap.set(cv2.CAP_PROP_FRAME_WIDTH, self.targetResolution[0])
+        self.capture.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self.targetResolution[1])
+
+        # opencv might not be able to set the frame shape you want for various reasons
+        realFrameShape = (
+            self.capture.cap.get(cv2.CAP_PROP_FRAME_WIDTH),
+            self.capture.cap.get(cv2.CAP_PROP_FRAME_HEIGHT),
+        )
+
+        frameRate = self.capture.cap.get(cv2.CAP_PROP_FPS)
+        print(f"fps: {frameRate}")
+        print(f"W: {realFrameShape[1]} H: {realFrameShape[1]}")
+        return frameRate
+
+    def calibrationCycle(self):
+        frame = self.capture.getColorFrame()
+
+        self.timeSincePic += self.secondPerFrame
+
+        if self.timeSincePic > self.timePerPicture:
+
+            self.frameIdx += 1
+            self.timeSincePic = 0
+            cv2.imwrite(
+                os.path.join(self.photoPath, f"Frame#{self.frameIdx}.jpg"), frame
+            )
+            cv2.putText(frame, f"Picture Taken!", (10, 30), 0, 1, (255, 255, 255), 2)
+        else:
+            cv2.putText(
+                frame,
+                f"Time Left: {(self.timePerPicture-self.timeSincePic):2f}",
+                (10, 30),
+                0,
+                1,
+                (255, 255, 255),
+                2,
+            )
+        return frame

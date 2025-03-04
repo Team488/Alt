@@ -14,7 +14,8 @@ def staticLoad(fileName: str):
             for (ending, filetype) in ConfigOperator.knownFileEndings:
                 if filePath.endswith(ending):
                     content = filetype.load(filePath)
-                    return content
+                    mtime = os.path.getmtime(filePath)
+                    return content, mtime
 
             print(
                 f"Invalid file ending. Options are: {[ending[0] for ending in ConfigOperator.knownFileEndings]}"

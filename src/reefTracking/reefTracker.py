@@ -13,6 +13,7 @@ from tools.Constants import (
 )
 from tools import Calculator, UnitConversion
 from Core import getLogger
+from Core.ConfigOperator import staticLoad
 
 
 ### CAD Offset:
@@ -271,6 +272,7 @@ def backProjWhite(labImage, threshold=120):
 # purpleHist = np.load("assets/purpleReefPostHist.npy")
 # # purpleHist = np.load("assets/simulationPurpleReefPost.npy")
 purpleHist = np.load("assets/histograms/darkdarkdark.npy")
+# purpleHist = staticLoad("histograms/reefPostHist.npy ")
 whiteHist = np.load("assets/histograms/whiteCoralHistBAD.npy")
 algaeHist = np.load("assets/histograms/blueAlgaeHist.npy")
 objThresh = 0.2

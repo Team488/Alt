@@ -34,7 +34,7 @@ class ReefTrackingAgentBase(CameraUsingAgentBase):
     def runPeriodic(self) -> None:
         super().runPeriodic()
         outCoral, outAlgae, atOutput = self.tracker.getAllTracks(
-            self.latestFrameCOLOR, drawBoxes=self.showFrames
+            self.latestFrameCOLOR, drawBoxes=self.showFrames or self.sendFrame
         )
         self.latestPoseREEF = self.poseSolver.getLatestPoseEstimate(atOutput)
         # print(self.latestPoseREEF)

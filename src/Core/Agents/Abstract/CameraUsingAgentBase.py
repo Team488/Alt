@@ -1,12 +1,19 @@
+import datetime
+import os
 import time
 from typing import Union
 import cv2
+import numpy as np
+from Captures.CameraCapture import ConfigurableCameraCapture
 from abstract.Agent import Agent
 from abstract.Capture import Capture
 from coreinterface.FramePacket import FramePacket
+from tools.Constants import CameraIntrinsics
 from tools.depthAiHelper import DepthAIHelper
 from screeninfo import get_monitors
 from abstract.depthCamera import depthCamera
+from tools import calibration
+from Core.ConfigOperator import staticLoad
 
 
 def getPrimary():
@@ -20,6 +27,12 @@ def getPrimary():
 class CameraUsingAgentBase(Agent):
     FRAMEPOSTFIX = "Frame"
     FRAMETOGGLEPOSTFIX = "SendFrame"
+    CALIBTOGGLEPOSTFIX = "StartCalib"
+    CALIBIDEALSHAPEWPOSTFIX = "CALIBGOALSHAPEW"
+    CALIBIDEALSHAPEHPOSTFIX = "CALIBGOALSHAPEH"
+    CALIBIDEALCOUNT = "NUMCALIBPICTURES"
+    DEFAULTCALIBCOUNT = 100
+    CALIBRATIONPREFIX = "Calibrations"
 
     """Agent -> CameraUsingAgentBase
 
@@ -30,8 +43,40 @@ class CameraUsingAgentBase(Agent):
 
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
-        self.capture: Union[Capture, depthCamera] = kwargs.get("capture", None)
+        self.capture: Union[
+            Capture, depthCamera, ConfigurableCameraCapture
+        ] = kwargs.get("capture", None)
         self.depthEnabled = issubclass(self.capture.__class__, depthCamera)
+        self.iscv2Configurable = issubclass(
+            self.capture.__class__, ConfigurableCameraCapture
+        )
+        self.customLoaded = False
+
+        if self.iscv2Configurable:
+            # try and load a possible saved calibration
+            calibPath = f"{os.path.join(self.CALIBRATIONPREFIX, self.capture.getUniqueCameraIdentifier())}.json"
+
+            out = staticLoad(calibPath)
+            if out:
+                calib, self.calibMTime = out
+                self.customLoaded = True
+                newCameraIntrinsics = CameraIntrinsics.fromCustomConfigLoaded(calib)
+                mapx, mapy = calibration.createMapXYForUndistortionFromCalib(calib)
+                self.preprocessFrame = lambda frame: calibration.undistortFrame(
+                    frame, mapx, mapy
+                )
+                self.capture.updateIntrinsics(newCameraIntrinsics)
+            else:
+                self.calibMTime = "Not_Loaded!"
+                self.customLoaded = False
+                self.preprocessFrame = None
+
+        else:
+            if self.depthEnabled:
+                self.calibMTime = "Prebaked_Internally"
+            else:
+                self.calibMTime = "Not_Using_Intrinsics"
+
         self.showFrames = kwargs.get("showFrames", False)
         self.hasIngested = False
         self.exit = False
@@ -39,16 +84,71 @@ class CameraUsingAgentBase(Agent):
         self.WINDOWNAMECOLOR = "color_frame"
         # self.primaryMonitor = getPrimary()
         self.primaryMonitor = None
+        self.latestFrameDEPTH = None
+        self.latestFrameCOLOR = None
+
+    def sendInitialUpdate(self):
+        if self.iscv2Configurable:
+            self.Sentinel.info("Detected cv2 configurable capture..")
+            if self.customLoaded:
+                self.Sentinel.info("Custom loaded config!")
+            else:
+                self.Sentinel.info("Could not find custom camera config")
+
+            self.propertyOperator.createReadOnlyProperty("CameraIntrinsics", "").set(
+                str(self.capture.getIntrinsics())
+            )
+        elif self.depthEnabled:
+            self.Sentinel.info("Depth camera detected..")
+            self.propertyOperator.createReadOnlyProperty("CameraIntrinsics", "").set(
+                str(self.capture.getIntrinsics())
+            )
+        if type(self.calibMTime) == float:
+            readable_time = datetime.datetime.fromtimestamp(self.calibMTime).strftime(
+                "%Y-%m-%d %H:%M:%S"
+            )
+            self.propertyOperator.createReadOnlyProperty(
+                "CameraIntrinsics.LastModification", ""
+            ).set(readable_time)
+        else:
+            # already str
+            self.propertyOperator.createReadOnlyProperty(
+                "CameraIntrinsics.LastModification", ""
+            ).set(self.calibMTime)
 
     def create(self) -> None:
         super().create()
+        self.sendInitialUpdate()
+
+        # if we are not main thread, even if it says showframe true we cannot allow it
+        if not self.isMainThread:
+            self.Sentinel.warning(
+                "When an agent is not running on the main thread, it cannot display frames directly."
+            )
+            self.showFrames = False
 
         # self.xdashDebugger = XDashDebugger()
 
         self.testCapture()
 
-        self.updateOp.addGlobalUpdate(self.FRAMETOGGLEPOSTFIX, False)
+        self.sendFrameProp = self.updateOp.createGlobalUpdate(
+            self.FRAMETOGGLEPOSTFIX, default=False, loadIfSaved=False
+        )
+        self.calibProp = self.updateOp.createGlobalUpdate(
+            self.CALIBTOGGLEPOSTFIX, default=False, loadIfSaved=False
+        )
+        self.calibW = self.updateOp.createGlobalUpdate(
+            self.CALIBIDEALSHAPEHPOSTFIX, default=None, loadIfSaved=False
+        )
+        self.calibH = self.updateOp.createGlobalUpdate(
+            self.CALIBIDEALSHAPEWPOSTFIX, default=None, loadIfSaved=False
+        )
+        self.calibCount = self.updateOp.createGlobalUpdate(
+            self.CALIBIDEALCOUNT, default=self.DEFAULTCALIBCOUNT, loadIfSaved=False
+        )
+
         self.sendFrame = False
+        self.calib = False
 
         if self.showFrames:
             cv2.namedWindow(self.WINDOWNAMECOLOR)
@@ -67,15 +167,122 @@ class CameraUsingAgentBase(Agent):
         if not retTest:
             raise BrokenPipeError(f"Failed to read from camera! {type(self.capture)=}")
 
-    def preprocessFrame(self, frame):
-        """Optional method you can implement to add preprocessing to a frame"""
-        return frame
-
     def runPeriodic(self):
         super().runPeriodic()
-        self.sendFrame = self.updateOp.readGlobalUpdate(
-            self.FRAMETOGGLEPOSTFIX, default=False, loadIfSaved=False
-        )
+        self.sendFrame = self.sendFrameProp.get()
+        self.calib = self.calibProp.get()
+
+        if self.calib:
+
+            if not self.iscv2Configurable:
+                self.Sentinel.warning(
+                    "Attempted to start calibration, but this capture type cannot be calibrated!"
+                )
+            else:
+                w = self.calibW.get()
+                if w is None:
+                    # use default intrinsics width
+                    w = self.capture.getIntrinsics().getHres()
+
+                h = self.calibH.get()
+                if h is None:
+                    # use default intrinsics width
+                    h = self.capture.getIntrinsics().getVres()
+
+                numPics = self.calibCount.get()
+
+                self.Sentinel.info(f"Starting Calibration! Goal Resolution: {w=} {h=}")
+                calibrator = calibration.CustomCalibrator(
+                    self.capture, timePerPicture=0.1, targetResolution=(w, h)
+                )
+
+                while calibrator.frameIdx < numPics:
+                    frame = calibrator.calibrationCycle()
+                    # send frame
+                    framePacket = FramePacket.createPacket(
+                        time.time() * 1000, "Frame", frame
+                    )
+                    self.updateOp.addGlobalUpdate(
+                        self.FRAMEPOSTFIX, framePacket.to_bytes()
+                    )
+
+                    if self.showFrames:
+                        cv2.imshow(self.WINDOWNAMECOLOR, frame)
+                        if cv2.waitKey(1) & 0xFF == ord("q"):
+                            self.exit = True
+                            break
+
+                    # if at any time calibprop becomes false, exit this loop and skip
+                    if not self.calibProp.get():
+                        break
+
+                # only do if calib prop is still true
+                if self.calibProp.get() and not self.exit:
+                    shape = (h, w, 3)  # default
+
+                    def runOnLoop(frame, frame_cnt):
+                        cv2.putText(
+                            frame,
+                            f"Calibrating Frame Number {frame_cnt}/{numPics}...",
+                            (20, 50),
+                            1,
+                            3,
+                            (255, 255, 255),
+                            2,
+                        )
+
+                        # send frame
+                        framePacket = FramePacket.createPacket(
+                            time.time() * 1000, "Frame", frame
+                        )
+                        self.updateOp.addGlobalUpdate(
+                            self.FRAMEPOSTFIX, framePacket.to_bytes()
+                        )
+                        nonlocal shape
+                        shape = frame.shape
+
+                    uniqueCamIdentifier = self.capture.getUniqueCameraIdentifier()
+                    calibPath = (
+                        f"assets/{self.CALIBRATIONPREFIX}/{uniqueCamIdentifier}.json"
+                    )
+                    sucess = calibration.charuco_calibration(
+                        calibPath=calibPath, runOnLoop=runOnLoop, arucoboarddim=(18, 11)
+                    )
+
+                    finalFrame = np.zeros(shape=shape, dtype=np.uint8)
+                    if sucess:
+                        cv2.putText(
+                            finalFrame,
+                            f"Finished calibration sucessfully!",
+                            (20, 50),
+                            1,
+                            3,
+                            (255, 255, 255),
+                            2,
+                        )
+                    else:
+                        cv2.putText(
+                            finalFrame,
+                            f"Failed to create calibration!",
+                            (20, 50),
+                            1,
+                            3,
+                            (255, 255, 255),
+                            2,
+                        )
+
+                    framePacket = FramePacket.createPacket(
+                        time.time() * 1000, "Frame", finalFrame
+                    )
+                    self.updateOp.addGlobalUpdate(
+                        self.FRAMEPOSTFIX, framePacket.to_bytes()
+                    )
+
+            self.calib = False
+            self.updateOp.addGlobalUpdate(
+                self.CALIBTOGGLEPOSTFIX, False
+            )  # force a false
+
         # show last frame if enabled. This allows any drawing that might have been on the frame to be shown
         if self.hasIngested:
             # local showing of frame
@@ -116,15 +323,21 @@ class CameraUsingAgentBase(Agent):
                     raise BrokenPipeError("Camera failed to capture with depth!")
 
                 self.latestFrameDEPTH = latestFrames[0]
-                self.latestFrameCOLOR = self.preprocessFrame(latestFrames[1])
+
+                if self.preprocessFrame is not None:
+                    self.latestFrameCOLOR = self.preprocessFrame(latestFrames[1])
+                else:
+                    self.latestFrameCOLOR = latestFrames[1]
 
             else:
                 frame = self.capture.getColorFrame()
                 if frame is None:
                     raise BrokenPipeError("Camera failed to capture!")
 
-                self.latestFrameCOLOR = self.preprocessFrame(frame)
-                self.latestFrameDEPTH = None
+                if self.preprocessFrame is not None:
+                    self.latestFrameCOLOR = self.preprocessFrame(frame)
+                else:
+                    self.latestFrameCOLOR = frame
 
     def onClose(self) -> None:
         super().onClose()

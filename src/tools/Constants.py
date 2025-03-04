@@ -367,6 +367,9 @@ class CameraIntrinsics:
         assert len(self.value) > 4
         return self.value[4][1]
 
+    def __str__(self):
+        return f"({self.getHres()}x{self.getVres()})-(fx:{self.getFx()}|fy:{self.getFy()}|cx:{self.getCx()}|cy:{self.getCy()})"
+
     @staticmethod
     def getHfov(cameraIntr: "CameraIntrinsics", radians: bool = True):
         hres = cameraIntr.getHres()
@@ -441,6 +444,32 @@ class CameraIntrinsics:
 
         except Exception as e:
             print(f"Failed to open config! {e}")
+            return None
+
+    @staticmethod
+    def fromCustomConfigLoaded(loadedConfig):
+        try:
+            data = loadedConfig
+
+            cameraIntrinsics = data["CameraMatrix"]
+            fx = cameraIntrinsics[0][0]
+            fy = cameraIntrinsics[1][1]
+            cx = cameraIntrinsics[0][2]
+            cy = cameraIntrinsics[1][2]
+
+            width = int(data["resolution"]["width"])
+            height = int(data["resolution"]["height"])
+
+            return CameraIntrinsics(
+                hres_pix=width,
+                vres_pix=height,
+                fx_pix=fx,
+                fy_pix=fy,
+                cx_pix=cx,
+                cy_pix=cy,
+            )
+        except Exception as e:
+            print(f"Failed to create config! {e}")
             return None
 
     @staticmethod
@@ -519,6 +548,7 @@ class D435IResolution(Enum):
 class CommonVideos(Enum):
     ReefscapeCompilation = "assets/reefscapevid.mp4"
     Comp2024Clip = "assets/video12qual25clipped.mp4"
+    ArucoCalib = "assets/arucoCalib.mp4"
 
     @property
     def path(self):

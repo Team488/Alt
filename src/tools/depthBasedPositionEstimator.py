@@ -13,8 +13,8 @@ Sentinel = getLogger("Position_Estimator")
 
 class DepthBasedPositionEstimator:
     def __init__(self) -> None:
-        self.__blueRobotHist = staticLoad("histograms/blueRobotHist.npy")
-        self.__redRobotHist = staticLoad("histograms/redRobotHist.npy")
+        self.__blueRobotHist, _ = staticLoad("histograms/blueRobotHist.npy")
+        self.__redRobotHist, _ = staticLoad("histograms/redRobotHist.npy")
         self.__minPerc = 0.2
 
     def __crop_image(

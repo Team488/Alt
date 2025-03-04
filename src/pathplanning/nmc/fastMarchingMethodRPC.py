@@ -393,6 +393,7 @@ class VisionCoprocessorServicer(XTableGRPC.VisionCoprocessorServicer):
         base_grid = np.ones((grid_height, grid_width), dtype=float)
         start = (request.start.x, request.start.y)
         goal = (request.end.x, request.end.y)
+        print(f"{start=} {goal=}")
 
         SAFE_DISTANCE_INCHES = (
             max(DEFAULT_SAFE_DISTANCE_INCHES, request.safeDistanceInches)
@@ -418,16 +419,6 @@ class VisionCoprocessorServicer(XTableGRPC.VisionCoprocessorServicer):
         static_grid = apply_and_inflate_all_static_obstacles(
             base_grid, modified_static_obs, TOTAL_SAFE_DISTANCE
         )
-
-        if self.central is not None:
-            for idx, label in enumerate(self.central.labels):
-                if label in self.OBSTACLELABELS:
-                    map = self.central.objectmap.getMap(idx)
-                    map *= 1000  # scale from 0-1 -> 0-1000
-
-                    reshaped = cv2.resize(map, static_grid.shape)
-
-                    static_grid = np.add(static_grid, reshaped)
 
         pathfinder = FastMarchingPathfinder(static_grid)
         START = (int(start[0] * PIXELS_PER_METER_X), int(start[1] * PIXELS_PER_METER_Y))
@@ -457,6 +448,8 @@ class VisionCoprocessorServicer(XTableGRPC.VisionCoprocessorServicer):
         response = build_bezier_curves_proto(
             safe_bezier_segments_poses, request.options
         )
+
+        print(f"{safe_bezier_segments_poses=}")
 
         return response
 

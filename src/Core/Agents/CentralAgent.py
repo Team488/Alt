@@ -185,7 +185,7 @@ class CentralAgent(PositionLocalizingAgentBase):
                 nP.set(float(nearest[3]))
 
         closest_At, closest_branch = self.central.reefState.getClosestOpen(
-            self.robotPose2dCMRAD, threshold=0.7
+            self.robotPose2dCMRAD, threshold=0.4, team=self.getTeam()
         )
         if closest_At is None:
             closest_At = -1

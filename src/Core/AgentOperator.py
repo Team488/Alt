@@ -43,6 +43,7 @@ class AgentOperator:
                 f"active_agents.{agentName}.Description", description
             ).set(description)
         )
+        self.mainAgent = None
 
     def stopAndWait(self) -> None:
         self.__stop = True
@@ -61,7 +62,9 @@ class AgentOperator:
         self.__setStatus(agent.getName(), "starting")
         self.Sentinel.info("The agent is alive!")
 
+        self.mainAgent = agent
         self.__startAgentLoop(agent, futurePtr=None)
+        self.mainAgent = None
 
     def wakeAgent(self, agent: Agent) -> None:
         self.Sentinel.info(
@@ -113,13 +116,16 @@ class AgentOperator:
         """ Main part #2 possible shutdown"""
         # if thread was shutdown abruptly (self.__stop flag), perform shutdown
         # shutdown before onclose
+
         forceStopped = self.__stop
         if forceStopped:
             progressStr = "shutdown interrupt"
             self.__setStatus(agent.getName(), progressStr)
             self.Sentinel.debug("Shutting down agent")
             try:
-                agent.forceShutdown()
+                with timer.run("shutdown"):
+                    agent.forceShutdown()
+                    agent.hasShutdown = True
             except Exception as e:
                 failed = True
                 self.__handleException("shutdown", agent.getName(), e)
@@ -139,6 +145,7 @@ class AgentOperator:
             # cleanup
             with timer.run("cleanup"):
                 agent.onClose()
+                agent.hasClosed = True
 
         except Exception as e:
             self.__handleException("cleanup", agent.getName(), e)
@@ -170,7 +177,7 @@ class AgentOperator:
     def waitForAgentsToFinish(self) -> None:
         """Thread blocking method that waits for any running agents"""
         if self.__futures:
-            self.Sentinel.info("Waiting for agent to finish...")
+            self.Sentinel.info("Waiting for async agent to finish...")
             while True:
                 with self.__futureLock:
                     if not self.__futures:
@@ -178,7 +185,19 @@ class AgentOperator:
                 time.sleep(0.001)
             self.Sentinel.info("Agents have all finished.")
         else:
-            self.Sentinel.warning("No agents to wait for!")
+            self.Sentinel.warning("No threadpool agents to wait for!")
+
+        if self.mainAgent is not None:
+            if not self.mainAgent.hasShutdown:
+                with self.mainAgent.getTimer().run("shutdown"):
+                    self.Sentinel.info("Shutting agent down with sigint")
+                self.mainAgent.forceShutdown()
+            if not self.mainAgent.hasClosed:
+                self.Sentinel.info("Closing agent with sigint")
+                with self.mainAgent.getTimer().run("cleanup"):
+                    self.mainAgent.onClose()
+
+            self.Sentinel.info("Main agent finished")
 
     def shutDownNow(self) -> None:
         """Threadblocks until executor is finished"""
