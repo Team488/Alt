@@ -9,6 +9,27 @@ from assets.schemas import reefStatePacket_capnp
 
 
 class ReefPacket:
+    """
+         Reef Face Structure
+
+    l4-left (id 4)|  l4-right  (id 5)
+         \        |        /
+          \       |       /
+    l3-left (id 2)|  l3-right  (id 3)
+         \        |        /
+          \       |       /
+    l2-left (id 0)|  l2-right  (id 1)
+         \        |        /
+          \       |       /
+      --------------------------
+      |     April Tag id       |
+      --------------------------
+
+
+
+
+    """
+
     @staticmethod
     def createPacket(
         reefTrackerOutputCoral: Dict[int, Dict[int, float]],
@@ -16,6 +37,10 @@ class ReefPacket:
         message,
         timeStamp,
     ) -> reefStatePacket_capnp.ReefPacket:
+        """
+        Reef tracker output is in format {atid: {branchid: openness conf, ....}, ....}
+        Algae tracker output is in format {atid: {openness conf}, ....}
+        """
         packet = reefStatePacket_capnp.ReefPacket.new_message()
         packet.message = message
         packet.timestamp = timeStamp
@@ -90,11 +115,18 @@ class ReefPacket:
         return None
 
     def getFlattenedObservations(packet) -> list[tuple[int, int, float]]:
-        """Observations as a list of (april tag id, branch index, confidence)"""
+        """
+        Returns tuple of coral observations, and algae observations respectively
+        Reef Observations as a list of (april tag id, branch index, confidence)
+        Coral Observations as a list of (april tag id, confidence) \n
+        NOTE: there is only one algae observation per reef face
+        and that observation corresponds to either a low or high algae depending on the reef face april tag
+
+        """
         # Decompress the JPEG data
-        flattenedOutputReef = []
+        flattenedOutputCoral = []
         for observation in packet.observationsReef:
-            flattenedOutputReef.append(
+            flattenedOutputCoral.append(
                 (
                     observation.apriltagid,
                     observation.branchindex,
@@ -108,7 +140,7 @@ class ReefPacket:
                 (observation.apriltagid, observation.occupiedconfidence)
             )
 
-        return flattenedOutputReef, flattenedOutputAlgae
+        return flattenedOutputCoral, flattenedOutputAlgae
 
 
 def test_packet() -> None:
@@ -116,7 +148,7 @@ def test_packet() -> None:
     packet = ReefPacket.createPacket(observations, {}, "test", 0)
     bytes = packet.to_bytes()
     decoded = ReefPacket.fromBytes(bytes)
-    flattenedOutput = ReefPacket.getFlattenedObservations(packet)[0]
+    flattenedOutput = ReefPacket.getFlattenedObservations(packet)
     print(flattenedOutput)
 
 

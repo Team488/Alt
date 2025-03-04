@@ -11,8 +11,6 @@ import numpy as np
 import skfmm
 import json
 
-from tools.Units import LengthType
-
 
 class FastMarchingPathfinder:
     def __init__(self, grid_cost) -> None:
@@ -390,36 +388,11 @@ class VisionCoprocessorServicer(XTableGRPC.VisionCoprocessorServicer):
     OBSTACLELABELS = [Label.ALGAE, Label.ROBOT]
     THRESHOLD = 0.3
 
-    def setCentral(self, central: Central):
-        self.central: Central = central
-
     def RequestBezierPathWithOptions(self, request, context):
         print("RequestBezierPathWithOptions")
         base_grid = np.ones((grid_height, grid_width), dtype=float)
         start = (request.start.x, request.start.y)
         goal = (request.end.x, request.end.y)
-        isReef = request.arguments.goalToBestReef
-        # isAlgae = request.arguments.goalToBestReef
-        isBlue = request.arguments.alliance == XTableValues.Alliance.BLUE
-
-        team = TEAM.BLUE if isBlue else TEAM.RED
-        foundReefMatch = False
-        closestBranch = None
-        closestAT = None
-        if self.central is not None:
-            robotPosCM = (start[0] * 100, start[1] * 100, 0)
-            if isReef:
-                closestAT, closestBranch = self.central.reefState.getClosestOpen(
-                    robotPosCM,
-                    team,
-                    threshold=0.7,
-                    algaeThreshold=0.7,
-                    considerAlgaeBlocking=True,
-                )
-                if closestAT is not None:
-                    atPose = ATLocations.get_pose_by_id(closestAT, LengthType.M)
-                    goal = atPose[:2]  # just x,y meters
-                    foundReefMatch = True
 
         SAFE_DISTANCE_INCHES = (
             max(DEFAULT_SAFE_DISTANCE_INCHES, request.safeDistanceInches)
@@ -485,15 +458,6 @@ class VisionCoprocessorServicer(XTableGRPC.VisionCoprocessorServicer):
             safe_bezier_segments_poses, request.options
         )
 
-        if isReef and foundReefMatch:
-            camera = self.getATCameraFromBranch(closestBranch)
-            lvl = self.getBranchLevel(closestBranch)
-            id = closestAT
-
-            response.alignToReefAprilTagOptions.camera = camera
-            response.alignToReefAprilTagOptions.branchLevel = lvl
-            response.alignToReefAprilTagOptions.aprilTagID = id
-
         return response
 
     def getATCameraFromBranch(self, branch_idx: int):
@@ -515,10 +479,9 @@ class VisionCoprocessorServicer(XTableGRPC.VisionCoprocessorServicer):
         # print(f"WARNING: Invalid branch level {lvl=} {branch_idx=}")
 
 
-def serve(central: Union[Central, None]) -> None:
+def serve() -> None:
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     servicer = VisionCoprocessorServicer()
-    servicer.setCentral(central)
     XTableGRPC.add_VisionCoprocessorServicer_to_server(servicer, server)
 
     server.add_insecure_port("[::]:9281")  # Listen on all interfaces
@@ -535,4 +498,4 @@ def serve(central: Union[Central, None]) -> None:
 
 
 if __name__ == "__main__":
-    serve(None)
+    serve()

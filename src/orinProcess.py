@@ -1,16 +1,17 @@
-from Core.Neo import Neo
-from Core.Agents.CentralAgent import CentralAgent
-from pathplanning.nmc import fastMarchingMethodRPC
+# from Core.Neo import Neo
+# from Core.Agents.CentralAgent import CentralAgent
 
-from Core.Agents.alignmentCheck import partialAlignmentCheck
+# from Core.Agents.alignmentCheck import partialAlignmentCheck
 
-n = Neo()
+# n = Neo()
 
-central = n.getCentral()
-alignmentCheck = partialAlignmentCheck(showFrames=False)
+# central = n.getCentral()
+# alignmentCheck = partialAlignmentCheck(showFrames=False)
 
-n.wakeAgent(CentralAgent, isMainThread=True)
-# n.wakeAgent(alignmentCheck, isMainThread=False)
+# n.wakeAgent(CentralAgent, isMainThread=True)
+# # n.wakeAgent(alignmentCheck, isMainThread=False)
 
 # start pathplanning rpc
-# fastMarchingMethodRPC.serve(central)
+from pathplanning.nmc import fastMarchingMethodRPC
+
+fastMarchingMethodRPC.serve()
