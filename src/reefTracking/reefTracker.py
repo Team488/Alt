@@ -271,9 +271,9 @@ def backProjWhite(labImage, threshold=120):
 
 # purpleHist = np.load("assets/purpleReefPostHist.npy")
 # # purpleHist = np.load("assets/simulationPurpleReefPost.npy")
-purpleHist = staticLoad("histograms/reef_post_hist.npy ")
-whiteHist = staticLoad("histograms/whiteCoralHistBAD.npy")
-algaeHist = staticLoad("histograms/blueAlgaeHist.npy")
+purpleHist, purpleHistMTime = staticLoad("histograms/reef_post_hist.npy")
+whiteHist, whiteHistMTime = staticLoad("histograms/whiteCoralHistBAD.npy")
+algaeHist, algaeHistMTime = staticLoad("histograms/blueAlgaeHist.npy")
 objThresh = 0.2
 blockerThresh = 0.2
 fullpurpleThresh = 0.7

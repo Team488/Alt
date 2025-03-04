@@ -96,6 +96,7 @@ class Window(QMainWindow):
         fileToolBar = self.addToolBar("File")
         fileToolBar.addAction(self.openAction)
         fileToolBar.addAction(self.saveAction)
+        fileToolBar.addAction(self.syncAction)
         fileToolBar.addAction(self.clearAction)
         fileToolBar.addAction(self.closeAction)
         fileToolBar.addAction(self.cameraAction)
@@ -107,6 +108,8 @@ class Window(QMainWindow):
         self.clearAction.triggered.connect(self.onClear)
         self.saveAction = QAction("&Save", self)
         self.saveAction.triggered.connect(self.onSave)
+        self.syncAction = QAction("&Sync", self)
+        self.syncAction.triggered.connect(self.onSync)
         self.closeAction = QAction("&Close", self)
         self.closeAction.triggered.connect(self.onClose)
         self.cameraAction = QAction("&Open Camera", self)
@@ -204,6 +207,22 @@ class Window(QMainWindow):
                 self, "Save Histogram", QDir.currentPath(), "Numpy Files (*.npy)"
             )[0]
             np.save(fileName, self.maskedAbHist)
+
+    def onSync(self) -> None:
+        from tools.piSync import saveToTempNpy, syncPis
+
+        FILENAME = "reef_post_hist.npy"
+        print("Syncing")
+        if self.maskedAbHist is not None:
+            text, ok = QInputDialog.getText(
+                None, "Histogram Sync Name", "Name will be for pi's too"
+            )
+            if ok:
+                try:
+                    saveToTempNpy(text, self.maskedAbHist)
+                    syncPis(text)
+                except Exception as e:
+                    print(f"Error!: \n{e}")
 
     def onClose(self) -> None:
         if self.tabs.currentWidget() is not None:

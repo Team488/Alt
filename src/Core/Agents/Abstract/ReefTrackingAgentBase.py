@@ -1,3 +1,4 @@
+import datetime
 from functools import partial
 import math
 import time
@@ -7,6 +8,7 @@ import numpy as np
 
 from Core.Agents.Abstract.CameraUsingAgentBase import CameraUsingAgentBase
 from abstract.Capture import ConfigurableCapture
+from reefTracking import reefTracker
 from reefTracking.reefTracker import ReefTracker
 from reefTracking.poseSolver import poseSolver
 from tools.Constants import ATLocations, CameraExtrinsics, CameraIntrinsics
@@ -29,7 +31,26 @@ class ReefTrackingAgentBase(CameraUsingAgentBase):
         super().create()
         self.poseSolver = poseSolver()
         self.tracker = ReefTracker(cameraIntrinsics=self.cameraIntrinsics)
-        self.c = 0
+
+        self.putNetworkInfo()
+
+    def putNetworkInfo(self):
+        getReadable = lambda time: datetime.datetime.fromtimestamp(time).strftime(
+            "%Y-%m-%d %H:%M:%S"
+        )
+        purpleHistMtime = reefTracker.purpleHistMTime
+        whiteHistMtime = reefTracker.whiteHistMTime
+        algaeHistMtime = reefTracker.algaeHistMTime
+
+        self.propertyOperator.createReadOnlyProperty(
+            "ReefTracker.PurpleReefPostHist.TimeStamp", getReadable(purpleHistMtime)
+        )
+        self.propertyOperator.createReadOnlyProperty(
+            "ReefTracker.WhiteCoralHist.TimeStamp", getReadable(whiteHistMtime)
+        )
+        self.propertyOperator.createReadOnlyProperty(
+            "ReefTracker.AlgaeHist.TimeStamp", getReadable(algaeHistMtime)
+        )
 
     def runPeriodic(self) -> None:
         super().runPeriodic()
@@ -43,11 +64,6 @@ class ReefTrackingAgentBase(CameraUsingAgentBase):
             outCoral, outAlgae, "helloo", time.time() * 1000
         )
         self.updateOp.addGlobalUpdate(self.OBSERVATIONPOSTFIX, reefPkt.to_bytes())
-
-        # if self.c < 50:
-        #     cv2.imwrite(f"assets/Frame#{self.c}.jpg",self.latestFrame)
-        #     self.c+=1
-        # time.sleep(1)
 
     def getName(self) -> str:
         return "Reef_Tracking_Agent"

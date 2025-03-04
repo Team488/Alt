@@ -9,7 +9,6 @@ from tools.Constants import (
 )
 from Captures import ConfigurableCameraCapture, OAKCapture, D435Capture
 
-# removes the temp ip for testing in main
 # intr = CameraIntrinsicsPredefined.OAKDLITE4K
 # intr = CameraIntrinsicsPredefined.OV9782COLOR
 
