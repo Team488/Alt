@@ -97,6 +97,7 @@ class Window(QMainWindow):
         fileToolBar.addAction(self.openAction)
         fileToolBar.addAction(self.saveAction)
         fileToolBar.addAction(self.syncAction)
+        fileToolBar.addAction(self.localSave)
         fileToolBar.addAction(self.clearAction)
         fileToolBar.addAction(self.closeAction)
         fileToolBar.addAction(self.cameraAction)
@@ -110,6 +111,8 @@ class Window(QMainWindow):
         self.saveAction.triggered.connect(self.onSave)
         self.syncAction = QAction("&Sync", self)
         self.syncAction.triggered.connect(self.onSync)
+        self.localSave = QAction("&Sync", self)
+        self.localSave.triggered.connect(self.onLocalSave)
         self.closeAction = QAction("&Close", self)
         self.closeAction.triggered.connect(self.onClose)
         self.cameraAction = QAction("&Open Camera", self)
@@ -211,16 +214,29 @@ class Window(QMainWindow):
     def onSync(self) -> None:
         from tools.piSync import saveToTempNpy, syncPis
 
-        FILENAME = "reef_post_hist.npy"
         print("Syncing")
         if self.maskedAbHist is not None:
             text, ok = QInputDialog.getText(
-                None, "Histogram Sync Name", "Name will be for pi's too"
+                None, "Histogram Sync Name", "Name will be for pi's too!"
             )
             if ok:
                 try:
                     saveToTempNpy(text, self.maskedAbHist)
                     syncPis(text)
+                except Exception as e:
+                    print(f"Error!: \n{e}")
+
+    def onLocalSave(self) -> None:
+        from tools.piSync import saveToTempNpy, syncPis
+
+        print("Saving To Local")
+        if self.maskedAbHist is not None:
+            text, ok = QInputDialog.getText(
+                None, "Local Save Name", "Make sure to name correctly!"
+            )
+            if ok:
+                try:
+                    saveToTempNpy(text, self.maskedAbHist)
                 except Exception as e:
                     print(f"Error!: \n{e}")
 

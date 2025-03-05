@@ -14,8 +14,9 @@ class CalibrationController(Agent):
     NOTE: Due to openCVs nature this agent must be run in the main thread\n
     """
 
-    # CALIBPREFIXFILTER = "photonvisionrearleft"
-    CALIBPREFIXFILTER = "Adem-GamingPc"
+    # CALIBPREFIXFILTER = "photonvisionfrontright"
+    CALIBPREFIXFILTER = "photonvisionfrontleft"
+    # CALIBPREFIXFILTER = "Adem-GamingPc"
 
     def create(self) -> None:
         super().create()

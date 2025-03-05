@@ -182,7 +182,7 @@ class CameraUsingAgentBase(Agent):
 
                 self.Sentinel.info(f"Starting Calibration! Goal Resolution: {w=} {h=}")
                 calibrator = calibration.CustomCalibrator(
-                    self.capture, timePerPicture=0.1, targetResolution=(w, h)
+                    self.capture, timePerPicture=1, targetResolution=(w, h)
                 )
 
                 while calibrator.frameIdx < numPics:
@@ -215,9 +215,9 @@ class CameraUsingAgentBase(Agent):
                             f"Calibrating Frame Number {frame_cnt}/{numPics}...",
                             (20, 50),
                             1,
-                            3,
+                            1,
                             (255, 255, 255),
-                            2,
+                            1,
                         )
 
                         # send frame
@@ -245,9 +245,9 @@ class CameraUsingAgentBase(Agent):
                             f"Finished calibration sucessfully!",
                             (20, 50),
                             1,
-                            3,
+                            1,
                             (255, 255, 255),
-                            2,
+                            1,
                         )
                     else:
                         cv2.putText(
@@ -255,9 +255,9 @@ class CameraUsingAgentBase(Agent):
                             f"Failed to create calibration!",
                             (20, 50),
                             1,
-                            3,
+                            1,
                             (255, 255, 255),
-                            2,
+                            1,
                         )
 
                     framePacket = FramePacket.createPacket(

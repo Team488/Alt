@@ -77,6 +77,9 @@ class PathPlanningAgentBase(PositionLocalizingAgentBase):
             2,
         )
 
+        for idx, label in enumerate(self.central.objectmap.labels):
+            cv2.imshow(str(label), self.central.objectmap.getHeatMap(idx))
+
         cv2.imshow("pathplanner", frame)
         if cv2.waitKey(1) & 0xFF == ord("q"):
             self.runFlag = False
