@@ -20,6 +20,16 @@ class PositionLocalizingAgentBase(Agent):
         self.locY = self.propertyOperator.createReadOnlyProperty("Robot.Robot_Loc_Y", 0)
         self.locRot = self.propertyOperator.createReadOnlyProperty("Robot.Robot_Rot", 0)
 
+        self.positionOffsetXM = self.propertyOperator.createProperty(
+            "Position_Offset_X_M", propertyDefault=0, loadIfSaved=False
+        )
+        self.positionOffsetYM = self.propertyOperator.createProperty(
+            "Position_Offset_Y_M", propertyDefault=0, loadIfSaved=False
+        )
+        self.positionOffsetYAWDEG = self.propertyOperator.createProperty(
+            "Position_Offset_YAW_Deg", propertyDefault=0, loadIfSaved=False
+        )
+
         """Variable to store robot location. Units will be (X(m), Y(m), Yaw Rotation (rad))"""
         self.robotPose2dMRAD = (0, 0, 0)
         self.robotPose2dCMRAD = (0, 0, 0)

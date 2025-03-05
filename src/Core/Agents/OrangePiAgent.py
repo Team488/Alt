@@ -29,7 +29,7 @@ class OrangePiAgent(ReefTrackingAgentBase):
     Agent to be run on the orange pis"""
 
     def __init__(self) -> None:
-        self.device_name = CameraName.getCameraName().name
+        self.device_name = getCameraName().name
         # # camera values
         # cameraIntrinsics, _, _ = getCameraValues2024(self.device_name)
 

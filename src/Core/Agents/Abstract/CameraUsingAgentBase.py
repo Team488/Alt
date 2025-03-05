@@ -10,18 +10,9 @@ from abstract.Capture import Capture
 from coreinterface.FramePacket import FramePacket
 from tools.Constants import CameraIntrinsics
 from tools.depthAiHelper import DepthAIHelper
-from screeninfo import get_monitors
 from abstract.depthCamera import depthCamera
 from tools import calibration
 from Core.ConfigOperator import staticLoad
-
-
-def getPrimary():
-    mons = get_monitors()
-    for monitor in mons:
-        if monitor.is_primary:
-            return monitor
-    return None
 
 
 class CameraUsingAgentBase(Agent):
@@ -82,8 +73,6 @@ class CameraUsingAgentBase(Agent):
         self.exit = False
         self.WINDOWNAMEDEPTH = "depth_frame"
         self.WINDOWNAMECOLOR = "color_frame"
-        # self.primaryMonitor = getPrimary()
-        self.primaryMonitor = None
         self.latestFrameDEPTH = None
         self.latestFrameCOLOR = None
 
@@ -287,18 +276,6 @@ class CameraUsingAgentBase(Agent):
         if self.hasIngested:
             # local showing of frame
             if self.showFrames:
-                if self.primaryMonitor:
-                    self.latestFrameCOLOR = cv2.resize(
-                        self.latestFrameCOLOR,
-                        (self.primaryMonitor.width, self.primaryMonitor.height),
-                    )
-
-                    if self.latestFrameDEPTH is not None:
-                        self.latestFrameDEPTH = cv2.resize(
-                            self.latestFrameDEPTH,
-                            (self.primaryMonitor.width, self.primaryMonitor.height),
-                        )
-
                 cv2.imshow(self.WINDOWNAMECOLOR, self.latestFrameCOLOR)
 
                 if self.latestFrameDEPTH is not None:

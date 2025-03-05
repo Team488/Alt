@@ -7,16 +7,19 @@ from tools.Constants import (
     ColorCameraExtrinsics2024,
     InferenceMode,
 )
+from Captures import ConfigurableCameraCapture
 
 
 def startDemo() -> None:
     n = Neo()
     frameAgent = ReefAndObjectLocalizerPartial(
-        cameraPath="http://localhost:3000/Robot_FrontRight%20Camera?dummy=param.mjpg",
-        # cameraPath="assets/reefscapevid.mp4",
-        cameraIntrinsics=CameraIntrinsicsPredefined.SIMULATIONCOLOR,
+        capture=ConfigurableCameraCapture(
+            uniqueId="SIMExample",
+            cameraPath="http://localhost:3000/Robot_FrontRight%20Camera?dummy=param.mjpg",
+            cameraIntrinsics=CameraIntrinsicsPredefined.SIMULATIONCOLOR,
+        ),
         cameraExtrinsics=ColorCameraExtrinsics2024.FRONTRIGHT,
-        inferenceMode=InferenceMode.ALCOROULTRALYTICSSMALL2025BAD,
+        inferenceMode=InferenceMode.ALCOROBEST2025,
         showFrames=True,
     )
 

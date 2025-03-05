@@ -101,6 +101,7 @@ class CentralAgent(PositionLocalizingAgentBase):
         # print(f"{det_packet.timestamp=}")
         packet = (DetectionPacket.toDetections(det_packet), idOffset, lastidx)
         self.objectupdateMap[key] = packet
+        print(packet)
 
     def __handleReefUpdate(self, ret) -> None:
         val = ret.value
@@ -113,6 +114,7 @@ class CentralAgent(PositionLocalizingAgentBase):
         # print(f"{det_packet.timestamp=}")
         packet = (ReefPacket.getFlattenedObservations(reef_packet), lastidx)
         self.reefupdateMap[key] = packet
+        print(packet)
 
     def __centralUpdate(self) -> None:
         currentTime = time.time() * 1000

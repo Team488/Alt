@@ -201,9 +201,9 @@ def getClosest3FacesCoral(tag_to_cam_translation, frame):
     pitch, yaw, _ = Calculator.extract_pitch_yaw_roll(
         tag_to_cam_translation, format="XYZ"
     )
-    cv2.putText(
-        frame, f"h: {yaw:.2f} v: {pitch:.2f}", (0, 40), 0, 1, (255, 255, 255), 1
-    )
+    # cv2.putText(
+    #     frame, f"h: {yaw:.2f} v: {pitch:.2f}", (0, 40), 0, 1, (255, 255, 255), 1
+    # )
     horizontal_boxOffset = reefBoxOffsetsLEFT if yaw > 0 else reefBoxOffsetsRIGHT
     vertical_boxOffset = reefBoxOffsetsTOP if pitch < 0 else reefBoxOffsetsBOTTOM
     return [reefBoxOffsetsFRONT, horizontal_boxOffset, vertical_boxOffset]
@@ -213,9 +213,9 @@ def getClosest3FacesAlgae(tag_to_cam_translation, frame):
     pitch, yaw, _ = Calculator.extract_pitch_yaw_roll(
         tag_to_cam_translation, format="XYZ"
     )
-    cv2.putText(
-        frame, f"h: {yaw:.2f} v: {pitch:.2f}", (0, 40), 0, 1, (255, 255, 255), 1
-    )
+    # cv2.putText(
+    #     frame, f"h: {yaw:.2f} v: {pitch:.2f}", (0, 40), 0, 1, (255, 255, 255), 1
+    # )
     horizontal_boxOffset = algaeBoxOffsetsLEFT if yaw > 0 else algaeBoxOffsetsRIGHT
     vertical_boxOffset = algaeBoxOffsetsTOP if pitch < 0 else algaeBoxOffsetsBOTTOM
     return [algaeBoxOffsetsFRONT, horizontal_boxOffset, vertical_boxOffset]

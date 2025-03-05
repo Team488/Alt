@@ -42,7 +42,7 @@ class PositionEstimator:
             self.__blueRobotHist, _ = staticLoad("histograms/blueRobotHist.npy")
 
         self.__redRobotHist, _ = staticLoad("histograms/redRobotHist.npy")
-        self.__MAXRATIO, _ = 3  # max ratio between number width/height or vice versa
+        self.__MAXRATIO = 3  # max ratio between number width/height or vice versa
 
     """ Extract a rectangular slice of the image, given a bounding box. This is axis aligned"""
 

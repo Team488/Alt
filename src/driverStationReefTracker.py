@@ -13,16 +13,13 @@ from Captures import ConfigurableCameraCapture, OAKCapture, D435Capture
 # intr = CameraIntrinsicsPredefined.OV9782COLOR
 
 ReefTracker = ReefTrackingAgentPartial(
-    capture=ConfigurableCameraCapture(
-        "test",
-        CommonVideos.ReefscapeCompilation.path,
-        CameraIntrinsicsPredefined.OV9782COLOR,
-    ),
+    # capture=D435Capture(D435IResolution.RS720P),
+    capture=OAKCapture(OAKDLITEResolution.OAK1080P),
     showFrames=True,
 )
 # ReefTracker = ReefTrackingAgentPartial(cameraPath=0, cameraIntrinsics=intr, showFrames=True)
 # R
 
 n = Neo()
-n.wakeAgent(ReefTracker, isMainThread=False)
-n.waitForAgentsFinished()
+n.wakeAgent(ReefTracker, isMainThread=True)
+n.shutDown()

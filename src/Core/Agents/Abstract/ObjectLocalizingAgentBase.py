@@ -1,3 +1,4 @@
+import math
 import os
 from typing import Union
 import cv2
@@ -66,15 +67,18 @@ class ObjectLocalizingAgentBase(TimestampRegulatedAgentBase):
     def runPeriodic(self) -> None:
         super().runPeriodic()
         sendFrame = self.sendFrame
+        offsetXCm = self.positionOffsetXM.get() * 100
+        offsetYCm = self.positionOffsetYM.get() * 100
+        offsetYawRAD = math.radians(self.positionOffsetYAWDEG.get())
         with self.timer.run("frame-processing"):
             processedResults = self.frameProcessor.processFrame(
                 self.latestFrameCOLOR,
                 self.latestFrameDEPTH if self.depthEnabled else None,
-                robotPosXCm=self.robotPose2dCMRAD[0],
-                robotPosYCm=self.robotPose2dCMRAD[1],
-                robotYawRad=self.robotPose2dCMRAD[2],
-                drawBoxes=sendFrame
-                or self.showFrames,  # if you are sending frames, you likely want to see bounding boxes aswell
+                robotPosXCm=self.robotPose2dCMRAD[0] + offsetXCm,
+                robotPosYCm=self.robotPose2dCMRAD[1] + offsetYCm,
+                robotYawRad=self.robotPose2dCMRAD[2] + offsetYawRAD,
+                drawBoxes=sendFrame or self.showFrames,
+                # if you are sending frames, you likely want to see bounding boxes aswell
             )
 
         # add highest detection telemetry
