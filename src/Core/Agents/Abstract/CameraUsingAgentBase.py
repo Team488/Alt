@@ -42,6 +42,7 @@ class CameraUsingAgentBase(Agent):
             self.capture.__class__, ConfigurableCameraCapture
         )
         self.customLoaded = False
+        self.preprocessFrame = None
 
         if self.iscv2Configurable:
             # try and load a possible saved calibration
@@ -60,7 +61,6 @@ class CameraUsingAgentBase(Agent):
             else:
                 self.calibMTime = "Not_Loaded!"
                 self.customLoaded = False
-                self.preprocessFrame = None
 
         else:
             if self.depthEnabled:
