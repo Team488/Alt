@@ -46,6 +46,10 @@ git clone https://github.com/pyenv/pyenv-virtualenv.git $(pyenv root)/plugins/py
 
 ```bash
 cat <<'EOF' >> $HOME/.bashrc
+export PYENV_ROOT="$HOME/.pyenv"
+[[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"
+eval "$(pyenv init - bash)"
+
 if [[ -x $(command -v pyenv) ]]; then
     eval "$(pyenv init --path)"
     eval "$(pyenv init -)"
