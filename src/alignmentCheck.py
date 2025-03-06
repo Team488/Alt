@@ -1,4 +1,4 @@
-from Core.Agents.alignmentCheck import partialAlignmentCheck
+from Core.Agents.AlignmentCheck import partialAlignmentCheck
 from Core.Neo import Neo
 
 alignmentCheck = partialAlignmentCheck(showFrames=True)

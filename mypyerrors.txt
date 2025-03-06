@@ -1,0 +1,70 @@
+src/tools/XTutils.py:4: error: Function is missing a type annotation  [no-untyped-def]
+src/tools/CsvParser.py:32: error: Need type annotation for "values"  [var-annotated]
+src/tools/CsvParser.py:59: error: No overload variant of "__setitem__" of "list" matches argument types "int", "float"  [call-overload]
+src/tools/CsvParser.py:59: note: Possible overload variants:
+src/tools/CsvParser.py:59: note:     def __setitem__(self, SupportsIndex, int, /) -> None
+src/tools/CsvParser.py:59: note:     def __setitem__(self, slice[Any, Any, Any], Iterable[int], /) -> None
+src/tools/CsvParser.py:66: error: Function is missing a return type annotation  [no-untyped-def]
+src/tools/CsvParser.py:66: note: Use "-> None" if function does not return a value
+src/tools/CsvParser.py:81: error: Incompatible return value type (got "list[tuple[str, tuple[float, str]]]", expected "list[tuple[float, str]]")  [return-value]
+src/tools/CsvParser.py:93: error: Incompatible types in assignment (expression has type "float", variable has type "int")  [assignment]
+src/tools/CsvParser.py:94: error: Incompatible return value type (got "Optional[tuple[float, str]]", expected "tuple[float, str]")  [return-value]
+src/tools/CsvParser.py:102: error: Incompatible types in assignment (expression has type "float", variable has type "int")  [assignment]
+src/tools/CsvParser.py:109: error: Incompatible types in assignment (expression has type "float", variable has type "int")  [assignment]
+src/tools/CsvParser.py:118: error: Incompatible types in assignment (expression has type "float", variable has type "int")  [assignment]
+src/tools/CsvParser.py:125: error: Incompatible types in assignment (expression has type "float", variable has type "int")  [assignment]
+src/mapinternals/NumberMapper.py:2: error: Function is missing a type annotation  [no-untyped-def]
+src/mapinternals/NumberMapper.py:6: error: Function is missing a type annotation  [no-untyped-def]
+src/mapinternals/KalmanEntry.py:2: error: Function is missing a type annotation  [no-untyped-def]
+src/mapinternals/KalmanEntry.py:7: error: Function is missing a return type annotation  [no-untyped-def]
+src/mapinternals/KalmanEntry.py:7: note: Use "-> None" if function does not return a value
+src/abstract/BaseDemo.py:3: error: Function is missing a type annotation  [no-untyped-def]
+src/abstract/BaseDemo.py:5: error: Function is missing a return type annotation  [no-untyped-def]
+src/abstract/BaseDemo.py:5: note: Use "-> None" if function does not return a value
+src/pathplanning/utils.py:4: error: Function is missing a type annotation  [no-untyped-def]
+src/pathplanning/utils.py:9: error: Function is missing a type annotation  [no-untyped-def]
+src/Core/ShareOperator.py:6: error: Need type annotation for "__sharedMap" (hint: "__sharedMap: dict[<type>, <type>] = ...")  [var-annotated]
+src/Core/ShareOperator.py:10: error: Function is missing a type annotation  [no-untyped-def]
+src/Core/ShareOperator.py:14: error: Function is missing a type annotation  [no-untyped-def]
+src/Core/ShareOperator.py:18: error: Function is missing a type annotation  [no-untyped-def]
+src/Core/LogManager.py:9: error: Function is missing a type annotation  [no-untyped-def]
+src/Core/LogManager.py:13: error: Function is missing a type annotation  [no-untyped-def]
+src/tools/configLoader.py:10: error: Function is missing a type annotation  [no-untyped-def]
+src/tools/configLoader.py:23: error: Function is missing a type annotation  [no-untyped-def]
+src/tools/configLoader.py:34: error: Function is missing a return type annotation  [no-untyped-def]
+src/tools/configLoader.py:41: error: Function is missing a return type annotation  [no-untyped-def]
+src/tools/configLoader.py:48: error: Function is missing a return type annotation  [no-untyped-def]
+src/tools/configLoader.py:54: error: Function is missing a return type annotation  [no-untyped-def]
+src/tools/Constants.py:4: error: Skipping analyzing "scipy.spatial.transform": module is installed, but missing library stubs or py.typed marker  [import-untyped]
+src/tools/histogramCreator.py:587: note: Use "-> None" if function does not return a value
+src/tools/histogramCreator.py:591: error: Name "QWidget" is not defined  [name-defined]
+src/tools/histogramCreator.py:592: error: Name "pyqtSignal" is not defined  [name-defined]
+src/tools/histogramCreator.py:594: error: Function is missing a type annotation  [no-untyped-def]
+src/tools/histogramCreator.py:601: error: Function is missing a return type annotation  [no-untyped-def]
+src/tools/histogramCreator.py:601: note: Use "-> None" if function does not return a value
+src/tools/histogramCreator.py:618: error: Function is missing a return type annotation  [no-untyped-def]
+src/tools/histogramCreator.py:618: note: Use "-> None" if function does not return a value
+src/tools/histogramCreator.py:628: error: Function is missing a type annotation  [no-untyped-def]
+src/tools/histogramCreator.py:631: error: Function is missing a type annotation  [no-untyped-def]
+src/tools/histogramCreator.py:634: error: Function is missing a type annotation  [no-untyped-def]
+src/tools/histogramCreator.py:637: error: Function is missing a return type annotation  [no-untyped-def]
+src/tools/histogramCreator.py:637: note: Use "-> None" if function does not return a value
+src/tools/histogramCreator.py:641: error: Function is missing a type annotation  [no-untyped-def]
+src/tools/histogramCreator.py:646: error: Name "QThread" is not defined  [name-defined]
+src/tools/histogramCreator.py:647: error: Name "pyqtSignal" is not defined  [name-defined]
+src/tools/histogramCreator.py:648: error: Name "pyqtSignal" is not defined  [name-defined]
+src/tools/histogramCreator.py:648: error: Name "QPixmap" is not defined  [name-defined]
+src/tools/histogramCreator.py:649: error: Name "pyqtSignal" is not defined  [name-defined]
+src/tools/histogramCreator.py:649: error: Name "QPixmap" is not defined  [name-defined]
+src/tools/histogramCreator.py:651: error: Function is missing a type annotation  [no-untyped-def]
+src/tools/histogramCreator.py:662: error: Function is missing a return type annotation  [no-untyped-def]
+src/tools/histogramCreator.py:662: note: Use "-> None" if function does not return a value
+src/tools/histogramCreator.py:680: error: Function is missing a return type annotation  [no-untyped-def]
+src/tools/histogramCreator.py:680: note: Use "-> None" if function does not return a value
+src/tools/histogramCreator.py:683: error: Function is missing a type annotation  [no-untyped-def]
+src/tools/histogramCreator.py:691: error: Function is missing a type annotation  [no-untyped-def]
+src/tools/histogramCreator.py:691: error: Name "QImage" is not defined  [name-defined]
+src/tools/histogramCreator.py:700: error: Function is missing a type annotation  [no-untyped-def]
+src/tools/histogramCreator.py:712: error: Function is missing a return type annotation  [no-untyped-def]
+src/tools/histogramCreator.py:712: note: Use "-> None" if function does not return a value
+src/tools/histogramCreator.py:720: error: Call to untyped function "main" in typed context  [no-untyped-call]
