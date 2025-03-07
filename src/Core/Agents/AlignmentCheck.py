@@ -16,9 +16,7 @@ class AlignmentChecker(CameraUsingAgentBase):
 
     def __init__(self, showFrames: bool):
         mjpeg_url = "http://localhost:1181/stream.mjpg"
-        super().__init__(
-            capture=FileCapture(videoFilePath=mjpeg_url), showFrames=showFrames
-        )
+        super().__init__(capture=FileCapture(videoFilePath=0), showFrames=showFrames)
 
     def create(self) -> None:
         super().create()

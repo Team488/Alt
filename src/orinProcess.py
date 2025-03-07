@@ -5,8 +5,6 @@ from Core.Agents.CentralAgent import CentralAgent
 
 n = Neo()
 
-central = n.getCentral()
-# alignmentCheck = partialAlignmentCheck(showFrames=False)
 
 n.wakeAgent(CentralAgent, isMainThread=False)
 # # n.wakeAgent(alignmentCheck, isMainThread=False)

@@ -14,6 +14,11 @@ class FrameDisplayer(Agent):
     NOTE: Due to openCVs nature this agent must be run in the main thread\n
     """
 
+    FilteredHostname = "photonvisionfrontright"
+
+    def filter(self, path: str):
+        return path.startswith(self.FilteredHostname)
+
     def create(self) -> None:
         super().create()
         # perform agent init here (eg open camera or whatnot)
@@ -34,6 +39,7 @@ class FrameDisplayer(Agent):
             updateSubscriber=self.__handleUpdate,
             runOnNewSubscribe=self.addKey,
             runOnRemoveSubscribe=self.removeKey,
+            pathFilter=self.filter,
         )
 
     def __handleUpdate(self, ret) -> None:
