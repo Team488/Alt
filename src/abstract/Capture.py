@@ -19,7 +19,7 @@ class Capture(ABC):
         """Returns fps of capture"""
         pass
 
-    def getFrameShape(self) -> np._Shape:
+    def getFrameShape(self):
         return self.getColorFrame().shape
 
     @abstractmethod

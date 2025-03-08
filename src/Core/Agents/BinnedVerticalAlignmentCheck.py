@@ -4,7 +4,7 @@ import cv2
 import numpy as np
 from Core.Agents.Abstract import CameraUsingAgentBase
 from Captures.FileCapture import FileCapture
-
+from tools.Constants import SimulationEndpoints
 from functools import partial
 from abstract.Agent import Agent
 
@@ -13,7 +13,8 @@ class BinnedVerticalAlignmentChecker(CameraUsingAgentBase):
     DEFAULTTHRESH = 10  # Default threshold in pixels
 
     def __init__(self, showFrames: bool, flushTimeMS: int = -1):
-        mjpeg_url = "http://localhost:1181/stream.mjpg"
+        # mjpeg_url = "http://localhost:1181/stream.mjpg"
+        mjpeg_url = SimulationEndpoints.FRONTRIGHTAPRILTAGSIM.path
         super().__init__(
             capture=FileCapture(videoFilePath=mjpeg_url, flushTimeMS=flushTimeMS),
             showFrames=showFrames,
