@@ -558,7 +558,7 @@ class CommonVideos(Enum):
 class SimulationEndpoints(Enum):
     FRONTRIGHTSIM = "http://localhost:3000/Robot_FrontRight%20Camera?dummy=param.mjpg"
     FRONTRIGHTAPRILTAGSIM = (
-        "http://localhost:3000/Robot_FrontRightAT%20Camera?dummy=param.mjpg"
+        "http://localhost:3000/Robot_FrontRight%20CameraAT?dummy=param.mjpg"
     )
     FRONTLEFTSIM = "http://localhost:3000/Robot_FrontLeft%20Camera?dummy=param.mjpg"
     REARRIGHTSIM = "http://localhost:3000/Robot_RearRight%20Camera?dummy=param.mjpg"
