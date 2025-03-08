@@ -5,9 +5,9 @@ import cv2
 
 
 class FileCapture(Capture):
-    def __init__(self, videoFilePath: str, flushTimeMs: int = -1) -> None:
+    def __init__(self, videoFilePath: str, flushTimeMS: int = -1) -> None:
         self.path = videoFilePath
-        self.flushTimeMS = flushTimeMs
+        self.flushTimeMS = flushTimeMS
 
     def create(self):
         self.cap = cv2.VideoCapture(self.path)
