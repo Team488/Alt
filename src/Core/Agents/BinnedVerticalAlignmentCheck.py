@@ -12,9 +12,12 @@ from abstract.Agent import Agent
 class BinnedVerticalAlignmentChecker(CameraUsingAgentBase):
     DEFAULTTHRESH = 10  # Default threshold in pixels
 
-    def __init__(self, showFrames: bool, flushTimeMS: int = -1):
-        # mjpeg_url = "http://localhost:1181/stream.mjpg"
-        mjpeg_url = SimulationEndpoints.FRONTRIGHTAPRILTAGSIM.path
+    def __init__(
+        self,
+        showFrames: bool,
+        flushTimeMS: int = -1,
+        mjpeg_url: str = "http://localhost:1181/stream.mjpg",
+    ):
         super().__init__(
             capture=FileCapture(videoFilePath=mjpeg_url, flushTimeMS=flushTimeMS),
             showFrames=showFrames,
@@ -199,7 +202,14 @@ class BinnedVerticalAlignmentChecker(CameraUsingAgentBase):
         return "Detects-Vertical-Edges-For-AprilTag-Alignment"
 
 
-def partialVerticalAlignmentCheck(showFrames: bool = False, flushTimeMS: int = -1):
+def partialVerticalAlignmentCheck(
+    showFrames: bool = False,
+    flushTimeMS: int = -1,
+    mjpeg_url="http://localhost:1181/stream.mjpg",
+):
     return partial(
-        BinnedVerticalAlignmentChecker, showFrames=showFrames, flushTimeMS=flushTimeMS
+        BinnedVerticalAlignmentChecker,
+        showFrames=showFrames,
+        flushTimeMS=flushTimeMS,
+        mjpeg_url=mjpeg_url,
     )
