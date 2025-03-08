@@ -1,3 +1,5 @@
+from typing import List, Tuple, Optional
+
 class CsvParser:
     """Reads in a csv file and extracts the keys provided into a dict"""
 
@@ -6,7 +8,7 @@ class CsvParser:
     ) -> None:
         self.keys = csvKeys
         union = self.__calculateUnion(csvKeys)
-        self.values = self.__parseCsvIntoGroups(
+        self.values: List[List[Tuple[float, str]]] = self.__parseCsvIntoGroups(
             csvLocation, union, minTimestepS, csvKeys
         )
 
@@ -27,9 +29,9 @@ class CsvParser:
 
     def __parseCsvIntoGroups(
         self, csvLocation: str, union: str, minTimestepS: float, csvKeys: list[str]
-    ) -> list[list[tuple[float, str]]]:
-        lastTimeStamps = [-1] * len(csvKeys)
-        values = [list() for _ in range(len(csvKeys))]
+    ) -> List[List[Tuple[float, str]]]:
+        lastTimeStamps = [-1.0] * len(csvKeys)
+        values: List[List[Tuple[float, str]]] = [[] for _ in range(len(csvKeys))]
         csvLens = [len(k) for k in csvKeys]
         unionLen = len(union)
         with open(csvLocation, "r") as file:
@@ -72,8 +74,8 @@ class CsvParser:
                 else:
                     break
 
-    def getNearestValues(self, timeSeconds: float) -> list[tuple[float, str]]:
-        ret = []
+    def getNearestValues(self, timeSeconds: float) -> list[tuple[str, tuple[float, str]]]:
+        ret: List[Tuple[str, Tuple[float, str]]] = []
         for i in range(len(self.keys)):
             keyName = self.keys[i]
             nearest = self.__getNearestValue(timeSeconds, self.values[i])
@@ -83,27 +85,28 @@ class CsvParser:
     def __getNearestValue(
         self, timeSeconds: float, values: list[tuple[float, str]]
     ) -> tuple[float, str]:
-        nearest = None
-        diff = 100000
+        nearest: Optional[tuple[float, str]] = None
+        diff = 100000.0
         for entry in values:
             timeStamp = entry[0]
             newDiff = abs(timeSeconds - timeStamp)
             if newDiff < diff:
                 nearest = entry
                 diff = newDiff
-        return nearest
+        # Return a default if nearest is None
+        return nearest if nearest is not None else (0.0, "")
 
     """ Absolute max timestamp value in the data"""
 
     def getMaxTimeStamp(self) -> float:
-        maxValue = 0
+        maxValue = 0.0
         for i in range(len(self.keys)):
             maxTimeStamp = self.__getMaxTimeStamp(self.values[i])
             maxValue = max(maxValue, maxTimeStamp)
         return maxValue
 
     def __getMaxTimeStamp(self, values: list[tuple[float, str]]) -> float:
-        maxTimeStamp = 0
+        maxTimeStamp = 0.0
         for entry in values:
             timeStamp = entry[0]
             maxTimeStamp = max(timeStamp, maxTimeStamp)
@@ -112,14 +115,14 @@ class CsvParser:
     """ Absolute min timestamp value in the data"""
 
     def getMinTimeStamp(self) -> float:
-        minValue = 0
+        minValue = 0.0
         for i in range(len(self.keys)):
             minTimeStamp = self.__getMinTimeStamp(self.values[i])
             minValue = min(minValue, minTimeStamp)
         return minValue
 
     def __getMinTimeStamp(self, values: list[tuple[float, str]]) -> float:
-        minTimeStamp = 0
+        minTimeStamp = 0.0
         for entry in values:
             timeStamp = entry[0]
             minTimeStamp = min(timeStamp, minTimeStamp)

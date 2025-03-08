@@ -1,8 +1,12 @@
 from dataclasses import dataclass
-
+from typing import Dict, List, Any, Optional, Tuple, Union
 from enum import Enum
-
 import math
+
+# Define the missing constants
+RED_ALLIANCE_TAGS = [1, 2, 3, 4, 5, 6, 7, 8]
+BLUE_ALLIANCE_TAGS = [11, 12, 13, 14, 15, 16, 17, 18]
+BRANCHES = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K"]
 
 
 class Alliance(Enum):
@@ -90,7 +94,7 @@ class Reef:
 
     def init_branch_states(self) -> None:
         # Initialize Branch States:
-        self.branch_state = {}
+        self.branch_state: Dict[str, Dict['Reef.Level', 'Reef.CoralState']] = {}
         for branch in BRANCHES:
             # Initialize L2, L3, L4
             self.branch_state.update(
@@ -103,60 +107,60 @@ class Reef:
                 }
             )
 
-    def get_all_states(self):
+    def get_all_states(self) -> Dict[str, Dict['Reef.Level', 'Reef.CoralState']]:
         return self.branch_state
 
     # Get the state of the branches
-    def get_branch(self, branch: Branch):
-        return self.branch_state.get(branch)
+    def get_branch(self, branch: 'Reef.Branch') -> Dict['Reef.Level', 'Reef.CoralState']:
+        return self.branch_state.get(branch.name, {})
 
     # get_branch_state_at("A", Reef.Level.L2) => Reef.BranchState.OFF
-    def get_branch_state_at(self, branch: Branch, level: Level):
+    def get_branch_state_at(self, branch: 'Reef.Branch', level: 'Reef.Level') -> 'Reef.CoralState':
         branch_face = self.get_branch(branch)
         # print("branch", branch_face)
-        return branch_face.get(level)
+        return branch_face.get(level, self.CoralState.OFF)
 
     # get_branches_at_tag(7) => ["A", "B"]
-    def get_branches_at_tag(self, id: int):
+    def get_branches_at_tag(self, id: int) -> List[str]:
         if id in self.alliance_tags:
             index = self.alliance_tags.index(id) * 2
             return BRANCHES[index : index + 2]
         return []
 
-    def get_self_alliance_tags(self):
+    def get_self_alliance_tags(self) -> List[int]:
         return self.alliance_tags
 
     # get_tag_from_branch("A") => 7
-    def get_tag_from_branch(self, branch: chr):
+    def get_tag_from_branch(self, branch: 'Reef.Branch') -> int:
         index = int(math.floor(branch.value[0] / 2))  # Retrieves the index
         return self.alliance_tags[index]
 
     # toggle_branch(Reef.Branch.A, Reef.Level.L1) => sets to true
     def set_branch_state(self, branch: Branch, level: Level, state: CoralState) -> None:
-        self.branch_state[branch][level] = state
+        self.branch_state[branch.name][level] = state
 
     # get_branch_with_state(CoralState.ON) => [A, B, C] which contains only CoralState.ON
-    def get_branch_with_state(self, state: CoralState):
-        lst = []
-        for branch, levels in self.branch_state.items():
+    def get_branch_with_state(self, state: 'Reef.CoralState') -> List[Tuple[str, str]]:
+        lst: List[Tuple[str, str]] = []
+        for branch_str, levels in self.branch_state.items():
             for level, coral_state in levels.items():
                 if coral_state == state:
-                    lst.append((branch.name, level.name))
+                    lst.append((branch_str, level.name))
         return lst
 
     # id : 6 => ReefFace.CLOSE_LEFT
-    def get_tag_to_ReefFace(self, tag_id: int):
+    def get_tag_to_ReefFace(self, tag_id: int) -> 'Reef.ReefFace':
         index = self.alliance_tags.index(tag_id)
         return self.ReefFace(index)
 
-    def get_ReefFace_to_tag(self, reef_face: ReefFace):
+    def get_ReefFace_to_tag(self, reef_face: 'Reef.ReefFace') -> int:
         return self.alliance_tags[reef_face.value]
 
     # returns the branch and their states at level level
-    def get_branches_at_level_with_state(self, level: Level, state: CoralState):
+    def get_branches_at_level_with_state(self, level: 'Reef.Level', state: 'Reef.CoralState') -> List[str]:
         return [
-            branch.name
-            for branch, levels in self.branch_state.items()
+            branch_str
+            for branch_str, levels in self.branch_state.items()
             if levels[level] == state
         ]
 

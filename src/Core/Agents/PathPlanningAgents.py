@@ -14,7 +14,9 @@ class DriveToTargetAgent(CentralAgent, PathPlanningAgentBase):
         self.bestX = self.propertyOperator.createReadOnlyProperty("bestTarget.bestX", 0)
         self.bestY = self.propertyOperator.createReadOnlyProperty("bestTarget.bestY", 0)
 
-    def getPath(self):
+    def getPath(self) -> Any:
+        from typing import Any, List, Tuple, Optional
+        
         target = self.central.objectmap.getHighestObject(class_idx=1)
         conf = target[2]
 
