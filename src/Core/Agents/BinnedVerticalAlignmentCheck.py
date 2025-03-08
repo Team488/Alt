@@ -11,6 +11,7 @@ from abstract.Agent import Agent
 
 class BinnedVerticalAlignmentChecker(CameraUsingAgentBase):
     DEFAULTTHRESH = 10  # Default threshold in pixels
+    testHostname = "photonvisionfrontright"  # for testing ONLY
 
     def __init__(
         self,
@@ -25,24 +26,48 @@ class BinnedVerticalAlignmentChecker(CameraUsingAgentBase):
 
     def create(self) -> None:
         super().create()
-        self.leftDistanceProp = self.propertyOperator.createCustomReadOnlyProperty(
-            propertyTable="verticalEdgeLeftDistancePx",
-            propertyValue=-1,
-            addBasePrefix=True,
-            addOperatorPrefix=False,
-        )
-        self.rightDistanceProp = self.propertyOperator.createCustomReadOnlyProperty(
-            propertyTable="verticalEdgeRightDistancePx",
-            propertyValue=-1,
-            addBasePrefix=True,
-            addOperatorPrefix=False,
-        )
-        self.isCenteredConfidently = self.propertyOperator.createCustomReadOnlyProperty(
-            propertyTable="verticalAlignedConfidently",
-            propertyValue=False,
-            addBasePrefix=True,
-            addOperatorPrefix=False,
-        )
+        if self.testHostname is None:
+            self.leftDistanceProp = self.propertyOperator.createCustomReadOnlyProperty(
+                propertyTable="verticalEdgeLeftDistancePx",
+                propertyValue=-1,
+                addBasePrefix=True,
+                addOperatorPrefix=False,
+            )
+            self.rightDistanceProp = self.propertyOperator.createCustomReadOnlyProperty(
+                propertyTable="verticalEdgeRightDistancePx",
+                propertyValue=-1,
+                addBasePrefix=True,
+                addOperatorPrefix=False,
+            )
+            self.isCenteredConfidently = (
+                self.propertyOperator.createCustomReadOnlyProperty(
+                    propertyTable="verticalAlignedConfidently",
+                    propertyValue=False,
+                    addBasePrefix=True,
+                    addOperatorPrefix=False,
+                )
+            )
+        else:
+            self.leftDistanceProp = self.propertyOperator.createCustomReadOnlyProperty(
+                propertyTable=f"{self.testHostname}.verticalEdgeLeftDistancePx",
+                propertyValue=-1,
+                addBasePrefix=False,
+                addOperatorPrefix=False,
+            )
+            self.rightDistanceProp = self.propertyOperator.createCustomReadOnlyProperty(
+                propertyTable=f"{self.testHostname}.verticalEdgeRightDistancePx",
+                propertyValue=-1,
+                addBasePrefix=False,
+                addOperatorPrefix=False,
+            )
+            self.isCenteredConfidently = (
+                self.propertyOperator.createCustomReadOnlyProperty(
+                    propertyTable=f"{self.testHostname}.verticalAlignedConfidently",
+                    propertyValue=False,
+                    addBasePrefix=False,
+                    addOperatorPrefix=False,
+                )
+            )
 
         self.sobel_threshold = self.propertyOperator.createProperty(
             propertyTable="inital_sobel_thresh",
