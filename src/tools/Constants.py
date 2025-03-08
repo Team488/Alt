@@ -178,9 +178,13 @@ class InferenceMode(Enum):
 
     @classmethod
     def assertModelType(
-        cls, inferenceMode1: "InferenceMode", inferenceMode2: "InferenceMode"
+        cls, coreInfMode: "InferenceMode", yourInfMode: "InferenceMode"
     ):
-        return inferenceMode1.getModelType() == inferenceMode2.getModelType()
+        # your model must be a subset of the core model running
+        for label in yourInfMode.getLabels():
+            if label not in coreInfMode.getLabels():
+                return False
+        return True
 
 
 class Object(Enum):
@@ -508,6 +512,15 @@ class CameraIntrinsicsPredefined:
         414,  # Calibrated Fx, Fy
         320,
         240,  # Calibrated Cx, Cy
+    )
+
+    OAKESTIMATE = CameraIntrinsics(
+        hres_pix=1920,
+        vres_pix=1080,  # Resolution
+        fx_pix=900,
+        fy_pix=850,  # Calibrated Fx, Fy
+        cx_pix=981,
+        cy_pix=500,  # Calibrated Cx, Cy
     )
 
 
