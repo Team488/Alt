@@ -1,11 +1,13 @@
 import numpy as np
+from Captures import utils
 from abstract.Capture import Capture
 import cv2
 
 
 class FileCapture(Capture):
-    def __init__(self, videoFilePath: str) -> None:
+    def __init__(self, videoFilePath: str, flushTimeMs: int = -1) -> None:
         self.path = videoFilePath
+        self.flushTimeMS = flushTimeMs
 
     def create(self):
         self.cap = cv2.VideoCapture(self.path)
@@ -21,6 +23,8 @@ class FileCapture(Capture):
         return retTest
 
     def getColorFrame(self) -> np.ndarray:
+        if self.flushTimeMS > 0:
+            utils.flushCapture(self.cap, self.flushTimeMS)
         return self.cap.read()[1]
 
     def getFps(self):

@@ -3,6 +3,7 @@ import cv2
 import numpy as np
 from abstract.Capture import ConfigurableCapture
 from tools.Constants import CameraIntrinsics
+from Captures import utils
 
 
 class ConfigurableCameraCapture(ConfigurableCapture):
@@ -11,9 +12,11 @@ class ConfigurableCameraCapture(ConfigurableCapture):
         uniqueId: str,
         cameraPath: Union[str, int],
         cameraIntrinsics: CameraIntrinsics,
+        flushTimeMS: int = -1,
     ):
         self.uniqueId = uniqueId
         self.path = cameraPath
+        self.flushTimeMS = flushTimeMS
         super().setIntrinsics(cameraIntrinsics)
 
     def create(self):
@@ -34,6 +37,8 @@ class ConfigurableCameraCapture(ConfigurableCapture):
         return retTest
 
     def getColorFrame(self) -> np.ndarray:
+        if self.flushTimeMS > 0:
+            utils.flushCapture(self.cap, self.flushTimeMS)
         return self.cap.read()[1]
 
     def getFps(self):
