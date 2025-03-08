@@ -6,11 +6,12 @@ from tools.depthAiHelper import DepthAIHelper
 class OAKCapture(depthCamera):
     def __init__(self, res: OAKDLITEResolution):
         self.res = res
-
-    def create(self):
         self.depthAiHelper = DepthAIHelper(self.res)
         super().setIntrinsics(self.depthAiHelper.getColorIntrinsics())
 
+    def create(self):
+        pass
+    
     def getDepthAndColorFrame(self):
         return (self.depthAiHelper.getDepthFrame(), self.depthAiHelper.getColorFrame())
 
