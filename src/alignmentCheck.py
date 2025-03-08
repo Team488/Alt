@@ -4,7 +4,7 @@ from tools.Constants import SimulationEndpoints
 
 alignmentCheck = partialVerticalAlignmentCheck(
     showFrames=True,
-    flushTimeMS=200,
+    flushTimeMS=-1,
     mjpeg_url=SimulationEndpoints.FRONTRIGHTAPRILTAGSIM.path,
 )
 
