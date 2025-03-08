@@ -3,3 +3,5 @@ pyrealsense2
 scikit-fmm
 depthai
 numba
+robotpy_apriltag
+
