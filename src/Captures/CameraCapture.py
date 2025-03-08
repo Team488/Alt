@@ -36,6 +36,9 @@ class ConfigurableCameraCapture(ConfigurableCapture):
     def getColorFrame(self) -> np.ndarray:
         return self.cap.read()[1]
 
+    def getFps(self):
+        return self.cap.get(cv2.CAP_PROP_FPS)
+
     def isOpen(self) -> bool:
         return self.cap.isOpened()
 

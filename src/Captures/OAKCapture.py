@@ -20,6 +20,9 @@ class OAKCapture(depthCamera):
     def getColorFrame(self):
         return self.depthAiHelper.getColorFrame()
 
+    def getFps(self):
+        return self.depthAiHelper.getFps()
+
     def isOpen(self):
         return self.depthAiHelper.isOpen()
 

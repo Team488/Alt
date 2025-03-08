@@ -5,6 +5,7 @@ from tools.Constants import CameraIntrinsics
 
 
 class Capture(ABC):
+    @abstractmethod
     def create(self):
         """Opens the capture, or throwing an exception if it cannot be opened"""
 
@@ -12,6 +13,14 @@ class Capture(ABC):
     def getColorFrame(self) -> np.ndarray:
         """Returns a color frame"""
         pass
+
+    @abstractmethod
+    def getFps(self) -> int:
+        """Returns fps of capture"""
+        pass
+
+    def getFrameShape(self) -> np._Shape:
+        return self.getColorFrame().shape
 
     @abstractmethod
     def isOpen(self) -> bool:

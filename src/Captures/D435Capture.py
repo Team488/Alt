@@ -8,12 +8,15 @@ class D435Capture(depthCamera):
         self.res = res
 
     def create(self):
-        self.realsenseHelper = realsense2Helper(res)
+        self.realsenseHelper = realsense2Helper(self.res)
         intr = self.realsenseHelper.getCameraIntrinsics()
         super().setIntrinsics(intr)
 
     def getColorFrame(self):
         return self.realsenseHelper.getDepthAndColor()[1]
+
+    def getFps(self):
+        return self.realsenseHelper.getFps()
 
     def getDepthFrame(self):
         return self.getDepthAndColorFrame()[0]  # linked together

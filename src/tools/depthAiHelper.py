@@ -25,6 +25,9 @@ class DepthAIHelper:
             name="depth", maxSize=4, blocking=False
         )
 
+    def getFps(self):
+        return self.res.fps
+
     def __getBakedIntrinsics(
         self,
         camera_id: dai.CameraBoardSocket,
