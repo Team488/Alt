@@ -4,6 +4,8 @@
 # For things pertaining only to the order, create them in the create method
 
 from abc import ABC, abstractmethod
+from typing import Any, Optional
+
 from JXTABLES.XTablesClient import XTablesClient
 from Core.Central import Central
 from Core.PropertyOperator import PropertyOperator
@@ -14,7 +16,12 @@ from Core.TimeOperator import Timer
 
 class Order(ABC):
     def __init__(self) -> None:
-        pass
+        self.central: Optional[Central] = None
+        self.xclient: Optional[XTablesClient] = None
+        self.propertyOperator: Optional[PropertyOperator] = None
+        self.configOperator: Optional[ConfigOperator] = None
+        self.shareOperator: Optional[ShareOperator] = None
+        self.timer: Optional[Timer] = None
 
     def inject(
         self,
@@ -33,18 +40,20 @@ class Order(ABC):
         self.shareOperator = shareOperator
         self.timer = timer
 
-    def getTimer(self):
+    def getTimer(self) -> Timer:
         """Use only when needed, and only when associated with order"""
+        if self.timer is None:
+            raise ValueError("Timer not initialized")
         return self.timer
 
     @abstractmethod
-    def create(self):
+    def create(self) -> None:
         """Perform any one time creation here.\n
         NOTE: this will not be called multiple times, even if the order is run multiple times"""
         pass
 
     @abstractmethod
-    def run(self, input):
+    def run(self, input: Any) -> Any:
         """Put your run once code here"""
         pass
 
@@ -55,7 +64,7 @@ class Order(ABC):
 
     def getName(self) -> str:
         """Return Order Name"""
-        pass
+        return self.__class__.__name__
 
     def cleanup(self) -> None:
         """Optional Method: Cleanup after running order"""

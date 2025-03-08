@@ -8,6 +8,12 @@ The following files have been fully type-annotated:
 
 - `src/pathplanning/PathFind.py`
 - `src/pathplanning/AStar.py`
+- `src/abstract/Agent.py`
+- `src/abstract/Order.py`
+- `src/abstract/Capture.py`
+- `src/abstract/inferencerBackend.py` 
+- `src/abstract/depthCamera.py`
+- `src/abstract/BaseDemo.py`
 
 ## Ignored Files
 
