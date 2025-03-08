@@ -4,6 +4,7 @@ import paramiko
 
 
 TMPSYNCPATH = "assets/TMPSync"
+REGULARSYNCPATH = "assets"
 TARGETSYNCPATH = "/xbot/config"
 
 
@@ -25,12 +26,25 @@ def send_file(hostname, username, password, local_file, remote_file):
         print(f"Error on {hostname}: {e}")
 
 
-def saveToTempNpy(fileName: str, npObj):
+def saveNpy(fileName: str, npObj, filePath=REGULARSYNCPATH):
     if not fileName.endswith(".npy"):
         fileName = f"{fileName}.npy"
-    os.makedirs(TMPSYNCPATH, exist_ok=True)
-    np.save(os.path.join(TMPSYNCPATH, fileName), npObj)
-    print(f"Saved at {os.path.join(TMPSYNCPATH,fileName)}")
+
+    fullPath = os.path.join(filePath, fileName)
+    slashIdx1 = fullPath.rfind("\\\\")
+    slashIdx2 = fullPath.rfind("//")
+
+    bestSlash = slashIdx1 if slashIdx1 > slashIdx2 else slashIdx2
+    if bestSlash != -1:
+        pathOnly = fullPath[:bestSlash]
+        os.makedirs(pathOnly, exist_ok=True)
+
+    np.save(fullPath, npObj)
+    print(f"Saved at {fullPath}")
+
+
+def saveToTempNpy(fileName: str, npObj):
+    saveNpy(fileName, npObj, fileName=TMPSYNCPATH)
 
 
 def syncPis(fileName, targetName=None):

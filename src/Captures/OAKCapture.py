@@ -5,8 +5,11 @@ from tools.depthAiHelper import DepthAIHelper
 
 class OAKCapture(depthCamera):
     def __init__(self, res: OAKDLITEResolution):
-        self.depthAiHelper = DepthAIHelper(res)
-        super().__init__(self.depthAiHelper.getColorIntrinsics())
+        self.res = res
+
+    def create(self):
+        self.depthAiHelper = DepthAIHelper(self.res)
+        super().setIntrinsics(self.depthAiHelper.getColorIntrinsics())
 
     def getDepthAndColorFrame(self):
         return (self.depthAiHelper.getDepthFrame(), self.depthAiHelper.getColorFrame())
@@ -16,6 +19,9 @@ class OAKCapture(depthCamera):
 
     def getColorFrame(self):
         return self.depthAiHelper.getColorFrame()
+
+    def getFps(self):
+        return self.depthAiHelper.getFps()
 
     def isOpen(self):
         return self.depthAiHelper.isOpen()
@@ -28,6 +34,7 @@ def startDemo():
     import cv2
 
     cap = OAKCapture(OAKDLITEResolution.OAK1080P)
+    cap.create()
 
     while cap.isOpen():
         depth, color = cap.getDepthAndColorFrame()

@@ -5,12 +5,18 @@ from tools.realsense2Helper import realsense2Helper
 
 class D435Capture(depthCamera):
     def __init__(self, res: D435IResolution):
-        self.realsenseHelper = realsense2Helper(res)
+        self.res = res
+
+    def create(self):
+        self.realsenseHelper = realsense2Helper(self.res)
         intr = self.realsenseHelper.getCameraIntrinsics()
-        super().__init__(intr)
+        super().setIntrinsics(intr)
 
     def getColorFrame(self):
         return self.realsenseHelper.getDepthAndColor()[1]
+
+    def getFps(self):
+        return self.realsenseHelper.getFps()
 
     def getDepthFrame(self):
         return self.getDepthAndColorFrame()[0]  # linked together
@@ -29,6 +35,7 @@ def startDemo():
     import cv2
 
     cap = D435Capture(D435IResolution.RS480P)
+    cap.create()
 
     while cap.isOpen():
         depth, color = cap.getDepthAndColorFrame()

@@ -24,6 +24,38 @@ matplotlib.use("agg")
 numBins = 40
 
 
+class CustomInputDialog(QDialog):
+    def __init__(self, default_options, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Custom Input Dialog")
+
+        layout = QVBoxLayout(self)
+
+        # Input field
+        self.input_field = QLineEdit(self)
+        layout.addWidget(self.input_field)
+
+        # Default option buttons
+        for optionName, optionValue in default_options.items():
+            button = QPushButton(optionName, self)
+            button.clicked.connect(lambda _, text=optionValue: self.fill_input(text))
+            layout.addWidget(button)
+
+        # OK and Cancel buttons
+        self.button_box = QDialogButtonBox(
+            QDialogButtonBox.Ok | QDialogButtonBox.Cancel
+        )
+        self.button_box.accepted.connect(self.accept)
+        self.button_box.rejected.connect(self.reject)
+        layout.addWidget(self.button_box)
+
+    def fill_input(self, text):
+        self.input_field.setText(text)
+
+    def get_input(self):
+        return self.input_field.text()
+
+
 class Window(QMainWindow):
     onTotalAbHistogramPixmapSignal = pyqtSignal(QPixmap)
 
@@ -111,7 +143,7 @@ class Window(QMainWindow):
         self.saveAction.triggered.connect(self.onSave)
         self.syncAction = QAction("&Sync", self)
         self.syncAction.triggered.connect(self.onSync)
-        self.localSave = QAction("&Sync", self)
+        self.localSave = QAction("&Save Assets", self)
         self.localSave.triggered.connect(self.onLocalSave)
         self.closeAction = QAction("&Close", self)
         self.closeAction.triggered.connect(self.onClose)
@@ -214,31 +246,45 @@ class Window(QMainWindow):
     def onSync(self) -> None:
         from tools.piSync import saveToTempNpy, syncPis
 
-        print("Syncing")
         if self.maskedAbHist is not None:
-            text, ok = QInputDialog.getText(
-                None, "Histogram Sync Name", "Name will be for pi's too!"
+            print("Syncing")
+            customDialog = CustomInputDialog(
+                {
+                    "ReefHistogram": "histograms/reef_post_hist.npy",
+                    "CoralHistogram": "histograms/whiteCoralHistBAD.npy",
+                    "AlgaeHistogram": "histograms/blueAlgaeHist.npy",
+                }
             )
-            if ok:
+
+            if customDialog.exec_() == 1:
                 try:
-                    saveToTempNpy(text, self.maskedAbHist)
-                    syncPis(text)
+                    filepath = customDialog.get_input()
+                    print(f"Saving to path: {filepath}")
+                    saveToTempNpy(filepath, self.maskedAbHist)
+                    syncPis(filepath)
                 except Exception as e:
-                    print(f"Error!: \n{e}")
+                    print(f"Error!: \n{e.with_traceback()}")
 
     def onLocalSave(self) -> None:
-        from tools.piSync import saveToTempNpy, syncPis
+        from tools.piSync import saveNpy
 
-        print("Saving To Local")
         if self.maskedAbHist is not None:
-            text, ok = QInputDialog.getText(
-                None, "Local Save Name", "Make sure to name correctly!"
+            print("Saving To Local")
+            customDialog = CustomInputDialog(
+                {
+                    "ReefHistogram": "histograms/reef_post_hist.npy",
+                    "CoralHistogram": "histograms/whiteCoralHistBAD.npy",
+                    "AlgaeHistogram": "histograms/blueAlgaeHist.npy",
+                }
             )
-            if ok:
+
+            if customDialog.exec_() == 1:
                 try:
-                    saveToTempNpy(text, self.maskedAbHist)
+                    filepath = customDialog.get_input()
+                    print(f"Saving to path: {filepath}")
+                    saveNpy(filepath, self.maskedAbHist)
                 except Exception as e:
-                    print(f"Error!: \n{e}")
+                    print(f"Error!: \n{e.with_traceback()}")
 
     def onClose(self) -> None:
         if self.tabs.currentWidget() is not None:

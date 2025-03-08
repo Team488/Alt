@@ -11,6 +11,7 @@ class realsense2Helper:
     COLOR = 1
 
     def __init__(self, res: D435IResolution) -> None:
+        self.res = res
         self.pipeline = rs.pipeline()
         self.config = rs.config()
         self.streams = [rs.stream.depth, rs.stream.color]
@@ -30,6 +31,9 @@ class realsense2Helper:
 
             self.baked.append((intr, coeffs))
             self.maps.append((mapx, mapy))
+
+    def getFps(self):
+        return self.res.fps
 
     def __getBakedIntrinsics(
         self, pipeline_profile, rs_stream

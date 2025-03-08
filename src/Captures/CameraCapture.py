@@ -3,6 +3,7 @@ import cv2
 import numpy as np
 from abstract.Capture import ConfigurableCapture
 from tools.Constants import CameraIntrinsics
+from Captures import utils
 
 
 class ConfigurableCameraCapture(ConfigurableCapture):
@@ -11,13 +12,17 @@ class ConfigurableCameraCapture(ConfigurableCapture):
         uniqueId: str,
         cameraPath: Union[str, int],
         cameraIntrinsics: CameraIntrinsics,
+        flushTimeMS: int = -1,
     ):
-        super().__init__(cameraIntrinsics)
-        self.cap = cv2.VideoCapture(cameraPath)
         self.uniqueId = uniqueId
         self.path = cameraPath
+        self.flushTimeMS = flushTimeMS
+        super().setIntrinsics(cameraIntrinsics)
+
+    def create(self):
+        self.cap = cv2.VideoCapture(self.path)
         if not self.__testCapture(self.cap):
-            raise BrokenPipeError(f"Failed to open video camera! {cameraPath=}")
+            raise BrokenPipeError(f"Failed to open video camera! {self.path=}")
         # add configurable settings
         fourcc = cv2.VideoWriter_fourcc(*"MJPG")  # or 'XVID', 'MP4V'
         self.cap.set(cv2.CAP_PROP_FOURCC, fourcc)
@@ -32,7 +37,12 @@ class ConfigurableCameraCapture(ConfigurableCapture):
         return retTest
 
     def getColorFrame(self) -> np.ndarray:
+        if self.flushTimeMS > 0:
+            utils.flushCapture(self.cap, self.flushTimeMS)
         return self.cap.read()[1]
+
+    def getFps(self):
+        return self.cap.get(cv2.CAP_PROP_FPS)
 
     def isOpen(self) -> bool:
         return self.cap.isOpened()
@@ -48,5 +58,5 @@ class ConfigurableCameraCapture(ConfigurableCapture):
         return identifier
 
     def updateIntrinsics(self, newIntrinsics: CameraIntrinsics):
-        self.cameraIntrinsics = newIntrinsics
+        super().setIntrinsics(newIntrinsics)
         CameraIntrinsics.setCapRes(newIntrinsics, self.cap)

@@ -1,13 +1,18 @@
 import numpy as np
+from Captures import utils
 from abstract.Capture import Capture
 import cv2
 
 
 class FileCapture(Capture):
-    def __init__(self, videoFilePath: str) -> None:
-        self.cap = cv2.VideoCapture(videoFilePath)
+    def __init__(self, videoFilePath: str, flushTimeMS: int = -1) -> None:
+        self.path = videoFilePath
+        self.flushTimeMS = flushTimeMS
+
+    def create(self):
+        self.cap = cv2.VideoCapture(self.path)
         if not self.__testCapture(self.cap):
-            raise BrokenPipeError(f"Failed to open video camera! {videoFilePath=}")
+            raise BrokenPipeError(f"Failed to open video camera! {self.path=}")
 
     def __testCapture(self, cap: cv2.VideoCapture) -> bool:
         retTest = True
@@ -18,7 +23,12 @@ class FileCapture(Capture):
         return retTest
 
     def getColorFrame(self) -> np.ndarray:
+        if self.flushTimeMS > 0:
+            utils.flushCapture(self.cap, self.flushTimeMS)
         return self.cap.read()[1]
+
+    def getFps(self):
+        return int(self.cap.get(cv2.CAP_PROP_FPS))
 
     def isOpen(self) -> bool:
         return self.cap.isOpened()
@@ -29,6 +39,7 @@ class FileCapture(Capture):
 
 def startDemo(videoFilePath: str):
     cap = FileCapture(videoFilePath)
+    cap.create()
 
     while cap.isOpen():
         frame = cap.getColorFrame()

@@ -237,8 +237,8 @@ class ProbMap:
         adjusted_coords = adjusted_coords[valid]
         valid_coords = coords[valid]
         # blob bounds check
-        valid_coords[:, 0] = np.clip(valid_coords[:, 0], 0, gaussian_blob.shape[0] - 1)
-        valid_coords[:, 1] = np.clip(valid_coords[:, 1], 0, gaussian_blob.shape[1] - 1)
+        valid_coords[:, 0] = np.clip(valid_coords[:, 0], 0, max(gaussian_blob.shape[0] - 1,0))
+        valid_coords[:, 1] = np.clip(valid_coords[:, 1], 0, max(gaussian_blob.shape[1] - 1,0))
 
         if adjusted_coords.size == 0 or valid_coords.size == 0:
             print("No valid coordinates")
