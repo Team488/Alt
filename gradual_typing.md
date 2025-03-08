@@ -14,6 +14,40 @@ The following files have been fully type-annotated:
 - `src/abstract/inferencerBackend.py` 
 - `src/abstract/depthCamera.py`
 - `src/abstract/BaseDemo.py`
+- `src/Core/Agents/Abstract/CameraUsingAgentBase.py`
+- `src/Core/Agents/Abstract/InferenceAgent.py`
+- `src/Core/Agents/Abstract/TimestampRegulatedAgentBase.py`
+- `src/Core/Agents/Abstract/PositionLocalizingAgentBase.py`
+- `src/Core/Agents/Abstract/ObjectLocalizingAgentBase.py`
+- `src/Core/Agents/Abstract/PathPlanningAgentBase.py`
+- `src/Core/Agents/Abstract/ReefTrackingAgentBase.py`
+
+### Implementation Classes
+
+- `src/Core/Agents/AgentExample.py`
+- `src/Core/Agents/FrameDisplayer.py`
+- `src/Core/Agents/ReefAndObjectLocalizer.py`
+- `src/Core/Agents/VideoWriterAgent.py`
+
+### Core Operators
+
+- `src/Core/PropertyOperator.py`
+- `src/Core/ConfigOperator.py`
+- `src/Core/UpdateOperator.py`
+- `src/Core/LogManager.py`
+- `src/Core/TimeOperator.py`
+
+### Tools
+
+- `src/tools/NtUtils.py`
+- `src/tools/XTutils.py`
+- `src/tools/UnitConversion.py`
+- `src/tools/Calculator.py`
+- `src/tools/CameraUtils.py`
+- `src/tools/CameraTransform.py`
+- `src/tools/positionTranslations.py`
+- `src/tools/Data.py`
+- `src/tools/CsvParser.py`
 
 ## Ignored Files
 

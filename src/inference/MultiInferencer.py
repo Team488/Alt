@@ -1,4 +1,5 @@
 import time
+from typing import List, Tuple, Optional, Any
 import cv2
 import numpy as np
 from abstract.inferencerBackend import InferencerBackend
@@ -11,42 +12,71 @@ Sentinel = getLogger("Multi_Inferencer")
 
 
 class MultiInferencer:
+    """
+    A unified interface for running inference with different backends (RKNN, ONNX, Ultralytics)
+    """
     def __init__(self, inferenceMode: InferenceMode) -> None:
-        self.inferenceMode = inferenceMode
-        self.backend = self.__getBackend(self.inferenceMode)
+        """
+        Initialize the multi-inferencer with a specific inference mode
+        
+        Args:
+            inferenceMode: The inference mode to use (defines model, backend, etc.)
+        """
+        self.inferenceMode: InferenceMode = inferenceMode
+        self.backend: InferencerBackend = self.__getBackend(self.inferenceMode)
         self.backend.initialize()
 
     def __getBackend(self, inferenceMode: InferenceMode) -> InferencerBackend:
+        """
+        Get the appropriate backend based on the inference mode
+        
+        Args:
+            inferenceMode: The inference mode to get the backend for
+            
+        Returns:
+            The initialized inferencer backend
+            
+        Raises:
+            RuntimeError: If an invalid backend is specified
+        """
         backend = inferenceMode.getBackend()
         if backend == Backend.RKNN:
             from inference.rknnInferencer import rknnInferencer
-
             return rknnInferencer(mode=inferenceMode)
 
         if backend == Backend.ONNX:
             from inference.onnxInferencer import onnxInferencer
-
             return onnxInferencer(mode=inferenceMode)
 
         if backend == Backend.ULTRALYTICS:
             from inference.ultralyticsInferencer import ultralyticsInferencer
-
             return ultralyticsInferencer(mode=inferenceMode)
 
         Sentinel.fatal(f"Invalid backend provided!: {backend}")
-        return None
+        raise RuntimeError(f"Invalid backend provided: {backend}")
 
-    def run(self, frame: np.ndarray, minConf: float, drawBoxes: bool = False):
+    def run(self, frame: np.ndarray, minConf: float, drawBoxes: bool = False) -> Optional[List[Tuple[List[float], float, int]]]:
+        """
+        Run inference on a frame
+        
+        Args:
+            frame: The input frame to run inference on
+            minConf: Minimum confidence threshold for detections
+            drawBoxes: Whether to draw bounding boxes on the frame
+            
+        Returns:
+            A list of tuples containing (bbox, confidence, class_id) or None if inference fails
+        """
         start = time.time_ns()
         if frame is None:
             Sentinel.fatal("Frame is None!")
-            return
+            return None
 
         tensor = self.backend.preprocessFrame(frame)
         pre = time.time_ns()
         if tensor is None:
             Sentinel.fatal("Inference Backend preprocessFrame() returned none!")
-            return
+            return None
 
         prens = pre - start
 
@@ -54,7 +84,7 @@ class MultiInferencer:
         inf = time.time_ns()
         if results is None:
             Sentinel.fatal("Inference Backend runInference() returned none!")
-            return
+            return None
 
         infns = inf - pre
 
@@ -62,7 +92,7 @@ class MultiInferencer:
         post = time.time_ns()
         if processed is None:
             Sentinel.fatal("Inference Backend postProcess() returned none!")
-            return
+            return None
 
         postns = post - inf
 
@@ -70,27 +100,18 @@ class MultiInferencer:
         # Sentinel.debug(f"{totalTimeElapsedNs=} {prens=} {infns=} {postns}")
         cumulativeFps = 1e9 / totalTimeElapsedNs
 
-        # do stuff here
+        # Draw detection boxes and performance metrics if requested
         if drawBoxes:
             cv2.putText(
-                frame, f"FPS: {cumulativeFps}", (10, 20), 1, 1, (255, 255, 255), 1
+                frame, f"FPS: {cumulativeFps:.1f}", (10, 20), 1, 1, (255, 255, 255), 1
             )
 
             for (bbox, conf, class_id) in processed:
-                # try to get label
-
+                # Get the label for this detection
                 label = f"Id out of range!: {class_id}"
                 if len(self.backend.labels) > class_id:
                     label = self.backend.labels[class_id]
 
                 utils.drawBox(frame, bbox, label, conf)
-
-                # p1 = UnitConversion.toint(bbox[:2])  # Convert to integer tuple
-                # p2 = UnitConversion.toint(bbox[2:4])  # Convert to integer tuple
-                # m = UnitConversion.toint(np.add(bbox[:2], bbox[2:4]) / 2)
-                # cv2.rectangle(frame, p1, p2, (0, 0, 255), 3)  # Drawing the rectangle
-                # cv2.putText(
-                #     frame, f"Label: {label} Conf: {conf:.2f}", m, 1, 1, (0, 255, 0), 1
-                # )
 
         return processed

@@ -1,18 +1,40 @@
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Dict, Any
 
 class CsvParser:
-    """Reads in a csv file and extracts the keys provided into a dict"""
+    """
+    Reads a CSV file and extracts the specified keys into a structured format
+    
+    This parser is designed for CSV files with time-series data where each row
+    contains a timestamp, a key, and a value.
+    """
 
     def __init__(
-        self, csvLocation: str, minTimestepS: float, csvKeys: list[str]
+        self, csvLocation: str, minTimestepS: float, csvKeys: List[str]
     ) -> None:
-        self.keys = csvKeys
-        union = self.__calculateUnion(csvKeys)
+        """
+        Initialize the CSV parser
+        
+        Args:
+            csvLocation: Path to the CSV file
+            minTimestepS: Minimum time difference (in seconds) between consecutive entries
+            csvKeys: List of keys to extract from the CSV
+        """
+        self.keys: List[str] = csvKeys
+        union: str = self.__calculateUnion(csvKeys)
         self.values: List[List[Tuple[float, str]]] = self.__parseCsvIntoGroups(
             csvLocation, union, minTimestepS, csvKeys
         )
 
-    def __calculateUnion(self, csvKeys: list[str]) -> str:
+    def __calculateUnion(self, csvKeys: List[str]) -> str:
+        """
+        Calculate the common prefix of all CSV keys
+        
+        Args:
+            csvKeys: List of keys to check for common prefix
+            
+        Returns:
+            The common prefix string shared by all keys
+        """
         if not csvKeys:
             return ""
 
@@ -28,7 +50,7 @@ class CsvParser:
         return union
 
     def __parseCsvIntoGroups(
-        self, csvLocation: str, union: str, minTimestepS: float, csvKeys: list[str]
+        self, csvLocation: str, union: str, minTimestepS: float, csvKeys: List[str]
     ) -> List[List[Tuple[float, str]]]:
         lastTimeStamps = [-1.0] * len(csvKeys)
         values: List[List[Tuple[float, str]]] = [[] for _ in range(len(csvKeys))]
@@ -74,7 +96,17 @@ class CsvParser:
                 else:
                     break
 
-    def getNearestValues(self, timeSeconds: float) -> list[tuple[str, tuple[float, str]]]:
+    def getNearestValues(self, timeSeconds: float) -> List[Tuple[str, Tuple[float, str]]]:
+        """
+        Get the nearest value for each key at the given timestamp
+        
+        Args:
+            timeSeconds: The timestamp to find values for
+            
+        Returns:
+            A list of tuples containing (key_name, (timestamp, value))
+            for each key in the parser
+        """
         ret: List[Tuple[str, Tuple[float, str]]] = []
         for i in range(len(self.keys)):
             keyName = self.keys[i]
@@ -83,8 +115,8 @@ class CsvParser:
         return ret
 
     def __getNearestValue(
-        self, timeSeconds: float, values: list[tuple[float, str]]
-    ) -> tuple[float, str]:
+        self, timeSeconds: float, values: List[Tuple[float, str]]
+    ) -> Tuple[float, str]:
         nearest: Optional[tuple[float, str]] = None
         diff = 100000.0
         for entry in values:

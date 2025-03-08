@@ -1,6 +1,8 @@
 import time
+from typing import Dict, Set, Any, Optional, Callable
 
 import cv2
+import numpy as np
 from Core.Agents.Abstract.CameraUsingAgentBase import CameraUsingAgentBase
 from tools.Constants import CameraIdOffsets2024
 from coreinterface.FramePacket import FramePacket
@@ -14,9 +16,20 @@ class FrameDisplayer(Agent):
     NOTE: Due to openCVs nature this agent must be run in the main thread\n
     """
 
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__(**kwargs)
+        self.getSendEnableTable: Callable[[str], str] = lambda key: ""
+        self.updateMap: Dict[str, np.ndarray] = {}
+        self.keys: Set[str] = set()
+        self.runFlag: bool = True
+        self.displayedFrames = None
+
     def create(self) -> None:
         super().create()
         # perform agent init here (eg open camera or whatnot)
+        if self.propertyOperator is None:
+            raise ValueError("PropertyOperator not initialized")
+            
         self.getSendEnableTable = (
             lambda key: f"{key}.{CameraUsingAgentBase.FRAMETOGGLEPOSTFIX}"
         )
@@ -28,7 +41,10 @@ class FrameDisplayer(Agent):
             "Showed_Frames", False
         )
 
-    def subscribeFrameUpdate(self):
+    def subscribeFrameUpdate(self) -> None:
+        if self.updateOp is None:
+            raise ValueError("UpdateOperator not initialized")
+            
         self.updateOp.subscribeAllGlobalUpdates(
             CameraUsingAgentBase.FRAMEPOSTFIX,
             updateSubscriber=self.__handleUpdate,
@@ -36,7 +52,7 @@ class FrameDisplayer(Agent):
             runOnRemoveSubscribe=self.removeKey,
         )
 
-    def __handleUpdate(self, ret) -> None:
+    def __handleUpdate(self, ret: Any) -> None:
         val = ret.value
 
         if not val or val == b"":
@@ -47,6 +63,9 @@ class FrameDisplayer(Agent):
         self.updateMap[ret.key] = frame
 
     def __showFrames(self) -> None:
+        if self.displayedFrames is None:
+            return
+            
         showedFrames = False
         for key in self.updateMap.keys():
             frame = self.updateMap.get(key)
@@ -59,7 +78,10 @@ class FrameDisplayer(Agent):
         if cv2.waitKey(1) & 0xFF == ord("q"):
             self.runFlag = False
 
-    def addKey(self, key: str):
+    def addKey(self, key: str) -> None:
+        if self.xclient is None:
+            raise ValueError("XTablesClient not initialized")
+            
         cut = key[: key.rfind(".")]
         full = f"{cut}.{CameraUsingAgentBase.FRAMETOGGLEPOSTFIX}"
         self.xclient.putBoolean(full, True)
@@ -67,7 +89,10 @@ class FrameDisplayer(Agent):
         print(f"{full=} set to True")
         # cv2.namedWindow(key)
 
-    def removeKey(self, key):
+    def removeKey(self, key: str) -> None:
+        if self.xclient is None:
+            raise ValueError("XTablesClient not initialized")
+            
         cut = key[: key.rfind(".")]
         full = f"{cut}.{CameraUsingAgentBase.FRAMETOGGLEPOSTFIX}"
         self.xclient.putBoolean(full, False)
@@ -87,12 +112,13 @@ class FrameDisplayer(Agent):
 
     def onClose(self) -> None:
         super().onClose()
-        self.updateOp.unsubscribeToAllGlobalUpdates(
-            CameraUsingAgentBase.FRAMEPOSTFIX, self.__handleUpdate
-        )
+        if self.updateOp is not None:
+            self.updateOp.unsubscribeToAllGlobalUpdates(
+                CameraUsingAgentBase.FRAMEPOSTFIX, self.__handleUpdate
+            )
         cv2.destroyAllWindows()
 
-    def isRunning(self):
+    def isRunning(self) -> bool:
         return self.runFlag
 
     def getName(self) -> str:
