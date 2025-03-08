@@ -107,6 +107,7 @@ class CameraUsingAgentBase(Agent):
 
     def create(self) -> None:
         super().create()
+        self.capture.create()
         self.sendInitialUpdate()
 
         # if we are not main thread, even if it says showframe true we cannot allow it

@@ -5,9 +5,12 @@ import cv2
 
 class FileCapture(Capture):
     def __init__(self, videoFilePath: str) -> None:
-        self.cap = cv2.VideoCapture(videoFilePath)
+        self.path = videoFilePath
+
+    def create(self):
+        self.cap = cv2.VideoCapture(self.path)
         if not self.__testCapture(self.cap):
-            raise BrokenPipeError(f"Failed to open video camera! {videoFilePath=}")
+            raise BrokenPipeError(f"Failed to open video camera! {self.path=}")
 
     def __testCapture(self, cap: cv2.VideoCapture) -> bool:
         retTest = True
@@ -29,6 +32,7 @@ class FileCapture(Capture):
 
 def startDemo(videoFilePath: str):
     cap = FileCapture(videoFilePath)
+    cap.create()
 
     while cap.isOpen():
         frame = cap.getColorFrame()

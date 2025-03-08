@@ -12,12 +12,14 @@ class ConfigurableCameraCapture(ConfigurableCapture):
         cameraPath: Union[str, int],
         cameraIntrinsics: CameraIntrinsics,
     ):
-        super().__init__(cameraIntrinsics)
-        self.cap = cv2.VideoCapture(cameraPath)
         self.uniqueId = uniqueId
         self.path = cameraPath
+        super().setIntrinsics(cameraIntrinsics)
+
+    def create(self):
+        self.cap = cv2.VideoCapture(self.path)
         if not self.__testCapture(self.cap):
-            raise BrokenPipeError(f"Failed to open video camera! {cameraPath=}")
+            raise BrokenPipeError(f"Failed to open video camera! {self.path=}")
         # add configurable settings
         fourcc = cv2.VideoWriter_fourcc(*"MJPG")  # or 'XVID', 'MP4V'
         self.cap.set(cv2.CAP_PROP_FOURCC, fourcc)
@@ -48,5 +50,5 @@ class ConfigurableCameraCapture(ConfigurableCapture):
         return identifier
 
     def updateIntrinsics(self, newIntrinsics: CameraIntrinsics):
-        self.cameraIntrinsics = newIntrinsics
+        super().setIntrinsics(newIntrinsics)
         CameraIntrinsics.setCapRes(newIntrinsics, self.cap)

@@ -9,12 +9,14 @@ from tools.Constants import (
 )
 from Captures import ConfigurableCameraCapture, OAKCapture, D435Capture
 
-# intr = CameraIntrinsicsPredefined.OAKDLITE4K
-# intr = CameraIntrinsicsPredefined.OV9782COLOR
 
 ReefTracker = ReefTrackingAgentPartial(
-    # capture=D435Capture(D435IResolution.RS720P),
-    capture=OAKCapture(OAKDLITEResolution.OAK1080P),
+    capture=ConfigurableCameraCapture(
+        uniqueId="a",
+        cameraPath=CommonVideos.ReefscapeCompilation.path,
+        cameraIntrinsics=CameraIntrinsicsPredefined.OV9782COLOR,
+    ),
+    # capture=OAKCapture(OAKDLITEResolution.OAK1080P),
     showFrames=True,
 )
 # ReefTracker = ReefTrackingAgentPartial(cameraPath=0, cameraIntrinsics=intr, showFrames=True)
