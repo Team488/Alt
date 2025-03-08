@@ -1,4 +1,5 @@
 import cv2
+from typing import Any, List, Tuple, Optional
 from Core.Agents.Abstract.PathPlanningAgentBase import PathPlanningAgentBase
 from Core.Agents.CentralAgent import CentralAgent
 from Core.Orders import TargetUpdatingOrder
@@ -55,7 +56,7 @@ class DriveToFixedPointAgent(PathPlanningAgentBase):
             propertyTable="targetY", propertyDefault=2
         )
 
-    def getPath(self):
+    def getPath(self) -> Optional[Any]:
         target = (self.targetX.get() * 100, self.targetY.get() * 100)
         self.Sentinel.info(f"{self.robotPose2dMRAD=} {target=}")
         return self.central.pathGenerator.generate(
@@ -81,7 +82,7 @@ class DriveToNetworkTargetAgent(PathPlanningAgentBase):
             propertyName="hasTarget", propertyValue=False
         )
 
-    def getPath(self):
+    def getPath(self) -> Optional[Any]:
         target = self.shareOp.get(TargetUpdatingOrder.TARGETKEY)
         if target == None:
             self.hasTarget.set(False)
