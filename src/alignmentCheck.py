@@ -1,7 +1,7 @@
-from Core.Agents.alignmentCheck import partialAlignmentCheck
+from Core.Agents.BinnedVerticalAlignmentCheck import BinnedVerticalAlignmentChecker
 from Core.Neo import Neo
 
-alignmentCheck = partialAlignmentCheck(showFrames=True)
+alignmentCheck = BinnedVerticalAlignmentChecker(showFrames=True, flushTimeMS=200)
 
 n = Neo()
 
