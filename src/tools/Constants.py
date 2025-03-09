@@ -178,9 +178,13 @@ class InferenceMode(Enum):
 
     @classmethod
     def assertModelType(
-        cls, inferenceMode1: "InferenceMode", inferenceMode2: "InferenceMode"
+        cls, coreInfMode: "InferenceMode", yourInfMode: "InferenceMode"
     ):
-        return inferenceMode1.getModelType() == inferenceMode2.getModelType()
+        # your model must be a subset of the core model running
+        for label in yourInfMode.getLabels():
+            if label not in coreInfMode.getLabels():
+                return False
+        return True
 
 
 class Object(Enum):
@@ -510,6 +514,15 @@ class CameraIntrinsicsPredefined:
         240,  # Calibrated Cx, Cy
     )
 
+    OAKESTIMATE = CameraIntrinsics(
+        hres_pix=1920,
+        vres_pix=1080,  # Resolution
+        fx_pix=900,
+        fy_pix=850,  # Calibrated Fx, Fy
+        cx_pix=981,
+        cy_pix=500,  # Calibrated Cx, Cy
+    )
+
 
 class OAKDLITEResolution(Enum):
     OAK4K = (3840, 2160, 30)
@@ -557,6 +570,9 @@ class CommonVideos(Enum):
 
 class SimulationEndpoints(Enum):
     FRONTRIGHTSIM = "http://localhost:3000/Robot_FrontRight%20Camera?dummy=param.mjpg"
+    FRONTRIGHTAPRILTAGSIM = (
+        "http://localhost:3000/Robot_FrontRight%20CameraAT?dummy=param.mjpg"
+    )
     FRONTLEFTSIM = "http://localhost:3000/Robot_FrontLeft%20Camera?dummy=param.mjpg"
     REARRIGHTSIM = "http://localhost:3000/Robot_RearRight%20Camera?dummy=param.mjpg"
     REARLEFTSIM = "http://localhost:3000/Robot_RearLeft%20Camera?dummy=param.mjpg"

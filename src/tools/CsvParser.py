@@ -1,3 +1,10 @@
+ROBOTPOSITIONKEYS = (
+    "/RealOutputs/PoseSubsystem/RobotPose/rotation/value",
+    "/RealOutputs/PoseSubsystem/RobotPose/translation/x",
+    "/RealOutputs/PoseSubsystem/RobotPose/translation/y",
+)
+
+
 class CsvParser:
     """Reads in a csv file and extracts the keys provided into a dict"""
 

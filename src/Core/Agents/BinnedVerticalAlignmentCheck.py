@@ -3,15 +3,20 @@ import cv2
 import numpy as np
 from Core.Agents.Abstract import CameraUsingAgentBase
 from Captures.FileCapture import FileCapture
-
+from tools.Constants import SimulationEndpoints
 from functools import partial
 
 
 class BinnedVerticalAlignmentChecker(CameraUsingAgentBase):
     DEFAULTTHRESH = 10  # Default threshold in pixels
+    testHostname = "photonvisionfrontright"  # for testing ONLY
 
-    def __init__(self, showFrames: bool, flushTimeMS: int = -1):
-        mjpeg_url = "http://localhost:1181/stream.mjpg"
+    def __init__(
+        self,
+        showFrames: bool,
+        flushTimeMS: int = -1,
+        mjpeg_url: str = "http://localhost:1181/stream.mjpg",
+    ):
         super().__init__(
             capture=FileCapture(videoFilePath=mjpeg_url, flushTimeMS=flushTimeMS),
             showFrames=showFrames,
@@ -19,24 +24,48 @@ class BinnedVerticalAlignmentChecker(CameraUsingAgentBase):
 
     def create(self) -> None:
         super().create()
-        self.leftDistanceProp = self.propertyOperator.createCustomReadOnlyProperty(
-            propertyTable="verticalEdgeLeftDistancePx",
-            propertyValue=-1,
-            addBasePrefix=True,
-            addOperatorPrefix=False,
-        )
-        self.rightDistanceProp = self.propertyOperator.createCustomReadOnlyProperty(
-            propertyTable="verticalEdgeRightDistancePx",
-            propertyValue=-1,
-            addBasePrefix=True,
-            addOperatorPrefix=False,
-        )
-        self.isCenteredConfidently = self.propertyOperator.createCustomReadOnlyProperty(
-            propertyTable="verticalAlignedConfidently",
-            propertyValue=False,
-            addBasePrefix=True,
-            addOperatorPrefix=False,
-        )
+        if self.testHostname is None:
+            self.leftDistanceProp = self.propertyOperator.createCustomReadOnlyProperty(
+                propertyTable="verticalEdgeLeftDistancePx",
+                propertyValue=-1,
+                addBasePrefix=True,
+                addOperatorPrefix=False,
+            )
+            self.rightDistanceProp = self.propertyOperator.createCustomReadOnlyProperty(
+                propertyTable="verticalEdgeRightDistancePx",
+                propertyValue=-1,
+                addBasePrefix=True,
+                addOperatorPrefix=False,
+            )
+            self.isCenteredConfidently = (
+                self.propertyOperator.createCustomReadOnlyProperty(
+                    propertyTable="verticalAlignedConfidently",
+                    propertyValue=False,
+                    addBasePrefix=True,
+                    addOperatorPrefix=False,
+                )
+            )
+        else:
+            self.leftDistanceProp = self.propertyOperator.createCustomReadOnlyProperty(
+                propertyTable=f"{self.testHostname}.verticalEdgeLeftDistancePx",
+                propertyValue=-1,
+                addBasePrefix=False,
+                addOperatorPrefix=False,
+            )
+            self.rightDistanceProp = self.propertyOperator.createCustomReadOnlyProperty(
+                propertyTable=f"{self.testHostname}.verticalEdgeRightDistancePx",
+                propertyValue=-1,
+                addBasePrefix=False,
+                addOperatorPrefix=False,
+            )
+            self.isCenteredConfidently = (
+                self.propertyOperator.createCustomReadOnlyProperty(
+                    propertyTable=f"{self.testHostname}.verticalAlignedConfidently",
+                    propertyValue=False,
+                    addBasePrefix=False,
+                    addOperatorPrefix=False,
+                )
+            )
 
         self.sobel_threshold = self.propertyOperator.createProperty(
             propertyTable="inital_sobel_thresh",
@@ -196,7 +225,14 @@ class BinnedVerticalAlignmentChecker(CameraUsingAgentBase):
         return "Detects-Vertical-Edges-For-AprilTag-Alignment"
 
 
-def partialVerticalAlignmentCheck(showFrames: bool = False, flushTimeMS: int = -1):
+def partialVerticalAlignmentCheck(
+    showFrames: bool = False,
+    flushTimeMS: int = -1,
+    mjpeg_url="http://localhost:1181/stream.mjpg",
+):
     return partial(
-        BinnedVerticalAlignmentChecker, showFrames=showFrames, flushTimeMS=flushTimeMS
+        BinnedVerticalAlignmentChecker,
+        showFrames=showFrames,
+        flushTimeMS=flushTimeMS,
+        mjpeg_url=mjpeg_url,
     )

@@ -28,16 +28,8 @@ class CentralAgent(PositionLocalizingAgentBase):
         self.localReefUpdateMap = {}
         self.lastUpdateTimeMs = -1
 
-        self.updateOp.subscribeAllGlobalUpdates(
-            ReefTrackingAgentBase.OBSERVATIONPOSTFIX,
-            self.__handleReefUpdate,
-            runOnNewSubscribe=self.addKeyReef,
-        )
-        self.updateOp.subscribeAllGlobalUpdates(
-            ObjectLocalizingAgentBase.DETECTIONPOSTFIX,
-            self.__handleObjectUpdate,
-            runOnNewSubscribe=self.addKeyObject,
-        )
+        self.iterationsPerUpdate = 50
+        self.iter_count = 0
 
         self.clAT = self.propertyOperator.createCustomReadOnlyProperty(
             "BESTOPENREEF_AT", None, addBasePrefix=False
@@ -135,10 +127,12 @@ class CentralAgent(PositionLocalizingAgentBase):
                 accumulatedObjectResults.append(res)
 
         # reef
+
         for key in self.localReefUpdateMap.keys():
             localidx = self.localReefUpdateMap[key]
             resultpacket = self.reefupdateMap[key]
             res, packetidx = resultpacket[0], resultpacket[1]
+            #print("key=", key, "result=", res)
             if packetidx != localidx:
                 # no update same id
                 self.localReefUpdateMap[key] = packetidx
@@ -149,14 +143,33 @@ class CentralAgent(PositionLocalizingAgentBase):
             cameraResults=accumulatedObjectResults, timeStepMs=timePerLoopMS
         )
         # update reef
+        #print("Updating Reef with accumulatedReefResults", accumulatedReefResults)
         self.central.processReefUpdate(
             reefResults=accumulatedReefResults, timeStepMs=timePerLoopMS
         )
+
+    def periodicSubscribe(self):
+        self.updateOp.subscribeAllGlobalUpdates(
+            ReefTrackingAgentBase.OBSERVATIONPOSTFIX,
+            self.__handleReefUpdate,
+            runOnNewSubscribe=self.addKeyReef,
+        )
+        self.updateOp.subscribeAllGlobalUpdates(
+            ObjectLocalizingAgentBase.DETECTIONPOSTFIX,
+            self.__handleObjectUpdate,
+            runOnNewSubscribe=self.addKeyObject,
+        )
+
 
     def runPeriodic(self) -> None:
         super().runPeriodic()
         self.__centralUpdate()
         self.putBestNetworkValues()
+        self.iter_count += 1
+        if (self.iter_count == self.iterationsPerUpdate):
+            # reset the count
+            self.iter_count = 0
+            self.periodicSubscribe()
 
     def putBestNetworkValues(self) -> None:
         # Send the ReefPacket for the entire map
@@ -164,7 +177,7 @@ class CentralAgent(PositionLocalizingAgentBase):
 
         timestamp = time.time()
         mapstate_packet = self.central.reefState.getReefMapState_as_ReefPacket(
-            team=TEAM.BLUE, timestamp=timestamp
+            team=TEAM.RED, timestamp=timestamp
         )
         bytes = mapstate_packet.to_bytes()
         self.reefmap_states.set(bytes)

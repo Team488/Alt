@@ -1,7 +1,12 @@
-from Core.Agents.BinnedVerticalAlignmentCheck import BinnedVerticalAlignmentChecker
+from Core.Agents.BinnedVerticalAlignmentCheck import partialVerticalAlignmentCheck
 from Core.Neo import Neo
+from tools.Constants import SimulationEndpoints
 
-alignmentCheck = BinnedVerticalAlignmentChecker(showFrames=True, flushTimeMS=200)
+alignmentCheck = partialVerticalAlignmentCheck(
+    showFrames=True,
+    flushTimeMS=-1,
+    mjpeg_url=SimulationEndpoints.FRONTRIGHTAPRILTAGSIM.path,
+)
 
 n = Neo()
 

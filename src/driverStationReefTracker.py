@@ -7,21 +7,26 @@ from tools.Constants import (
     CommonVideos,
     SimulationEndpoints,
 )
-from Captures import ConfigurableCameraCapture, OAKCapture, D435Capture
+from Captures import ConfigurableCameraCapture, OAKCapture, D435Capture, FileCapture
 
+# intr = CameraIntrinsicsPredefined.OAKDLITE4K
+# intr = CameraIntrinsicsPredefined.OV9782COLOR
 
 ReefTracker = ReefTrackingAgentPartial(
-    capture=ConfigurableCameraCapture(
-        uniqueId="a",
-        cameraPath=CommonVideos.ReefscapeCompilation.path,
-        cameraIntrinsics=CameraIntrinsicsPredefined.OV9782COLOR,
-    ),
-    # capture=OAKCapture(OAKDLITEResolution.OAK1080P),
-    showFrames=True,
+    capture=ConfigurableCameraCapture(uniqueId="1",
+                                      cameraPath="assets/driverStationVideo.mp4", 
+                                      cameraIntrinsics=CameraIntrinsicsPredefined.OAKESTIMATE),
+    showFrames=True
 )
+"""
+ReefTracker = ReefTrackingAgentPartial(
+    capture=OAKCapture(OAKDLITEResolution.OAK1080P),
+    showFrames=True
+)
+"""
 # ReefTracker = ReefTrackingAgentPartial(cameraPath=0, cameraIntrinsics=intr, showFrames=True)
-# R
 
 n = Neo()
 n.wakeAgent(ReefTracker, isMainThread=True)
 n.shutDown()
+n = Neo()
