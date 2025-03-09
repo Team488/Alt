@@ -1,12 +1,10 @@
 from collections import defaultdict
-import math
 import cv2
 import numpy as np
 from Core.Agents.Abstract import CameraUsingAgentBase
 from Captures.FileCapture import FileCapture
 
 from functools import partial
-from abstract.Agent import Agent
 
 
 class BinnedVerticalAlignmentChecker(CameraUsingAgentBase):
