@@ -158,12 +158,15 @@ class BinnedVerticalAlignmentChecker(CameraUsingAgentBase):
         for valid_key, valid_bin in valid_binned.items():
             size = valid_key * binSize
             pairLength = min(len(valid_bin), 2)
-            if pairLength >= bestPairLength:  # prioritize pair then size
+            if pairLength > bestPairLength:  # prioritize pair then size
                 bestmatch = valid_bin[:2]  # ugly, but get only two
                 bestPairLength = pairLength
+                bestsize = size
             elif pairLength == bestPairLength:
-                if size >= bestsize:
+                if size > bestsize:
+                    bestsize = size
                     bestmatch = valid_bin[:2]
+
 
         leftDistance = -1
         rightDistance = -1
