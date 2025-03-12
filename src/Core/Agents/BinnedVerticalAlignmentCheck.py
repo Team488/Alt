@@ -8,7 +8,6 @@ from functools import partial
 
 
 class BinnedVerticalAlignmentChecker(CameraUsingAgentBase):
-    DEFAULTTHRESH = 10  # Default threshold in pixels
     testHostname = "photonvisionfrontright"  # for testing ONLY
 
     def __init__(
@@ -74,17 +73,22 @@ class BinnedVerticalAlignmentChecker(CameraUsingAgentBase):
         )
         self.threshold_pixels = self.propertyOperator.createProperty(
             propertyTable="vertical_threshold_pixels",
-            propertyDefault=self.DEFAULTTHRESH,
+            propertyDefault=10,
+            setDefaultOnNetwork=True,
+        )
+        self.threshold_to_last_used = self.propertyOperator.createProperty(
+            propertyTable="threshold_to_last_used_size",
+            propertyDefault=25,
             setDefaultOnNetwork=True,
         )
         self.threshold_diff_pixels = self.propertyOperator.createProperty(
             propertyTable="aligment_threshold_pixels",
-            propertyDefault=self.DEFAULTTHRESH,
+            propertyDefault=35,
             setDefaultOnNetwork=True,
         )
         self.bin_size_pixels = self.propertyOperator.createProperty(
             propertyTable="binning_size_pixels",
-            propertyDefault=5,
+            propertyDefault=15,
             setDefaultOnNetwork=True,
         )
         self.min_edge_height = self.propertyOperator.createProperty(
@@ -92,6 +96,7 @@ class BinnedVerticalAlignmentChecker(CameraUsingAgentBase):
             propertyDefault=250,  # Minimum height in pixels for a valid edge
             setDefaultOnNetwork=True,
         )
+        self.lastUsedSize = None
 
     def runPeriodic(self) -> None:
         super().runPeriodic()
@@ -151,17 +156,31 @@ class BinnedVerticalAlignmentChecker(CameraUsingAgentBase):
 
         # match similar heights
         bestmatch = None
+        sizeLocked = False
         bestsize = -1
         bestPairLength = -1
         for valid_key, valid_bin in valid_binned.items():
             size = valid_key * binSize
             pairLength = min(len(valid_bin), 2)
-            if pairLength >= bestPairLength:  # prioritize pair then size
+            if pairLength > bestPairLength:  # prioritize pair then size
                 bestmatch = valid_bin[:2]  # ugly, but get only two
                 bestPairLength = pairLength
+                bestsize = size
             elif pairLength == bestPairLength:
-                if size >= bestsize:
+                if self.lastUsedSize is not None:
+                    diff = abs(self.lastUsedSize-size)
+
+                    if diff < self.threshold_to_last_used.get():
+                        bestsize = size
+                        bestmatch = valid_bin[:2]
+                        sizeLocked = True
+
+
+                if not sizeLocked and size > bestsize:
+                    bestsize = size
                     bestmatch = valid_bin[:2]
+        
+        self.lastUsedSize = bestsize
 
         leftDistance = -1
         rightDistance = -1
