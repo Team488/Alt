@@ -1,8 +1,13 @@
 from Core.Agents.BinnedVerticalAlignmentCheck import partialVerticalAlignmentCheck
 from Core.Neo import Neo
-from tools.Constants import SimulationEndpoints
 
-alignmentCheck = partialVerticalAlignmentCheck(
+# alignmentCheckRight = partialVerticalAlignmentCheck(
+#     showFrames=True,
+#     flushTimeMS=-1,
+#     mjpeg_url="http://photonvisionrearleft.local:1181/stream.mjpg",
+# )
+
+alignmentCheckRight = partialVerticalAlignmentCheck(
     showFrames=True,
     flushTimeMS=-1,
     mjpeg_url="http://localhost:1183/stream.mjpg",
@@ -10,5 +15,5 @@ alignmentCheck = partialVerticalAlignmentCheck(
 
 n = Neo()
 
-n.wakeAgent(alignmentCheck, isMainThread=True)
+n.wakeAgent(alignmentCheckRight, isMainThread=True)
 n.shutDown()

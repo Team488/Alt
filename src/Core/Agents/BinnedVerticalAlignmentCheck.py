@@ -11,6 +11,8 @@ from abstract.Agent import Agent
 
 class BinnedVerticalAlignmentChecker(CameraUsingAgentBase):
     testHostname = "photonvisionfrontright"  # for testing ONLY
+    TUNEDWIDTH = 960
+    TUNEDHEIGHT = 720
 
     def __init__(
         self,
@@ -22,6 +24,14 @@ class BinnedVerticalAlignmentChecker(CameraUsingAgentBase):
             capture=FileCapture(videoFilePath=mjpeg_url, flushTimeMS=flushTimeMS),
             showFrames=showFrames,
         )
+
+        self.shape = (self.TUNEDWIDTH, self.TUNEDHEIGHT) # default
+
+    def rescaleWidth(self, value):
+        return value * self.shape[1] / self.TUNEDWIDTH
+    
+    def rescaleHeight(self, value):
+        return value * self.shape[0] / self.TUNEDHEIGHT
 
     def create(self) -> None:
         super().create()
@@ -38,13 +48,17 @@ class BinnedVerticalAlignmentChecker(CameraUsingAgentBase):
                 addBasePrefix=True,
                 addOperatorPrefix=False,
             )
-            self.isCenteredConfidently = (
-                self.propertyOperator.createCustomReadOnlyProperty(
-                    propertyTable="verticalAlignedConfidently",
-                    propertyValue=False,
-                    addBasePrefix=True,
-                    addOperatorPrefix=False,
-                )
+            self.hresProp = self.propertyOperator.createCustomReadOnlyProperty(
+                propertyTable="cameraHres",
+                propertyValue=-1,
+                addBasePrefix=True,
+                addOperatorPrefix=False,
+            )
+            self.vresProp = self.propertyOperator.createCustomReadOnlyProperty(
+                propertyTable="cameraVres",
+                propertyValue=-1,
+                addBasePrefix=True,
+                addOperatorPrefix=False,
             )
         else:
             self.leftDistanceProp = self.propertyOperator.createCustomReadOnlyProperty(
@@ -59,13 +73,17 @@ class BinnedVerticalAlignmentChecker(CameraUsingAgentBase):
                 addBasePrefix=False,
                 addOperatorPrefix=False,
             )
-            self.isCenteredConfidently = (
-                self.propertyOperator.createCustomReadOnlyProperty(
-                    propertyTable=f"{self.testHostname}.verticalAlignedConfidently",
-                    propertyValue=False,
-                    addBasePrefix=False,
-                    addOperatorPrefix=False,
-                )
+            self.hresProp = self.propertyOperator.createCustomReadOnlyProperty(
+                propertyTable=f"{self.testHostname}.cameraHres",
+                propertyValue=-1,
+                addBasePrefix=False,
+                addOperatorPrefix=False,
+            )
+            self.vresProp = self.propertyOperator.createCustomReadOnlyProperty(
+                propertyTable=f"{self.testHostname}.cameraVres",
+                propertyValue=-1,
+                addBasePrefix=False,
+                addOperatorPrefix=False,
             )
 
         self.sobel_threshold = self.propertyOperator.createProperty(
@@ -73,19 +91,9 @@ class BinnedVerticalAlignmentChecker(CameraUsingAgentBase):
             propertyDefault=80,
             setDefaultOnNetwork=True,
         )
-        self.threshold_pixels = self.propertyOperator.createProperty(
-            propertyTable="vertical_threshold_pixels",
-            propertyDefault=10,
-            setDefaultOnNetwork=True,
-        )
         self.threshold_to_last_used = self.propertyOperator.createProperty(
             propertyTable="threshold_to_last_used_size",
             propertyDefault=25,
-            setDefaultOnNetwork=True,
-        )
-        self.threshold_diff_pixels = self.propertyOperator.createProperty(
-            propertyTable="aligment_threshold_pixels",
-            propertyDefault=35,
             setDefaultOnNetwork=True,
         )
         self.bin_size_pixels = self.propertyOperator.createProperty(
@@ -104,6 +112,11 @@ class BinnedVerticalAlignmentChecker(CameraUsingAgentBase):
         super().runPeriodic()
 
         frame = self.latestFrameCOLOR
+        self.shape = frame.shape
+
+
+        self.vresProp.set(frame.shape[0])
+        self.hresProp.set(frame.shape[1])
 
         # Convert to grayscale for edge detection
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -138,8 +151,8 @@ class BinnedVerticalAlignmentChecker(CameraUsingAgentBase):
         # Prepare a visualization image
         edge_viz = np.zeros_like(frame)
 
-        min_height = self.min_edge_height.get()
-        binSize = self.bin_size_pixels.get()
+        min_height = self.rescaleHeight(self.min_edge_height.get())
+        binSize = self.rescaleHeight(self.bin_size_pixels.get())
 
         valid_binned = defaultdict(list)
 
@@ -172,13 +185,13 @@ class BinnedVerticalAlignmentChecker(CameraUsingAgentBase):
                 if self.lastUsedSize is not None:
                     diff = abs(self.lastUsedSize-size)
 
-                    if diff < self.threshold_to_last_used.get():
+                    if diff < self.rescaleHeight(self.threshold_to_last_used.get()):
                         bestsize = size
                         bestmatch = valid_bin[:2]
                         sizeLocked = True
 
 
-                if not sizeLocked and size > bestsize:
+                if not sizeLocked and size < bestsize:
                     bestsize = size
                     bestmatch = valid_bin[:2]
         
@@ -221,17 +234,7 @@ class BinnedVerticalAlignmentChecker(CameraUsingAgentBase):
                 2,
             )
 
-            # Check if it's centered (distance from middle of the frame should be similar for both edges)
-            if (
-                leftDistance != -1
-                and rightDistance != -1
-                and abs(leftDistance - rightDistance) <= self.threshold_pixels.get()
-            ):
-                self.isCenteredConfidently.set(True)
-            else:
-                self.isCenteredConfidently.set(False)
         else:
-            self.isCenteredConfidently.set(False)
             self.leftDistanceProp.set(-1)
             self.rightDistanceProp.set(-1)
 
