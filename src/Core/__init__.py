@@ -1,6 +1,7 @@
 import subprocess
 from tools.Constants import InferenceMode
 from .LogManager import getLogger
+import sys
 
 COREMODELTABLE = "MainProcessInferenceMODE"
 COREINFERENCEMODE = InferenceMode.ALCOROBEST2025
@@ -8,7 +9,7 @@ COREINFERENCEMODE = InferenceMode.ALCOROBEST2025
 def isHeadless():
     try:
         result = subprocess.run(
-            ["python3", "-c", "import cv2; cv2.namedWindow('test'); cv2.destroyWindow('test')"],
+            [sys.executable, "-c", "import cv2; cv2.namedWindow('test'); cv2.destroyWindow('test')"],
             capture_output=True,
             text=True
         )
