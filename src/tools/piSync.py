@@ -44,7 +44,7 @@ def saveNpy(fileName: str, npObj, filePath=REGULARSYNCPATH):
 
 
 def saveToTempNpy(fileName: str, npObj):
-    saveNpy(fileName, npObj, fileName=TMPSYNCPATH)
+    saveNpy(fileName, npObj, filePath=TMPSYNCPATH)
 
 
 def syncPis(fileName, targetName=None):

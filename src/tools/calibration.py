@@ -2,7 +2,7 @@ import codecs
 import json
 import os
 import time
-from typing import Any, Callable
+from typing import Any, Callable, Optional, Union, Tuple
 import numpy as np
 import cv2
 
@@ -60,7 +60,7 @@ def chessboard_calibration(
         # Find the chess board corners
         ret, corners = cv2.findChessboardCorners(gray, chessBoardDim, None)
         # If found, add object points, image points (after refining them)
-        if ret == True:
+        if ret:
             objpoints.append(objp)
 
             corners2 = cv2.cornerSubPix(gray, corners, (11, 11), (-1, -1), criteria)
@@ -68,7 +68,7 @@ def chessboard_calibration(
 
     if imgpoints:
         print(f"Using: {len(imgpoints)} points")
-        ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(
+        ret_val, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(
             objpoints, imgpoints, gray.shape[::-1], None, None
         )
         __SaveOutput(calibPath, mtx, dist, calibshape)
@@ -81,14 +81,16 @@ def charuco_calibration(
     calibPath,
     imagesPath=DEFAULTSAVEPATH,
     arucoboarddim=(15, 15),
-    runOnLoop: Callable[[np.ndarray, int], None] = None,
+    runOnLoop: Optional[Callable[[np.ndarray, int], None]] = None,
 ):
     images = []
     calibshape = None
     for image_file in sorted(os.listdir(imagesPath)):
         if image_file.endswith((".jpg", ".png")):
             img = cv2.imread(os.path.join(imagesPath, image_file))
-            calibshape = img.shape[:2][::-1]  # (width, height)
+            # Explicitly cast to tuple of ints for mypy
+            h, w = img.shape[:2]
+            calibshape = (int(w), int(h))  # (width, height)
             images.append(img)
 
     board = cv2.aruco.CharucoBoard(
@@ -126,9 +128,17 @@ def charuco_calibration(
 
     if obj_points and img_points:
         print(f"Using {len(img_points)} valid images for calibration")
-        ret, mtx, dist, rvecs, tvecs = cv2.calibrateCameraExtended(
-            obj_points, img_points, calibshape, None, None
-        )[:5]
+        # Make sure calibshape is a tuple of ints
+        if calibshape is not None and isinstance(calibshape, tuple) and len(calibshape) == 2:
+            image_size = (int(calibshape[0]), int(calibshape[1]))
+            ret_val, mtx, dist, rvecs, tvecs = cv2.calibrateCameraExtended(
+                obj_points, img_points, image_size, None, None
+            )[:5]
+        else:
+            # Default size if calibshape is not valid
+            ret_val, mtx, dist, rvecs, tvecs = cv2.calibrateCameraExtended(
+                obj_points, img_points, (640, 480), None, None
+            )[:5]
 
         __SaveOutput(calibPath, mtx, dist, calibshape)
         print("Calibration saved to", calibPath)
@@ -168,7 +178,9 @@ def charuco_calibration_videos(
         if not ret or maxPoints <=0:
             break
         if calibshape is None:
-            calibshape = frame.shape[:2][::-1]
+            # Explicitly cast to tuple of ints for mypy
+            h, w = frame.shape[:2]
+            calibshape = (int(w), int(h))
 
 
         print(calibshape)
@@ -192,9 +204,17 @@ def charuco_calibration_videos(
 
     if obj_points and img_points:
         print(f"Using {len(img_points)} valid images for calibration")
-        ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(
-            obj_points, img_points, calibshape, None, None
-        )[:5]
+        # Make sure calibshape is a tuple of ints
+        if calibshape is not None and isinstance(calibshape, tuple) and len(calibshape) == 2:
+            image_size = (int(calibshape[0]), int(calibshape[1]))
+            ret_val, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(
+                obj_points, img_points, image_size, None, None
+            )[:5]
+        else:
+            # Default size if calibshape is not valid
+            ret_val, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(
+                obj_points, img_points, (640, 480), None, None
+            )[:5]
 
         __SaveOutput(calibPath, mtx, dist, calibshape)
         print("Calibration saved to", calibPath)
@@ -292,7 +312,8 @@ def takeCalibrationPhotos(
         r, frame = cap.read()
 
         if r:
-            timePassed += secondPerFrame
+            # Ensure this is a float for type checking
+            timePassed += float(secondPerFrame)
 
             if timePassed > timePerPicture:
                 frameIdx += 1

@@ -8,7 +8,7 @@ from tools.Constants import (
 from Core.Agents.CSVDemoObjectLocalizingAgent import partialCsvDemoObjectLocalizingAgent
 
 agent = partialCsvDemoObjectLocalizingAgent(
-    capture=FileCapture(CommonVideos.Comp2024Clip),
+    capture=FileCapture(CommonVideos.Comp2024Clip.path),
     cameraExtrinsics=ColorCameraExtrinsics2024.DEPTHLEFT,
     cameraIntrinsics=CameraIntrinsicsPredefined.OAKESTIMATE,
     inferenceMode=InferenceMode.ALCOROBEST2025,
