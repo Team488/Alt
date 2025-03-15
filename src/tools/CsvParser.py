@@ -1,5 +1,12 @@
 from typing import List, Tuple, Optional, Dict, Any
 
+ROBOTPOSITIONKEYS = (
+    "/RealOutputs/PoseSubsystem/RobotPose/rotation/value",
+    "/RealOutputs/PoseSubsystem/RobotPose/translation/x",
+    "/RealOutputs/PoseSubsystem/RobotPose/translation/y",
+)
+
+
 class CsvParser:
     """
     Reads a CSV file and extracts the specified keys into a structured format

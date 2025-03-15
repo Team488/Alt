@@ -1,5 +1,4 @@
 from deep_sort.tracker import Tracker as DeepSortTracker
-from tools import generate_detections as gdet
 from deep_sort import nn_matching
 from deep_sort.detection import Detection
 import numpy as np
@@ -11,6 +10,8 @@ class Tracker:
     tracks = None
 
     def __init__(self) -> None:
+        from tools import generate_detections as gdet
+
         max_cosine_distance = 0.4
         nn_budget = None
 

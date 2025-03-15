@@ -3,7 +3,6 @@ import cv2
 import json
 import numpy as np
 from typing import Dict, Optional
-from wpimath.geometry import Transform3d
 from reefTracking.aprilTagHelper import AprilTagLocal
 from tools.Constants import (
     ATLocations,

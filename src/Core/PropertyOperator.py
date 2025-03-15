@@ -227,6 +227,8 @@ class PropertyOperator:
             return XTablesByteUtils.to_string(propertyValue)
         elif type == XTableProto.XTableMessage.Type.DOUBLE_LIST:
             return XTablesByteUtils.to_double_list(propertyValue)
+        elif type == XTableProto.XTableMessage.Type.PROBABILITY_MAPPING:
+            return XTablesByteUtils.unpack_probability_mapping_detections(propertyValue)
 
         else:
             self.Sentinel.error(

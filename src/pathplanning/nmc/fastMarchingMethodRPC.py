@@ -1,5 +1,4 @@
 import math
-from typing import Union
 
 import grpc
 from concurrent import futures
@@ -216,7 +215,7 @@ class FastMarchingPathfinder:
         return final_segments
 
 
-def deflate_inflection_points(points, distance_threshold=2.0):
+def deflate_inflection_points(points, distance_threshold=2):
     """
     Reduce the number of control points by averaging clusters of points that are
     within a specified distance threshold from one another.
@@ -354,7 +353,7 @@ low_hanging_blue_mid_active = False
 low_hanging_blue_close_active = False
 
 # ----- SET THIS VALUE TO FALSE WHEN DEPLOYING ON ORIN ----
-isRelativePath = False
+isRelativePath = True
 
 print("Loading pre-set static obstacles...")
 pathPrefix = "" if isRelativePath else "pathplanning/nmc/"
@@ -379,15 +378,8 @@ static_hang_obs_blue_close = get_static_obstacles(
 )
 print("Finished loading pre-set static obstacles...")
 
-from Core.Central import Central
-from tools.Constants import Label, TEAM, ATLocations
-from tools import UnitConversion
-
 
 class VisionCoprocessorServicer(XTableGRPC.VisionCoprocessorServicer):
-    OBSTACLELABELS = [Label.ALGAE, Label.ROBOT]
-    THRESHOLD = 0.3
-
     def RequestBezierPathWithOptions(self, request, context):
         print("RequestBezierPathWithOptions")
         base_grid = np.ones((grid_height, grid_width), dtype=float)

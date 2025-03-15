@@ -8,6 +8,9 @@ from Core.Agents.Abstract.ObjectLocalizingAgentBase import ObjectLocalizingAgent
 from Core.Agents.Abstract.ReefTrackingAgentBase import ReefTrackingAgentBase
 from Core.Agents.Abstract.PositionLocalizingAgentBase import PositionLocalizingAgentBase
 
+from JXTABLES import XTableProto_pb2 as XTableProto
+from JXTABLES import XTableValues_pb2 as XTableValue
+from typing import List
 
 class CentralAgent(PositionLocalizingAgentBase):
     """Agent -> CentralAgentBase
@@ -28,16 +31,8 @@ class CentralAgent(PositionLocalizingAgentBase):
         self.localReefUpdateMap = {}
         self.lastUpdateTimeMs = -1
 
-        self.updateOp.subscribeAllGlobalUpdates(
-            ReefTrackingAgentBase.OBSERVATIONPOSTFIX,
-            self.__handleReefUpdate,
-            runOnNewSubscribe=self.addKeyReef,
-        )
-        self.updateOp.subscribeAllGlobalUpdates(
-            ObjectLocalizingAgentBase.DETECTIONPOSTFIX,
-            self.__handleObjectUpdate,
-            runOnNewSubscribe=self.addKeyObject,
-        )
+        self.iterationsPerUpdate = 50
+        self.iter_count = 0
 
         self.clAT = self.propertyOperator.createCustomReadOnlyProperty(
             "BESTOPENREEF_AT", None, addBasePrefix=False
@@ -72,8 +67,14 @@ class CentralAgent(PositionLocalizingAgentBase):
             "REEFMAP_STATES", None, addBasePrefix=False
         )
 
+        self.reefmap_states_proto = self.propertyOperator.createReadOnlyProperty(
+            "REEFMAP_STATES_PROTO", None,
+        )
+
         self.offsetMap = {}
         self.offsetLength = 30
+
+        self.team = self.getTeam()
 
     def addKeyObject(self, key):
         self.objectupdateMap[key] = ([], 0, 0)
@@ -135,10 +136,12 @@ class CentralAgent(PositionLocalizingAgentBase):
                 accumulatedObjectResults.append(res)
 
         # reef
+
         for key in self.localReefUpdateMap.keys():
             localidx = self.localReefUpdateMap[key]
             resultpacket = self.reefupdateMap[key]
             res, packetidx = resultpacket[0], resultpacket[1]
+            #print("key=", key, "result=", res)
             if packetidx != localidx:
                 # no update same id
                 self.localReefUpdateMap[key] = packetidx
@@ -149,26 +152,51 @@ class CentralAgent(PositionLocalizingAgentBase):
             cameraResults=accumulatedObjectResults, timeStepMs=timePerLoopMS
         )
         # update reef
+        #print("Updating Reef with accumulatedReefResults", accumulatedReefResults)
         self.central.processReefUpdate(
             reefResults=accumulatedReefResults, timeStepMs=timePerLoopMS
         )
+
+    def periodicSubscribe(self):
+        self.updateOp.subscribeAllGlobalUpdates(
+            ReefTrackingAgentBase.OBSERVATIONPOSTFIX,
+            self.__handleReefUpdate,
+            runOnNewSubscribe=self.addKeyReef,
+        )
+        self.updateOp.subscribeAllGlobalUpdates(
+            ObjectLocalizingAgentBase.DETECTIONPOSTFIX,
+            self.__handleObjectUpdate,
+            runOnNewSubscribe=self.addKeyObject,
+        )
+
 
     def runPeriodic(self) -> None:
         super().runPeriodic()
         self.__centralUpdate()
         self.putBestNetworkValues()
+        self.iter_count += 1
+        if (self.iter_count == self.iterationsPerUpdate):
+            # reset the count
+            self.iter_count = 0
+            self.periodicSubscribe()
 
     def putBestNetworkValues(self) -> None:
         # Send the ReefPacket for the entire map
         import time
 
         timestamp = time.time()
+        
         mapstate_packet = self.central.reefState.getReefMapState_as_ReefPacket(
-            team=TEAM.BLUE, timestamp=timestamp
+            team=self.team, timestamp=timestamp
         )
         bytes = mapstate_packet.to_bytes()
         self.reefmap_states.set(bytes)
 
+        # send protobuf
+        probability_map_detections = self.getProbabilityMapDetectionsProtobuf()
+        #print("probability map detections", probability_map_detections, type(probability_map_detections))
+        self.reefmap_states_proto.set(probability_map_detections)
+        
         # Send the confidence of highest algae
         for idx, (bX, bY, bP, nX, nY, nP) in enumerate(self.bestObjs):
             highest = self.central.objectmap.getHighestObject(class_idx=idx)
@@ -203,6 +231,21 @@ class CentralAgent(PositionLocalizingAgentBase):
         self.updateOp.unsubscribeToAllGlobalUpdates(
             ObjectLocalizingAgentBase.DETECTIONPOSTFIX, self.__handleObjectUpdate
         )
+    def getProbabilityMapDetectionsProtobuf(self) ->  XTableValue.ProbabilityMappingDetections:
+        
+        probability_map_detections = XTableValue.ProbabilityMappingDetections()
+
+        # TODO: Hook up w/ Robot, Algae and Coral Detections later
+        robot_detection_lst : List[XTableValue.RobotDetection] = []
+        algae_detection_lst : List[XTableValue.AlgaeDetection] = []
+        coral_detection_lst : List[XTableValue.CoralDetection] = []
+        reef_state : XTableValue.XTablesValues.ReefState = self.central.reefState.getReefMapState_as_protobuf(self.team)
+
+        probability_map_detections.robots.extend(robot_detection_lst)
+        probability_map_detections.algaes.extend(algae_detection_lst)
+        probability_map_detections.corals.extend(coral_detection_lst)
+        probability_map_detections.reef.CopyFrom(reef_state)
+        return probability_map_detections
 
     def getDescription(self):
         return "Central-Process-Accumulate-Results-Broadcast-Them"

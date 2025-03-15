@@ -2,7 +2,6 @@ from abc import abstractmethod
 from typing import List, Tuple, Optional, Any
 import cv2
 import numpy as np
-from networktables import NetworkTables
 from Core.Agents.Abstract.PositionLocalizingAgentBase import PositionLocalizingAgentBase
 from tools import XTutils
 

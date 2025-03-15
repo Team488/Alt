@@ -2,13 +2,13 @@ import codecs
 import json
 import os
 import time
-from typing import Callable
+from typing import Any, Callable
 import numpy as np
 import cv2
 
-from Captures.CameraCapture import ConfigurableCameraCapture
-from abstract.Capture import ConfigurableCapture
-from tools.Constants import CameraIntrinsics
+# from Captures.CameraCapture import ConfigurableCameraCapture
+# from abstract.Capture import ConfigurableCapture
+# from tools.Constants import CameraIntrinsics
 
 DEFAULTSAVEPATH = "assets/TMPCalibration"
 
@@ -136,6 +136,72 @@ def charuco_calibration(
     else:
         print("Failed to find enough Charuco points")
         return False
+    
+
+def charuco_calibration_videos(
+    calibPath : str,
+    videoPath : Any,
+    arucoboarddim=(15, 15),
+):
+    cap = cv2.VideoCapture(videoPath)
+
+
+    board = cv2.aruco.CharucoBoard(
+        size=arucoboarddim,
+        squareLength=30,
+        markerLength=22,
+        dictionary=cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_1000),
+    )
+    arucoParams = cv2.aruco.DetectorParameters()
+    arucoParams.cornerRefinementMethod = cv2.aruco.CORNER_REFINE_SUBPIX
+
+    detector = cv2.aruco.CharucoDetector(board)
+    detector.setDetectorParameters(arucoParams)
+    obj_points = []
+    img_points = []
+    maxPoints = 200
+    calibshape = None
+    while cap.isOpened():
+        ret, frame = cap.read()
+        maxPoints-=1
+        
+        if not ret or maxPoints <=0:
+            break
+        if calibshape is None:
+            calibshape = frame.shape[:2][::-1]
+
+
+        print(calibshape)
+
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        charuco_corners, charuco_ids, _, _ = detector.detectBoard(gray)
+        # print(f"{charuco_corners=} {charuco_ids=}")
+
+        if charuco_corners is not None and len(charuco_corners) > 0:
+            obj_pt, img_pt = board.matchImagePoints(charuco_corners, charuco_ids)
+            if len(img_pt) > 4  and len(obj_pt) > 4:
+                obj_points.append(obj_pt)
+                img_points.append(img_pt)
+                cv2.aruco.drawDetectedCornersCharuco(frame, charuco_corners, charuco_ids)
+        
+        cv2.imshow("frame",frame)
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break        
+
+    print(f"Found {len(obj_points)} object points and {len(img_points)} image points")
+
+    if obj_points and img_points:
+        print(f"Using {len(img_points)} valid images for calibration")
+        ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(
+            obj_points, img_points, calibshape, None, None
+        )[:5]
+
+        __SaveOutput(calibPath, mtx, dist, calibshape)
+        print("Calibration saved to", calibPath)
+        return True
+    else:
+        print("Failed to find enough Charuco points")
+        return False
 
 
 def createMapXYForUndistortionFromCalib(loadedCalibration):
@@ -160,7 +226,8 @@ def createMapXYForUndistortionFromCalib(loadedCalibration):
     return mapx, mapy
 
 
-def createMapXYForUndistortion(distCoeffs, cameraIntrinsics: CameraIntrinsics):
+# def createMapXYForUndistortion(distCoeffs, cameraIntrinsics: CameraIntrinsics):
+def createMapXYForUndistortion(distCoeffs, cameraIntrinsics):
     cameraMatrix = np.array(
         [
             [cameraIntrinsics.getFx(), 0, cameraIntrinsics.getCx()],
@@ -256,7 +323,7 @@ def takeCalibrationPhotos(
 class CustomCalibrator:
     def __init__(
         self,
-        capture: ConfigurableCameraCapture,
+        # capture: ConfigurableCameraCapture,
         photoPath=DEFAULTSAVEPATH,
         timePerPicture=3,
         targetResolution=(640, 480),

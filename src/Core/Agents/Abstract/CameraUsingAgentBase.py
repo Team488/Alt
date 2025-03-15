@@ -13,6 +13,7 @@ from tools.depthAiHelper import DepthAIHelper
 from abstract.depthCamera import depthCamera
 from tools import calibration
 from Core.ConfigOperator import staticLoad
+import Core
 
 
 class CameraUsingAgentBase(Agent):
@@ -118,6 +119,11 @@ class CameraUsingAgentBase(Agent):
 
     def create(self) -> None:
         super().create()
+        if not Core.canCurrentlyDisplay:
+            self.Sentinel.warning("This enviorment cannot display frames!")
+            self.showFrames = False
+
+
         self.capture.create()
         self.sendInitialUpdate()
 

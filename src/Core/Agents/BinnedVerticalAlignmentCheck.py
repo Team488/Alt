@@ -1,17 +1,16 @@
 from collections import defaultdict
-import math
 import cv2
 import numpy as np
 from Core.Agents.Abstract import CameraUsingAgentBase
 from Captures.FileCapture import FileCapture
 from tools.Constants import SimulationEndpoints
 from functools import partial
-from abstract.Agent import Agent
 
 
 class BinnedVerticalAlignmentChecker(CameraUsingAgentBase):
-    DEFAULTTHRESH = 10  # Default threshold in pixels
     testHostname = "photonvisionfrontright"  # for testing ONLY
+    TUNEDWIDTH = 960
+    TUNEDHEIGHT = 720
 
     def __init__(
         self,
@@ -23,6 +22,14 @@ class BinnedVerticalAlignmentChecker(CameraUsingAgentBase):
             capture=FileCapture(videoFilePath=mjpeg_url, flushTimeMS=flushTimeMS),
             showFrames=showFrames,
         )
+
+        self.shape = (self.TUNEDWIDTH, self.TUNEDHEIGHT) # default
+
+    def rescaleWidth(self, value):
+        return value * self.shape[1] / self.TUNEDWIDTH
+    
+    def rescaleHeight(self, value):
+        return value * self.shape[0] / self.TUNEDHEIGHT
 
     def create(self) -> None:
         super().create()
@@ -39,13 +46,17 @@ class BinnedVerticalAlignmentChecker(CameraUsingAgentBase):
                 addBasePrefix=True,
                 addOperatorPrefix=False,
             )
-            self.isCenteredConfidently = (
-                self.propertyOperator.createCustomReadOnlyProperty(
-                    propertyTable="verticalAlignedConfidently",
-                    propertyValue=False,
-                    addBasePrefix=True,
-                    addOperatorPrefix=False,
-                )
+            self.hresProp = self.propertyOperator.createCustomReadOnlyProperty(
+                propertyTable="cameraHres",
+                propertyValue=-1,
+                addBasePrefix=True,
+                addOperatorPrefix=False,
+            )
+            self.vresProp = self.propertyOperator.createCustomReadOnlyProperty(
+                propertyTable="cameraVres",
+                propertyValue=-1,
+                addBasePrefix=True,
+                addOperatorPrefix=False,
             )
         else:
             self.leftDistanceProp = self.propertyOperator.createCustomReadOnlyProperty(
@@ -60,33 +71,33 @@ class BinnedVerticalAlignmentChecker(CameraUsingAgentBase):
                 addBasePrefix=False,
                 addOperatorPrefix=False,
             )
-            self.isCenteredConfidently = (
-                self.propertyOperator.createCustomReadOnlyProperty(
-                    propertyTable=f"{self.testHostname}.verticalAlignedConfidently",
-                    propertyValue=False,
-                    addBasePrefix=False,
-                    addOperatorPrefix=False,
-                )
+            self.hresProp = self.propertyOperator.createCustomReadOnlyProperty(
+                propertyTable=f"{self.testHostname}.cameraHres",
+                propertyValue=-1,
+                addBasePrefix=False,
+                addOperatorPrefix=False,
+            )
+            self.vresProp = self.propertyOperator.createCustomReadOnlyProperty(
+                propertyTable=f"{self.testHostname}.cameraVres",
+                propertyValue=-1,
+                addBasePrefix=False,
+                addOperatorPrefix=False,
             )
 
+        
         self.sobel_threshold = self.propertyOperator.createProperty(
             propertyTable="inital_sobel_thresh",
             propertyDefault=80,
             setDefaultOnNetwork=True,
         )
-        self.threshold_pixels = self.propertyOperator.createProperty(
-            propertyTable="vertical_threshold_pixels",
-            propertyDefault=self.DEFAULTTHRESH,
-            setDefaultOnNetwork=True,
-        )
-        self.threshold_diff_pixels = self.propertyOperator.createProperty(
-            propertyTable="aligment_threshold_pixels",
-            propertyDefault=self.DEFAULTTHRESH,
+        self.threshold_to_last_used = self.propertyOperator.createProperty(
+            propertyTable="threshold_to_last_used_size",
+            propertyDefault=25,
             setDefaultOnNetwork=True,
         )
         self.bin_size_pixels = self.propertyOperator.createProperty(
             propertyTable="binning_size_pixels",
-            propertyDefault=5,
+            propertyDefault=30,
             setDefaultOnNetwork=True,
         )
         self.min_edge_height = self.propertyOperator.createProperty(
@@ -94,11 +105,31 @@ class BinnedVerticalAlignmentChecker(CameraUsingAgentBase):
             propertyDefault=250,  # Minimum height in pixels for a valid edge
             setDefaultOnNetwork=True,
         )
+        self.distanceMemoryFrames = self.propertyOperator.createProperty(
+            propertyTable="number_of_frames_to_keep_memory",
+            propertyDefault=30,
+            setDefaultOnNetwork=True,
+        )
+        self.lastUsedSize = None
+        self.lastValidLeft = None
+        self.lastValidLeftFrameCnt = None 
+        self.lastValidRight = None
+        self.lastValidRightFrameCnt = None
+        self.currentFrameCnt = 0
 
     def runPeriodic(self) -> None:
         super().runPeriodic()
+        self.currentFrameCnt += 1
 
         frame = self.latestFrameCOLOR
+        self.shape = frame.shape
+
+
+        self.vresProp.set(frame.shape[0])
+        self.hresProp.set(frame.shape[1])
+
+        newLeftDistance = None
+        newRightDistance = None
 
         # Convert to grayscale for edge detection
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -119,7 +150,9 @@ class BinnedVerticalAlignmentChecker(CameraUsingAgentBase):
 
         # Threshold the edge image
         _, thresh = cv2.threshold(sobel_8u, 100, 255, cv2.THRESH_BINARY)
-        cv2.imshow("thresh", thresh)
+        
+        if self.showFrames:
+            cv2.imshow("thresh", thresh)
 
         # Apply morphological operations to enhance vertical edges
         kernel_vertical = np.ones((5, 1), np.uint8)
@@ -133,12 +166,12 @@ class BinnedVerticalAlignmentChecker(CameraUsingAgentBase):
         # Prepare a visualization image
         edge_viz = np.zeros_like(frame)
 
-        min_height = self.min_edge_height.get()
-        binSize = self.bin_size_pixels.get()
+        min_height = self.rescaleHeight(self.min_edge_height.get())
+        binSize = self.rescaleHeight(self.bin_size_pixels.get())
 
         valid_binned = defaultdict(list)
 
-        # match up binned pairs
+        # match similar heights by binning by a certain resolution, if greater than a threshold height
 
         for contour in contours:
             x, y, w, h = cv2.boundingRect(contour)
@@ -149,27 +182,40 @@ class BinnedVerticalAlignmentChecker(CameraUsingAgentBase):
 
                 cv2.rectangle(edge_viz, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
-        # print([(key, len(item)) for key, item in valid_binned.items()])
-
-        # match similar heights
-        bestmatch = None
+        # fnd the smallest "pair" of sides that is SILL BIG ENOUGH, but not the biggest in general.
+        # This helps distinguish the april tag sides from the side of the april tag paper and the gray background 
+        bestmatchedPair = None
+        sizeLocked = False
         bestsize = -1
         bestPairLength = -1
         for valid_key, valid_bin in valid_binned.items():
             size = valid_key * binSize
             pairLength = min(len(valid_bin), 2)
-            if pairLength >= bestPairLength:  # prioritize pair then size
-                bestmatch = valid_bin[:2]  # ugly, but get only two
+            if pairLength > bestPairLength:  # prioritize pair then size
+                bestmatchedPair = valid_bin[:2]  # ugly, but get only two
                 bestPairLength = pairLength
+                bestsize = size
             elif pairLength == bestPairLength:
-                if size >= bestsize:
-                    bestmatch = valid_bin[:2]
+                if self.lastUsedSize is not None:
+                    diff = abs(self.lastUsedSize-size)
 
-        leftDistance = -1
-        rightDistance = -1
+                    if diff < self.rescaleHeight(self.threshold_to_last_used.get()):
+                        bestsize = size
+                        bestmatchedPair = valid_bin[:2]
+                        sizeLocked = True
 
-        if bestmatch is not None:
-            for biggest in bestmatch:
+
+                if not sizeLocked and size < bestsize:
+                    bestsize = size
+                    bestmatchedPair = valid_bin[:2]
+        
+        # memory for last used bin size
+        self.lastUsedSize = bestsize
+
+
+        # assign left/right sides
+        if bestmatchedPair is not None:
+            for biggest in bestmatchedPair:
                 x, y, w, h = cv2.boundingRect(biggest)
 
                 # draw valid vertical edge in the visualization
@@ -182,39 +228,60 @@ class BinnedVerticalAlignmentChecker(CameraUsingAgentBase):
                 distMid = int(abs(mid - frame.shape[1] / 2))
 
                 if isLeftEdge:
-                    leftDistance = distMid
+                    newLeftDistance = distMid
                 else:
-                    rightDistance = distMid
+                    newRightDistance = distMid
 
                 cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
-            # Update properties
-            self.leftDistanceProp.set(leftDistance)
-            self.rightDistanceProp.set(rightDistance)
+        # figure out how Update properties
 
-            cv2.putText(
-                frame,
-                f"L: {leftDistance}px, R: {rightDistance}px",
-                (10, 30),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                0.7,
-                (0, 255, 0),
-                2,
-            )
+        # default -1
+        selectedLeft = -1
+        if newLeftDistance is not None:
+            # set memory
+            self.lastValidLeft = newLeftDistance
+            self.lastValidLeftFrameCnt = self.currentFrameCnt
+            selectedLeft = newLeftDistance
 
-            # Check if it's centered (distance from middle of the frame should be similar for both edges)
-            if (
-                leftDistance != -1
-                and rightDistance != -1
-                and abs(leftDistance - rightDistance) <= self.threshold_pixels.get()
-            ):
-                self.isCenteredConfidently.set(True)
-            else:
-                self.isCenteredConfidently.set(False)
-        else:
-            self.isCenteredConfidently.set(False)
-            self.leftDistanceProp.set(-1)
-            self.rightDistanceProp.set(-1)
+        elif self.lastValidLeftFrameCnt is not None:
+            # try get memory
+            deltaSinceLastValidLeft = self.currentFrameCnt-self.lastValidLeftFrameCnt
+
+            if deltaSinceLastValidLeft < self.distanceMemoryFrames.get():
+                # recent enough to put
+                selectedLeft = self.lastValidLeft
+
+        # default -1
+        selectedRight = -1
+        if newRightDistance is not None:
+            # set memory
+            self.lastValidRight = newRightDistance
+            self.lastValidRightFrameCnt = self.currentFrameCnt
+            selectedRight = newRightDistance
+        elif self.lastValidRightFrameCnt is not None:
+            # try get memory
+            deltaSinceLastValidRight = self.currentFrameCnt-self.lastValidRightFrameCnt
+
+            if deltaSinceLastValidRight < self.distanceMemoryFrames.get():
+                # recent enough to put
+                selectedRight = self.lastValidRight
+
+        
+
+        cv2.putText(
+            frame,
+            f"L: {selectedLeft}px, R: {selectedRight}px",
+            (10, 30),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.7,
+            (0, 255, 0),
+            2,
+        )
+
+        self.leftDistanceProp.set(selectedLeft)
+        self.rightDistanceProp.set(selectedRight)
+
 
         # If showing frames is enabled, display the edge visualization
         if self.showFrames:
