@@ -96,7 +96,7 @@ class BinnedVerticalAlignmentChecker(CameraUsingAgentBase):
         )
         self.bin_size_pixels = self.propertyOperator.createProperty(
             propertyTable="binning_size_pixels",
-            propertyDefault=15,
+            propertyDefault=30,
             setDefaultOnNetwork=True,
         )
         self.min_edge_height = self.propertyOperator.createProperty(
@@ -135,7 +135,9 @@ class BinnedVerticalAlignmentChecker(CameraUsingAgentBase):
 
         # Threshold the edge image
         _, thresh = cv2.threshold(sobel_8u, 100, 255, cv2.THRESH_BINARY)
-        cv2.imshow("thresh", thresh)
+        
+        if self.showFrames:
+            cv2.imshow("thresh", thresh)
 
         # Apply morphological operations to enhance vertical edges
         kernel_vertical = np.ones((5, 1), np.uint8)
