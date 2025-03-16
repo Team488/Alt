@@ -1,6 +1,5 @@
 ARG TARGETPLATFORM
 FROM ademcan/xbot-robotpy-base:latest
-
 WORKDIR /xbot/Alt/src
 
 # COPY non-base-requirements.txt /xbot/Alt/non-base-requirements.txt

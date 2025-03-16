@@ -48,11 +48,13 @@ class FrameDisplayer(Agent):
 
     def __showFrames(self) -> None:
         showedFrames = False
-        for key in self.updateMap.keys():
-            frame = self.updateMap.get(key)
-            if frame is not None:
-                cv2.imshow(key, frame)
-                showedFrames = True
+        if len(self.updateMap.keys()) > 0:
+            copy = dict(self.updateMap.items()) # copy
+            for key, item in copy.items():
+                frame = item
+                if frame is not None:
+                    cv2.imshow(key, frame)
+                    showedFrames = True
 
         self.displayedFrames.set(showedFrames)
 
