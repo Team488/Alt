@@ -1,7 +1,7 @@
 import logging
 from collections.abc import Iterable
 from logging import Logger
-from typing import Dict, List, Any, Optional, Callable, TypeVar, Union, Tuple, Set, cast
+from typing import Dict, List, Any, Optional, Callable, TypeVar, Union, Tuple, Set, cast, Generic
 from JXTABLES.XTablesClient import XTablesClient
 from JXTABLES import XTableProto_pb2 as XTableProto
 from JXTABLES.XTablesByteUtils import XTablesByteUtils
@@ -79,7 +79,12 @@ class PropertyOperator:
 
         # if this property already has been created, just give that one.
         if propertyTable in self.__properties:
-            return self.__properties.get(propertyTable)
+            existing_property = self.__properties.get(propertyTable)
+            if existing_property is not None:
+                return existing_property
+            # This should not happen, but to satisfy mypy
+            self.Sentinel.error(f"Property exists in map but returned None: {propertyTable}")
+            # Create a new one instead of returning None
 
         # init default in map if not saved from previous run, or if you dont want to use a saved value
         if propertyTable not in self.__propertyValueMap or not loadIfSaved:
@@ -177,24 +182,31 @@ class PropertyOperator:
         if propertyIterable is None:
             return False
 
-        if not propertyIterable:
+        # Convert to list for safe indexing and emptiness check
+        try:
+            property_list = list(propertyIterable)
+        except Exception as e:
+            self.Sentinel.error(f"Failed to convert iterable to list: {e}")
+            return False
+
+        if not property_list:
             # eg empty so can use any put method
             self.__xclient.putIntegerList(propertyTable, [])
             return True
 
-        firstType = type(propertyIterable[0])
+        firstType = type(property_list[0])
 
         putMethod = self.__getListTypeMethod(firstType)
         if not putMethod:
             self.Sentinel.debug(f"Invalid list type: {firstType}")
             return False
 
-        for value in propertyIterable[1:]:
+        for value in property_list[1:]:
             if type(value) is not firstType:
                 self.Sentinel.debug("List is not all same type!")
                 return False
 
-        putMethod(propertyTable, propertyIterable)
+        putMethod(propertyTable, property_list)
         return True
 
     def __getListTypeMethod(self, listType: type):
@@ -208,7 +220,7 @@ class PropertyOperator:
             return self.__xclient.putStringList
         return None
 
-    def __getRealType(self, type, propertyValue) -> bool:
+    def __getRealType(self, type, propertyValue) -> Any:
         # get real type from xtable bytes
         if (
             type == XTableProto.XTableMessage.Type.UNKNOWN
@@ -234,7 +246,8 @@ class PropertyOperator:
             self.Sentinel.error(
                 f"Invalid property type!: {XTableProto.XTableMessage.Type.Name(type)}"
             )
-            return None
+            # Return a default False boolean instead of None for type consistency
+            return False
 
     def getChild(self, prefix: str) -> Optional["PropertyOperator"]:
         if not prefix:
@@ -280,7 +293,7 @@ class PropertyOperator:
         return wasAllRemoved
 
 
-class Property:
+class Property(Generic[T]):
     def __init__(self, getFunc: Callable[[], T], propertyTable: str) -> None:  # lambda to get the property
         self.__getFunc: Callable[[], T] = getFunc
         self.__propertyTable: str = propertyTable

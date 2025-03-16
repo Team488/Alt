@@ -178,9 +178,13 @@ def charuco_calibration_videos(
         if not ret or maxPoints <=0:
             break
         if calibshape is None:
-            # Explicitly cast to tuple of ints for mypy
-            h, w = frame.shape[:2]
-            calibshape = (int(w), int(h))
+            # Check if frame is a numpy array with a shape attribute
+            if isinstance(frame, np.ndarray) and hasattr(frame, 'shape'):
+                h, w = frame.shape[:2]
+                calibshape = (int(w), int(h))
+            else:
+                # Default size if shape cannot be determined
+                calibshape = (640, 480)
 
 
         print(calibshape)
@@ -307,6 +311,7 @@ def takeCalibrationPhotos(
     secondPerFrame = 1 / frameRate
 
     frameIdx = 0
+    timePassed = 0.0  # Explicitly initialize as float
     os.makedirs(photoPath, exist_ok=True)
     while cap.isOpened():
         r, frame = cap.read()
@@ -317,7 +322,7 @@ def takeCalibrationPhotos(
 
             if timePassed > timePerPicture:
                 frameIdx += 1
-                timePassed = 0
+                timePassed = 0.0  # Initialize as float
                 cv2.imwrite(os.path.join(photoPath, f"Frame#{frameIdx}.jpg"), frame)
                 cv2.putText(
                     frame, f"Picture Taken!", (10, 30), 0, 1, (255, 255, 255), 2

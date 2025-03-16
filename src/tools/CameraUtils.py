@@ -1,6 +1,7 @@
 import cv2
 import logging
-from typing import List, Tuple, Optional
+import numpy as np
+from typing import List, Tuple, Optional, Union, Any
 
 
 def getCorrectCameraFeed(
@@ -22,8 +23,14 @@ def getCorrectCameraFeed(
             cap = cv2.VideoCapture(idx)
             while cap.isOpened():
                 ret, frame = cap.read()
-                if ret and frame.shape == expectedRes:
-                    return idx
+                # Check if frame is a numpy array with a shape attribute
+                if ret and isinstance(frame, np.ndarray) and hasattr(frame, 'shape'):
+                    frame_shape = tuple(frame.shape)
+                    if frame_shape == expectedRes:
+                        cap.release()
+                        return idx
+                break  # Only read one frame for testing
+            cap.release()
         return None
     except Exception as E:
         logging.error(f"Error when finding correct camera index! {E}")
