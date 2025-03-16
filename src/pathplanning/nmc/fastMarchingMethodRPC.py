@@ -1,4 +1,5 @@
 import math
+import time
 
 import grpc
 from concurrent import futures
@@ -444,6 +445,8 @@ class VisionCoprocessorServicer(XTableGRPC.VisionCoprocessorServicer):
         path = [START]
         current = START
         max_steps = 10000
+        print("Generating path...")
+        t = time.time()
         for _ in range(max_steps):
             next_cell = pathfinder.next_step(current, time_map)
             if next_cell == current:
@@ -452,6 +455,7 @@ class VisionCoprocessorServicer(XTableGRPC.VisionCoprocessorServicer):
             current = next_cell
             if current == goal:
                 break
+        print(f"Finished generating path in {time.time() - t} seconds.")
         inflection_points = find_inflection_points(path)
         if SAFE_DISTANCE_INCHES >= 10:
             smoothed_control_points = deflate_inflection_points(
@@ -459,10 +463,12 @@ class VisionCoprocessorServicer(XTableGRPC.VisionCoprocessorServicer):
             )
         else:
             smoothed_control_points = deflate_inflection_points(inflection_points)
-
+        print("Finding safe bezier paths...")
+        t = time.time()
         safe_bezier_segments = pathfinder.generate_safe_bezier_paths(
             smoothed_control_points
         )
+        print(f"Finished finding safe bezier paths in {time.time() - t} seconds.")
         safe_bezier_segments_poses = [
             segment / np.array([PIXELS_PER_METER_X, PIXELS_PER_METER_Y])
             for segment in safe_bezier_segments
