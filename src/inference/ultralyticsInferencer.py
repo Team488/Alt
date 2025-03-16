@@ -14,7 +14,7 @@ class ultralyticsInferencer(InferencerBackend):
     def runInference(self, inputTensor):
         return self.model(inputTensor)
 
-    def postProcess(self, results, frame, minConf):
+    def postProcessBoxes(self, results, frame, minConf):
         if results != None and results[0] != None:
             boxes = results[0].boxes.xywh.cpu().numpy()
             half = boxes[:, 2:] / 2

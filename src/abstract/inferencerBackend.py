@@ -30,7 +30,7 @@ class InferencerBackend(ABC):
         pass
 
     @abstractmethod
-    def postProcess(
+    def postProcessBoxes(
         self, results, frame, minConf
     ) -> list[tuple[list[float, float, float, float], float, int]]:
         """Place postprocess here.\n
