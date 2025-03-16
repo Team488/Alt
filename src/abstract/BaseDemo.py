@@ -1,8 +1,8 @@
 from abc import ABC, abstractmethod
 
 
-def Demo(ABC) -> None:
+class Demo(ABC):
     @abstractmethod
-    def startDemo():
+    def startDemo(self) -> None:
         # every demo will have a start demo
         pass

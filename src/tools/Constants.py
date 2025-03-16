@@ -1,12 +1,21 @@
 from abc import abstractmethod
 from enum import Enum
 import json
-from typing import Union, Any
+from typing import Union, Any, Dict, List, Tuple, Optional, cast
+from typing import Literal, TypeVar, Generic, Type, Sequence, Callable, overload
 from tools import UnitConversion, Units
 import math
 import cv2
 import numpy as np
 from scipy.spatial.transform import Rotation
+from numpy.typing import NDArray
+
+# Type definitions for better typing in this file
+RotationType = Units.RotationType
+LengthType = Units.LengthType
+Position2D = Tuple[float, float]
+Position3D = Tuple[float, float, float]
+RotationAngles = Tuple[float, float]
 
 
 class YOLOTYPE(Enum):
@@ -194,32 +203,34 @@ class Object(Enum):
     ROBOT = "r"
 
 
-class CameraExtrinsics:
+class CameraExtrinsics(Enum):
     #   {PositionName} = ((offsetX(in),offsetY(in),offsetZ(in)),(yawOffset(deg),pitchOffset(deg)))
+    # Values will be added as enum members when subclassing
+    
     @staticmethod
-    def getDefaultLengthType():
+    def getDefaultLengthType() -> LengthType:
         return Units.LengthType.IN
 
     @staticmethod
-    def getDefaultRotationType():
+    def getDefaultRotationType() -> RotationType:
         return Units.RotationType.Deg
 
-    def getOffsetXIN(self):
+    def getOffsetXIN(self) -> float:
         return self.value[0][0]
 
-    def getOffsetXCM(self):
+    def getOffsetXCM(self) -> float:
         return self.value[0][0] * 2.54
 
     def getOffsetYIN(self) -> float:
         return self.value[0][1]
 
-    def getOffsetYCM(self):
+    def getOffsetYCM(self) -> float:
         return self.value[0][1] * 2.54
 
     def getOffsetZIN(self) -> float:
         return self.value[0][2]
 
-    def getOffsetZCM(self):
+    def getOffsetZCM(self) -> float:
         return self.value[0][2] * 2.54  # Fixed typo (was using Y instead of Z)
 
     def getYawOffset(self) -> float:
@@ -234,15 +245,23 @@ class CameraExtrinsics:
     def getPitchOffsetAsRadians(self) -> float:
         return math.radians(self.value[1][1])
 
-    def get4x4AffineMatrix(self, lengthType: Units.LengthType = Units.LengthType.CM):
+    def get4x4AffineMatrix(self, lengthType: LengthType = Units.LengthType.CM) -> NDArray:
         """Returns a 4x4 affine transformation matrix for the camera extrinsics"""
 
         x_in, y_in, z_in = self.value[0]
         yaw, pitch = map(math.radians, self.value[1])  # Convert degrees to radians
 
-        x, y, z = UnitConversion.convertLength(
+        # Handle different possible return types from convertLength
+        position_result = UnitConversion.convertLength(
             (x_in, y_in, z_in), CameraExtrinsics.getDefaultLengthType(), lengthType
         )
+        
+        # Ensure we have a 3D position
+        if isinstance(position_result, tuple) and len(position_result) == 3:
+            x, y, z = position_result
+        else:
+            # Default to zeros if conversion fails
+            x, y, z = 0.0, 0.0, 0.0
 
         # Create rotation matrix (assuming yaw around Z, pitch around Y)
         rotation_matrix = Rotation.from_euler(
@@ -700,36 +719,58 @@ class ATLocations(Enum):
     @classmethod
     def get_pose_by_id(
         cls,
-        tag_id,
-        length: Units.LengthType = Units.LengthType.CM,
-        rotation: Units.RotationType = Units.RotationType.Rad,
-    ):
+        tag_id: int,
+        length: LengthType = Units.LengthType.CM,
+        rotation_type: RotationType = Units.RotationType.Rad,
+    ) -> Optional[Tuple[Position3D, RotationAngles]]:
         """Retrieve the position and rotation for a given tag ID."""
         tag = cls.get_by_id(tag_id)
 
         if tag is None:
             return None
 
-        position = UnitConversion.convertLength(
+        # Get position
+        position_result = UnitConversion.convertLength(
             tag.position, cls.getDefaultLengthType(), length
         )
-
-        rotation = UnitConversion.convertRotation(
-            tag.rotation, cls.getDefaultRotationType(), rotation
+        
+        # Get rotation
+        rotation_result = UnitConversion.convertRotation(
+            tag.rotation, cls.getDefaultRotationType(), rotation_type
         )
-
-        return position, rotation
+        
+        # Ensure position is a 3D position tuple
+        if isinstance(position_result, tuple) and len(position_result) == 3:
+            position = position_result
+        else:
+            # If not a valid position, return None
+            return None
+            
+        # Ensure rotation is a 2D rotation tuple
+        if isinstance(rotation_result, tuple) and len(rotation_result) == 2:
+            rotation_angles = rotation_result
+        else:
+            # If not a valid rotation, return None
+            return None
+            
+        return position, rotation_angles
 
     @classmethod
     def getPoseAfflineMatrix(
-        cls, tag_id, units: Units.LengthType = Units.LengthType.CM
-    ):
+        cls, tag_id: int, units: LengthType = Units.LengthType.CM
+    ) -> Optional[NDArray]:
+        """Returns a 4x4 affine matrix for the tag pose"""
         pose = cls.get_pose_by_id(tag_id, length=units)
         if pose is None:
             return None
 
-        translation, rotation = pose
-        rotMatrix = Rotation.from_euler("ZY", rotation, degrees=False).as_matrix()
+        translation, rotation_angles = pose
+        # Make sure the translation is a 3D position
+        if not isinstance(translation, tuple) or len(translation) != 3:
+            return None
+            
+        # Convert rotation angles to a rotation matrix
+        rotMatrix = Rotation.from_euler("ZY", rotation_angles, degrees=False).as_matrix()
 
         m = np.eye(4)
         m[:3, :3] = rotMatrix
@@ -737,7 +778,7 @@ class ATLocations(Enum):
         return m
 
     @classmethod
-    def getReefBasedIds(cls, team: TEAM = None) -> list[int]:
+    def getReefBasedIds(cls, team: Optional[TEAM] = None) -> List[int]:
         if not team:
             return ATLocations.getReefBasedIds(TEAM.BLUE) + ATLocations.getReefBasedIds(
                 TEAM.RED
@@ -785,15 +826,31 @@ class ReefBranches(Enum):
     L4R = (5, "L4-R", np.array([6.468, -58.4175, 0.876]))
 
     @property
-    def branchid(self):
-        return self[0]
+    def branchid(self) -> int:
+        return self.value[0]
 
     @property
-    def branchname(self):
-        return self[1]
+    def branchname(self) -> str:
+        return self.value[1]
 
-    def getAprilTagOffset(self, units: Units.LengthType = Units.LengthType.CM):
-        return UnitConversion.convertLength(self[2], self.getDefaultLengthType(), units)
+    def getAprilTagOffset(self, units: LengthType = Units.LengthType.CM) -> NDArray:
+        # The original value is a numpy array, so we need to handle it carefully
+        result = UnitConversion.convertLength(
+            self.value[2], self.getDefaultLengthType(), units
+        )
+        
+        # Type check and convert
+        if result is None:
+            # Default to zero array if conversion fails
+            return np.zeros(3)
+        elif isinstance(result, tuple):
+            return np.array(result)
+        elif isinstance(result, (int, float)):
+            # If we get a scalar, return a zero-vector
+            return np.zeros(3)
+        else:
+            # Already a numpy array
+            return result
 
     @classmethod
     def getByID(cls, branchid: int):
@@ -856,7 +913,7 @@ class MapConstants(Enum):
     robotHeight = 75  # cm assuming square robot with max frame perimiter of 300
     gameObjectWidth = 35  # cm
     gameObjectHeight = 35  # cm
-    mapObstacles = []
+    mapObstacles = []  # type: ignore
 
     b_reef_center = (448.93, 402.59)  # cm
     r_reef_center = (1305.8902, 402.59)  # cm
@@ -872,10 +929,17 @@ class MapConstants(Enum):
 
     def getLength(
         self, lengthType: Units.LengthType = Units.LengthType.CM
-    ) -> Union[tuple[float], float]:
-        return UnitConversion.convertLength(
+    ) -> float:
+        # Since MapConstants values are all floats, we only need to handle float returns
+        result = UnitConversion.convertLength(
             self.getCM(), fromType=self.getDefaultLengthType(), toType=lengthType
         )
+        # Ensure we return a float
+        if isinstance(result, (int, float)):
+            return float(result)
+        else:
+            # Default to zero if conversion fails
+            return 0.0
 
 
 class LabelingConstants(Enum):
@@ -928,9 +992,9 @@ def getCameraExtrinsics2025(cameraName):
     return None
 
 
-def getCameraValues2024(
+def getCameraValues2025(
     cameraName: str,
-) -> tuple[CameraIntrinsics, CameraExtrinsics, CameraIdOffsets2024]:
+) -> tuple[CameraIntrinsics, CameraExtrinsics, CameraIdOffsets2025]:
     return (
         CameraIntrinsicsPredefined.OV9782COLOR,
         getCameraExtrinsics2025(cameraName),

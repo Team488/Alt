@@ -1,37 +1,45 @@
 import traceback
 from logging import Logger
+from typing import Any, Set, Callable, Dict, Protocol, TypeVar, cast
 from JXTABLES.XTablesClient import XTablesClient
 from abstract.Order import Order
-from Core.PropertyOperator import PropertyOperator
+from Core.PropertyOperator import PropertyOperator, ReadonlyProperty
+from Core.TimeOperator import Timer
+
+# Return type from XTablesClient subscription callback
+class XTableReturn(Protocol):
+    key: str
+    value: Any
+    type: int
 
 # subscribes to command request with xtables and then executes when requested
 class OrderOperator:
     def __init__(
         self, xclient: XTablesClient, propertyOp: PropertyOperator, logger: Logger
     ) -> None:
-        self.Sentinel = logger
-        self.propertyOp = propertyOp
-        self.triggers = set()
+        self.Sentinel: Logger = logger
+        self.propertyOp: PropertyOperator = propertyOp
+        self.triggers: Set[str] = set()
         self.__xclient: XTablesClient = xclient
-        self.__setTriggerDescription = lambda orderTriggerName, description: self.propertyOp.createCustomReadOnlyProperty(
+        self.__setTriggerDescription: Callable[[str, str], bool] = lambda orderTriggerName, description: self.propertyOp.createCustomReadOnlyProperty(
             f"active_triggers.{orderTriggerName}.Description", description
         ).set(
             description
         )
-        self.__setTriggerStatus = lambda orderTriggerName, status: self.propertyOp.createCustomReadOnlyProperty(
+        self.__setTriggerStatus: Callable[[str, str], bool] = lambda orderTriggerName, status: self.propertyOp.createCustomReadOnlyProperty(
             f"active_triggers.{orderTriggerName}.Status", status
         ).set(
             status
         )
 
-    def __runOrder(self, order: Order, ret) -> None:
-        orderTriggerName = ret.key
+    def __runOrder(self, order: Order, ret: XTableReturn) -> None:
+        orderTriggerName: str = ret.key
         self.__setTriggerStatus(orderTriggerName, "running!")
         self.Sentinel.info(f"Starting order that does: {order.getDescription()}")
-        timer = order.getTimer()
+        timer: Timer = order.getTimer()
         try:
             self.Sentinel.debug(f"Running order...")
-            progressStr = "run"
+            progressStr: str = "run"
             with timer.run("run"):
                 order.run(input=ret.value)
 
@@ -45,7 +53,7 @@ class OrderOperator:
             self.__setTriggerStatus(
                 orderTriggerName, f"failed!\n On {progressStr}: {e}"
             )
-            tb = traceback.format_exc()
+            tb: str = traceback.format_exc()
             self.Sentinel.error(tb)
 
     def createOrderTrigger(self, orderTriggerName: str, orderToRun: Order) -> None:
@@ -67,8 +75,8 @@ class OrderOperator:
             f"Created order trigger | Trigger Name: {orderTriggerName} Order description: {orderToRun.getDescription()}"
         )
 
-    def deregister(self):
-        wasAllRemoved = True
+    def deregister(self) -> bool:
+        wasAllRemoved: bool = True
         for orderTriggerName in self.triggers:
             wasAllRemoved &= self.__xclient.unsubscribe(
                 orderTriggerName, self.__runOrder

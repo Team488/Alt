@@ -1,4 +1,6 @@
 from abc import ABC, abstractmethod
+from typing import Tuple
+
 import numpy as np
 
 from tools.Constants import CameraIntrinsics
@@ -6,8 +8,9 @@ from tools.Constants import CameraIntrinsics
 
 class Capture(ABC):
     @abstractmethod
-    def create(self):
+    def create(self) -> None:
         """Opens the capture, or throwing an exception if it cannot be opened"""
+        pass
 
     @abstractmethod
     def getColorFrame(self) -> np.ndarray:
@@ -19,7 +22,8 @@ class Capture(ABC):
         """Returns fps of capture"""
         pass
 
-    def getFrameShape(self):
+    def getFrameShape(self) -> Tuple[int, ...]:
+        """Returns the shape of the frame"""
         return self.getColorFrame().shape
 
     @abstractmethod
@@ -34,8 +38,14 @@ class Capture(ABC):
 
 
 class ConfigurableCapture(Capture):
-    def setIntrinsics(self, cameraIntrinsics: CameraIntrinsics):
+    def __init__(self) -> None:
+        super().__init__()
+        self.cameraIntrinsics: CameraIntrinsics = CameraIntrinsics()
+
+    def setIntrinsics(self, cameraIntrinsics: CameraIntrinsics) -> None:
+        """Set the camera intrinsics"""
         self.cameraIntrinsics = cameraIntrinsics
 
     def getIntrinsics(self) -> CameraIntrinsics:
+        """Get the camera intrinsics"""
         return self.cameraIntrinsics

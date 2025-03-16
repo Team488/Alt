@@ -1,16 +1,30 @@
 import numpy as np
 import cv2
 import time
+from typing import List, Tuple, Callable, Any, Union, Optional
 from Core.LogManager import getLogger
-from tools.Constants import YOLOTYPE
 from tools.Constants import YOLOTYPE, Backend
 
 Sentinel = getLogger("Inference_Utils")
 
+# Type aliases
+BoundingBox = List[float]  # [x_min, y_min, x_max, y_max]
+Detection = Tuple[BoundingBox, float, int]  # (bbox, confidence, class_id)
 
-def letterbox_image(image, target_size=(640, 640)):
+
+def letterbox_image(image: np.ndarray, target_size: Tuple[int, int] = (640, 640)) -> np.ndarray:
+    """
+    Resize an image to the target size while preserving aspect ratio, padding with zeros
+    
+    Args:
+        image: Input image
+        target_size: Target size (width, height)
+        
+    Returns:
+        Letterboxed image
+    """
     # dont do if not needed
-    if image.shape[:2] == target_size:
+    if image.shape[:2] == target_size[::-1]:  # Shape is (height, width) but target_size is (width, height)
         return image
 
     # Get original dimensions
@@ -41,8 +55,18 @@ def letterbox_image(image, target_size=(640, 640)):
     return letterbox
 
 
-# xyxy
-def rescaleBox(box, img_shape, target_size=(640, 640)):
+def rescaleBox(box: List[float], img_shape: Tuple[int, ...], target_size: Tuple[int, int] = (640, 640)) -> List[float]:
+    """
+    Rescale a bounding box from the target size back to the original image dimensions
+    
+    Args:
+        box: Bounding box in [x_min, y_min, x_max, y_max] format
+        img_shape: Original image shape (height, width, channels)
+        target_size: Target size that was used for letterboxing
+        
+    Returns:
+        Rescaled bounding box
+    """
     h, w = img_shape[:2]
     target_width, target_height = target_size
 
@@ -73,7 +97,22 @@ def rescaleBox(box, img_shape, target_size=(640, 640)):
     return [x_min, y_min, x_max, y_max]
 
 
-def non_max_suppression(predictions, conf_threshold=0.6, iou_threshold=0.4):
+def non_max_suppression(
+    predictions: List[Detection], 
+    conf_threshold: float = 0.6, 
+    iou_threshold: float = 0.4
+) -> List[Detection]:
+    """
+    Apply non-maximum suppression to a list of detections
+    
+    Args:
+        predictions: List of detections as (bbox, confidence, class_id) tuples
+        conf_threshold: Confidence threshold for filtering
+        iou_threshold: IoU threshold for NMS
+        
+    Returns:
+        Filtered list of detections
+    """
     # Filter out predictions with low confidence
     predictions = [x for x in predictions if x[1] >= conf_threshold]
 
@@ -84,32 +123,66 @@ def non_max_suppression(predictions, conf_threshold=0.6, iou_threshold=0.4):
     scores = []
     class_ids = []
     for x in predictions:
-        boxes.append(x[0])  # The first 4 elements are the bounding box coordinates
-        scores.append(x[1])  # The 5th element is the confidence score
-        class_ids.append(x[2])  # The 6th element is the class ID
+        boxes.append(x[0])  # The bounding box coordinates
+        scores.append(x[1])  # The confidence score
+        class_ids.append(x[2])  # The class ID
 
     indices = cv2.dnn.NMSBoxesBatched(
         boxes, scores, class_ids, conf_threshold, iou_threshold
     )
-    print(indices)
+    
     # Return selected boxes and class IDs
     return [(boxes[i], scores[i], class_ids[i]) for i in indices]
 
 
-def sigmoid(x):
-    return 1 / (1 + np.exp(x))
+def sigmoid(x: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
+    """
+    Apply sigmoid function to input
+    
+    Args:
+        x: Input value or array
+        
+    Returns:
+        Sigmoid of input
+    """
+    return 1 / (1 + np.exp(-x))
 
 
-def softmaxx(values):
+def softmaxx(values: np.ndarray) -> np.ndarray:
+    """
+    Apply softmax function to an array of values
+    
+    Args:
+        values: Input array
+        
+    Returns:
+        Softmax of input array
+    """
     exps = np.exp(values)
     exps /= sum(exps)
     return exps
 
 
-def adjustBoxesV5(outputs, imgShape, minConf=0.7, printDebug=False):
-    predictions = outputs[
-        0
-    ]  # Model's predictions = 1 x 25200 x 7 (x,y,w,h + objectness score + 2 classes)
+def adjustBoxesV5(
+    outputs: np.ndarray, 
+    imgShape: Tuple[int, ...], 
+    minConf: float = 0.7, 
+    printDebug: bool = False
+) -> List[Detection]:
+    """
+    Process YOLOv5 model outputs to get normalized detection boxes
+    
+    Args:
+        outputs: Raw model output tensor
+        imgShape: Original image shape
+        minConf: Minimum confidence threshold
+        printDebug: Whether to print debug information
+        
+    Returns:
+        List of detections (bbox, confidence, class_id)
+    """
+    # Model's predictions = 1 x 25200 x (x,y,w,h + objectness score + classes)
+    predictions = outputs[0]
     objectness_scores = predictions[:, 4]
     class_scores = predictions[:, 5:]
     class_ids = np.argmax(class_scores, axis=1)
@@ -122,29 +195,51 @@ def adjustBoxesV5(outputs, imgShape, minConf=0.7, printDebug=False):
     filtered_scores = scores[high_score_indices]
     filtered_class_ids = class_ids[high_score_indices]
 
-    adjusted_boxes = []
+    adjusted_boxes: List[Detection] = []
     for pred, score, class_id in zip(
         filtered_predictions, filtered_scores, filtered_class_ids
     ):
+        # Convert from center-width-height to corner format
         x, y, width, height = pred[:4]
         x1, x2 = x - width / 2, x + width / 2
         y1, y2 = y - height / 2, y + height / 2
 
+        # Rescale to original image dimensions
         scaledBox = rescaleBox([x1, y1, x2, y2], imgShape)
+        
         if printDebug:
             print(f"X {x} Y {y} w {width} h {height} classid {class_id}")
             time.sleep(1)
-        adjusted_boxes.append([scaledBox, score, class_id])
+            
+        adjusted_boxes.append((scaledBox, float(score), int(class_id)))
 
     return adjusted_boxes
 
 
-def adjustBoxesV11ONNX(outputs, imgShape, minConf=0.7, printDebug=False):
+def adjustBoxesV11ONNX(
+    outputs: np.ndarray, 
+    imgShape: Tuple[int, ...], 
+    minConf: float = 0.7, 
+    printDebug: bool = False
+) -> List[Detection]:
+    """
+    Process YOLOv11 ONNX model outputs to get normalized detection boxes
+    
+    Args:
+        outputs: Raw model output tensor
+        imgShape: Original image shape
+        minConf: Minimum confidence threshold
+        printDebug: Whether to print debug information
+        
+    Returns:
+        List of detections (bbox, confidence, class_id)
+    """
     #  Model's predictions = 1 x 6 x 8400
     predictions = outputs[0]  # extract 6 x 8400
     predictions = np.transpose(
         predictions, (1, 0)
-    )  # transpose to 8400 x 6 (x,y,w,h + 2 classes)
+    )  # transpose to 8400 x 6 (x,y,w,h + classes)
+    
     class_scores = predictions[:, 4:]
     class_ids = np.argmax(class_scores, axis=1)
     confidences = class_scores[np.arange(class_scores.shape[0]), class_ids]
@@ -155,28 +250,48 @@ def adjustBoxesV11ONNX(outputs, imgShape, minConf=0.7, printDebug=False):
     filtered_scores = confidences[high_score_indices]
     filtered_class_ids = class_ids[high_score_indices]
 
-    adjusted_boxes = []
+    adjusted_boxes: List[Detection] = []
     for pred, score, class_id in zip(
         filtered_predictions, filtered_scores, filtered_class_ids
     ):
+        # Convert from center-width-height to corner format
         x, y, width, height = pred[:4]
         x1, x2 = x - width / 2, x + width / 2
         y1, y2 = y - height / 2, y + height / 2
 
+        # Rescale to original image dimensions
         scaledBox = rescaleBox([x1, y1, x2, y2], imgShape)
+        
         if printDebug:
             print(f"X {x} Y {y} w {width} h {height} classid {class_id}")
             time.sleep(1)
-        adjusted_boxes.append([scaledBox, score, class_id])
+            
+        adjusted_boxes.append((scaledBox, float(score), int(class_id)))
 
     return adjusted_boxes
 
 
-def getAdjustBoxesMethod(yoloType: YOLOTYPE, backend: Backend):
+def getAdjustBoxesMethod(
+    yoloType: YOLOTYPE, 
+    backend: Backend
+) -> Callable[[np.ndarray, Tuple[int, ...], float, bool], List[Detection]]:
+    """
+    Get the appropriate box adjustment function for a given YOLO type and backend
+    
+    Args:
+        yoloType: The YOLO model version
+        backend: The inference backend
+        
+    Returns:
+        A function to adjust boxes for the specified model type
+        
+    Raises:
+        RuntimeError: If an unsupported YOLO type is provided
+    """
     if yoloType == YOLOTYPE.V5:
         return adjustBoxesV5
     elif yoloType == YOLOTYPE.V11:
         return adjustBoxesV11ONNX
     else:
         Sentinel.fatal(f"Invalid Yolotype not supported yet!: {yoloType}")
-        return None
+        raise RuntimeError(f"Invalid Yolotype not supported: {yoloType}")

@@ -2,6 +2,7 @@ import os
 import cv2
 import time
 from functools import partial
+from typing import Optional, Dict, Any, List, Tuple
 
 import numpy as np
 
@@ -19,16 +20,29 @@ class InferenceAgent(CameraUsingAgentBase):
     Adds inference capabilites to an agent, processing frames
     NOTE: Requires extra arguments passed in somehow, for example using Functools partial or extending the class"""
 
-    def __init__(self, **kwargs) -> None:
+    def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
-        self.inferenceMode = kwargs.get("inferenceMode", None)
+        self.inferenceMode: Optional[InferenceMode] = kwargs.get("inferenceMode", None)
+        self.inf: Optional[MultiInferencer] = None
+        self.confidence = None
+        self.drawBoxes = None
+        self.results: Optional[Dict[str, Any]] = None
 
     def create(self) -> None:
         super().create()
-        self.Sentinel.info("Creating Frame Processor...")
+        if self.Sentinel:
+            self.Sentinel.info("Creating Frame Processor...")
+            
+        if self.inferenceMode is None:
+            raise ValueError("InferenceMode not provided")
+            
         self.inf = MultiInferencer(
             inferenceMode=self.inferenceMode,
         )
+        
+        if self.propertyOperator is None:
+            raise ValueError("PropertyOperator not initialized")
+            
         self.confidence = self.propertyOperator.createProperty(
             "Confidence_Threshold", 0.7
         )
@@ -36,6 +50,18 @@ class InferenceAgent(CameraUsingAgentBase):
 
     def runPeriodic(self) -> None:
         super().runPeriodic()
+        
+        if self.timer is None:
+            raise ValueError("Timer not initialized")
+            
+        if self.inf is None:
+            raise ValueError("Inferencer not initialized")
+            
+        if self.latestFrameCOLOR is None:
+            return
+            
+        if self.confidence is None or self.drawBoxes is None:
+            raise ValueError("Properties not initialized")
 
         with self.timer.run("inference"):
             self.results = self.inf.run(
@@ -53,7 +79,7 @@ def InferenceAgentPartial(
     capture: ConfigurableCapture,
     inferenceMode: InferenceMode,
     showFrames: bool = False,
-):
+) -> Any:
     """Returns a partially completed frame processing agent. All you have to do is pass it into neo"""
     return partial(
         InferenceAgent,

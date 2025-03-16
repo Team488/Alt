@@ -1,5 +1,7 @@
+from typing import Any
+
 class KalmanEntry:
-    def __init__(self, X, P) -> None:
+    def __init__(self, X: Any, P: Any) -> None:
         self.X = X
         self.P = P
         self.framesNotSeen = 0

@@ -1,8 +1,9 @@
 from logging import Logger
 from threading import Lock
+from typing import Any, Optional
 from JXTABLES.XTablesClient import XTablesClient
 from Core.Central import Central
-from Core.PropertyOperator import PropertyOperator
+from Core.PropertyOperator import PropertyOperator, ReadonlyProperty
 from Core.ConfigOperator import ConfigOperator
 from Core.ShareOperator import ShareOperator
 
@@ -19,16 +20,16 @@ class XDashOperator:
         shareOperator: ShareOperator,
         logger: Logger,
     ) -> None:
-        self.central = central
-        self.xclient = xclient
-        self.propertyOperator = propertyOperator
-        self.configOperator = configOperator
-        self.shareOp = shareOperator
-        self.Sentinel = logger
+        self.central: Central = central
+        self.xclient: XTablesClient = xclient
+        self.propertyOperator: PropertyOperator = propertyOperator
+        self.configOperator: ConfigOperator = configOperator
+        self.shareOp: ShareOperator = shareOperator
+        self.Sentinel: Logger = logger
 
         # telemetry properties
-        self.mapProp = self.propertyOperator.createCustomReadOnlyProperty("Probmap", "")
-        self.pathProp = self.propertyOperator.createCustomReadOnlyProperty(
+        self.mapProp: ReadonlyProperty = self.propertyOperator.createCustomReadOnlyProperty("Probmap", "")
+        self.pathProp: ReadonlyProperty = self.propertyOperator.createCustomReadOnlyProperty(
             "Best_Path", ""
         )
 

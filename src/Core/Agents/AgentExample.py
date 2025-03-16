@@ -1,9 +1,19 @@
+from typing import Any, Optional
 from abstract.Agent import Agent
 
 
 class AgentExample(Agent):
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__(**kwargs)
+        self.nameProp = None
+        self.projectNameProp = None
+        self.timesRun: int = 0
+
     def create(self) -> None:
         # for example here i can create a propery to configure what to call myself
+        if self.propertyOperator is None:
+            raise ValueError("PropertyOperator not initialized")
+            
         self.nameProp = self.propertyOperator.createProperty(
             propertyTable="agent_name", propertyDefault="Bob"
         )
@@ -15,6 +25,12 @@ class AgentExample(Agent):
     def runPeriodic(self) -> None:
         # task periodic loop here
         # for example, i can tell the world what im called
+        if self.nameProp is None or self.projectNameProp is None:
+            return
+            
+        if self.Sentinel is None:
+            return
+            
         self.timesRun += 1
         name = self.nameProp.get()
         self.projectNameProp.set(name)
@@ -23,9 +39,10 @@ class AgentExample(Agent):
     def onClose(self) -> None:
         # task cleanup here
         # for example, i can tell the world that my time has come
-        print(f"My time has come. Never forget the name {self.nameProp.get()}!")
+        if self.nameProp is not None:
+            print(f"My time has come. Never forget the name {self.nameProp.get()}!")
 
-    def isRunning(self):
+    def isRunning(self) -> bool:
         # condition to keep task running here
         # for example, i want to run only 50 times. Thus i will be running if the number of times i have run is less than 50
         return self.timesRun < 10000

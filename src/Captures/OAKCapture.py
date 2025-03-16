@@ -1,37 +1,105 @@
+from typing import Tuple, Optional
+import numpy as np
 from abstract.depthCamera import depthCamera
-from tools.Constants import OAKDLITEResolution
+from tools.Constants import OAKDLITEResolution, CameraIntrinsics
 from tools.depthAiHelper import DepthAIHelper
 
 
 class OAKCapture(depthCamera):
-    def __init__(self, res: OAKDLITEResolution):
-        self.res = res
+    """
+    Capture implementation for OpenCV AI Kit (OAK-D) camera
+    """
+    def __init__(self, res: OAKDLITEResolution) -> None:
+        """
+        Initialize OAK capture with specified resolution
+        
+        Args:
+            res: Resolution setting for the camera
+        """
+        super().__init__()
+        self.res: OAKDLITEResolution = res
+        self.depthAiHelper: Optional[DepthAIHelper] = None
+
+    def create(self) -> None:
+        """
+        Initialize the OAK camera
+        """
         self.depthAiHelper = DepthAIHelper(self.res)
         super().setIntrinsics(self.depthAiHelper.getColorIntrinsics())
 
-    def create(self):
-        pass
-    
-    def getDepthAndColorFrame(self):
+    def getDepthAndColorFrame(self) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Get both depth and color frames from the camera
+        
+        Returns:
+            A tuple containing (depth_frame, color_frame)
+        """
+        if self.depthAiHelper is None:
+            raise RuntimeError("Capture not created, call create() first")
+            
         return (self.depthAiHelper.getDepthFrame(), self.depthAiHelper.getColorFrame())
 
-    def getDepthFrame(self):
+    def getDepthFrame(self) -> np.ndarray:
+        """
+        Get the depth frame from the camera
+        
+        Returns:
+            The depth frame as a numpy array
+        """
+        if self.depthAiHelper is None:
+            raise RuntimeError("Capture not created, call create() first")
+            
         return self.depthAiHelper.getDepthFrame()
 
-    def getColorFrame(self):
+    def getColorFrame(self) -> np.ndarray:
+        """
+        Get the color frame from the camera
+        
+        Returns:
+            The color frame as a numpy array
+        """
+        if self.depthAiHelper is None:
+            raise RuntimeError("Capture not created, call create() first")
+            
         return self.depthAiHelper.getColorFrame()
 
-    def getFps(self):
+    def getFps(self) -> int:
+        """
+        Get the camera frames per second
+        
+        Returns:
+            Camera frame rate
+        """
+        if self.depthAiHelper is None:
+            raise RuntimeError("Capture not created, call create() first")
+            
         return self.depthAiHelper.getFps()
 
-    def isOpen(self):
+    def isOpen(self) -> bool:
+        """
+        Check if the camera is still open
+        
+        Returns:
+            True if the camera is open, False otherwise
+        """
+        if self.depthAiHelper is None:
+            return False
+            
         return self.depthAiHelper.isOpen()
 
-    def close(self):
-        self.depthAiHelper.close()
+    def close(self) -> None:
+        """
+        Close the camera and release resources
+        """
+        if self.depthAiHelper is not None:
+            self.depthAiHelper.close()
+            self.depthAiHelper = None
 
 
-def startDemo():
+def startDemo() -> None:
+    """
+    Start a demo showing depth and color frames from the OAK camera
+    """
     import cv2
 
     cap = OAKCapture(OAKDLITEResolution.OAK1080P)

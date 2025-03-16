@@ -1,9 +1,11 @@
+from typing import List, Optional
+
 class NumberMapper:
-    def __init__(self, redrobot_numbers, bluerobot_numbers) -> None:
+    def __init__(self, redrobot_numbers: List[str], bluerobot_numbers: List[str]) -> None:
         self.rednums = redrobot_numbers
         self.bluenums = bluerobot_numbers
 
-    def getRobotNumberEstimate(self, colorisblue, numberestimate):
+    def getRobotNumberEstimate(self, colorisblue: bool, numberestimate: str) -> str:
         if len(numberestimate) == 0:
             print("Empty number estimate")
             return ""
