@@ -261,7 +261,7 @@ def apply_and_inflate_all_static_obstacles(grid, static_obs_array, safe_distance
             grid[y, x] = 1000000
     # Inflate static obstacles using dilation.
     binary_static = (grid > 1).astype(np.uint8)
-    kernel_size = int(safe_distance)
+    kernel_size = 2 * safe_distance + 1
     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (kernel_size, kernel_size))
     inflated_static = cv2.dilate(binary_static, kernel, iterations=1)
     grid[inflated_static == 1] = 101
@@ -352,17 +352,20 @@ fieldHeightMeters = 8.05
 fieldWidthMeters = 17.55
 grid_width = 690
 grid_height = 316
-ROBOT_SIZE_LENGTH_INCHES = 35
-ROBOT_SIZE_WIDTH_INCHES = 35
+ROBOT_SIZE_LENGTH_INCHES = 36
+ROBOT_SIZE_WIDTH_INCHES = 36
 DEFAULT_SAFE_DISTANCE_INCHES = 0.5
 # ----------- CONSTANTS (DO NOT CHANGE UNLESS KNOWN) -------------
 
 
 # ----------- MAIN CODE (DO NOT EDIT) -------------
-MAX_ROBOT_SIZE_DIAGONAL_INCHES = int(
-    math.ceil(math.sqrt(ROBOT_SIZE_LENGTH_INCHES**2 + ROBOT_SIZE_WIDTH_INCHES**2))
+MAX_ROBOT_SIZE_DIAGONAL_INCHES = math.sqrt(
+    ROBOT_SIZE_LENGTH_INCHES**2 + ROBOT_SIZE_WIDTH_INCHES**2
 )
+
+print("Robot Diagonal Distance (in): ", MAX_ROBOT_SIZE_DIAGONAL_INCHES)
 CENTER_ROBOT_SIZE = MAX_ROBOT_SIZE_DIAGONAL_INCHES / 2
+print("Robot Center Size (in): ", CENTER_ROBOT_SIZE)
 PIXELS_PER_METER_X = grid_width / fieldWidthMeters
 PIXELS_PER_METER_Y = grid_height / fieldHeightMeters
 
@@ -413,8 +416,9 @@ class VisionCoprocessorServicer(XTableGRPC.VisionCoprocessorServicer):
             if request.HasField("safeDistanceInches")
             else DEFAULT_SAFE_DISTANCE_INCHES
         )
-
+        print("Safe Distance (in): ", SAFE_DISTANCE_INCHES)
         TOTAL_SAFE_DISTANCE = int(CENTER_ROBOT_SIZE + SAFE_DISTANCE_INCHES)
+        print("Total Safe Distance (in): ", TOTAL_SAFE_DISTANCE)
         modified_static_obs = static_obs_array.copy()
         if low_hanging_red_far_active:
             modified_static_obs.extend(static_hang_obs_red_far)
@@ -449,7 +453,12 @@ class VisionCoprocessorServicer(XTableGRPC.VisionCoprocessorServicer):
             if current == goal:
                 break
         inflection_points = find_inflection_points(path)
-        smoothed_control_points = deflate_inflection_points(inflection_points)
+        if SAFE_DISTANCE_INCHES >= 10:
+            smoothed_control_points = deflate_inflection_points(
+                inflection_points, distance_threshold=4
+            )
+        else:
+            smoothed_control_points = deflate_inflection_points(inflection_points)
 
         safe_bezier_segments = pathfinder.generate_safe_bezier_paths(
             smoothed_control_points
