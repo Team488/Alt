@@ -5,6 +5,7 @@ from threading import Thread
 from reefTracking.ReefVisualizer import ReefVisualizerApp
 from reefTracking import ReefVisualizer
 from reefTracking.Reef import Reef, Alliance
+from tools.Constants import TEAM
 from functools import partial
 
 from abstract.Agent import Agent
@@ -33,6 +34,14 @@ class ReefVisualizerAgent(Agent):
         self.xclient.subscribe(
             "REEFMAP_STATES", consumer=lambda ret: self.__updateVisualizer(ret)
         )
+        team = self.getTeam()
+        if team == TEAM.RED:
+            self.reef = Reef(Alliance.RED)
+        elif team == TEAM.BLUE:
+            self.reef = Reef(Alliance.BLUE)
+        else:
+            raise Exception("Invalid Team Reading from XTables")
+    
 
     def runPeriodic(self) -> None:
         super().runPeriodic()
@@ -52,6 +61,7 @@ class ReefVisualizerAgent(Agent):
         flattenedCoralOutput = ReefPacket.getFlattenedObservations(decoded)[0]
 
         for atID_x, branchID_x, confidence in flattenedCoralOutput:
+            # print(atID_x, branchID_x, confidence)
             if confidence != 0.5:
                 print(atID_x, branchID_x, confidence)
             branch_index = branchID_x % 2  # Index Left or Right side of AT (0, 1)
