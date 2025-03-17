@@ -27,7 +27,12 @@ class TimeOperator:
             A Timer instance for the given name
         """
         if timeName in self.timerMap:
-            return self.timerMap.get(timeName)
+            existing_timer = self.timerMap.get(timeName)
+            if existing_timer is not None:
+                return existing_timer
+            # This should never happen as we check the key exists,
+            # but it satisfies mypy type checking
+            self.Sentinel.warning(f"Timer {timeName} existed in map but returned None")
 
         timer = self.__createTimer(timeName)
         self.timerMap[timeName] = timer
