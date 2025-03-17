@@ -1,5 +1,6 @@
 import numpy as np
 import cv2
+from typing import Optional, Tuple, List, Any
 from filterpy.kalman import UnscentedKalmanFilter
 from filterpy.kalman import MerweScaledSigmaPoints
 from tools.Constants import MapConstants
@@ -111,8 +112,22 @@ class Ukf:
         return np.array([new_x, new_y, vel_x, vel_y])
 
     def __adjustCollisionToClosestSide(
-        self, oldX, oldY, newX, newY, obstacle
-    ) -> tuple[float, float]:
+        self, oldX: float, oldY: float, newX: float, newY: float, 
+        obstacle: tuple[tuple[int, int], tuple[int, int]]
+    ) -> Optional[tuple[float, float]]:
+        """
+        Adjusts the collision point to the closest side of an obstacle
+        
+        Args:
+            oldX: Previous x position
+            oldY: Previous y position
+            newX: New x position
+            newY: New y position
+            obstacle: The obstacle coordinates as ((topX, topY), (botX, botY))
+            
+        Returns:
+            A tuple of (x, y) coordinates of the collision point, or None if no collision
+        """
         collisionPoint = None
         ((topX, topY), (botX, botY)) = obstacle
 
@@ -126,11 +141,11 @@ class Ukf:
         XforPossibleY = self.__getXvalue(possibleY, m, b)
 
         # Check if this found point is where we collide
-        # Check if this found point is where we collide
         if botY <= YforPossibleX <= topY:
             collisionPoint = (possibleX, YforPossibleX)
         elif botX <= XforPossibleY <= topX:
             collisionPoint = (XforPossibleY, possibleY)
+            
         return collisionPoint
 
     def __isWithin(self, oldDim, newDim, topDim, bottomDim):
