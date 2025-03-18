@@ -1,5 +1,6 @@
 import logging
 import math
+from typing import Optional, Tuple, List, Union, Any
 import cv2
 import numpy as np
 from mapinternals.NumberMapper import NumberMapper
@@ -13,13 +14,40 @@ Sentinel = getLogger("Position_Estimator")
 
 class DepthBasedPositionEstimator:
     def __init__(self) -> None:
-        self.__blueRobotHist, _ = staticLoad("histograms/blueRobotHist.npy")
-        self.__redRobotHist, _ = staticLoad("histograms/redRobotHist.npy")
+        """
+        Initialize the depth-based position estimator
+        Loads histogram files for robot color identification
+        """
+        hist_result = staticLoad("histograms/blueRobotHist.npy")
+        if hist_result is not None:
+            self.__blueRobotHist, _ = hist_result
+        else:
+            self.__blueRobotHist = np.zeros((256, 256), dtype=np.float32)
+            Sentinel.error("Failed to load blue robot histogram")
+            
+        hist_result = staticLoad("histograms/redRobotHist.npy")
+        if hist_result is not None:
+            self.__redRobotHist, _ = hist_result
+        else:
+            self.__redRobotHist = np.zeros((256, 256), dtype=np.float32)
+            Sentinel.error("Failed to load red robot histogram")
+            
         self.__minPerc = 0.2
 
     def __crop_image(
-        self, image: np.ndarray, bbox, safety_margin: float = 0
-    ) -> np.ndarray:  # in decimal percentage. Eg 5% margin -> 0.05
+        self, image: np.ndarray, bbox: Tuple[int, int, int, int], safety_margin: float = 0
+    ) -> np.ndarray:  
+        """
+        Crop an image based on a bounding box with optional safety margin
+        
+        Args:
+            image: The image to crop
+            bbox: The bounding box (x1, y1, x2, y2)
+            safety_margin: Optional safety margin in decimal percentage (e.g., 0.05 for 5% margin)
+            
+        Returns:
+            The cropped image
+        """
         x1, y1, x2, y2 = bbox
 
         if safety_margin != 0:
@@ -32,30 +60,74 @@ class DepthBasedPositionEstimator:
             y2 = int(np.clip(y2 + safety_margin * height, 0, yMax))
 
         cropped_image = image[y1:y2, x1:x2]
-
         return cropped_image
 
-    # returns the backprojected frame with either true for blue for false for red
-    # if there was no color at all the frame returned will have a corresponding None value
-    def __backprojAndThreshFrame(self, frame, histogram, isBlue):
-        backProj = cv2.calcBackProject([frame], [1, 2], histogram, [0, 256, 0, 256], 1)
+    def __backprojAndThreshFrame(
+        self, frame: np.ndarray, histogram: np.ndarray, isBlue: bool
+    ) -> np.ndarray:
+        """
+        Apply back projection and thresholding to a frame using a color histogram
+        
+        Args:
+            frame: The frame to process
+            histogram: The color histogram
+            isBlue: Whether the histogram is for blue (True) or red (False)
+            
+        Returns:
+            The thresholded back projection
+        """
+        # OpenCV calcBackProject expects a list of arrays
+        channels = [frame]
+        backProj = cv2.calcBackProject(channels, [1, 2], histogram, [0, 256, 0, 256], 1)
         # cv2.imshow(f"backprojb b?:{isBlue}",backProj)
         _, thresh = cv2.threshold(backProj, 50, 255, cv2.THRESH_BINARY)
         # cv2.imshow(f"thresh b?:{isBlue}",thresh)
 
         return thresh
 
-    def __getMajorityWhite(self, thresholded_image, bbox):
+    def __getMajorityWhite(
+        self, thresholded_image: np.ndarray, bbox: Tuple[int, int, int, int]
+    ) -> float:
+        """
+        Calculate the percentage of white pixels in a thresholded image within a bounding box
+        
+        Args:
+            thresholded_image: The thresholded image
+            bbox: The bounding box (x1, y1, x2, y2)
+            
+        Returns:
+            The percentage of white pixels (0.0 to 1.0)
+        """
         # Calculate the percentage of match pixels
         bumperExtracted = self.__crop_image(thresholded_image, bbox)
+        if bumperExtracted.size == 0:
+            return 0.0
+            
         num_match = np.count_nonzero(bumperExtracted)
-
         matchPercentage = num_match / bumperExtracted.size
         return matchPercentage
 
     """ Checks a frame for two backprojections. Either a blue or red bumper. If there is enough of either color, then its a sucess and we return the backprojected value. Else a fail"""
 
-    def __backprojCheck(self, frame, redHist, blueHist, bbox):
+    def __backprojCheck(
+        self, 
+        frame: np.ndarray, 
+        redHist: np.ndarray, 
+        blueHist: np.ndarray, 
+        bbox: Tuple[int, int, int, int]
+    ) -> Tuple[Optional[np.ndarray], Optional[bool]]:
+        """
+        Check if a frame contains a blue or red robot bumper
+        
+        Args:
+            frame: The frame to check
+            redHist: The red robot histogram
+            blueHist: The blue robot histogram
+            bbox: The bounding box of the robot
+            
+        Returns:
+            A tuple containing (backprojected_frame, is_blue) or (None, None) if no match
+        """
         redBackproj = self.__backprojAndThreshFrame(frame, redHist, False)
         blueBackproj = self.__backprojAndThreshFrame(frame, blueHist, True)
         # cv2.imshow("Blue backproj",blueBackproj)
@@ -64,7 +136,7 @@ class DepthBasedPositionEstimator:
 
         if redPerc > bluePerc:
             if redPerc > self.__minPerc:
-                Sentinel.debug("Red suceess")
+                Sentinel.debug("Red success")
                 return (redBackproj, False)
             else:
                 # failed minimum percentage
@@ -73,7 +145,7 @@ class DepthBasedPositionEstimator:
         else:
             # blue greater
             if bluePerc > self.__minPerc:
-                Sentinel.debug("blue sucess")
+                Sentinel.debug("Blue success")
                 return (blueBackproj, True)
             else:
                 Sentinel.debug(f"Blue fail perc : {bluePerc}")
@@ -98,16 +170,27 @@ class DepthBasedPositionEstimator:
         return -pixelDiff * fovperPixel
 
     def __getRobotDepthCMCOLOR(
-        self, depthFrameMM: np.ndarray, colorFrame: np.ndarray, bbox
-    ) -> tuple[float, bool]:
-        """Isolates robot bumper based on color, and then gets the horizontal center of the bumper"""
+        self, depthFrameMM: np.ndarray, colorFrame: np.ndarray, bbox: Tuple[int, int, int, int]
+    ) -> Optional[float]:
+        """
+        Isolates robot bumper based on color, and then gets the horizontal center of the bumper
+        
+        Args:
+            depthFrameMM: The depth frame in millimeters
+            colorFrame: The color frame
+            bbox: The bounding box of the robot
+            
+        Returns:
+            The average depth in centimeters, or None if no robot is found
+        """
         # Convert to LAB color space
         labFrame = cv2.cvtColor(colorFrame, cv2.COLOR_BGR2LAB)
         processed, isBlue = self.__backprojCheck(
             labFrame, self.__redRobotHist, self.__blueRobotHist, bbox
         )
-        if isBlue is None:
+        if isBlue is None or processed is None:
             return None
+            
         # Adjust kernel size and iterations based on frame size
         bumperKernel = np.ones((2, 2), np.uint8)
         iterations_close = 1
@@ -129,13 +212,23 @@ class DepthBasedPositionEstimator:
         average_depth = np.mean(depth_masked) / 10 if depth_masked.size > 0 else None
         return average_depth
 
-    def __getRobotDepthCM(self, depthFrameMM: np.ndarray, bbox) -> tuple[float, bool]:
-        """Isolates robot bumper based on color, and then gets the horizontal center of the bumper"""
+    def __getRobotDepthCM(self, depthFrameMM: np.ndarray, bbox: Tuple[int, int, int, int]) -> Optional[float]:
+        """
+        Isolates robot bumper based on depth discontinuities
+        
+        Args:
+            depthFrameMM: The depth frame in millimeters
+            bbox: The bounding box of the robot (x1, y1, x2, y2)
+            
+        Returns:
+            The depth in centimeters, or None if no valid depth is found
+        """
         x1, y1, x2, y2 = bbox
         midX = min(int((x1 + x2) / 2), depthFrameMM.shape[1] - 1)
         botY = y2 - 1
         step = -1
 
+        # Calculate depth differences in vertical direction
         deltas = np.diff(depthFrameMM[:, midX])
 
         diffThresh = 10  # looking for less than 10 mm change in direction
@@ -145,15 +238,16 @@ class DepthBasedPositionEstimator:
             delta = deltas[botY]
             if abs(delta) < diffThresh:
                 selectedDepth = depthFrameMM[botY, midX]
+                # Use a sequence for the color parameter to match OpenCV's type expectations
                 cv2.circle(
                     depthFrameMM,
                     center=(midX, botY),
                     radius=2,
-                    color=99999,
+                    color=(99999, 99999, 99999),  # Use a sequence for color
                     thickness=-1,
                 )
 
-                # add depth line here
+                # add depth line here - search horizontally for similar depths
                 dirs = (1, -1)
                 deltasHorizontal = np.diff(depthFrameMM[botY, :])
                 for dir in dirs:
@@ -162,38 +256,52 @@ class DepthBasedPositionEstimator:
                         0 <= nx < len(deltasHorizontal)
                         and abs(deltasHorizontal[nx]) < diffThresh
                     ):
+                        # Use a sequence for the color parameter to match OpenCV's type expectations
                         cv2.circle(
                             depthFrameMM,
                             center=(nx, botY),
                             radius=2,
-                            color=99999,
+                            color=(99999, 99999, 99999),  # Use a sequence for color
                             thickness=-1,
                         )
 
                         depthProbe = depthFrameMM[botY, nx]
 
-                        selectedDepth = min(selectedDepth, depthProbe)
+                        if selectedDepth is not None and depthProbe is not None:
+                            selectedDepth = min(selectedDepth, depthProbe)
                         nx += dir
 
                 break
 
             botY += step
 
-        return selectedDepth / 10 if selectedDepth is not None else selectedDepth
+        # Convert from mm to cm
+        return selectedDepth / 10 if selectedDepth is not None else None
 
     def __estimateRelativeRobotPosition(
         self,
         colorFrame: np.ndarray,
         depthFrameMM: np.ndarray,
-        boundingBox,
+        boundingBox: Tuple[int, int, int, int],
         cameraIntrinsics: CameraIntrinsics,
-    ) -> tuple[float, float]:
+    ) -> Optional[Tuple[float, float]]:
+        """
+        Estimate the relative position of a robot
+        
+        Args:
+            colorFrame: The color frame
+            depthFrameMM: The depth frame in millimeters
+            boundingBox: The bounding box of the robot (x1, y1, x2, y2)
+            cameraIntrinsics: The camera intrinsics
+            
+        Returns:
+            A tuple containing (x, y) coordinates in centimeters, or None if no valid position is found
+        """
         x1, _, x2, _ = boundingBox
         centerX = (x2 + x1) / 2
         depthCM = self.__getRobotDepthCM(depthFrameMM, boundingBox)
-        import math
 
-        if depthCM is not None and depthCM and not math.isnan(depthCM):
+        if depthCM is not None and depthCM > 0 and not math.isnan(depthCM):
             bearing = self.__calcBearing(
                 CameraIntrinsics.getVfov(cameraIntrinsics, radians=True),
                 cameraIntrinsics.getHres(),
@@ -207,17 +315,30 @@ class DepthBasedPositionEstimator:
         return None
 
     def __simpleEstimatePosition(
-        self, depthFrameMM: np.ndarray, boundingBox, cameraIntrinsics: CameraIntrinsics
-    ) -> tuple[float, float]:
+        self, 
+        depthFrameMM: np.ndarray, 
+        boundingBox: Tuple[int, int, int, int], 
+        cameraIntrinsics: CameraIntrinsics
+    ) -> Optional[Tuple[float, float]]:
+        """
+        Estimate the position of a generic object using central depth estimate
+        
+        Args:
+            depthFrameMM: The depth frame in millimeters
+            boundingBox: The bounding box of the object (x1, y1, x2, y2)
+            cameraIntrinsics: The camera intrinsics
+            
+        Returns:
+            A tuple containing (x, y) coordinates in centimeters, or None if no valid position is found
+        """
         x1, _, x2, _ = boundingBox
         centerX = (x2 + x1) / 2
         depthCM = self.__getCentralDepthEstimateCM(
             depthFrameMM,
             boundingBox,
         )
-        import math
 
-        if depthCM is not None and depthCM and not math.isnan(depthCM):
+        if depthCM is not None and depthCM > 0 and not math.isnan(depthCM):
             bearing = self.__calcBearing(
                 CameraIntrinsics.getVfov(cameraIntrinsics, radians=True),
                 cameraIntrinsics.getHres(),
@@ -226,6 +347,7 @@ class DepthBasedPositionEstimator:
             Sentinel.debug(f"{depthCM=} {bearing=}")
             estCoords = self.componentizeMagnitudeAndBearing(depthCM, bearing)
             return estCoords
+            
         return None
 
     def __estimateRelativePosition(
@@ -233,10 +355,24 @@ class DepthBasedPositionEstimator:
         class_idx: int,
         colorFrame: np.ndarray,
         depthframeMM: np.ndarray,
-        bbox: list,
+        bbox: Union[List[int], Tuple[int, int, int, int]],
         cameraIntrinsics: CameraIntrinsics,
         inferenceMode: InferenceMode,
-    ):
+    ) -> Optional[Tuple[float, float]]:
+        """
+        Estimate the relative position of an object based on its class index
+        
+        Args:
+            class_idx: The class index of the object
+            colorFrame: The color frame
+            depthframeMM: The depth frame in millimeters
+            bbox: The bounding box of the object (x1, y1, x2, y2)
+            cameraIntrinsics: The camera intrinsics
+            inferenceMode: The inference mode
+            
+        Returns:
+            A tuple containing (x, y) coordinates in centimeters, or None if no valid position is found
+        """
         labels = inferenceMode.getLabels()
         if class_idx < 0 or class_idx >= len(labels):
             Sentinel.warning(
@@ -244,13 +380,24 @@ class DepthBasedPositionEstimator:
             )
             return None
 
+        # Convert list to tuple if needed, ensuring it has 4 elements
+        if isinstance(bbox, list):
+            if len(bbox) == 4:
+                bbox_tuple = (bbox[0], bbox[1], bbox[2], bbox[3])
+            else:
+                Sentinel.warning(f"Bounding box must have 4 elements, got {len(bbox)}: {bbox}")
+                return None
+        else:
+            bbox_tuple = bbox
+        
         label = labels[class_idx]
         if label == Label.ROBOT:
             return self.__estimateRelativeRobotPosition(
-                colorFrame, depthframeMM, bbox, cameraIntrinsics
+                colorFrame, depthframeMM, bbox_tuple, cameraIntrinsics
             )
         if label in {Label.NOTE, Label.ALGAE, Label.CORAL}:
-            return self.__simpleEstimatePosition(depthframeMM, bbox, cameraIntrinsics)
+            return self.__simpleEstimatePosition(depthframeMM, bbox_tuple, cameraIntrinsics)
+            
         Sentinel.warning(
             f"Label: {str(label)} is not supported for position estimation!"
         )
