@@ -1,4 +1,5 @@
 import math
+import time
 
 import grpc
 from concurrent import futures
@@ -261,7 +262,7 @@ def apply_and_inflate_all_static_obstacles(grid, static_obs_array, safe_distance
             grid[y, x] = 1000000
     # Inflate static obstacles using dilation.
     binary_static = (grid > 1).astype(np.uint8)
-    kernel_size = int(safe_distance)
+    kernel_size = 2 * safe_distance + 1
     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (kernel_size, kernel_size))
     inflated_static = cv2.dilate(binary_static, kernel, iterations=1)
     grid[inflated_static == 1] = 101
@@ -284,6 +285,26 @@ def find_inflection_points(path):
             inflection_points.append(path[i])
     inflection_points.append(path[-1])
     return inflection_points
+
+
+def filter_control_points(segments, grid, threshold=1):
+    """
+    For each segment (an array of control points in pixel coordinates),
+    remove any point whose corresponding cell in 'grid' has a value >= threshold.
+    Only segments with at least 2 remaining points are kept.
+    """
+    filtered_segments = []
+    for seg in segments:
+        filtered_seg = []
+        for pt in seg:
+            x = int(round(pt[0]))
+            y = int(round(pt[1]))
+            if 0 <= x < grid.shape[1] and 0 <= y < grid.shape[0]:
+                if grid[y, x] < threshold:
+                    filtered_seg.append(pt)
+        if len(filtered_seg) >= 2:
+            filtered_segments.append(np.array(filtered_seg))
+    return filtered_segments
 
 
 def build_bezier_curves_proto(final_segments, options):
@@ -332,16 +353,20 @@ fieldHeightMeters = 8.05
 fieldWidthMeters = 17.55
 grid_width = 690
 grid_height = 316
-ROBOT_SIZE_LENGTH_INCHES = 35
-ROBOT_SIZE_WIDTH_INCHES = 35
-DEFAULT_SAFE_DISTANCE_INCHES = 5
+ROBOT_SIZE_LENGTH_INCHES = 36
+ROBOT_SIZE_WIDTH_INCHES = 36
+DEFAULT_SAFE_DISTANCE_INCHES = 0.5
 # ----------- CONSTANTS (DO NOT CHANGE UNLESS KNOWN) -------------
 
 
 # ----------- MAIN CODE (DO NOT EDIT) -------------
-MAX_ROBOT_SIZE_DIAGONAL_INCHES = int(
-    math.ceil(math.sqrt(ROBOT_SIZE_LENGTH_INCHES**2 + ROBOT_SIZE_WIDTH_INCHES**2))
+MAX_ROBOT_SIZE_DIAGONAL_INCHES = math.sqrt(
+    ROBOT_SIZE_LENGTH_INCHES**2 + ROBOT_SIZE_WIDTH_INCHES**2
 )
+
+print("Robot Diagonal Distance (in): ", MAX_ROBOT_SIZE_DIAGONAL_INCHES)
+CENTER_ROBOT_SIZE = MAX_ROBOT_SIZE_DIAGONAL_INCHES / 2
+print("Robot Center Size (in): ", CENTER_ROBOT_SIZE)
 PIXELS_PER_METER_X = grid_width / fieldWidthMeters
 PIXELS_PER_METER_Y = grid_height / fieldHeightMeters
 
@@ -392,8 +417,9 @@ class VisionCoprocessorServicer(XTableGRPC.VisionCoprocessorServicer):
             if request.HasField("safeDistanceInches")
             else DEFAULT_SAFE_DISTANCE_INCHES
         )
-
-        TOTAL_SAFE_DISTANCE = int(MAX_ROBOT_SIZE_DIAGONAL_INCHES + SAFE_DISTANCE_INCHES)
+        print("Safe Distance (in): ", SAFE_DISTANCE_INCHES)
+        TOTAL_SAFE_DISTANCE = int(CENTER_ROBOT_SIZE + SAFE_DISTANCE_INCHES)
+        print("Total Safe Distance (in): ", TOTAL_SAFE_DISTANCE)
         modified_static_obs = static_obs_array.copy()
         if low_hanging_red_far_active:
             modified_static_obs.extend(static_hang_obs_red_far)
@@ -419,6 +445,8 @@ class VisionCoprocessorServicer(XTableGRPC.VisionCoprocessorServicer):
         path = [START]
         current = START
         max_steps = 10000
+        print("Generating path...")
+        t = time.time()
         for _ in range(max_steps):
             next_cell = pathfinder.next_step(current, time_map)
             if next_cell == current:
@@ -427,12 +455,20 @@ class VisionCoprocessorServicer(XTableGRPC.VisionCoprocessorServicer):
             current = next_cell
             if current == goal:
                 break
+        print(f"Finished generating path in {time.time() - t} seconds.")
         inflection_points = find_inflection_points(path)
-        smoothed_control_points = deflate_inflection_points(inflection_points)
-
+        if SAFE_DISTANCE_INCHES >= 10:
+            smoothed_control_points = deflate_inflection_points(
+                inflection_points, distance_threshold=4
+            )
+        else:
+            smoothed_control_points = deflate_inflection_points(inflection_points)
+        print("Finding safe bezier paths...")
+        t = time.time()
         safe_bezier_segments = pathfinder.generate_safe_bezier_paths(
             smoothed_control_points
         )
+        print(f"Finished finding safe bezier paths in {time.time() - t} seconds.")
         safe_bezier_segments_poses = [
             segment / np.array([PIXELS_PER_METER_X, PIXELS_PER_METER_Y])
             for segment in safe_bezier_segments
@@ -444,24 +480,6 @@ class VisionCoprocessorServicer(XTableGRPC.VisionCoprocessorServicer):
         print(f"{safe_bezier_segments_poses=}")
 
         return response
-
-    def getATCameraFromBranch(self, branch_idx: int):
-        if branch_idx % 2 == 0:
-            return XTableValues.AprilTagCamera.FRONT_LEFT
-        else:
-            return XTableValues.AprilTagCamera.FRONT_RIGHT
-
-    def getBranchLevel(self, branch_idx: int):
-        lvl = branch_idx // 2 + 2
-
-        if lvl == 2:
-            return XTableValues.BranchLevel.LEVEL_2
-        if lvl == 3:
-            return XTableValues.BranchLevel.LEVEL_3
-        if lvl == 4:
-            return XTableValues.BranchLevel.LEVEL_4
-
-        # print(f"WARNING: Invalid branch level {lvl=} {branch_idx=}")
 
 
 def serve() -> None:

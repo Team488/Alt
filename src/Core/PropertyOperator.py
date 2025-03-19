@@ -231,6 +231,8 @@ class PropertyOperator:
             return XTablesByteUtils.to_double_list(propertyValue)
         elif type == XTableValue.ProbabilityMappingDetections:
             return XTablesByteUtils.unpack_probability_mapping_detections(propertyValue)
+        elif type == XTableProto.XTableMessage.Type.POSE2D:
+            return XTablesByteUtils.unpack_pose2d(propertyValue)
 
         else:
             self.Sentinel.error(

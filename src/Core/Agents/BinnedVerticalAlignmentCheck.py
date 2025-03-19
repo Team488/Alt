@@ -8,7 +8,8 @@ from functools import partial
 
 
 class BinnedVerticalAlignmentChecker(CameraUsingAgentBase):
-    testHostname = "photonvisionfrontright"  # for testing ONLY
+    # testHostname = "photonvisionfrontright"  # for testing ONLY
+    testHostname = None
     TUNEDWIDTH = 960
     TUNEDHEIGHT = 720
 

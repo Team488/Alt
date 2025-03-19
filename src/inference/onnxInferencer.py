@@ -33,7 +33,7 @@ class onnxInferencer(InferencerBackend):
     def runInference(self, inputTensor):
         return self.session.run([self.outputName], {self.inputName: inputTensor})
 
-    def postProcess(self, results, frame, minConf):
+    def postProcessBoxes(self, results, frame, minConf):
         adjusted = self.adjustBoxes(results[0], frame.shape, minConf)
         nmsResults = utils.non_max_suppression(adjusted, minConf)
         return nmsResults

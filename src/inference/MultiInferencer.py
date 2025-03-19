@@ -58,7 +58,7 @@ class MultiInferencer:
 
         infns = inf - pre
 
-        processed = self.backend.postProcess(results, frame, minConf)
+        processed = self.backend.postProcessBoxes(results, frame, minConf)
         post = time.time_ns()
         if processed is None:
             Sentinel.fatal("Inference Backend postProcess() returned none!")
