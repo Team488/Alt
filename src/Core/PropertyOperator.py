@@ -3,7 +3,7 @@ from collections.abc import Iterable
 from logging import Logger
 from JXTABLES.XTablesClient import XTablesClient
 from JXTABLES import XTableProto_pb2 as XTableProto
-from JXTABLES import XTableValues_pb2 as XTableValue
+from JXTABLES import XTableValues_pb2 as XTableValues
 from JXTABLES.XTablesByteUtils import XTablesByteUtils
 from Core.ConfigOperator import ConfigOperator
 
@@ -161,12 +161,14 @@ class PropertyOperator:
             self.__xclient.putBytes(propertyTable, propertyValue)
         elif type(propertyValue) is bool:
             self.__xclient.putBoolean(propertyTable, propertyValue)
-        elif type(propertyValue) is XTableValue.ProbabilityMappingDetections:
+        elif type(propertyValue) is XTableValues.ProbabilityMappingDetections:
             # TODO: Figure out the NULL Proto error..
-            #self.__xclient.putProbabilityMappingDetections(propertyTable, propertyValue)
+            # self.__xclient.putProbabilityMappingDetections(propertyTable, propertyValue)
             pass
         elif propertyValue is None:
             self.__xclient.putString(propertyTable, "NULLVALUE")
+        elif type(propertyValue) is XTableValues.BezierCurves:
+            self.__xclient.putBezierCurves(propertyTable, propertyValue)
         elif type(propertyValue) is Iterable:
             return self.__setNetworkIterable(propertyTable, propertyValue)
         else:
@@ -229,7 +231,7 @@ class PropertyOperator:
             return XTablesByteUtils.to_string(propertyValue)
         elif type == XTableProto.XTableMessage.Type.DOUBLE_LIST:
             return XTablesByteUtils.to_double_list(propertyValue)
-        elif type == XTableValue.ProbabilityMappingDetections:
+        elif type == XTableValues.ProbabilityMappingDetections:
             return XTablesByteUtils.unpack_probability_mapping_detections(propertyValue)
         elif type == XTableProto.XTableMessage.Type.POSE2D:
             return XTablesByteUtils.unpack_pose2d(propertyValue)
