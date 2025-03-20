@@ -79,11 +79,9 @@ class PathToNearestCoralStation(Agent):
             start=startPoint, end=endPoint, arguments=arguments, options=options
         )
         path = fastMarchingMethodRPC.pathplan(request)
-        self.bezierPathToNearestCoralStation.set(path)
-
         if path is None:
             return
-        print(path)
+        self.bezierPathToNearestCoralStation.set(path)
 
     def getIntervalMs(self):
         return -1

@@ -124,7 +124,7 @@ class FastMarchingPathfinder:
         xs, ys = xs[valid], ys[valid]
         return np.any(self.grid_cost[ys, xs] >= minimum_heat)
 
-    def try_inflate_segment(self, segment, max_offset_pixels=45, tol=1.0):
+    def try_inflate_segment(self, segment, max_offset_pixels=38, tol=1.0):
         """
         Try to inflate (bend) a segment using a binary search on the perpendicular offset
         so that the resulting Bézier curve avoids collisions.
@@ -400,9 +400,9 @@ PIXELS_PER_METER_Y = grid_height / fieldHeightMeters
 low_hanging_red_far_active = False
 low_hanging_red_mid_active = False
 low_hanging_red_close_active = False
-low_hanging_blue_far_active = False
+low_hanging_blue_far_active = True
 low_hanging_blue_mid_active = False
-low_hanging_blue_close_active = False
+low_hanging_blue_close_active = True
 
 # ----- SET THIS VALUE TO FALSE WHEN DEPLOYING ON ORIN ----
 isRelativePath = False
@@ -482,10 +482,8 @@ def pathplan(request):
             break
     print(f"Finished generating path in {(time.time() - t) * 1000:.3f} ms.")
     t = time.time()
-
     # Filter the initial segment that is "hot"
     path = filter_path_until_first_non_heat(path, static_grid)
-    print(path)
     print(f"Finished filtering path in {(time.time() - t) * 1000:.3f} ms.")
 
     inflection_points = find_inflection_points(path)
