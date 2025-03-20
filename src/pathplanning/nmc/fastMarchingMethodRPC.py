@@ -262,7 +262,7 @@ def apply_and_inflate_all_static_obstacles(grid, static_obs_array, safe_distance
             grid[y, x] = 1000000
     # Inflate static obstacles using dilation.
     binary_static = (grid > 1).astype(np.uint8)
-    kernel_size = 2 * safe_distance + 1
+    kernel_size = int(2 * safe_distance)
     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (kernel_size, kernel_size))
     inflated_static = cv2.dilate(binary_static, kernel, iterations=1)
     grid[inflated_static == 1] = 101
@@ -355,7 +355,7 @@ grid_width = 690
 grid_height = 316
 ROBOT_SIZE_LENGTH_INCHES = 36
 ROBOT_SIZE_WIDTH_INCHES = 36
-DEFAULT_SAFE_DISTANCE_INCHES = 0.5
+DEFAULT_SAFE_DISTANCE_INCHES = 0
 # ----------- CONSTANTS (DO NOT CHANGE UNLESS KNOWN) -------------
 
 
@@ -378,7 +378,7 @@ low_hanging_blue_mid_active = False
 low_hanging_blue_close_active = False
 
 # ----- SET THIS VALUE TO FALSE WHEN DEPLOYING ON ORIN ----
-isRelativePath = True
+isRelativePath = False
 
 print("Loading pre-set static obstacles...")
 pathPrefix = "" if isRelativePath else "pathplanning/nmc/"
@@ -404,82 +404,80 @@ static_hang_obs_blue_close = get_static_obstacles(
 print("Finished loading pre-set static obstacles...")
 
 
+def pathplan(request):
+    base_grid = np.ones((grid_height, grid_width), dtype=float)
+    start = (request.start.x, request.start.y)
+    goal = (request.end.x, request.end.y)
+    print(f"{start=} {goal=}")
+
+    SAFE_DISTANCE_INCHES = (
+        max(DEFAULT_SAFE_DISTANCE_INCHES, request.safeDistanceInches)
+        if request.HasField("safeDistanceInches")
+        else DEFAULT_SAFE_DISTANCE_INCHES
+    )
+    print("Safe Distance (in): ", SAFE_DISTANCE_INCHES)
+    TOTAL_SAFE_DISTANCE = int(CENTER_ROBOT_SIZE + SAFE_DISTANCE_INCHES)
+    print("Total Safe Distance (in): ", TOTAL_SAFE_DISTANCE)
+    modified_static_obs = static_obs_array.copy()
+    if low_hanging_red_far_active:
+        modified_static_obs.extend(static_hang_obs_red_far)
+    if low_hanging_red_mid_active:
+        modified_static_obs.extend(static_hang_obs_red_mid)
+    if low_hanging_red_close_active:
+        modified_static_obs.extend(static_hang_obs_red_close)
+    if low_hanging_blue_far_active:
+        modified_static_obs.extend(static_hang_obs_blue_far)
+    if low_hanging_blue_mid_active:
+        modified_static_obs.extend(static_hang_obs_blue_mid)
+    if low_hanging_blue_close_active:
+        modified_static_obs.extend(static_hang_obs_blue_close)
+
+    static_grid = apply_and_inflate_all_static_obstacles(
+        base_grid, modified_static_obs, TOTAL_SAFE_DISTANCE
+    )
+
+    pathfinder = FastMarchingPathfinder(static_grid)
+    START = (int(start[0] * PIXELS_PER_METER_X), int(start[1] * PIXELS_PER_METER_Y))
+    GOAL = (int(goal[0] * PIXELS_PER_METER_X), int(goal[1] * PIXELS_PER_METER_Y))
+    time_map = pathfinder.compute_time_map(GOAL)
+    path = [START]
+    current = START
+    max_steps = 10000
+    print("Generating path...")
+    t = time.time()
+    for _ in range(max_steps):
+        next_cell = pathfinder.next_step(current, time_map)
+        if next_cell == current:
+            break  # No progress: local minimum reached.
+        path.append(next_cell)
+        current = next_cell
+        if current == goal:
+            break
+    print(f"Finished generating path in {(time.time() - t) * 1000:.3f} ms.")
+    inflection_points = find_inflection_points(path)
+    if SAFE_DISTANCE_INCHES >= 10:
+        smoothed_control_points = deflate_inflection_points(
+            inflection_points, distance_threshold=4
+        )
+    else:
+        smoothed_control_points = deflate_inflection_points(inflection_points)
+    print("Finding safe bezier paths...")
+    t = time.time()
+    safe_bezier_segments = pathfinder.generate_safe_bezier_paths(
+        smoothed_control_points
+    )
+    print(f"Finished finding safe bezier paths in {(time.time() - t) * 1000:.3f} ms.")
+    safe_bezier_segments_poses = [
+        segment / np.array([PIXELS_PER_METER_X, PIXELS_PER_METER_Y])
+        for segment in safe_bezier_segments
+    ]
+    response = build_bezier_curves_proto(safe_bezier_segments_poses, request.options)
+    return response
+
+
 class VisionCoprocessorServicer(XTableGRPC.VisionCoprocessorServicer):
     def RequestBezierPathWithOptions(self, request, context):
-        print("RequestBezierPathWithOptions")
-        base_grid = np.ones((grid_height, grid_width), dtype=float)
-        start = (request.start.x, request.start.y)
-        goal = (request.end.x, request.end.y)
-        print(f"{start=} {goal=}")
-
-        SAFE_DISTANCE_INCHES = (
-            max(DEFAULT_SAFE_DISTANCE_INCHES, request.safeDistanceInches)
-            if request.HasField("safeDistanceInches")
-            else DEFAULT_SAFE_DISTANCE_INCHES
-        )
-        print("Safe Distance (in): ", SAFE_DISTANCE_INCHES)
-        TOTAL_SAFE_DISTANCE = int(CENTER_ROBOT_SIZE + SAFE_DISTANCE_INCHES)
-        print("Total Safe Distance (in): ", TOTAL_SAFE_DISTANCE)
-        modified_static_obs = static_obs_array.copy()
-        if low_hanging_red_far_active:
-            modified_static_obs.extend(static_hang_obs_red_far)
-        if low_hanging_red_mid_active:
-            modified_static_obs.extend(static_hang_obs_red_mid)
-        if low_hanging_red_close_active:
-            modified_static_obs.extend(static_hang_obs_red_close)
-        if low_hanging_blue_far_active:
-            modified_static_obs.extend(static_hang_obs_blue_far)
-        if low_hanging_blue_mid_active:
-            modified_static_obs.extend(static_hang_obs_blue_mid)
-        if low_hanging_blue_close_active:
-            modified_static_obs.extend(static_hang_obs_blue_close)
-
-        static_grid = apply_and_inflate_all_static_obstacles(
-            base_grid, modified_static_obs, TOTAL_SAFE_DISTANCE
-        )
-
-        pathfinder = FastMarchingPathfinder(static_grid)
-        START = (int(start[0] * PIXELS_PER_METER_X), int(start[1] * PIXELS_PER_METER_Y))
-        GOAL = (int(goal[0] * PIXELS_PER_METER_X), int(goal[1] * PIXELS_PER_METER_Y))
-        time_map = pathfinder.compute_time_map(GOAL)
-        path = [START]
-        current = START
-        max_steps = 10000
-        print("Generating path...")
-        t = time.time()
-        for _ in range(max_steps):
-            next_cell = pathfinder.next_step(current, time_map)
-            if next_cell == current:
-                break  # No progress: local minimum reached.
-            path.append(next_cell)
-            current = next_cell
-            if current == goal:
-                break
-        print(f"Finished generating path in {time.time() - t} seconds.")
-        inflection_points = find_inflection_points(path)
-        if SAFE_DISTANCE_INCHES >= 10:
-            smoothed_control_points = deflate_inflection_points(
-                inflection_points, distance_threshold=4
-            )
-        else:
-            smoothed_control_points = deflate_inflection_points(inflection_points)
-        print("Finding safe bezier paths...")
-        t = time.time()
-        safe_bezier_segments = pathfinder.generate_safe_bezier_paths(
-            smoothed_control_points
-        )
-        print(f"Finished finding safe bezier paths in {time.time() - t} seconds.")
-        safe_bezier_segments_poses = [
-            segment / np.array([PIXELS_PER_METER_X, PIXELS_PER_METER_Y])
-            for segment in safe_bezier_segments
-        ]
-        response = build_bezier_curves_proto(
-            safe_bezier_segments_poses, request.options
-        )
-
-        print(f"{safe_bezier_segments_poses=}")
-
-        return response
+        return pathplan(request)
 
 
 def serve() -> None:
