@@ -9,11 +9,11 @@ from JXTABLES import XTableValues_pb2 as XTableValues
 
 
 class PathToNearestCoralStation(Agent):
-    blueLeftCoralStation = (0.85, 7.40, -54.00)
-    blueRightCoralStation = (0.85, 0.66, 54.00)
+    blueLeftCoralStation = (1.12, 7.03, -54.00)
+    blueRightCoralStation = (1.12, 1.03, 54.00)
 
-    redRightCoralStation = (16.70, 0.66, 126.00)
-    redLeftCoralStation = (16.70, 7.40, -126.00)
+    redLeftCoralStation = (16.43, 1.03, 126.00)
+    redRightCoralStation = (16.43, 7.03, -126.00)
 
     redCoralStations = [redRightCoralStation, redLeftCoralStation]
     blueCoralStations = [blueRightCoralStation, blueLeftCoralStation]
