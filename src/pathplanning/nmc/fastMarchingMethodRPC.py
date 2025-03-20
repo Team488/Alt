@@ -348,6 +348,33 @@ def build_bezier_curves_proto(final_segments, options):
     return bezier_curves_msg
 
 
+def filter_path_until_first_non_heat(path, grid, threshold=100):
+    """
+    Filters out the initial points in the path that are 'heated' until the first point
+    is found where the grid value is below the threshold. The remaining points in the path
+    are returned unmodified.
+
+    Args:
+        path (list or np.ndarray): A list (or array) of (x, y) points representing the path.
+        grid (np.ndarray): 2D array representing the grid with heat values.
+        threshold (float): The heat threshold; cells with values >= threshold are considered hot.
+
+    Returns:
+        list: The filtered path starting from the first non-heated point.
+              If all points are heated or the path is empty, returns an empty list.
+    """
+    for i, pt in enumerate(path):
+        x = int(round(pt[0]))
+        y = int(round(pt[1]))
+        # Check if the point is within grid bounds
+        if 0 <= x < grid.shape[1] and 0 <= y < grid.shape[0]:
+            if grid[y, x] < threshold:
+                # Found the first non-heated point: return the remainder of the path.
+                return path[i:]
+    # If no non-heated point is found, return an empty list.
+    return []
+
+
 # ----------- CONSTANTS (DO NOT CHANGE UNLESS KNOWN) -------------
 fieldHeightMeters = 8.05
 fieldWidthMeters = 17.55
@@ -454,6 +481,13 @@ def pathplan(request):
         if current == goal:
             break
     print(f"Finished generating path in {(time.time() - t) * 1000:.3f} ms.")
+    t = time.time()
+
+    # Filter the initial segment that is "hot"
+    path = filter_path_until_first_non_heat(path, static_grid)
+    print(path)
+    print(f"Finished filtering path in {(time.time() - t) * 1000:.3f} ms.")
+
     inflection_points = find_inflection_points(path)
     if SAFE_DISTANCE_INCHES >= 10:
         smoothed_control_points = deflate_inflection_points(
@@ -461,6 +495,7 @@ def pathplan(request):
         )
     else:
         smoothed_control_points = deflate_inflection_points(inflection_points)
+
     print("Finding safe bezier paths...")
     t = time.time()
     safe_bezier_segments = pathfinder.generate_safe_bezier_paths(
