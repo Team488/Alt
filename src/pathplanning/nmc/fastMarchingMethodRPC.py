@@ -400,9 +400,9 @@ PIXELS_PER_METER_Y = grid_height / fieldHeightMeters
 low_hanging_red_far_active = False
 low_hanging_red_mid_active = False
 low_hanging_red_close_active = False
-low_hanging_blue_far_active = True
+low_hanging_blue_far_active = False
 low_hanging_blue_mid_active = False
-low_hanging_blue_close_active = True
+low_hanging_blue_close_active = False
 
 # ----- SET THIS VALUE TO FALSE WHEN DEPLOYING ON ORIN ----
 isRelativePath = False
