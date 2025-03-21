@@ -57,7 +57,7 @@ class AlignmentChecker(CameraUsingAgentBase):
     def runPeriodic(self) -> None:
         super().runPeriodic()
 
-        frame = self.latestFrameCOLOR
+        frame = self.latestFrameMain
         # 1. Convert to grayscale
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 

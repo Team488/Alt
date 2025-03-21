@@ -1,4 +1,5 @@
 import cv2
+from typing import Dict, Any, Tuple, Optional
 from Core.Agents.Abstract.CameraUsingAgentBase import CameraUsingAgentBase
 from Core.Agents.Abstract.PositionLocalizingAgentBase import PositionLocalizingAgentBase
 
@@ -10,11 +11,11 @@ class TimestampRegulatedAgentBase(CameraUsingAgentBase, PositionLocalizingAgentB
     NOTE: this class should always be extended
     """
 
-    BINSIZE = 5  # whatever the timestamp units are in, likely MS but todo figure out
+    BINSIZE: int = 5  # whatever the timestamp units are in, likely MS but todo figure out
 
-    def __init__(self, **kwargs) -> None:
+    def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
-        self.binnedMap = {}
+        self.binnedMap: Dict[int, Any] = {}
 
     def runPeriodic(self) -> None:
         super().runPeriodic()

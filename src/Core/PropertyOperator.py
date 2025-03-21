@@ -1,57 +1,60 @@
 import logging
 from collections.abc import Iterable
 from logging import Logger
+from typing import Dict, List, Any, Optional, Callable, TypeVar, Union, Tuple, Set, cast
 from JXTABLES.XTablesClient import XTablesClient
 from JXTABLES import XTableProto_pb2 as XTableProto
-from JXTABLES import XTableValues_pb2 as XTableValue
+from JXTABLES import XTableValues_pb2 as XTableValues
 from JXTABLES.XTablesByteUtils import XTablesByteUtils
 from Core.ConfigOperator import ConfigOperator
 
+T = TypeVar('T')
+
 # creates network properties that can be set by xtables
 class PropertyOperator:
-    __OPERATORS = {}
+    __OPERATORS: Dict[str, 'PropertyOperator'] = {}
 
     def __init__(
         self,
         xclient: XTablesClient,
         configOp: ConfigOperator,
         logger: Logger,
-        basePrefix="",
-        prefix="",
+        basePrefix: str = "",
+        prefix: str = "",
     ) -> None:
         self.__xclient: XTablesClient = xclient
-        self.__configOp = configOp
-        self.Sentinel = logger
-        self.basePrefix = basePrefix
-        self.prefix = prefix
+        self.__configOp: ConfigOperator = configOp
+        self.Sentinel: Logger = logger
+        self.basePrefix: str = basePrefix
+        self.prefix: str = prefix
 
-        self.__addBasePrefix = (
+        self.__addBasePrefix: Callable[[str], str] = (
             lambda propertyTable: f"{self.basePrefix}.{propertyTable}"
         )
-        self.__addFullPrefix = (
+        self.__addFullPrefix: Callable[[str], str] = (
             lambda propertyTable: f"{self.basePrefix}{self.prefix}.{propertyTable}"
         )
-        self.__getSaveFile = lambda: self.__addFullPrefix("saved_properties.json")
+        self.__getSaveFile: Callable[[], str] = lambda: self.__addFullPrefix("saved_properties.json")
 
-        self.__propertyValueMap: dict = self.__configOp.getContent(
+        self.__propertyValueMap: Dict[str, Any] = self.__configOp.getContent(
             self.__getSaveFile(), default={}
         )
-        self.__properties = {}
-        self.__readOnlyProperties = {}
+        self.__properties: Dict[str, 'Property'] = {}
+        self.__readOnlyProperties: Dict[str, 'ReadonlyProperty'] = {}
 
-        self.__getPropertyTable = lambda propertyName: self.__addFullPrefix(
+        self.__getPropertyTable: Callable[[str], str] = lambda propertyName: self.__addFullPrefix(
             f"properties.EDITABLE.{propertyName}"
         )
-        self.__getReadOnlyPropertyTable = lambda propertyName: self.__addFullPrefix(
+        self.__getReadOnlyPropertyTable: Callable[[str], str] = lambda propertyName: self.__addFullPrefix(
             f"properties.READONLY.{propertyName}"
         )
 
-        self.__children = []
+        self.__children: List['PropertyOperator'] = []
 
-    def getFullPrefix(self):
+    def getFullPrefix(self) -> str:
         return self.__addFullPrefix("")
 
-    def __updatePropertyCallback(self, ret) -> None:
+    def __updatePropertyCallback(self, ret: Any) -> None:
         self.__propertyValueMap[ret.key] = self.__getRealType(ret.type, ret.value)
         # self.Sentinel.debug(f"Property updated | Name: {ret.key} Value : {ret.value}")
 
@@ -161,12 +164,14 @@ class PropertyOperator:
             self.__xclient.putBytes(propertyTable, propertyValue)
         elif type(propertyValue) is bool:
             self.__xclient.putBoolean(propertyTable, propertyValue)
-        elif type(propertyValue) is XTableValue.ProbabilityMappingDetections:
+        elif type(propertyValue) is XTableValues.ProbabilityMappingDetections:
             # TODO: Figure out the NULL Proto error..
-            #self.__xclient.putProbabilityMappingDetections(propertyTable, propertyValue)
+            # self.__xclient.putProbabilityMappingDetections(propertyTable, propertyValue)
             pass
         elif propertyValue is None:
             self.__xclient.putString(propertyTable, "NULLVALUE")
+        elif type(propertyValue) is XTableValues.BezierCurves:
+            self.__xclient.putBezierCurves(propertyTable, propertyValue)
         elif type(propertyValue) is Iterable:
             return self.__setNetworkIterable(propertyTable, propertyValue)
         else:
@@ -229,7 +234,7 @@ class PropertyOperator:
             return XTablesByteUtils.to_string(propertyValue)
         elif type == XTableProto.XTableMessage.Type.DOUBLE_LIST:
             return XTablesByteUtils.to_double_list(propertyValue)
-        elif type == XTableValue.ProbabilityMappingDetections:
+        elif type == XTableValues.ProbabilityMappingDetections:
             return XTablesByteUtils.unpack_probability_mapping_detections(propertyValue)
         elif type == XTableProto.XTableMessage.Type.POSE2D:
             return XTablesByteUtils.unpack_pose2d(propertyValue)
@@ -240,7 +245,7 @@ class PropertyOperator:
             )
             return None
 
-    def getChild(self, prefix) -> "PropertyOperator":
+    def getChild(self, prefix: str) -> Optional["PropertyOperator"]:
         if not prefix:
             self.Sentinel.warning(
                 "PropertyOperator getChild cannot take an empty string as a prefix!"
@@ -263,7 +268,7 @@ class PropertyOperator:
         PropertyOperator.__OPERATORS[fullPrefix] = child
         return child
 
-    def deregisterAll(self):
+    def deregisterAll(self) -> bool:
         # unsubscribe from all callbacks
         wasAllRemoved = True
         for propertyTable in self.__propertyValueMap.keys():
@@ -285,36 +290,36 @@ class PropertyOperator:
 
 
 class Property:
-    def __init__(self, getFunc, propertyTable) -> None:  # lambda to get the property
-        self.__getFunc = getFunc
-        self.__propertyTable = propertyTable
+    def __init__(self, getFunc: Callable[[], T], propertyTable: str) -> None:  # lambda to get the property
+        self.__getFunc: Callable[[], T] = getFunc
+        self.__propertyTable: str = propertyTable
 
-    def get(self):
+    def get(self) -> T:
         return self.__getFunc()
 
-    def getTable(self):
+    def getTable(self) -> str:
         return self.__propertyTable
 
 
 class ReadonlyProperty:
     def __init__(
-        self, setFunc, propertyTable
+        self, setFunc: Callable[[Any], bool], propertyTable: str
     ) -> None:  # lambda to set the read only property
-        self.__setFunc = setFunc
-        self.__propertyTable = propertyTable
+        self.__setFunc: Callable[[Any], bool] = setFunc
+        self.__propertyTable: str = propertyTable
 
-    def set(self, value):
+    def set(self, value: Any) -> bool:
         return self.__setFunc(value)
 
-    def getTable(self):
+    def getTable(self) -> str:
         return self.__propertyTable
 
 
 class LambdaHandler(logging.Handler):
-    def __init__(self, func) -> None:
+    def __init__(self, func: Callable[[str], None]) -> None:
         super().__init__()
-        self.func = func  # This function will be executed on each log message
+        self.func: Callable[[str], None] = func  # This function will be executed on each log message
 
-    def emit(self, record) -> None:
+    def emit(self, record: logging.LogRecord) -> None:
         log_entry = self.format(record)  # Format log message
         self.func(log_entry)  # Call the lambda with the log entry

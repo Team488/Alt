@@ -1,7 +1,5 @@
 #!/bin/bash
 
-# Run the Java JAR file
-java -jar src/assets/XTABLES.jar&
 
 cd src
 # Run the reef/object tracking agent
