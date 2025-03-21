@@ -53,7 +53,7 @@ class VerticalAlignmentChecker(CameraUsingAgentBase):
     def runPeriodic(self) -> None:
         super().runPeriodic()
 
-        frame = self.latestFrameCOLOR
+        frame = self.latestFrameMain
 
         # Convert to grayscale for edge detection
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)

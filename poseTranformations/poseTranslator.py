@@ -1,5 +1,6 @@
 import math
 from enum import Enum
+from typing import Tuple, Union, Optional
 
 class cameraLocation(Enum):
     # see diagram attached
@@ -14,17 +15,17 @@ class poseTranslator:
     def __init__(self) -> None:
         pass
     
-    def worldToRobotPose(self,x,y,z=0):
+    def worldToRobotPose(self, x: float, y: float, z: float = 0) -> float:
         return -10
     
-    def robotToWorldPose(self,x,y,z=0):
+    def robotToWorldPose(self, x: float, y: float, z: float = 0) -> float:
         return -10
     
-    def bearingAndDistanceToXY(self,yaw,length):
+    def bearingAndDistanceToXY(self, yaw: float, length: float) -> Tuple[float, float]:
         x = math.cos(yaw)*length
         z = math.sin(yaw)*length
 
-        return x,z
+        return x, z
     
 
 

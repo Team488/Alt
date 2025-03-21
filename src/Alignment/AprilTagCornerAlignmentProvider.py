@@ -1,96 +1,26 @@
 from collections import defaultdict
 import cv2
 import numpy as np
-from Core.Agents.Abstract import CameraUsingAgentBase
+from abstract.AlignmentProvider import AlignmentProvider
 from Captures.FileCapture import FileCapture
 from tools.Constants import SimulationEndpoints
-from functools import partial
+from Core import PropertyOperator, getLogger
 
-
-class BinnedVerticalAlignmentChecker(CameraUsingAgentBase):
+Sentinel = getLogger("April_Tag_Alignment_Provider")
+class BinnedVerticalAlignmentChecker(AlignmentProvider):
     # testHostname = "photonvisionfrontright"  # for testing ONLY
     testHostname = None
     TUNEDWIDTH = 960
     TUNEDHEIGHT = 720
 
     def __init__(
-        self,
-        showFrames: bool,
-        flushTimeMS: int = -1,
-        mjpeg_url: str = "http://localhost:1181/stream.mjpg",
+        self, propertyOperator :PropertyOperator
     ):
-        super().__init__(
-            capture=FileCapture(videoFilePath=mjpeg_url, flushTimeMS=flushTimeMS),
-            showFrames=showFrames,
-        )
-
+        super().__init__()
+        self.propertyOperator = propertyOperator
         self.shape = (self.TUNEDWIDTH, self.TUNEDHEIGHT) # default
 
-    def rescaleWidth(self, value):
-        return value * self.shape[1] / self.TUNEDWIDTH
-    
-    def rescaleHeight(self, value):
-        return value * self.shape[0] / self.TUNEDHEIGHT
-
-    def create(self) -> None:
-        super().create()
-        if self.testHostname is None:
-            self.leftDistanceProp = self.propertyOperator.createCustomReadOnlyProperty(
-                propertyTable="verticalEdgeLeftDistancePx",
-                propertyValue=-1,
-                addBasePrefix=True,
-                addOperatorPrefix=False,
-            )
-            self.rightDistanceProp = self.propertyOperator.createCustomReadOnlyProperty(
-                propertyTable="verticalEdgeRightDistancePx",
-                propertyValue=-1,
-                addBasePrefix=True,
-                addOperatorPrefix=False,
-            )
-            self.hresProp = self.propertyOperator.createCustomReadOnlyProperty(
-                propertyTable="cameraHres",
-                propertyValue=-1,
-                addBasePrefix=True,
-                addOperatorPrefix=False,
-            )
-            self.vresProp = self.propertyOperator.createCustomReadOnlyProperty(
-                propertyTable="cameraVres",
-                propertyValue=-1,
-                addBasePrefix=True,
-                addOperatorPrefix=False,
-            )
-        else:
-            self.leftDistanceProp = self.propertyOperator.createCustomReadOnlyProperty(
-                propertyTable=f"{self.testHostname}.verticalEdgeLeftDistancePx",
-                propertyValue=-1,
-                addBasePrefix=False,
-                addOperatorPrefix=False,
-            )
-            self.rightDistanceProp = self.propertyOperator.createCustomReadOnlyProperty(
-                propertyTable=f"{self.testHostname}.verticalEdgeRightDistancePx",
-                propertyValue=-1,
-                addBasePrefix=False,
-                addOperatorPrefix=False,
-            )
-            self.hresProp = self.propertyOperator.createCustomReadOnlyProperty(
-                propertyTable=f"{self.testHostname}.cameraHres",
-                propertyValue=-1,
-                addBasePrefix=False,
-                addOperatorPrefix=False,
-            )
-            self.vresProp = self.propertyOperator.createCustomReadOnlyProperty(
-                propertyTable=f"{self.testHostname}.cameraVres",
-                propertyValue=-1,
-                addBasePrefix=False,
-                addOperatorPrefix=False,
-            )
-
-        
-        self.sobel_threshold = self.propertyOperator.createProperty(
-            propertyTable="inital_sobel_thresh",
-            propertyDefault=80,
-            setDefaultOnNetwork=True,
-        )
+    def createConstants(self):
         self.threshold_to_last_used = self.propertyOperator.createProperty(
             propertyTable="threshold_to_last_used_size",
             propertyDefault=25,
@@ -118,25 +48,28 @@ class BinnedVerticalAlignmentChecker(CameraUsingAgentBase):
         self.lastValidRightFrameCnt = None
         self.currentFrameCnt = 0
 
-    def runPeriodic(self) -> None:
-        super().runPeriodic()
+    def rescaleWidth(self, value):
+        return value * self.shape[1] / self.TUNEDWIDTH
+    
+    def rescaleHeight(self, value):
+        return value * self.shape[0] / self.TUNEDHEIGHT
+
+    def isColorBased():
+        return False # uses april tags so b/w frame
+    
+    def align(self, inputFrame, draw):
+        frame = inputFrame
+        if not self.checkFrame(frame):
+            # we assume if its not a b/w frame (eg checkframe false), that it means its a cv2 bgr and to change to b/w
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
         self.currentFrameCnt += 1
-
-        frame = self.latestFrameMain
-        self.shape = frame.shape
-
-
-        self.vresProp.set(frame.shape[0])
-        self.hresProp.set(frame.shape[1])
 
         newLeftDistance = None
         newRightDistance = None
 
-        # Convert to grayscale for edge detection
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-
         # Apply Gaussian blur to reduce noise
-        blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+        blurred = cv2.GaussianBlur(frame, (5, 5), 0)
 
         if self.sobel_threshold.get() > 0:
             # this threshold can be though of as a way to only get the april tag lines by first dropping anything other than a dark april tag
@@ -152,9 +85,6 @@ class BinnedVerticalAlignmentChecker(CameraUsingAgentBase):
         # Threshold the edge image
         _, thresh = cv2.threshold(sobel_8u, 100, 255, cv2.THRESH_BINARY)
         
-        if self.showFrames:
-            cv2.imshow("thresh", thresh)
-
         # Apply morphological operations to enhance vertical edges
         kernel_vertical = np.ones((5, 1), np.uint8)
         vertical_edges = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel_vertical)
@@ -181,7 +111,8 @@ class BinnedVerticalAlignmentChecker(CameraUsingAgentBase):
                 bin_idx = h // binSize
                 valid_binned[bin_idx].append(contour)
 
-                cv2.rectangle(edge_viz, (x, y), (x + w, y + h), (0, 255, 0), 2)
+                if draw:
+                    cv2.rectangle(edge_viz, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
         # fnd the smallest "pair" of sides that is SILL BIG ENOUGH, but not the biggest in general.
         # This helps distinguish the april tag sides from the side of the april tag paper and the gray background 
@@ -220,7 +151,8 @@ class BinnedVerticalAlignmentChecker(CameraUsingAgentBase):
                 x, y, w, h = cv2.boundingRect(biggest)
 
                 # draw valid vertical edge in the visualization
-                cv2.drawContours(edge_viz, [biggest], -1, (0, 0, 255), 2)
+                if draw:
+                    cv2.drawContours(edge_viz, [biggest], -1, (0, 0, 255), 2)
 
                 mid = x + w / 2
 
@@ -233,7 +165,8 @@ class BinnedVerticalAlignmentChecker(CameraUsingAgentBase):
                 else:
                     newRightDistance = distMid
 
-                cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+                if draw:
+                    cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
         # figure out how Update properties
 
@@ -269,40 +202,17 @@ class BinnedVerticalAlignmentChecker(CameraUsingAgentBase):
                 selectedRight = self.lastValidRight
 
         
+        if draw:
+            cv2.putText(
+                frame,
+                f"L: {selectedLeft}px, R: {selectedRight}px",
+                (10, 30),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.7,
+                (0, 255, 0),
+                2,
+            )
 
-        cv2.putText(
-            frame,
-            f"L: {selectedLeft}px, R: {selectedRight}px",
-            (10, 30),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            0.7,
-            (0, 255, 0),
-            2,
-        )
+        return selectedLeft, selectedRight
 
-        self.leftDistanceProp.set(selectedLeft)
-        self.rightDistanceProp.set(selectedRight)
-
-
-        # If showing frames is enabled, display the edge visualization
-        if self.showFrames:
-            cv2.imshow("Vertical Edges", edge_viz)
-
-    def getName(self) -> str:
-        return "VerticalEdgeAlignmentCheck"
-
-    def getDescription(self) -> str:
-        return "Detects-Vertical-Edges-For-AprilTag-Alignment"
-
-
-def partialVerticalAlignmentCheck(
-    showFrames: bool = False,
-    flushTimeMS: int = -1,
-    mjpeg_url="http://localhost:1181/stream.mjpg",
-):
-    return partial(
-        BinnedVerticalAlignmentChecker,
-        showFrames=showFrames,
-        flushTimeMS=flushTimeMS,
-        mjpeg_url=mjpeg_url,
-    )
+    

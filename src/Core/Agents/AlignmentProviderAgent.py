@@ -1,0 +1,54 @@
+import math
+import cv2
+import numpy as np
+from Core.Agents.Abstract import CameraUsingAgentBase
+from Captures.FileCapture import FileCapture
+from functools import partial
+
+from abstract.AlignmentProvider import AlignmentProvider
+
+
+class AlignmentProviderAgent(CameraUsingAgentBase):
+    DEFAULTTHRESH = 10
+
+    def __init__(self, alignmentProvider : AlignmentProvider, cameraPath = "http://localhost:1181/stream.mjpg", showFrames = False):
+        super().__init__(
+            capture=FileCapture(videoFilePath=cameraPath), showFrames=showFrames
+        )
+        self.alignmentProvider = alignmentProvider
+
+    def create(self):
+        super().create()
+
+        self.leftDistanceProp = self.propertyOperator.createCustomReadOnlyProperty(
+                propertyTable="verticalEdgeLeftDistancePx",
+                propertyValue=-1,
+                addBasePrefix=True,
+                addOperatorPrefix=False,
+            )
+        self.rightDistanceProp = self.propertyOperator.createCustomReadOnlyProperty(
+            propertyTable="verticalEdgeRightDistancePx",
+            propertyValue=-1,
+            addBasePrefix=True,
+            addOperatorPrefix=False,
+        )
+
+
+    def runPeriodic(self) -> None:
+        super().runPeriodic()
+
+        frame = self.latestFrameMain
+        left, right = self.alignmentProvider.align(frame, self.showFrames or self.sendFrame)
+        self.leftDistanceProp.set(left)
+        self.rightDistanceProp.set(right)
+
+
+    def getName(self) -> str:
+        return "AlignmentProviderAgent"
+
+    def getDescription(self) -> str:
+        return "Looks-Through-Camera-Checks-Alignment"
+
+
+def partialAlignmentCheck(alignmentProvider : AlignmentProvider, cameraPath = "http://localhost:1181/stream.mjpg", showFrames = False):
+    return partial(AlignmentProviderAgent, alignmentProvider=alignmentProvider,cameraPath=cameraPath,showFrames=showFrames)

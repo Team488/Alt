@@ -1,77 +1,152 @@
 from collections.abc import Iterable
-from typing import Any, Union
+from typing import Any, Union, TypeVar, Callable, Tuple, Optional, cast, overload
 import tools
 from tools import Units
 import tools.Constants
 
+# Type variables for better typing
+NumericType = Union[float, int]
+T = TypeVar('T')
+ConversionFunction = Callable[[NumericType], T]
 
-def mtoin(m: Union[float, int]) -> float:
+
+def mtoin(m: NumericType) -> float:
+    """Convert meters to inches"""
     return m * 39.37
 
 
-def intom(inch: Union[float, int]) -> float:
+def intom(inch: NumericType) -> float:
+    """Convert inches to meters"""
     return inch / 39.37
 
 
-def intocm(inch: Union[float, int]) -> float:
+def intocm(inch: NumericType) -> float:
+    """Convert inches to centimeters"""
     return inch * 2.54
 
 
-def cmtoin(cm: Union[float, int]) -> float:
+def cmtoin(cm: NumericType) -> float:
+    """Convert centimeters to inches"""
     return cm / 2.54
 
 
-def ftocm(f: Union[float, int]) -> float:
+def ftocm(f: NumericType) -> float:
+    """Convert feet to centimeters"""
     return f * 30.48
 
 
-def cmtof(cm: Union[float, int]) -> float:
+def cmtof(cm: NumericType) -> float:
+    """Convert centimeters to feet"""
     return cm / 30.48
 
 
-def ytocm(y: Union[float, int]) -> float:
+def ytocm(y: NumericType) -> float:
+    """Convert yards to centimeters"""
     return y * 91.44
 
 
-def cmtoy(cm: Union[float, int]) -> float:
+def cmtoy(cm: NumericType) -> float:
+    """Convert centimeters to yards"""
     return cm / 91.44
 
 
 def toint(
-    value: Union[Iterable[Union[float, int]], float]
-) -> Union[tuple[int], int, None]:
+    value: Union[Iterable[NumericType], NumericType]
+) -> Union[Tuple[int, ...], int, None]:
+    """
+    Convert numeric value(s) to integer
+    
+    Args:
+        value: A single numeric value or an iterable of numeric values
+        
+    Returns:
+        The input value(s) converted to integer, or None if conversion fails
+    """
     return __convert(value, int)
 
 
-def invertY(yCM: Union[float, int]) -> float:
+def invertY(yCM: NumericType) -> float:
+    """
+    Invert the Y coordinate relative to field height
+    
+    Args:
+        yCM: Y coordinate in centimeters
+        
+    Returns:
+        Inverted Y coordinate (field height - Y)
+    """
     return tools.Constants.MapConstants.fieldHeight.getCM() - yCM
 
 
-def invertX(xCM: Union[float, int]) -> float:
+def invertX(xCM: NumericType) -> float:
+    """
+    Invert the X coordinate relative to field width
+    
+    Args:
+        xCM: X coordinate in centimeters
+        
+    Returns:
+        Inverted X coordinate (field width - X)
+    """
     return tools.Constants.MapConstants.fieldWidth.getCM() - xCM
 
 
 def convertLength(
-    value: Union[Iterable[Union[float, int]], float],
+    value: Union[Iterable[NumericType], NumericType],
     fromType: Units.LengthType,
     toType: Units.LengthType,
-) -> Union[tuple[float], float, None]:
+) -> Union[Tuple[float, ...], float, None]:
+    """
+    Convert length value(s) between different units
+    
+    Args:
+        value: Length value(s) to convert
+        fromType: Source unit type
+        toType: Target unit type
+        
+    Returns:
+        Converted value(s), or None if conversion fails
+    """
     convertLengthFunc = lambda value: Units.Length.convert(value, fromType, toType)
     return __convert(value, convertLengthFunc)
 
 
 def convertRotation(
-    value: Union[Iterable[Union[float, int]], float],
+    value: Union[Iterable[NumericType], NumericType],
     fromType: Units.RotationType,
     toType: Units.RotationType,
-) -> Union[tuple[float], float, None]:
-    convertLengthFunc = lambda value: Units.Rotation.convert(value, fromType, toType)
-    return __convert(value, convertLengthFunc)
+) -> Union[Tuple[float, ...], float, None]:
+    """
+    Convert rotation value(s) between different units
+    
+    Args:
+        value: Rotation value(s) to convert
+        fromType: Source unit type (degrees or radians)
+        toType: Target unit type (degrees or radians)
+        
+    Returns:
+        Converted value(s), or None if conversion fails
+    """
+    convertRotFunc = lambda value: Units.Rotation.convert(value, fromType, toType)
+    return __convert(value, convertRotFunc)
 
 
-def __convert(value: Any, convertFunction: Any) -> Union[tuple, Any, None]:
+def __convert(
+    value: Union[Iterable[Any], Any], 
+    convertFunction: Callable[[Any], T]
+) -> Union[Tuple[T, ...], T, None]:
+    """
+    Internal helper function to apply a conversion function to a value or iterable of values
+    
+    Args:
+        value: Value(s) to convert
+        convertFunction: Function to apply to each value
+        
+    Returns:
+        Converted value(s), or None if conversion fails
+    """
     try:
-        if isinstance(value, Iterable):
+        if isinstance(value, Iterable) and not isinstance(value, (str, bytes)):
             return tuple(map(convertFunction, value))
         else:
             return convertFunction(value)

@@ -6,6 +6,8 @@
 
 from abc import ABC, abstractmethod
 from logging import Logger
+from typing import Optional, Any
+
 from JXTABLES.XTablesClient import XTablesClient
 from Core.UpdateOperator import UpdateOperator
 from Core.Central import Central
@@ -17,13 +19,21 @@ from tools.Constants import TEAM
 
 
 class Agent(ABC):
-    DEFAULT_LOOP_TIME = 0  # 0 ms
+    DEFAULT_LOOP_TIME: int = 0  # 0 ms
 
-    def __init__(self, **kwargs) -> None:
+    def __init__(self, **kwargs: Any) -> None:
         # nothing should go here
-        self.hasShutdown = False
-        self.hasClosed = False
-        pass
+        self.hasShutdown: bool = False
+        self.hasClosed: bool = False
+        self.central: Optional[Central] = None
+        self.xclient: Optional[XTablesClient] = None
+        self.propertyOperator: Optional[PropertyOperator] = None
+        self.configOperator: Optional[ConfigOperator] = None
+        self.shareOp: Optional[ShareOperator] = None
+        self.updateOp: Optional[UpdateOperator] = None
+        self.Sentinel: Optional[Logger] = None
+        self.timer: Optional[Timer] = None
+        self.isMainThread: bool = False
 
     def inject(
         self,
@@ -49,13 +59,18 @@ class Agent(ABC):
         self.isMainThread = isMainThread
         # other than setting variables, nothing should go here
 
-    def getTimer(self):
+    def getTimer(self) -> Timer:
         """Use only when needed, and only when associated with agent"""
+        if self.timer is None:
+            raise ValueError("Timer not initialized")
         return self.timer
 
-    def getTeam(self):
+    def getTeam(self) -> Optional[TEAM]:
         """Fetches team from XTables, dont trust at the start when everything is initializing"""
-        team: str = self.xclient.getString("TEAM")
+        if self.xclient is None:
+            raise ValueError("XTablesClient not initialized")
+            
+        team: Optional[str] = self.xclient.getString("TEAM")
         if team is None:
             return None
 
@@ -67,13 +82,13 @@ class Agent(ABC):
     # ----- Required Implementations -----
 
     @abstractmethod
-    def create(self):
+    def create(self) -> None:
         """Runs once when the agent is created"""
         # perform agent init here (eg open camera or whatnot)
         pass
 
     @abstractmethod
-    def runPeriodic(self):
+    def runPeriodic(self) -> None:
         """Runs continously until the agent ends"""
         # agent periodic loop here
         pass
@@ -87,20 +102,20 @@ class Agent(ABC):
     # ----- properties -----
 
     @abstractmethod
-    def getName(self):
+    def getName(self) -> str:
         """Please tell me your name"""
         # agent name here
         pass
 
     @abstractmethod
-    def getDescription(self):
+    def getDescription(self) -> str:
         """Sooo, what do you do for a "living" """
         # agent description here
         pass
 
     # ----- optional methods -----
 
-    def getIntervalMs(self):
+    def getIntervalMs(self) -> int:
         """how long to wait between each run call
         default is 0, eg no waiting
         """

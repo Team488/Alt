@@ -1,4 +1,5 @@
 from abc import abstractmethod
+from typing import List, Tuple, Optional, Any
 import cv2
 import numpy as np
 from Core.Agents.Abstract.PositionLocalizingAgentBase import PositionLocalizingAgentBase
@@ -12,19 +13,42 @@ class PathPlanningAgentBase(PositionLocalizingAgentBase):
     NOTE: you must implement the getPath function
     """
 
-    SHAREDPATHNAME = "createdPath"
+    SHAREDPATHNAME: str = "createdPath"
+
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__(**kwargs)
+        self.pathTable = None
+        self.path: Optional[List[Tuple[int, int]]] = None
+        self.runFlag: bool = True
+        self.central = None
 
     def create(self) -> None:
         super().create()
+        
+        if self.propertyOperator is None:
+            raise ValueError("PropertyOperator not initialized")
+            
         self.pathTable = self.propertyOperator.createProperty(
             "Path_Name", "target_waypoints"
         )
 
     @abstractmethod
-    def getPath(self):
+    def getPath(self) -> Optional[List[Tuple[int, int]]]:
         pass
 
-    def __emitPath(self, path) -> None:
+    def __emitPath(self, path: Optional[List[Tuple[int, int]]]) -> None:
+        if self.shareOp is None:
+            raise ValueError("ShareOperator not initialized")
+            
+        if self.xclient is None:
+            raise ValueError("XTablesClient not initialized")
+            
+        if self.Sentinel is None:
+            raise ValueError("Logger not initialized")
+            
+        if self.pathTable is None:
+            raise ValueError("Path table property not initialized")
+            
         # put in shared memory (regardless if not created Eg. None)
         self.shareOp.put(PathPlanningAgentBase.SHAREDPATHNAME, path)
         # put on network if path was sucessfully created
@@ -47,6 +71,9 @@ class PathPlanningAgentBase(PositionLocalizingAgentBase):
         # emit the path to shared mem and network
         self.__emitPath(self.path)
 
+        if self.central is None or not hasattr(self.central, 'objectmap'):
+            return
+            
         maps = self.central.objectmap.getHeatMaps()
         maps.append(np.zeros_like(self.central.objectmap.getHeatMap(0)))
         frame = cv2.merge(maps)
@@ -55,6 +82,7 @@ class PathPlanningAgentBase(PositionLocalizingAgentBase):
             for point in self.path:
                 cv2.circle(frame, point, 5, (255, 255, 255), -1)
         frame = cv2.flip(frame, 0)
+        
         # add debug message
         if not self.path:
             cv2.putText(

@@ -32,7 +32,7 @@ class Neo:
         self.__printInit()
         Sentinel.info("Creating Config operator")
         Sentinel.info("Loading configs")
-        self.__configOp = ConfigOperator(logger=Sentinel.getChild("Config_Operator"))
+        self.__configOp = ConfigOperator()
         Sentinel.info("Creating XTables Client....")
         tcm.invalidate()
         self.__xclient = XTablesClient(debug_mode=True)

@@ -1,22 +1,32 @@
 import heapq
 import math
+from typing import List, Set, Tuple, Optional, Dict, Any
 
 import numpy as np
 
 
 class PathFinder:
-    def __init__(self, map_size_x, map_size_y) -> None:
-        self.start = None
-        self.goal = None
-        self.obstacles = set()  # Store blocked points
-        self.max_path_length = 20
-        self.path = []
-        self.map_size_y = map_size_y
-        self.map_size_x = map_size_x
+    def __init__(self, map_size_x: int, map_size_y: int) -> None:
+        self.start: Optional[Tuple[int, int]] = None
+        self.goal: Optional[Tuple[int, int]] = None
+        self.obstacles: Set[Tuple[int, int]] = set()  # Store blocked points
+        self.max_path_length: int = 20
+        self.path: List[Tuple[int, int]] = []
+        self.map_size_y: int = map_size_y
+        self.map_size_x: int = map_size_x
 
+    @staticmethod
     def willObjectCollideWithRobot(
-        P_A0, V_A, S_A, P_B0, V_B, S_B, t_max, d_min, inches_per_point
-    ):
+        P_A0: Tuple[float, float], 
+        V_A: Tuple[float, float], 
+        S_A: float, 
+        P_B0: Tuple[float, float], 
+        V_B: Tuple[float, float], 
+        S_B: float, 
+        t_max: float, 
+        d_min: float, 
+        inches_per_point: float
+    ) -> Tuple[bool, Optional[float], Optional[Tuple[float, float]], Optional[float]]:
         for t in np.linspace(0, t_max, num=1000):
             P_A_t = (P_A0[0] + V_A[0] * S_A * t, P_A0[1] + V_A[1] * S_A * t)
             P_B_t = (P_B0[0] + V_B[0] * S_B * t, P_B0[1] + V_B[1] * S_B * t)
@@ -28,11 +38,15 @@ class PathFinder:
                     (P_A_t[0] + P_B_t[0]) / 2,
                     (P_A_t[1] + P_B_t[1]) / 2,
                 )
-                return True, t, collision_position, distance
+                return True, float(t), (float(collision_position[0]), float(collision_position[1])), float(distance)
         return False, None, None, None
 
+    @staticmethod
     def mark_collision_zone_on_grid(
-        grid, P_B_predicted, d_min, inches_per_point
+        grid: List[List[int]], 
+        P_B_predicted: Tuple[float, float], 
+        d_min: float, 
+        inches_per_point: float
     ) -> None:
         radius = int(d_min / inches_per_point)
         x_center, y_center = int(P_B_predicted[0]), int(P_B_predicted[1])
@@ -44,7 +58,11 @@ class PathFinder:
                         grid[x][y] = 1  # Mark the cell as an obstacle
 
     def update_values(
-        self, start=None, goal=None, obstacles=None, max_path_length=None
+        self, 
+        start: Optional[Tuple[int, int]] = None, 
+        goal: Optional[Tuple[int, int]] = None, 
+        obstacles: Optional[List[Tuple[int, int, int, Any]]] = None, 
+        max_path_length: Optional[int] = None
     ) -> None:
         if start:
             self.start = start
@@ -56,7 +74,11 @@ class PathFinder:
             self.max_path_length = max_path_length
 
     def update_path_with_values(
-        self, start=None, goal=None, obstacles=None, max_path_length=None
+        self, 
+        start: Optional[Tuple[int, int]] = None, 
+        goal: Optional[Tuple[int, int]] = None, 
+        obstacles: Optional[List[Tuple[int, int, int, Any]]] = None, 
+        max_path_length: Optional[int] = None
     ) -> None:
         if (
             self.start != start
@@ -71,9 +93,9 @@ class PathFinder:
         self.start = None
         self.goal = None
         self.path = []
-        self.obstacles = []
+        self.obstacles = set()  # Changed from [] to set() to match declaration
 
-    def heuristic(self, a, b):
+    def heuristic(self, a: Tuple[int, int], b: Tuple[int, int]) -> float:
         # Using diagonal distance heuristic
         D = 1
         D2 = 1.414
@@ -81,8 +103,8 @@ class PathFinder:
         dy = abs(a[1] - b[1])
         return D * (dx + dy) + (D2 - 2 * D) * min(dx, dy)
 
-    def compute_obstacle_points(self, obstacles):
-        blocked_points = set()
+    def compute_obstacle_points(self, obstacles: List[Tuple[int, int, int, Any]]) -> Set[Tuple[int, int]]:
+        blocked_points: Set[Tuple[int, int]] = set()
         for obs_x, obs_y, radius, _ in obstacles:
             # Iterate over all points in a square bounding box around the obstacle
             for dx in range(-radius, radius + 1):
@@ -93,21 +115,31 @@ class PathFinder:
                         blocked_points.add(point)
         return blocked_points
 
-    def a_star_search(self, start, goal, obstacles, map_size_x, map_size_y):
-        open_set = []
+    def a_star_search(
+        self, 
+        start: Tuple[int, int], 
+        goal: Tuple[int, int], 
+        obstacles: Set[Tuple[int, int]], 
+        map_size_x: int, 
+        map_size_y: int
+    ) -> List[Tuple[int, int]]:
+        open_set: List[Tuple[float, Tuple[int, int]]] = []
         heapq.heappush(open_set, (0, start))
-        came_from = {}
-        g_score = {start: 0}
-        f_score = {start: self.heuristic(start, goal)}
-        step_count = 0
+        came_from: Dict[Tuple[int, int], Tuple[int, int]] = {}
+        g_score: Dict[Tuple[int, int], float] = {start: 0}
+        f_score: Dict[Tuple[int, int], float] = {start: self.heuristic(start, goal)}
+        step_count: int = 0
 
         # Calculate target direction unit vector
-        target_dir = (goal[0] - start[0], goal[1] - start[1])
-        target_magnitude = math.sqrt(target_dir[0] ** 2 + target_dir[1] ** 2)
-        target_dir = (
-            target_dir[0] / target_magnitude,
-            target_dir[1] / target_magnitude,
-        )
+        raw_target_dir = (goal[0] - start[0], goal[1] - start[1])
+        target_magnitude = math.sqrt(raw_target_dir[0] ** 2 + raw_target_dir[1] ** 2)
+        if target_magnitude > 0:  # Avoid division by zero
+            target_dir = (
+                float(raw_target_dir[0] / target_magnitude),
+                float(raw_target_dir[1] / target_magnitude),
+            )
+        else:
+            target_dir = (0.0, 0.0)  # Default if start and goal are the same
 
         while open_set:
             print(step_count)
@@ -115,7 +147,7 @@ class PathFinder:
 
             # Check if we've reached the goal or exceeded the max path length
             if current == goal or step_count >= self.max_path_length:
-                path = []
+                path: List[Tuple[int, int]] = []
                 while current in came_from:
                     path.append(current)
                     current = came_from[current]
@@ -149,11 +181,11 @@ class PathFinder:
                     and neighbor not in obstacles
                 ):
                     # Calculate move direction vector
-                    move_dir = (dx, dy)
-                    move_magnitude = math.sqrt(move_dir[0] ** 2 + move_dir[1] ** 2)
+                    raw_move_dir = (dx, dy)
+                    move_magnitude = math.sqrt(raw_move_dir[0] ** 2 + raw_move_dir[1] ** 2)
                     move_dir = (
-                        move_dir[0] / move_magnitude,
-                        move_dir[1] / move_magnitude,
+                        float(raw_move_dir[0] / move_magnitude),
+                        float(raw_move_dir[1] / move_magnitude),
                     )
 
                     # Use dot product to scale move cost
@@ -182,7 +214,6 @@ class PathFinder:
                 self.start, self.goal, self.obstacles, self.map_size_x, self.map_size_y
             )
             if not self.path:
-
                 print("Start:", self.start)
                 print("Goal:", self.goal)
                 # print("Obstacles:", self.obstacles)

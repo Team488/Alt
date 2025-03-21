@@ -68,7 +68,7 @@ class CsvDemoObjectLocalizingAgent(CsvSimulatedAgentBase):
         super().runPeriodic()
         with self.timer.run("frame-processing"):
             processedResults = self.frameProcessor.processFrame(
-                self.latestFrameCOLOR,
+                self.latestFrameMain,
                 self.latestFrameDEPTH if self.depthEnabled else None,
                 robotPosXCm=self.robotPose2dCMRAD[0],
                 robotPosYCm=self.robotPose2dCMRAD[1],

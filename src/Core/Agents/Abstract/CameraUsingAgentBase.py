@@ -1,7 +1,7 @@
 import datetime
 import os
 import time
-from typing import Union
+from typing import Union, Optional, Callable, Tuple, Any
 import cv2
 import numpy as np
 from Captures.CameraCapture import ConfigurableCameraCapture
@@ -33,17 +33,21 @@ class CameraUsingAgentBase(Agent):
     NOTE: This means you cannot run this class as is
     """
 
-    def __init__(self, **kwargs) -> None:
+    def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.capture: Union[
             Capture, depthCamera, ConfigurableCameraCapture
         ] = kwargs.get("capture", None)
-        self.depthEnabled = issubclass(self.capture.__class__, depthCamera)
-        self.iscv2Configurable = issubclass(
+        if self.capture is None:
+            raise ValueError("CameraUsingAgentBase requires a capture object")
+            
+        self.depthEnabled: bool = issubclass(self.capture.__class__, depthCamera)
+        self.iscv2Configurable: bool = issubclass(
             self.capture.__class__, ConfigurableCameraCapture
         )
-        self.customLoaded = False
-        self.preprocessFrame = None
+        self.customLoaded: bool = False
+        self.preprocessFrame: Optional[Callable[[np.ndarray], np.ndarray]] = None
+        self.calibMTime: Union[float, str] = "Not_Set"
 
         if self.iscv2Configurable:
             # try and load a possible saved calibration
@@ -69,15 +73,21 @@ class CameraUsingAgentBase(Agent):
             else:
                 self.calibMTime = "Not_Using_Intrinsics"
 
-        self.showFrames = kwargs.get("showFrames", False)
-        self.hasIngested = False
-        self.exit = False
-        self.WINDOWNAMEDEPTH = "depth_frame"
-        self.WINDOWNAMECOLOR = "color_frame"
-        self.latestFrameDEPTH = None
-        self.latestFrameCOLOR = None
+        self.showFrames: bool = kwargs.get("showFrames", False)
+        self.hasIngested: bool = False
+        self.exit: bool = False
+        self.WINDOWNAMEDEPTH: str = "depth_frame"
+        self.WINDOWNAMECOLOR: str = "color_frame"
+        self.latestFrameDEPTH: Optional[np.ndarray] = None
+        self.latestFrameMain: Optional[np.ndarray] = None
+        self.sendFrame: bool = False
+        self.calib: bool = False
 
-    def sendInitialUpdate(self):
+    def sendInitialUpdate(self) -> None:
+        """Set up initial camera intrinsics properties"""
+        if self.propertyOperator is None:
+            raise ValueError("PropertyOperator not initialized")
+            
         if self.iscv2Configurable:
             self.Sentinel.info("Detected cv2 configurable capture..")
             if self.customLoaded:
@@ -93,7 +103,8 @@ class CameraUsingAgentBase(Agent):
             self.propertyOperator.createReadOnlyProperty("CameraIntrinsics", "").set(
                 str(self.capture.getIntrinsics())
             )
-        if type(self.calibMTime) == float:
+            
+        if isinstance(self.calibMTime, float):
             readable_time = datetime.datetime.fromtimestamp(self.calibMTime).strftime(
                 "%Y-%m-%d %H:%M:%S"
             )
@@ -118,15 +129,19 @@ class CameraUsingAgentBase(Agent):
 
         # if we are not main thread, even if it says showframe true we cannot allow it
         if not self.isMainThread:
-            self.Sentinel.warning(
-                "When an agent is not running on the main thread, it cannot display frames directly."
-            )
+            if self.Sentinel:
+                self.Sentinel.warning(
+                    "When an agent is not running on the main thread, it cannot display frames directly."
+                )
             self.showFrames = False
 
         # self.xdashDebugger = XDashDebugger()
 
         self.testCapture()
 
+        if self.updateOp is None:
+            raise ValueError("UpdateOperator not initialized")
+            
         self.sendFrameProp = self.updateOp.createGlobalUpdate(
             self.FRAMETOGGLEPOSTFIX, default=False, loadIfSaved=False
         )
@@ -152,19 +167,22 @@ class CameraUsingAgentBase(Agent):
             if self.depthEnabled:
                 cv2.namedWindow(self.WINDOWNAMEDEPTH)
 
-    def testCapture(self):
+    def testCapture(self) -> None:
+        """Test if the camera is properly functioning"""
         if self.capture.isOpen():
-            frame = self.capture.getColorFrame()
+            frame = self.capture.getMainFrame()
             retTest = frame is not None
-
         else:
             retTest = False
 
         if not retTest:
             raise BrokenPipeError(f"Failed to read from camera! {type(self.capture)=}")
 
-    def runPeriodic(self):
+    def runPeriodic(self) -> None:
         super().runPeriodic()
+        if not hasattr(self, 'sendFrameProp') or not hasattr(self, 'calibProp'):
+            raise ValueError("Properties not initialized properly")
+            
         self.sendFrame = self.sendFrameProp.get()
         self.calib = self.calibProp.get()
 
@@ -283,7 +301,7 @@ class CameraUsingAgentBase(Agent):
         if self.hasIngested:
             # local showing of frame
             if self.showFrames:
-                cv2.imshow(self.WINDOWNAMECOLOR, self.latestFrameCOLOR)
+                cv2.imshow(self.WINDOWNAMECOLOR, self.latestFrameMain)
 
                 if self.latestFrameDEPTH is not None:
                     cv2.imshow(self.WINDOWNAMEDEPTH, self.latestFrameDEPTH)
@@ -294,7 +312,7 @@ class CameraUsingAgentBase(Agent):
             # network showing of frame
             if self.sendFrame:
                 framePacket = FramePacket.createPacket(
-                    time.time() * 1000, "Frame", self.latestFrameCOLOR
+                    time.time() * 1000, "Frame", self.latestFrameMain
                 )
                 self.updateOp.addGlobalUpdate(self.FRAMEPOSTFIX, framePacket.to_bytes())
 
@@ -309,19 +327,19 @@ class CameraUsingAgentBase(Agent):
                 self.latestFrameDEPTH = latestFrames[0]
 
                 if self.preprocessFrame is not None:
-                    self.latestFrameCOLOR = self.preprocessFrame(latestFrames[1])
+                    self.latestFrameMain = self.preprocessFrame(latestFrames[1])
                 else:
-                    self.latestFrameCOLOR = latestFrames[1]
+                    self.latestFrameMain = latestFrames[1]
 
             else:
-                frame = self.capture.getColorFrame()
+                frame = self.capture.getMainFrame()
                 if frame is None:
                     raise BrokenPipeError("Camera failed to capture!")
 
                 if self.preprocessFrame is not None:
-                    self.latestFrameCOLOR = self.preprocessFrame(frame)
+                    self.latestFrameMain = self.preprocessFrame(frame)
                 else:
-                    self.latestFrameCOLOR = frame
+                    self.latestFrameMain = frame
 
     def onClose(self) -> None:
         super().onClose()
@@ -332,10 +350,12 @@ class CameraUsingAgentBase(Agent):
 
     def isRunning(self) -> bool:
         if not self.capture.isOpen():
-            self.Sentinel.fatal("Camera cant be opened!")
+            if self.Sentinel:
+                self.Sentinel.fatal("Camera cant be opened!")
             return False
         if self.exit:
-            self.Sentinel.info("Gracefully exiting...")
+            if self.Sentinel:
+                self.Sentinel.info("Gracefully exiting...")
             return False
         return True
 
