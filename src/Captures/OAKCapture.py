@@ -51,7 +51,7 @@ class OAKCapture(depthCamera):
             
         return self.depthAiHelper.getDepthFrame()
 
-    def getColorFrame(self) -> np.ndarray:
+    def getMainFrame(self) -> np.ndarray:
         """
         Get the color frame from the camera
         

@@ -49,7 +49,7 @@ class FileCapture(Capture):
             retTest = False
         return retTest
 
-    def getColorFrame(self) -> np.ndarray:
+    def getMainFrame(self) -> np.ndarray:
         """
         Get the next color frame from the video
         
@@ -112,7 +112,7 @@ def startDemo(videoFilePath: str) -> None:
     cap.create()
 
     while cap.isOpen():
-        frame = cap.getColorFrame()
+        frame = cap.getMainFrame()
 
         cv2.imshow("Video", frame)
 

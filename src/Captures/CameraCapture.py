@@ -68,7 +68,7 @@ class ConfigurableCameraCapture(ConfigurableCapture):
             retTest = False
         return retTest
 
-    def getColorFrame(self) -> np.ndarray:
+    def getMainFrame(self) -> np.ndarray:
         """
         Get a color frame from the camera
         

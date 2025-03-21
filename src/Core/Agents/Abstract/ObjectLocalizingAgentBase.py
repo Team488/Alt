@@ -104,13 +104,13 @@ class ObjectLocalizingAgentBase(TimestampRegulatedAgentBase):
         offsetYCm = self.positionOffsetYM.get() * 100
         offsetYawRAD = math.radians(self.positionOffsetYAWDEG.get())
         
-        if self.latestFrameCOLOR is None:
+        if self.latestFrameMain is None:
             self.Sentinel.warning("No latest color frame available")
             return
             
         with self.timer.run("frame-processing"):
             processedResults = self.frameProcessor.processFrame(
-                self.latestFrameCOLOR,
+                self.latestFrameMain,
                 self.latestFrameDEPTH if self.depthEnabled else None,
                 robotPosXCm=self.robotPose2dCMRAD[0] + offsetXCm,
                 robotPosYCm=self.robotPose2dCMRAD[1] + offsetYCm,

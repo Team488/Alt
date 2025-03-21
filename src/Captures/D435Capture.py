@@ -28,7 +28,7 @@ class D435Capture(depthCamera):
         intr: CameraIntrinsics = self.realsenseHelper.getCameraIntrinsics()
         super().setIntrinsics(intr)
 
-    def getColorFrame(self) -> np.ndarray:
+    def getMainFrame(self) -> np.ndarray:
         """
         Get the color frame from the camera
         

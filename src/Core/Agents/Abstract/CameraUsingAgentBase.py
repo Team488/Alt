@@ -79,7 +79,7 @@ class CameraUsingAgentBase(Agent):
         self.WINDOWNAMEDEPTH: str = "depth_frame"
         self.WINDOWNAMECOLOR: str = "color_frame"
         self.latestFrameDEPTH: Optional[np.ndarray] = None
-        self.latestFrameCOLOR: Optional[np.ndarray] = None
+        self.latestFrameMain: Optional[np.ndarray] = None
         self.sendFrame: bool = False
         self.calib: bool = False
 
@@ -170,7 +170,7 @@ class CameraUsingAgentBase(Agent):
     def testCapture(self) -> None:
         """Test if the camera is properly functioning"""
         if self.capture.isOpen():
-            frame = self.capture.getColorFrame()
+            frame = self.capture.getMainFrame()
             retTest = frame is not None
         else:
             retTest = False
@@ -301,7 +301,7 @@ class CameraUsingAgentBase(Agent):
         if self.hasIngested:
             # local showing of frame
             if self.showFrames:
-                cv2.imshow(self.WINDOWNAMECOLOR, self.latestFrameCOLOR)
+                cv2.imshow(self.WINDOWNAMECOLOR, self.latestFrameMain)
 
                 if self.latestFrameDEPTH is not None:
                     cv2.imshow(self.WINDOWNAMEDEPTH, self.latestFrameDEPTH)
@@ -312,7 +312,7 @@ class CameraUsingAgentBase(Agent):
             # network showing of frame
             if self.sendFrame:
                 framePacket = FramePacket.createPacket(
-                    time.time() * 1000, "Frame", self.latestFrameCOLOR
+                    time.time() * 1000, "Frame", self.latestFrameMain
                 )
                 self.updateOp.addGlobalUpdate(self.FRAMEPOSTFIX, framePacket.to_bytes())
 
@@ -327,19 +327,19 @@ class CameraUsingAgentBase(Agent):
                 self.latestFrameDEPTH = latestFrames[0]
 
                 if self.preprocessFrame is not None:
-                    self.latestFrameCOLOR = self.preprocessFrame(latestFrames[1])
+                    self.latestFrameMain = self.preprocessFrame(latestFrames[1])
                 else:
-                    self.latestFrameCOLOR = latestFrames[1]
+                    self.latestFrameMain = latestFrames[1]
 
             else:
-                frame = self.capture.getColorFrame()
+                frame = self.capture.getMainFrame()
                 if frame is None:
                     raise BrokenPipeError("Camera failed to capture!")
 
                 if self.preprocessFrame is not None:
-                    self.latestFrameCOLOR = self.preprocessFrame(frame)
+                    self.latestFrameMain = self.preprocessFrame(frame)
                 else:
-                    self.latestFrameCOLOR = frame
+                    self.latestFrameMain = frame
 
     def onClose(self) -> None:
         super().onClose()

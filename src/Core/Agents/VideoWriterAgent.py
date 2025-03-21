@@ -27,10 +27,10 @@ class VideoWriterAgent(CameraUsingAgentBase):
         if self.writer is None:
             raise ValueError("VideoWriter not initialized")
             
-        if self.latestFrameCOLOR is None:
+        if self.latestFrameMain is None:
             return
             
-        self.writer.write(self.latestFrameCOLOR)
+        self.writer.write(self.latestFrameMain)
 
     def onClose(self) -> None:
         super().onClose()

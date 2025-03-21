@@ -75,11 +75,11 @@ class ReefTrackingAgentBase(CameraUsingAgentBase):
         if self.updateOp is None:
             raise ValueError("UpdateOperator not initialized")
             
-        if self.latestFrameCOLOR is None:
+        if self.latestFrameMain is None:
             return
             
         outCoral, outAlgae, atOutput = self.tracker.getAllTracks(
-            self.latestFrameCOLOR, drawBoxes=self.showFrames or self.sendFrame
+            self.latestFrameMain, drawBoxes=self.showFrames or self.sendFrame
         )
         self.latestPoseREEF = self.poseSolver.getLatestPoseEstimate(atOutput)
         # print(self.latestPoseREEF)

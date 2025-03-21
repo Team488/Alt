@@ -57,7 +57,7 @@ class InferenceAgent(CameraUsingAgentBase):
         if self.inf is None:
             raise ValueError("Inferencer not initialized")
             
-        if self.latestFrameCOLOR is None:
+        if self.latestFrameMain is None:
             return
             
         if self.confidence is None or self.drawBoxes is None:
@@ -65,7 +65,7 @@ class InferenceAgent(CameraUsingAgentBase):
 
         with self.timer.run("inference"):
             self.results = self.inf.run(
-                self.latestFrameCOLOR, self.confidence.get(), self.drawBoxes.get()
+                self.latestFrameMain, self.confidence.get(), self.drawBoxes.get()
             )
 
     def getName(self) -> str:

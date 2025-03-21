@@ -13,8 +13,8 @@ class Capture(ABC):
         pass
 
     @abstractmethod
-    def getColorFrame(self) -> np.ndarray:
-        """Returns a color frame"""
+    def getMainFrame(self) -> np.ndarray:
+        """Returns the main capture frame"""
         pass
 
     @abstractmethod
@@ -24,7 +24,7 @@ class Capture(ABC):
 
     def getFrameShape(self) -> Tuple[int, ...]:
         """Returns the shape of the frame"""
-        return self.getColorFrame().shape
+        return self.getMainFrame().shape
 
     @abstractmethod
     def isOpen(self) -> bool:
