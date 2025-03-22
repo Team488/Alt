@@ -68,6 +68,21 @@ class PropertyOperator:
         addOperatorPrefix: bool = False,
         setDefaultOnNetwork: bool = True,
     ) -> "Property":
+        """ Creates a network property that you can read from. To avoid conflicts, this property can only be read from, so its not writable.\n
+            For a writable property, use whats called a '''ReadonlyProperty''' \n
+
+            NOTE if you want to read from an existing table, and you are providing the absolute path in propertyTable, then mark isCustom True, and set the add...prefix arguments below it to False
+            Args:
+                propertyTable: str = The table name you wish to read from
+                propertyDefault: Any = What default should it fallback to
+                loadIfSaved: bool = Whether to make the property persistent or not
+                isCustom: bool = Whether to use the custom add...prefix args  below
+                addBasePrefix: bool = Whether to add the base hostname of the system
+                addOperatorPrefix: bool = Whether to add whatever prefix this propertyOperator has. In an agent, this is the agent.getName()
+                setDefaultOnNetwork: bool = Whether to push the default value you have onto the network.
+          
+          
+        """
         if isCustom:
             if addBasePrefix and addOperatorPrefix:
                 propertyTable = self.__addFullPrefix(propertyTable)
