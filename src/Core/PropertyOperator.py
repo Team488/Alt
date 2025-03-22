@@ -58,6 +58,13 @@ class PropertyOperator:
         self.__propertyValueMap[ret.key] = self.__getRealType(ret.type, ret.value)
         # self.Sentinel.debug(f"Property updated | Name: {ret.key} Value : {ret.value}")
 
+    
+    def createReadExistingNetworkValueProperty(self, propertyTable : str, propertyDefault: Any):
+        """ Same as calling createProperty() with isCustom = True, and addBasePrefix/addOperatorPrefix = False\n
+            shorter method for when you just want to read from an existing propertyTable
+        """
+        return self.createProperty(propertyTable, propertyDefault, loadIfSaved=False, isCustom=True,addBasePrefix=False,addOperatorPrefix=False,setDefaultOnNetwork=False)
+    
     def createProperty(
         self,
         propertyTable: str,
