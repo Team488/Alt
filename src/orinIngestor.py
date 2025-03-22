@@ -1,3 +1,5 @@
+import time
+
 from Captures import FileCapture
 import cv2
 from time import strftime, localtime
@@ -54,7 +56,11 @@ def startWriting():
         for capture, writer in to_remove:
             captures.remove(capture)
             videowriters.remove(writer)
+        time.sleep(0.01)
 
+    for capture, writer in zip(captures, videowriters):
+        capture.close()
+        writer.release()
     # Execution reaches here once all captures close
     print("All video captures have closed.")
 
