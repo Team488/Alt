@@ -1,5 +1,5 @@
 ARG TARGETPLATFORM
-FROM johnylamw/488-alt-python-3-10
+FROM johnylamw/488-alt-python-3.10
 WORKDIR /xbot/Alt/src
 
 RUN pip install --upgrade tensorflow
