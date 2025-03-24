@@ -4,4 +4,13 @@ scikit-fmm
 depthai
 numba
 robotpy_apriltag
-
+#pybind11 # satisfied by mostrobotpy
+devtools
+build
+scikit-fmm
+pyflame
+grpcio-tools
+grpcio
+pynetworktables
+XTablesClient
+python-doctr[torch]==0.11.0
