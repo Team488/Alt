@@ -4,14 +4,13 @@ import threading
 import traceback
 import time
 from logging import Logger
-from concurrent.futures import ThreadPoolExecutor
-from concurrent.futures import Future
-from typing import Optional
+from concurrent.futures import ThreadPoolExecutor, Future
+from typing import Any, Dict, Optional, Callable, Set, cast
 from JXTABLES.XTablesClient import XTablesClient
 import concurrent
-from Core.TimeOperator import TimeOperator
+from Core.TimeOperator import TimeOperator, Timer
 from abstract.Agent import Agent
-from Core.PropertyOperator import PropertyOperator
+from Core.PropertyOperator import PropertyOperator, ReadonlyProperty
 
 
 # subscribes to command request with xtables and then executes when requested
@@ -19,38 +18,40 @@ class AgentOperator:
     def __init__(
         self, propertyOp: PropertyOperator, timeOp: TimeOperator, logger: Logger
     ) -> None:
-        self.Sentinel = logger
-        self.propertyOp = propertyOp
-        self.timeOp = timeOp
-        self.__executor = ThreadPoolExecutor()
-        self.__futures = {}
-        self.__futPtr = 0
-        self.__futureLock = threading.Lock()
-        self.__stop = False  # flag
-        self.__runOnFinish = None  # runnable
-        self.__setStatus = (
+        self.Sentinel: Logger = logger
+        self.propertyOp: PropertyOperator = propertyOp
+        self.timeOp: TimeOperator = timeOp
+        self.__executor: ThreadPoolExecutor = ThreadPoolExecutor()
+        self.__futures: Dict[int, Future] = {}
+        self.__futPtr: int = 0
+        self.__futureLock: threading.Lock = threading.Lock()
+        self.__stop: bool = False  # flag
+        self.__runOnFinish: Optional[Callable[[], None]] = None  # runnable
+        self.__setStatus: Callable[[str, str], bool] = (
             lambda agentName, status: propertyOp.createCustomReadOnlyProperty(
                 f"active_agents.{agentName}.Status", status
             ).set(status)
         )
-        self.__setErrorLog = (
+        self.__setErrorLog: Callable[[str, str], bool] = (
             lambda agentName, error: propertyOp.createCustomReadOnlyProperty(
                 f"active_agents.{agentName}.Errors", error
             ).set(error)
         )
-        self.__setDescription = (
+        self.__setDescription: Callable[[str, str], bool] = (
             lambda agentName, description: propertyOp.createCustomReadOnlyProperty(
                 f"active_agents.{agentName}.Description", description
             ).set(description)
         )
-        self.mainAgent = None
+        self.mainAgent: Optional[Agent] = None
 
     def stopAndWait(self) -> None:
+        """Stop all agents but allow them to clean up, and wait for them to finish"""
         self.__stop = True
         self.waitForAgentsToFinish()
         self.__stop = False
 
     def stopPermanent(self) -> None:
+        """Set the stop flag permanently (will not be reset)"""
         self.__stop = True
 
     def wakeAgentMain(self, agent: Agent) -> None:
@@ -67,12 +68,13 @@ class AgentOperator:
         self.mainAgent = None
 
     def wakeAgent(self, agent: Agent) -> None:
+        """Start an agent in a separate thread"""
         self.Sentinel.info(
             f"Waking agent! | Name: {agent.getName()} Description : {agent.getDescription()}"
         )
         self.__setDescription(agent.getName(), agent.getDescription())
         self.__setStatus(agent.getName(), "starting")
-        future = self.__executor.submit(self.__startAgentLoop, agent, self.__futPtr)
+        future: Future = self.__executor.submit(self.__startAgentLoop, agent, self.__futPtr)
         with self.__futureLock:
             self.__futures[self.__futPtr] = future
         self.__futPtr += 1
@@ -80,11 +82,13 @@ class AgentOperator:
         self.Sentinel.info("The agent is alive!")
 
     def __startAgentLoop(self, agent: Agent, futurePtr: Optional[int]) -> None:
-        failed = False
+        """Main agent loop that manages agent lifecycle"""
+        failed: bool = False
+        progressStr: str = "starting"
+        timer: Timer = agent.getTimer()
 
         """Main part #1 Creation and running"""
         try:
-            timer = agent.getTimer()
             self.__setErrorLog(agent.getName(), "None...")
 
             # create
@@ -104,9 +108,9 @@ class AgentOperator:
                     agent.runPeriodic()
 
                     progressStr = "getIntervalMs"
-                    intervalMs = agent.getIntervalMs()
+                    intervalMs: int = agent.getIntervalMs()
                     if intervalMs > 0:
-                        sleepTime = intervalMs / 1000  # ms -> seconds
+                        sleepTime: float = intervalMs / 1000  # ms -> seconds
                         time.sleep(sleepTime)
 
         except Exception as e:
@@ -117,7 +121,7 @@ class AgentOperator:
         # if thread was shutdown abruptly (self.__stop flag), perform shutdown
         # shutdown before onclose
 
-        forceStopped = self.__stop
+        forceStopped: bool = self.__stop
         if forceStopped:
             progressStr = "shutdown interrupt"
             self.__setStatus(agent.getName(), progressStr)
@@ -161,14 +165,16 @@ class AgentOperator:
             with self.__futureLock:
                 self.__futures.pop(futurePtr)
 
-    def __handleException(self, task: str, agentName: str, exception) -> None:
-        message = f"Failed! | During {task}: {exception}"
+    def __handleException(self, task: str, agentName: str, exception: Exception) -> None:
+        """Handle an exception that occurred during agent execution"""
+        message: str = f"Failed! | During {task}: {exception}"
         self.__setStatus(agentName, message)
-        tb = traceback.format_exc()
+        tb: str = traceback.format_exc()
         self.__setErrorLog(agentName, tb)
         self.Sentinel.error(tb)
 
-    def setOnAgentFinished(self, runOnFinish) -> None:
+    def setOnAgentFinished(self, runOnFinish: Callable[[], None]) -> None:
+        """Set a callback to run when an agent finishes"""
         if self.__futures:
             self.__runOnFinish = runOnFinish
         else:

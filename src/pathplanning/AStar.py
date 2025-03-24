@@ -1,46 +1,47 @@
 import math
 import heapq
+from typing import List, Tuple, Optional, Any, Union
 
 import numpy as np
 
 # Define the Cell class
 class Cell:
     def __init__(self) -> None:
-        self.parent_i = 0  # Parent cell's row index
-        self.parent_j = 0  # Parent cell's column index
-        self.f = float("inf")  # Total cost of the cell (g + h)
-        self.g = float("inf")  # Cost from start to this cell
-        self.h = 0  # Heuristic cost from this cell to destination
+        self.parent_i: int = 0  # Parent cell's row index
+        self.parent_j: int = 0  # Parent cell's column index
+        self.f: float = float("inf")  # Total cost of the cell (g + h)
+        self.g: float = float("inf")  # Cost from start to this cell
+        self.h: float = 0  # Heuristic cost from this cell to destination
 
 
 # Define the size of the grid
-ROW = 500
-COL = 500
+ROW: int = 500
+COL: int = 500
 
 # Check if a cell is valid (within the grid)
-def is_valid(row, col):
+def is_valid(row: int, col: int) -> bool:
     return (row >= 0) and (row < ROW) and (col >= 0) and (col < COL)
 
 
 # Check if a cell is unblocked
-def is_unblocked(grid, row, col):
+def is_unblocked(grid: Union[List[List[int]], np.ndarray], row: int, col: int) -> bool:
     return grid[row][col] == 1
 
 
 # Check if a cell is the destination
-def is_destination(row, col, dest):
+def is_destination(row: int, col: int, dest: Tuple[int, int]) -> bool:
     return row == dest[0] and col == dest[1]
 
 
 # Calculate the heuristic value of a cell (Euclidean distance to destination)
-def calculate_h_value(row, col, dest):
+def calculate_h_value(row: int, col: int, dest: Tuple[int, int]) -> float:
     return ((row - dest[0]) ** 2 + (col - dest[1]) ** 2) ** 0.5
 
 
 # Trace the path from source to destination
-def trace_path(cell_details, dest) -> None:
+def trace_path(cell_details: List[List[Cell]], dest: Tuple[int, int]) -> List[Tuple[int, int]]:
     print("The Path is ")
-    path = []
+    path: List[Tuple[int, int]] = []
     row = dest[0]
     col = dest[1]
 
@@ -64,31 +65,37 @@ def trace_path(cell_details, dest) -> None:
     for i in path:
         print("->", i, end=" ")
     print()
+    
+    return path
 
 
 # Implement the A* search algorithm
-def a_star_search(grid, src, dest) -> None:
+def a_star_search(
+    grid: Union[List[List[int]], np.ndarray], 
+    src: Tuple[int, int], 
+    dest: Tuple[int, int]
+) -> Optional[List[Tuple[int, int]]]:
     # Check if the source and destination are valid
     if not is_valid(src[0], src[1]) or not is_valid(dest[0], dest[1]):
         print("Source or destination is invalid")
-        return
+        return None
 
     # Check if the source and destination are unblocked
     if not is_unblocked(grid, src[0], src[1]) or not is_unblocked(
         grid, dest[0], dest[1]
     ):
         print("Source or the destination is blocked")
-        return
+        return None
 
     # Check if we are already at the destination
     if is_destination(src[0], src[1], dest):
         print("We are already at the destination")
-        return
+        return [src]
 
     # Initialize the closed list (visited cells)
-    closed_list = [[False for _ in range(COL)] for _ in range(ROW)]
+    closed_list: List[List[bool]] = [[False for _ in range(COL)] for _ in range(ROW)]
     # Initialize the details of each cell
-    cell_details = [[Cell() for _ in range(COL)] for _ in range(ROW)]
+    cell_details: List[List[Cell]] = [[Cell() for _ in range(COL)] for _ in range(ROW)]
 
     # Initialize the start cell details
     i = src[0]
@@ -100,7 +107,7 @@ def a_star_search(grid, src, dest) -> None:
     cell_details[i][j].parent_j = j
 
     # Initialize the open list (cells to be visited) with the start cell
-    open_list = []
+    open_list: List[Tuple[float, int, int]] = []
     heapq.heappush(open_list, (0.0, i, j))
 
     # Initialize the flag for whether destination is found
@@ -144,9 +151,9 @@ def a_star_search(grid, src, dest) -> None:
                     cell_details[new_i][new_j].parent_j = j
                     print("The destination cell is found")
                     # Trace and print the path from source to destination
-                    trace_path(cell_details, dest)
+                    path = trace_path(cell_details, dest)
                     found_dest = True
-                    return
+                    return path
                 else:
                     # Calculate the new f, g, and h values
                     g_new = cell_details[i][j].g + 1.0
@@ -170,6 +177,8 @@ def a_star_search(grid, src, dest) -> None:
     # If the destination is not found after visiting all cells
     if not found_dest:
         print("Failed to find the destination cell")
+    
+    return None  # Explicit return at the end of the function
 
 
 def main() -> None:
@@ -177,11 +186,13 @@ def main() -> None:
     grid = np.ones((500, 500), dtype=int)
 
     # Define the source and destination
-    src = [0, 0]
-    dest = [499, 499]
+    src: Tuple[int, int] = (0, 0)
+    dest: Tuple[int, int] = (499, 499)
 
     # Run the A* search algorithm
-    a_star_search(grid, src, dest)
+    path = a_star_search(grid, src, dest)
+    if path:
+        print(f"Path length: {len(path)}")
 
 
 if __name__ == "__main__":
