@@ -1,4 +1,4 @@
-FROM python:3.9.21-slim-bookworm
+FROM python:3.10.16-slim-bookworm
 
 # Install basic dependencies, Python-related packages, and other libraries
 RUN apt-get update && apt-get install -y --no-install-recommends --fix-missing \
@@ -22,7 +22,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends --fix-missing \
 WORKDIR /app
 
 # Copy the local base-requirements.txt to the container
-COPY base-requirements.txt /app/base-requirements.txt
+COPY /docker-base/base-requirements.txt /app/base-requirements.txt
 
 # Install Python packages globally from base-requirements.txt
 RUN pip install --no-cache-dir --upgrade pip && \

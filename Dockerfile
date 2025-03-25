@@ -1,8 +1,14 @@
 ARG TARGETPLATFORM
-FROM ademcan/xbot-robotpy-base:latest
+FROM johnylamw/488-alt-python-3.10
 WORKDIR /xbot/Alt/src
 
-# COPY non-base-requirements.txt /xbot/Alt/non-base-requirements.txt
+RUN pip install --upgrade tensorflow
+RUN pip install --upgrade XTablesClient
+RUN pip install --upgrade ultralytics
+
+# ARG TARGETPLATFORM
+# FROM johnylamw/alt-docker-base-python-3.10
+# WORKDIR /xbot/Alt/src
 
 # RUN apt-get update && apt-get install -y --no-install-recommends build-essential python3-dev
 #     # rm -rf /var/lib/apt/lists/* && apt-get clean
@@ -21,18 +27,19 @@ WORKDIR /xbot/Alt/src
 #     apt-get install -y python3-pip
 
 # # installing robotpy__apriltag (currenntly this installs all of robotpy)
+# WORKDIR /xbot/Alt
 # RUN git clone https://github.com/robotpy/mostrobotpy.git
 # # into repo
 # WORKDIR /xbot/Alt/mostrobotpy
-# # keep deterministic
-
+# # keep deterministic for mostrobotpy
+# RUN git fetch origin
 # RUN git checkout f16ab492127e01f8db152ecfd0de47acbce5674a
 
 # RUN pip install pybind11
 # RUN pip install --upgrade pip
 # RUN pip install -r rdev_requirements.txt  # Install project-specific dependencies
 # RUN pip install numpy  # Install numpy separately, as instructed
-
+# RUN pip install devtools
 # # Step 5: Make the rdev.sh script executable
 # RUN chmod +x rdev.sh
 
@@ -46,23 +53,15 @@ WORKDIR /xbot/Alt/src
 
 # # go back to regular workdir
 # WORKDIR /xbot/Alt
-
-
-
-# RUN pip install --no-cache-dir --prefer-binary XTablesClient&& \
-#     apt-get install -y build-essential python3-dev && \
-#     pip install --no-cache-dir --upgrade pip && \
-#     pip install build && \
-#     pip install scikit-fmm && \
-#     pip install pyflame && \
-#     pip install grpcio-tools && \
-#     pip install grpcio
-
-# RUN pip install rknn-toolkit-lite2==2.3.0 --no-cache-dir && \
-#     pip install pynetworktables
-
+# COPY non-base-requirements.txt /xbot/Alt/non-base-requirements.txt
 # RUN pip install --no-cache-dir --prefer-binary -r non-base-requirements.txt
 
+# COPY ./src/assets/librknnrt.so /usr/lib/librknnrt.so
+
+# WORKDIR /xbot/Alt/src
+# WORKDIR /xbot/Alt
+# COPY non-base-requirements.txt /xbot/Alt/non-base-requirements.txt
+# RUN pip install --no-cache-dir --prefer-binary -r non-base-requirements.txt
 
 # COPY ./src/assets/librknnrt.so /usr/lib/librknnrt.so
 

@@ -8,11 +8,10 @@ from doctr.io import DocumentFile
 from doctr.utils.geometry import detach_scores
 
 Sentinel = getLogger("DocTr_Alignment_Provider")
-class DocTrAlignmentProvider(AlignmentProvider):
 
-    def __init__(
-        self, propertyOperator :PropertyOperator
-    ):
+
+class DocTrAlignmentProvider(AlignmentProvider):
+    def __init__(self, propertyOperator: PropertyOperator):
         super().__init__()
         self.propertyOperator = propertyOperator
         self.initalizerDetector()
@@ -32,16 +31,16 @@ class DocTrAlignmentProvider(AlignmentProvider):
         self.det_predictor.model.postprocessor.box_thresh = 0.1
 
     def isColorBased():
-        return False # uses april tags so b/w frame
-    
+        return False  # uses april tags so b/w frame
+
     def align(self, inputFrame, draw):
-        frame = inputFrame # move og ref of input frame to draw on original
+        frame = inputFrame  # move og ref of input frame to draw on original
         if not self.checkFrame(frame):
             # we assume if its not a b/w frame (eg checkframe false), that it means its a cv2 bgr and to change to b/w
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
-        docs = DocumentFile.from_images([tag])
-        results = self.det_predictor(docs)   
+        docs = DocumentFile.from_images([frame])
+        results = self.det_predictor(docs)
 
         for doc, res in zip(docs, results):
             img_shape = (doc.shape[0], doc.shape[1])
@@ -49,13 +48,25 @@ class DocTrAlignmentProvider(AlignmentProvider):
             detached_coords, prob_scores = detach_scores([res.get("words")])
 
             for i, coords in enumerate(detached_coords[0]):
-                coords = coords.reshape(2, 2).tolist() if coords.shape == (4,) else coords.tolist()
+                coords = (
+                    coords.reshape(2, 2).tolist()
+                    if coords.shape == (4,)
+                    else coords.tolist()
+                )
 
                 # Convert relative to absolute pixel coordinates
-                points = np.array(self._to_absolute(coords, img_shape), dtype=np.int32).reshape((-1, 1, 2))
+                points = np.array(
+                    self._to_absolute(coords, img_shape), dtype=np.int32
+                ).reshape((-1, 1, 2))
 
                 if draw:
-                    cv2.polylines(inputFrame, [points], isClosed=True, color=(255, 0, 0), thickness=2)
+                    cv2.polylines(
+                        inputFrame,
+                        [points],
+                        isClosed=True,
+                        color=(255, 0, 0),
+                        thickness=2,
+                    )
 
         # add final alignment logic here
         left = None
@@ -65,12 +76,12 @@ class DocTrAlignmentProvider(AlignmentProvider):
     # Helper function to convert relative coordinates to absolute pixel values
     def _to_absolute(self, geom, img_shape: tuple[int, int]) -> list[list[int]]:
         h, w = img_shape
-        if len(geom) == 2:  # Assume straight pages = True -> [[xmin, ymin], [xmax, ymax]]
+        if (
+            len(geom) == 2
+        ):  # Assume straight pages = True -> [[xmin, ymin], [xmax, ymax]]
             (xmin, ymin), (xmax, ymax) = geom
             xmin, xmax = int(round(w * xmin)), int(round(w * xmax))
             ymin, ymax = int(round(h * ymin)), int(round(h * ymax))
             return [[xmin, ymin], [xmax, ymin], [xmax, ymax], [xmin, ymax]]
         else:  # For polygons, convert each point to absolute coordinates
             return [[int(point[0] * w), int(point[1] * h)] for point in geom]
-
-    
