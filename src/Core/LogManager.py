@@ -1,3 +1,14 @@
+"""
+Centralized logging system for the Alt framework.
+
+This module provides a centralized logging system with a hierarchical structure,
+where all loggers are children of a central logger (Sentinel). Each logger is 
+uniquely identified using the hostname to distinguish between different instances
+in a distributed system.
+
+The module exports functions to retrieve child loggers and set the global log level.
+"""
+
 import socket
 import logging
 from typing import Union, Optional, Final

@@ -1,3 +1,25 @@
+"""
+Camera Using Agent Base Module - Base class for agents that process camera frames
+
+This module provides the CameraUsingAgentBase class, which extends the basic Agent
+class with camera frame capture and processing capabilities. It handles camera
+initialization, frame acquisition, optional preprocessing (such as undistortion),
+and frame display/sharing with both local display and network transmission.
+
+Key features:
+- Automatic camera initialization and error handling
+- Support for both regular and depth cameras
+- Camera calibration capabilities for supported camera types
+- Frame preprocessing (e.g., undistortion) using loaded calibrations
+- Local frame display in OpenCV windows
+- Network sharing of frames via the update system
+- Intelligent handling of headless environments
+
+Concrete agent implementations that work with camera input should inherit from
+this class rather than the basic Agent class to leverage its camera handling
+functionality.
+"""
+
 import datetime
 import os
 import time
@@ -17,6 +39,42 @@ import Core
 
 
 class CameraUsingAgentBase(Agent):
+    """
+    Base class for agents that process camera frames.
+    
+    This abstract base class extends the basic Agent class with camera frame
+    capture and processing capabilities. It handles camera initialization,
+    frame acquisition, optional preprocessing (such as undistortion), and
+    frame display/sharing. It also provides camera calibration functionality
+    for supported camera types.
+    
+    The inheritance hierarchy is:
+    Agent -> CameraUsingAgentBase
+    
+    Attributes:
+        FRAMEPOSTFIX: Suffix for network frame updates
+        FRAMETOGGLEPOSTFIX: Suffix for frame sending toggle property
+        CALIBTOGGLEPOSTFIX: Suffix for calibration toggle property
+        CALIBIDEALSHAPEWPOSTFIX: Suffix for calibration width property
+        CALIBIDEALSHAPEHPOSTFIX: Suffix for calibration height property
+        CALIBIDEALCOUNT: Property name for calibration frame count
+        DEFAULTCALIBCOUNT: Default number of frames for calibration
+        CALIBRATIONPREFIX: Prefix for calibration file paths
+        capture: Camera capture device interface
+        depthEnabled: Whether depth capture is available
+        iscv2Configurable: Whether camera supports custom calibration
+        preprocessFrame: Optional function to process frames before use
+        showFrames: Whether to display frames in windows
+        latestFrameMain: Most recent color frame
+        latestFrameDEPTH: Most recent depth frame (if available)
+        
+    Notes:
+        - This class should be extended, not used directly
+        - Requires a capture object to be passed in constructor
+        - When used with a localizing agent, it matches timestamps
+    """
+    
+    # Constants for property names and defaults
     FRAMEPOSTFIX = "Frame"
     FRAMETOGGLEPOSTFIX = "SendFrame"
     CALIBTOGGLEPOSTFIX = "StartCalib"
@@ -26,14 +84,21 @@ class CameraUsingAgentBase(Agent):
     DEFAULTCALIBCOUNT = 100
     CALIBRATIONPREFIX = "Calibrations"
 
-    """Agent -> CameraUsingAgentBase
-
-    Adds camera ingestion capabilites to an agent. When used with a localizing agent, it matches timestamps aswell
-    NOTE: Requires extra arguments passed in somehow and you should always be extending this class, and use partial constructors further up
-    NOTE: This means you cannot run this class as is
-    """
-
     def __init__(self, **kwargs: Any) -> None:
+        """
+        Initialize a new CameraUsingAgentBase instance.
+        
+        Sets up the camera capture device, loads any existing calibration,
+        and initializes frame processing capabilities.
+        
+        Args:
+            **kwargs: Keyword arguments which must include:
+                - capture: A camera capture device
+                - showFrames (optional): Whether to display frames in windows
+                
+        Raises:
+            ValueError: If no capture object is provided
+        """
         super().__init__(**kwargs)
         self.capture: Union[
             Capture, depthCamera, ConfigurableCameraCapture
@@ -41,6 +106,7 @@ class CameraUsingAgentBase(Agent):
         if self.capture is None:
             raise ValueError("CameraUsingAgentBase requires a capture object")
             
+        # Determine camera capabilities
         self.depthEnabled: bool = issubclass(self.capture.__class__, depthCamera)
         self.iscv2Configurable: bool = issubclass(
             self.capture.__class__, ConfigurableCameraCapture
@@ -50,11 +116,12 @@ class CameraUsingAgentBase(Agent):
         self.calibMTime: Union[float, str] = "Not_Set"
 
         if self.iscv2Configurable:
-            # try and load a possible saved calibration
+            # Try to load a saved camera calibration
             calibPath = f"{os.path.join(self.CALIBRATIONPREFIX, self.capture.getUniqueCameraIdentifier())}.json"
 
             out = staticLoad(calibPath)
             if out:
+                # Set up frame preprocessing with the loaded calibration
                 calib, self.calibMTime = out
                 self.customLoaded = True
                 newCameraIntrinsics = CameraIntrinsics.fromCustomConfigLoaded(calib)
@@ -66,13 +133,14 @@ class CameraUsingAgentBase(Agent):
             else:
                 self.calibMTime = "Not_Loaded!"
                 self.customLoaded = False
-
         else:
+            # Set appropriate calibration status for non-configurable cameras
             if self.depthEnabled:
                 self.calibMTime = "Prebaked_Internally"
             else:
                 self.calibMTime = "Not_Using_Intrinsics"
 
+        # Initialize display and frame variables
         self.showFrames: bool = kwargs.get("showFrames", False)
         self.hasIngested: bool = False
         self.exit: bool = False
@@ -84,7 +152,16 @@ class CameraUsingAgentBase(Agent):
         self.calib: bool = False
 
     def sendInitialUpdate(self) -> None:
-        """Set up initial camera intrinsics properties"""
+        """
+        Set up initial camera intrinsics properties in the property system.
+        
+        This method publishes information about the camera's intrinsic parameters
+        (focal length, principal point, etc.) and calibration status to the
+        property system so that other components can access them.
+        
+        Raises:
+            ValueError: If PropertyOperator is not initialized
+        """
         if self.propertyOperator is None:
             raise ValueError("PropertyOperator not initialized")
             
@@ -104,6 +181,7 @@ class CameraUsingAgentBase(Agent):
                 str(self.capture.getIntrinsics())
             )
             
+        # Publish calibration timestamp in human-readable format
         if isinstance(self.calibMTime, float):
             readable_time = datetime.datetime.fromtimestamp(self.calibMTime).strftime(
                 "%Y-%m-%d %H:%M:%S"
@@ -118,16 +196,31 @@ class CameraUsingAgentBase(Agent):
             ).set(self.calibMTime)
 
     def create(self) -> None:
+        """
+        Initialize the camera and set up frame display/sharing options.
+        
+        This method:
+        1. Initializes the camera capture device
+        2. Configures frame display settings based on environment capabilities
+        3. Tests the camera to ensure it's functioning
+        4. Creates properties for calibration and frame sharing controls
+        5. Sets up display windows if frame visualization is enabled
+        
+        Raises:
+            ValueError: If required components are missing
+            BrokenPipeError: If camera initialization fails
+        """
         super().create()
+        # Check if the current environment supports visual display
         if not Core.canCurrentlyDisplay:
-            self.Sentinel.warning("This enviorment cannot display frames!")
+            self.Sentinel.warning("This environment cannot display frames!")
             self.showFrames = False
 
-
+        # Initialize the camera
         self.capture.create()
         self.sendInitialUpdate()
 
-        # if we are not main thread, even if it says showframe true we cannot allow it
+        # Frame display requires the main thread
         if not self.isMainThread:
             if self.Sentinel:
                 self.Sentinel.warning(
@@ -135,10 +228,10 @@ class CameraUsingAgentBase(Agent):
                 )
             self.showFrames = False
 
-        # self.xdashDebugger = XDashDebugger()
-
+        # Test that the camera is working properly
         self.testCapture()
 
+        # Create properties for controlling calibration and frame sharing
         if self.updateOp is None:
             raise ValueError("UpdateOperator not initialized")
             
@@ -161,6 +254,7 @@ class CameraUsingAgentBase(Agent):
         self.sendFrame = False
         self.calib = False
 
+        # Create display windows if needed
         if self.showFrames:
             cv2.namedWindow(self.WINDOWNAMECOLOR)
 
@@ -168,7 +262,15 @@ class CameraUsingAgentBase(Agent):
                 cv2.namedWindow(self.WINDOWNAMEDEPTH)
 
     def testCapture(self) -> None:
-        """Test if the camera is properly functioning"""
+        """
+        Test if the camera is properly functioning.
+        
+        Attempts to open the camera and capture a frame to ensure
+        that the camera is working correctly.
+        
+        Raises:
+            BrokenPipeError: If the camera fails to open or return a valid frame
+        """
         if self.capture.isOpen():
             frame = self.capture.getMainFrame()
             retTest = frame is not None
@@ -179,6 +281,25 @@ class CameraUsingAgentBase(Agent):
             raise BrokenPipeError(f"Failed to read from camera! {type(self.capture)=}")
 
     def runPeriodic(self) -> None:
+        """
+        Execute the agent's periodic processing logic.
+        
+        This method is called regularly by the agent framework and performs the
+        following operations:
+        1. Updates local state from property values
+        2. Performs camera calibration if requested
+        3. Captures new frames from the camera
+        4. Preprocesses frames if needed
+        5. Displays frames locally if enabled
+        6. Sends frames over the network if enabled
+        
+        The method handles camera failures and ensures proper synchronization
+        between the agent state and the property system.
+        
+        Raises:
+            ValueError: If required properties are not initialized
+            BrokenPipeError: If camera capture fails
+        """
         super().runPeriodic()
         if not hasattr(self, 'sendFrameProp') or not hasattr(self, 'calibProp'):
             raise ValueError("Properties not initialized properly")
@@ -342,6 +463,12 @@ class CameraUsingAgentBase(Agent):
                     self.latestFrameMain = frame
 
     def onClose(self) -> None:
+        """
+        Clean up resources when the agent is closing.
+        
+        Closes the camera capture device and destroys any open
+        display windows to ensure clean shutdown.
+        """
         super().onClose()
         self.capture.close()
 
@@ -349,9 +476,18 @@ class CameraUsingAgentBase(Agent):
             cv2.destroyAllWindows()
 
     def isRunning(self) -> bool:
+        """
+        Check if the agent should continue running.
+        
+        Verifies that the camera is still available and that the
+        agent has not been signaled to exit.
+        
+        Returns:
+            True if the agent should continue running, False otherwise
+        """
         if not self.capture.isOpen():
             if self.Sentinel:
-                self.Sentinel.fatal("Camera cant be opened!")
+                self.Sentinel.fatal("Camera cannot be opened!")
             return False
         if self.exit:
             if self.Sentinel:
@@ -360,5 +496,11 @@ class CameraUsingAgentBase(Agent):
         return True
 
     def forceShutdown(self) -> None:
+        """
+        Handle forced shutdown of the agent.
+        
+        Ensures the camera is properly closed even during
+        abnormal termination of the agent.
+        """
         super().forceShutdown()
         self.capture.close()

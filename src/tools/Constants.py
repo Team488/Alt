@@ -1,3 +1,18 @@
+"""
+Constants Module - Defines system-wide constants, enumerations, and utility classes.
+
+This module contains enumerations and constants used throughout the system, including:
+- Detection/inference-related constants (labels, model types, etc.)
+- Camera configuration constants (intrinsics, extrinsics, resolutions)
+- Unit conversion types and physical object references
+- Field and object measurements
+- AprilTag IDs and locations
+- Tracking and Kalman filter parameters
+
+The module provides a standardized way to access and convert between different 
+units of measurement (inches, centimeters) and to handle various coordinate systems.
+"""
+
 from abc import abstractmethod
 from enum import Enum
 import json
@@ -19,18 +34,55 @@ RotationAngles = Tuple[float, float]
 
 
 class YOLOTYPE(Enum):
+    """
+    Enumeration of supported YOLO model types.
+    
+    This enum defines the different versions of YOLO object detection 
+    models supported by the system.
+    
+    Attributes:
+        V11: YOLOv11 model type
+        V8: YOLOv8 model type
+        V5: YOLOv5 model type
+    """
     V11 = "v11"
     V8 = "v8"
     V5 = "v5"
 
 
 class Backend(Enum):
+    """
+    Enumeration of supported inference backends.
+    
+    This enum defines the different inference engine backends that
+    can be used to run object detection models.
+    
+    Attributes:
+        RKNN: Rockchip Neural Network backend (optimized for specific hardware)
+        ONNX: Open Neural Network Exchange format backend
+        ULTRALYTICS: PyTorch-based Ultralytics backend
+    """
     RKNN = "rknn"
     ONNX = "onnx"
     ULTRALYTICS = "ultralytics"
 
 
 class Label(Enum):
+    """
+    Enumeration of detectable object labels with their dimensions.
+    
+    This enum defines the different types of objects that can be detected
+    by the system, along with their physical dimensions.
+    
+    Each label value is a tuple of (name, (width, height)) where dimensions
+    are in centimeters.
+    
+    Attributes:
+        ROBOT: Robot label with dimensions (75cm x 75cm)
+        NOTE: Game note label with dimensions (35cm x 35cm)
+        ALGAE: Algae label with dimensions (41cm x 41cm)
+        CORAL: Coral label with dimensions (30cm x 12cm)
+    """
     # name, w,h (cm)
     ROBOT = ("robot", (75, 75))
     NOTE = ("note", (35, 35))
@@ -38,18 +90,45 @@ class Label(Enum):
     CORAL = ("coral", (30, 12))
 
     @staticmethod
-    def getDefaultLengthType():
+    def getDefaultLengthType() -> LengthType:
+        """
+        Get the default length unit type used for label dimensions.
+        
+        Returns:
+            LengthType: The default length unit (centimeters)
+        """
         return Units.LengthType.CM
 
     def __str__(self) -> str:
+        """
+        Get the string representation of the label.
+        
+        Returns:
+            str: The name of the label
+        """
         return self.value[0]
 
-    def getSize(self, lengthType: Units.LengthType):
+    def getSize(self, lengthType: LengthType) -> Union[float, Tuple[float, float]]:
+        """
+        Get the size of the object in the specified length unit.
+        
+        Args:
+            lengthType: The desired length unit (e.g., CM, IN)
+            
+        Returns:
+            Union[float, Tuple[float, float]]: The dimensions converted to the specified unit
+        """
         return UnitConversion.convertLength(
             self.getSizeCm(), self.getDefaultLengthType(), lengthType
         )
 
-    def getSizeCm(self):
+    def getSizeCm(self) -> Tuple[float, float]:
+        """
+        Get the size of the object in centimeters.
+        
+        Returns:
+            Tuple[float, float]: The width and height in centimeters
+        """
         return self.value[1]
 
 

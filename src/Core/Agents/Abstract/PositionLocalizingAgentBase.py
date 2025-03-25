@@ -1,16 +1,68 @@
+"""
+Position Localizing Agent Base Module - Base class for agents that track robot position
+
+This module provides the PositionLocalizingAgentBase class, which extends the basic
+Agent class with robot position tracking capabilities. It establishes a connection
+to external position data sources (typically from robot odometry or vision systems)
+and maintains the current robot position and orientation in multiple coordinate formats.
+
+Key features:
+- Subscribes to robot position updates from an external source (via XTables)
+- Maintains the current robot position in both meters and centimeters
+- Provides position offset adjustment capabilities for calibration
+- Publishes position data to properties for other components to use
+- Handles coordinate system transformations appropriately
+
+This base class is typically used as a building block for more complex agents
+that need to know the robot's position, such as object localizers, path planners,
+and navigation agents.
+"""
+
 from typing import Tuple, Any, Optional
 from abstract.Agent import Agent
 from tools import NtUtils
 
 
 class PositionLocalizingAgentBase(Agent):
-    """Agent -> PositionLocalizingAgentBase
-
-    Extending Agent with Localizing capabilites. Supports only XTables
-    NOTE: For changes to properties to take place, the Agent must be restarted
+    """
+    Base class for agents that need robot position data.
+    
+    This abstract base class extends the basic Agent class with position
+    localization capabilities. It subscribes to robot position updates from
+    an external source (via XTables) and maintains the current robot position
+    and orientation in multiple coordinate formats. It also provides position
+    offset adjustment capabilities.
+    
+    The inheritance hierarchy is:
+    Agent -> PositionLocalizingAgentBase
+    
+    Attributes:
+        xtablesPosTable: Property for the XTables position table name
+        locX: Property for robot X position (meters)
+        locY: Property for robot Y position (meters)
+        locRot: Property for robot rotation (radians)
+        positionOffsetXM: User-adjustable X position offset (meters)
+        positionOffsetYM: User-adjustable Y position offset (meters)
+        positionOffsetYAWDEG: User-adjustable rotation offset (degrees)
+        robotPose2dMRAD: Robot pose (X, Y, Rotation) in meters and radians
+        robotPose2dCMRAD: Robot pose (X, Y, Rotation) in centimeters and radians
+        connectedToLoc: Flag indicating connection to localization
+        locTimeStamp: Timestamp of last position update
+        
+    Note:
+        For changes to properties to take effect, the agent must be restarted
     """
 
     def __init__(self, **kwargs: Any) -> None:
+        """
+        Initialize a new PositionLocalizingAgentBase instance.
+        
+        Sets up initial property values and robot pose variables.
+        These will be properly initialized in the create() method.
+        
+        Args:
+            **kwargs: Keyword arguments passed to parent class constructor
+        """
         super().__init__(**kwargs)
         # Initialize properties that will be set in create()
         self.xtablesPosTable = None
@@ -28,6 +80,17 @@ class PositionLocalizingAgentBase(Agent):
         self.locTimeStamp: int = -1
 
     def create(self) -> None:
+        """
+        Initialize localization properties and subscribe to position updates.
+        
+        This method:
+        1. Creates properties for accessing and controlling the robot position
+        2. Sets up network properties for XTables integration
+        3. Subscribes to position updates from the robot
+        
+        Raises:
+            ValueError: If required system components are missing
+        """
         super().create()
         
         if self.propertyOperator is None:
@@ -61,20 +124,34 @@ class PositionLocalizingAgentBase(Agent):
         self.connectedToLoc = False
         self.locTimeStamp = -1
 
+        # Subscribe to position updates from XTables
         self.xclient.subscribe(self.xtablesPosTable.get(), self.__updateLocation)
 
     def __updateLocation(self, ret: Any) -> None:
+        """
+        Handle position updates from XTables.
+        
+        This callback is invoked when new position data is available from
+        the robot. It updates the internal pose variables and publishes
+        the updated values to network properties for other components.
+        
+        Args:
+            ret: Data packet from XTables containing position information
+        """
         if self.Sentinel is None:
             return
             
         try:
+            # Parse the position data from bytes
             self.robotPose2dMRAD = NtUtils.getPose2dFromBytes(ret.value)
+            # Convert to centimeters for internal use (maintaining radians for rotation)
             self.robotPose2dCMRAD = (
                 self.robotPose2dMRAD[0] * 100,
                 self.robotPose2dMRAD[1] * 100,
                 self.robotPose2dMRAD[2],
             )  # m to cm
 
+            # Update network properties with new position data
             if self.locX and self.locY and self.locRot:
                 self.locX.set(self.robotPose2dMRAD[0])
                 self.locY.set(self.robotPose2dMRAD[1])

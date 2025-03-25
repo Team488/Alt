@@ -1,3 +1,15 @@
+"""
+Network property management system for creating, tracking, and updating network values.
+
+This module provides the PropertyOperator class which enables creating and managing
+network properties that can be set and read from external systems via XTables. 
+It supports persistent properties that are saved and loaded across runs, as well as
+read-only properties that can only be modified by the owner.
+
+The module also defines Property and ReadonlyProperty classes for accessing these
+network values, and a LambdaHandler for custom logging.
+"""
+
 import logging
 from collections.abc import Iterable
 from logging import Logger
@@ -12,6 +24,23 @@ T = TypeVar('T')
 
 # creates network properties that can be set by xtables
 class PropertyOperator:
+    """
+    Manages network properties that can be set and read from XTables network communication.
+    
+    This class provides a way to create and manage properties that are synchronized across
+    a distributed system using XTables. It supports both regular properties (read-only from
+    the network perspective) and read-only properties (writable only by the owner).
+    
+    Properties can be:
+    - Persistent (saved and loaded across runs)
+    - Hierarchical (with parent-child relationships)
+    - Typed (supporting various data types including primitives, lists, and custom types)
+    
+    Attributes:
+        Sentinel: Logger for logging property operations
+        basePrefix: Base prefix for all property tables (typically hostname)
+        prefix: Additional prefix for this operator's properties (typically component name)
+    """
     __OPERATORS: Dict[str, 'PropertyOperator'] = {}
 
     def __init__(
@@ -22,6 +51,16 @@ class PropertyOperator:
         basePrefix: str = "",
         prefix: str = "",
     ) -> None:
+        """
+        Initialize a PropertyOperator with specified prefixes and dependencies.
+        
+        Args:
+            xclient: XTablesClient for network communication
+            configOp: ConfigOperator for saving/loading persistent properties
+            logger: Logger for recording property operations
+            basePrefix: Base prefix for all property tables (typically hostname)
+            prefix: Additional prefix for this operator's properties (typically component name)
+        """
         self.__xclient: XTablesClient = xclient
         self.__configOp: ConfigOperator = configOp
         self.Sentinel: Logger = logger
@@ -52,6 +91,12 @@ class PropertyOperator:
         self.__children: List['PropertyOperator'] = []
 
     def getFullPrefix(self) -> str:
+        """
+        Get the complete prefix for this PropertyOperator.
+        
+        Returns:
+            The full prefix string combining basePrefix and operator-specific prefix
+        """
         return self.__addFullPrefix("")
 
     def __updatePropertyCallback(self, ret: Any) -> None:
@@ -60,8 +105,18 @@ class PropertyOperator:
 
     
     def createReadExistingNetworkValueProperty(self, propertyTable : str, propertyDefault: Any):
-        """ Same as calling createProperty() with isCustom = True, and addBasePrefix/addOperatorPrefix = False\n
-            shorter method for when you just want to read from an existing propertyTable
+        """
+        Create a property to read from an existing network table.
+        
+        This is a convenience method that calls createProperty() with preconfigured
+        parameter values optimized for reading from existing network tables.
+        
+        Args:
+            propertyTable: The full table name to read from
+            propertyDefault: Default value to use if the property doesn't exist
+            
+        Returns:
+            A Property object for reading the specified network property
         """
         return self.createProperty(propertyTable, propertyDefault, loadIfSaved=False, isCustom=True,addBasePrefix=False,addOperatorPrefix=False,setDefaultOnNetwork=False)
     
@@ -312,36 +367,122 @@ class PropertyOperator:
 
 
 class Property:
+    """
+    Represents a read-only network property.
+    
+    This class provides access to a network property value through a getter function.
+    The property value is read-only from the user's perspective (can only be changed
+    via network updates).
+    
+    Attributes:
+        __getFunc: Function to retrieve the current property value
+        __propertyTable: The full table name for this property
+    """
+    
     def __init__(self, getFunc: Callable[[], T], propertyTable: str) -> None:  # lambda to get the property
+        """
+        Initialize a Property with a getter function and table name.
+        
+        Args:
+            getFunc: Function to retrieve the current property value
+            propertyTable: The full table name for this property
+        """
         self.__getFunc: Callable[[], T] = getFunc
         self.__propertyTable: str = propertyTable
 
     def get(self) -> T:
+        """
+        Get the current value of the property.
+        
+        Returns:
+            The current value of the property
+        """
         return self.__getFunc()
 
     def getTable(self) -> str:
+        """
+        Get the full table name for this property.
+        
+        Returns:
+            The full XTable table name for this property
+        """
         return self.__propertyTable
 
 
 class ReadonlyProperty:
+    """
+    Represents a property that can be written to but is read-only for other systems.
+    
+    This class provides a way to set a property value through a setter function.
+    The property can only be written to by the owner but can be read by any system.
+    
+    Attributes:
+        __setFunc: Function to set the property value
+        __propertyTable: The full table name for this property
+    """
+    
     def __init__(
         self, setFunc: Callable[[Any], bool], propertyTable: str
     ) -> None:  # lambda to set the read only property
+        """
+        Initialize a ReadonlyProperty with a setter function and table name.
+        
+        Args:
+            setFunc: Function to set the property value
+            propertyTable: The full table name for this property
+        """
         self.__setFunc: Callable[[Any], bool] = setFunc
         self.__propertyTable: str = propertyTable
 
     def set(self, value: Any) -> bool:
+        """
+        Set a new value for the property.
+        
+        Args:
+            value: The new value to set
+            
+        Returns:
+            True if the value was successfully set, False otherwise
+        """
         return self.__setFunc(value)
 
     def getTable(self) -> str:
+        """
+        Get the full table name for this property.
+        
+        Returns:
+            The full XTable table name for this property
+        """
         return self.__propertyTable
 
 
 class LambdaHandler(logging.Handler):
+    """
+    A custom logging handler that executes a function for each log record.
+    
+    This handler allows redirecting log messages to a custom function, which is
+    useful for sending logs to network tables or other non-standard destinations.
+    
+    Attributes:
+        func: The function to call with each formatted log message
+    """
+    
     def __init__(self, func: Callable[[str], None]) -> None:
+        """
+        Initialize a LambdaHandler with a handler function.
+        
+        Args:
+            func: The function to call with each formatted log message
+        """
         super().__init__()
         self.func: Callable[[str], None] = func  # This function will be executed on each log message
 
     def emit(self, record: logging.LogRecord) -> None:
+        """
+        Process a log record by formatting it and calling the handler function.
+        
+        Args:
+            record: The log record to process
+        """
         log_entry = self.format(record)  # Format log message
         self.func(log_entry)  # Call the lambda with the log entry

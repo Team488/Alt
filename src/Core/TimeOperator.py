@@ -1,3 +1,27 @@
+"""
+Time Operator Module - Provides timing and performance measurement utilities
+
+This module defines the TimeOperator and Timer classes used for measuring and
+tracking execution time throughout the codebase. It enables performance monitoring,
+benchmarking, and optimization by providing tools to measure execution times of
+different code sections.
+
+The module creates a hierarchical timing structure where:
+- TimeOperator manages a collection of named timers
+- Each Timer can have multiple sub-timers for more granular timing
+
+Usage examples:
+    # Get a timer and use it directly
+    timer = timeOperator.getTimer("myOperation")
+    timer.resetMeasurement()
+    # ... code to time ...
+    timer.measureAndUpdate()
+    
+    # Or use the context manager for cleaner code
+    with timeOperator.getTimer("myOperation").run():
+        # ... code to time ...
+"""
+
 import time
 from logging import Logger
 from typing import Dict, Optional, Generator, Any
@@ -7,11 +31,26 @@ from Core.PropertyOperator import PropertyOperator, ReadonlyProperty
 
 class TimeOperator:
     """
-    Manages timing operations for performance monitoring
+    Manages timing operations for performance monitoring.
+    
+    This class provides a centralized system for creating and managing timers
+    used to measure execution time of various operations in the system.
+    
+    Attributes:
+        TIMEPREFIX: Prefix used for timer properties in the property tree
+        Sentinel: Logger instance for this operator
+        timerMap: Dictionary mapping timer names to Timer instances
     """
     TIMEPREFIX: str = "timers"
 
     def __init__(self, propertyOp: PropertyOperator, logger: Logger) -> None:
+        """
+        Initialize a TimeOperator instance.
+        
+        Args:
+            propertyOp: PropertyOperator to store timer values
+            logger: Logger instance for this operator
+        """
         self.Sentinel: Logger = logger
         self.__propertyOp: PropertyOperator = propertyOp
         self.timerMap: Dict[str, 'Timer'] = {}
@@ -56,16 +95,37 @@ Sentinel: Logger = getLogger("Timer_Entry")
 
 class Timer:
     """
-    Measures and records performance timing information
+    Measures and records performance timing information.
+    
+    This class provides functionality to measure execution time of code sections
+    and record the results in a property tree. It supports multiple named sub-timers
+    within a single Timer instance to track different components of an operation.
+    
+    Attributes:
+        name: The name of this timer
+        timeMap: Dictionary mapping sub-timer names to their start times
+        timeTable: PropertyOperator for storing timing measurements
     """
     def __init__(self, name: str, timeTable: PropertyOperator) -> None:
+        """
+        Initialize a Timer instance.
+        
+        Args:
+            name: The name of this timer
+            timeTable: PropertyOperator for storing timing measurements
+        """
         self.name: str = name
         self.timeMap: Dict[str, float] = {}
         self.resetMeasurement()
         self.timeTable: PropertyOperator = timeTable
 
     def getName(self) -> str:
-        """Get the name of this timer"""
+        """
+        Get the name of this timer.
+        
+        Returns:
+            str: The name of this timer
+        """
         return self.name
 
     def resetMeasurement(self, subTimerName: str = "main") -> None:

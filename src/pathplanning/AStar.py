@@ -4,9 +4,33 @@ from typing import List, Tuple, Optional, Any, Union
 
 import numpy as np
 
-# Define the Cell class
+"""
+A* Pathfinding Algorithm Implementation.
+
+This module provides an implementation of the A* pathfinding algorithm for grid-based
+environments. A* is an informed search algorithm that finds the least-cost path from 
+a given source to a destination. It uses a heuristic function to guide the search.
+
+The implementation supports 8-directional movement (horizontal, vertical, and diagonal)
+and handles grid-based obstacles.
+"""
+
 class Cell:
+    """
+    Represents a cell in the pathfinding grid.
+    
+    Each cell maintains its parent coordinates for path reconstruction,
+    and stores the cost values used by the A* algorithm.
+    
+    Attributes:
+        parent_i: Parent cell's row index
+        parent_j: Parent cell's column index
+        f: Total cost of the cell (g + h)
+        g: Cost from start to this cell
+        h: Heuristic cost from this cell to destination
+    """
     def __init__(self) -> None:
+        """Initialize a new cell with default values."""
         self.parent_i: int = 0  # Parent cell's row index
         self.parent_j: int = 0  # Parent cell's column index
         self.f: float = float("inf")  # Total cost of the cell (g + h)
@@ -18,28 +42,82 @@ class Cell:
 ROW: int = 500
 COL: int = 500
 
-# Check if a cell is valid (within the grid)
 def is_valid(row: int, col: int) -> bool:
+    """
+    Check if cell coordinates are within the valid grid bounds.
+    
+    Args:
+        row: The row index to check
+        col: The column index to check
+        
+    Returns:
+        True if the coordinates are within grid bounds, False otherwise
+    """
     return (row >= 0) and (row < ROW) and (col >= 0) and (col < COL)
 
 
-# Check if a cell is unblocked
 def is_unblocked(grid: Union[List[List[int]], np.ndarray], row: int, col: int) -> bool:
+    """
+    Check if a cell in the grid is unblocked (passable).
+    
+    Args:
+        grid: The grid representing the environment (1 for passable, 0 for blocked)
+        row: The row index of the cell to check
+        col: The column index of the cell to check
+        
+    Returns:
+        True if the cell is unblocked (value 1), False if blocked (value 0)
+    """
     return grid[row][col] == 1
 
 
-# Check if a cell is the destination
 def is_destination(row: int, col: int, dest: Tuple[int, int]) -> bool:
+    """
+    Check if the current cell is the destination.
+    
+    Args:
+        row: The row index of the current cell
+        col: The column index of the current cell
+        dest: The coordinates (row, col) of the destination
+        
+    Returns:
+        True if the current cell is the destination, False otherwise
+    """
     return row == dest[0] and col == dest[1]
 
 
-# Calculate the heuristic value of a cell (Euclidean distance to destination)
 def calculate_h_value(row: int, col: int, dest: Tuple[int, int]) -> float:
+    """
+    Calculate the heuristic value of a cell using Euclidean distance.
+    
+    The heuristic estimates the cost to reach the destination from the current cell.
+    
+    Args:
+        row: The row index of the current cell
+        col: The column index of the current cell
+        dest: The coordinates (row, col) of the destination
+        
+    Returns:
+        The Euclidean distance from the current cell to the destination
+    """
     return ((row - dest[0]) ** 2 + (col - dest[1]) ** 2) ** 0.5
 
 
-# Trace the path from source to destination
 def trace_path(cell_details: List[List[Cell]], dest: Tuple[int, int]) -> List[Tuple[int, int]]:
+    """
+    Reconstruct the path from source to destination using the cell parent pointers.
+    
+    This function walks backwards from the destination to the source by following
+    the parent pointers stored in each cell, then reverses the path to get the 
+    source-to-destination path.
+    
+    Args:
+        cell_details: Grid of Cell objects containing parent information
+        dest: The coordinates (row, col) of the destination
+        
+    Returns:
+        A list of coordinates (row, col) representing the path from source to destination
+    """
     print("The Path is ")
     path: List[Tuple[int, int]] = []
     row = dest[0]
@@ -69,12 +147,27 @@ def trace_path(cell_details: List[List[Cell]], dest: Tuple[int, int]) -> List[Tu
     return path
 
 
-# Implement the A* search algorithm
 def a_star_search(
     grid: Union[List[List[int]], np.ndarray], 
     src: Tuple[int, int], 
     dest: Tuple[int, int]
 ) -> Optional[List[Tuple[int, int]]]:
+    """
+    Implement the A* search algorithm to find the optimal path.
+    
+    A* is an informed search algorithm that uses a heuristic to guide the search
+    towards the destination. It maintains an open list of cells to be explored,
+    and a closed list of cells already explored.
+    
+    Args:
+        grid: The grid representing the environment (1 for passable, 0 for blocked)
+        src: The coordinates (row, col) of the source
+        dest: The coordinates (row, col) of the destination
+        
+    Returns:
+        A list of coordinates representing the optimal path from source to destination,
+        or None if no path exists
+    """
     # Check if the source and destination are valid
     if not is_valid(src[0], src[1]) or not is_valid(dest[0], dest[1]):
         print("Source or destination is invalid")
@@ -182,6 +275,12 @@ def a_star_search(
 
 
 def main() -> None:
+    """
+    Demonstration of the A* algorithm on a simple grid.
+    
+    Creates a fully unblocked grid and finds a path from the top-left
+    corner to the bottom-right corner.
+    """
     # Define the grid (1 for unblocked, 0 for blocked)
     grid = np.ones((500, 500), dtype=int)
 

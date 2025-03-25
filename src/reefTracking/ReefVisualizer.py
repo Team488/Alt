@@ -1,3 +1,15 @@
+"""
+Graphical reef visualization system.
+
+This module provides a visualization tool for viewing and monitoring the state
+of the reef in real-time. It creates a graphical representation of the
+competition field with interactive elements that update to reflect the current
+state of coral slots and algae presence.
+
+The visualization uses Kivy for the user interface, supporting resizable
+layouts and color-coded feedback about reef state.
+"""
+
 import kivy
 
 from enum import Enum
@@ -14,7 +26,31 @@ from queue import Queue
 
 
 class HexagonLayout(RelativeLayout):
+    """
+    Main layout for the reef visualization display.
+    
+    This class builds and manages the visual representation of the reef state,
+    including the background field image, coral slot buttons arranged in their
+    hexagonal pattern, and algae indicators. It supports dynamic resizing and
+    real-time color updates based on state changes.
+    
+    Attributes:
+        button_dictionary: Mapping of button identifiers to Button widgets
+        init_dictionary: Configuration data for button positioning
+        update_queue: Thread-safe queue for color update requests
+        background: Background image of the competition field
+    """
+    
     def __init__(self, **kwargs) -> None:
+        """
+        Initialize the reef visualization layout.
+        
+        Sets up the background, reef buttons, and algae indicators, then
+        configures event handlers for resizing and updates.
+        
+        Args:
+            **kwargs: Keyword arguments passed to the parent RelativeLayout
+        """
         super().__init__(**kwargs)
 
         self.init_background()
@@ -37,6 +73,12 @@ class HexagonLayout(RelativeLayout):
         Clock.schedule_interval(self.process_queue_updates, 0.05)
 
     def init_background(self) -> None:
+        """
+        Initialize the background image of the competition field.
+        
+        Sets up the window size to match the background image dimensions
+        and adds the field image as the background layer.
+        """
         # Original image dimensions
         self.bg_width = int(1886 * 1.0)
         self.bg_height = int(1528 * 1.0)
@@ -189,7 +231,17 @@ class HexagonLayout(RelativeLayout):
 
 
     def update_layout(self, instance, width, height) -> None:
-        # print("Layout updated")
+        """
+        Adjust the layout when the window is resized.
+        
+        Scales all elements proportionally to the new window size,
+        including the background image and all buttons.
+        
+        Args:
+            instance: The window instance that was resized
+            width: New window width
+            height: New window height
+        """
         # Ensure background size matches the window
         self.background.size = (width, height)
         self.background.pos = (0, 0)
@@ -210,27 +262,54 @@ class HexagonLayout(RelativeLayout):
             button.pos = (width * button_x_ratio, height * button_y_ratio)
 
     def update_button_color(self, button_text, color) -> None:
-        # print(self.button_dictionary)
-        # print(button_text, color)
+        """
+        Update the color of a specific button.
+        
+        Args:
+            button_text: Identifier of the button to update
+            color: New RGBA color tuple (r, g, b, a) with values from 0-1
+        """
         if button_text in self.button_dictionary:
             self.button_dictionary[button_text].background_color = color
-            # print("COLOR UPDATED", color, button_text, self.button_dictionary[button_text], "to", self.button_dictionary[button_text].background_color)
 
     def update_mouse_position(self, dt) -> None:
+        """
+        Update the mouse position display.
+        
+        Called periodically to show the current mouse coordinates
+        in the visualization window.
+        
+        Args:
+            dt: Time delta since last update (provided by Kivy clock)
+        """
         x, y = Window.mouse_pos
         self.mouse.text = f"Mouse Position: ({int(x)}, {int(y)})"
-        # print("color of A", self.button_dictionary["A"].background_color)
 
     def queue_color_update(self, button_text, color) -> None:
-        # print("queueing", button_text, color)
+        """
+        Queue a color update request for thread-safe operation.
+        
+        This method allows color updates to be requested from any thread
+        and processed safely on the main UI thread.
+        
+        Args:
+            button_text: Identifier of the button to update
+            color: New RGBA color tuple (r, g, b, a) with values from 0-1
+        """
         self.update_queue.put((button_text, color))
 
     def process_queue_updates(self, dt) -> None:
-        # Update the color according to the queue
-        # print("length of queue", self.update_queue.qsize())
+        """
+        Process queued color update requests.
+        
+        Called periodically to apply all queued color updates
+        in the main UI thread.
+        
+        Args:
+            dt: Time delta since last update (provided by Kivy clock)
+        """
         while not self.update_queue.empty():
             button_text, color = self.update_queue.get()
-            # print("Processing queue updates for", button_text, "with color", color)
             Clock.schedule_once(
                 lambda dt, bt=button_text, c=color: self.update_button_color(bt, c)
             )
@@ -240,12 +319,27 @@ layout = HexagonLayout()
 
 
 class ReefVisualizerApp(App):
+    """
+    Kivy application for the reef state visualization.
+    
+    This class sets up the Kivy application and returns the main
+    HexagonLayout as the root widget.
+    """
+    
     def build(self):
+        """
+        Build the application and return the root widget.
+        
+        Returns:
+            The HexagonLayout instance to use as the root widget
+        """
         return layout
 
 
 if __name__ == "__main__":
+    # Standalone execution for development and testing
     app = ReefVisualizerApp()
     app_instance = app.build()
+    # Example color update for testing
     app_instance.queue_color_update("CL", (0.5, 0.5, 0.5, 1))
     app.run()

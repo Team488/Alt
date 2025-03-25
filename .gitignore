@@ -70,6 +70,10 @@ instance/
 
 # Sphinx documentation
 docs/_build/
+docs/_autosummary/
+docs/_static/generated/
+docs/.doctrees/
+*.doctree
 
 # PyBuilder
 .pybuilder/
