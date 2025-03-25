@@ -4,6 +4,7 @@ WORKDIR /xbot/Alt/src
 
 RUN pip install --upgrade tensorflow
 RUN pip install --upgrade XTablesClient
+RUN pip install --upgrade ultralytics
 
 # ARG TARGETPLATFORM
 # FROM johnylamw/alt-docker-base-python-3.10
