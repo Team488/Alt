@@ -2,7 +2,7 @@ from Core.Agents.Abstract import ObjectLocalizingAgentPartial
 from Core.Agents.CentralAgent import CentralAgent
 from Core.Neo import Neo
 from Core.Agents.PathToNearestCoralStation import PathToNearestCoralStation
-from tools.Constants import InferenceMode
+from tools.Constants import InferenceMode, D435IResolution, CameraExtrinsics
 from Captures import D435Capture
 
 n = Neo()
@@ -13,7 +13,9 @@ n.wakeAgent(CentralAgent, isMainThread=False)
 n.wakeAgent(PathToNearestCoralStation, isMainThread=False)
 
 object_localization = ObjectLocalizingAgentPartial(
-    inferenceMode=InferenceMode.ALCOROBEST2025GPUONLY, capture=D435Capture()
+    inferenceMode=InferenceMode.ALCOROBEST2025GPUONLY,
+    capture=D435Capture(res=D435IResolution.RS720P),
+    cameraExtrinsics=CameraExtrinsics.DEPTH_REAR_LEFT,
 )
 
 n.wakeAgent(object_localization, isMainThread=False)
