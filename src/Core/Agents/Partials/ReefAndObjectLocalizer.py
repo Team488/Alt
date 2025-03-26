@@ -1,6 +1,6 @@
 from functools import partial
 from typing import Any, Tuple
-from Core.Agents.Abstract.ObjectLocalizingAgentBase import ObjectLocalizingAgentBase
+from Core.Agents.Partials.ObjectLocalizingAgentBase import ObjectLocalizingAgentBase
 from Core.Agents.Abstract.ReefTrackingAgentBase import ReefTrackingAgentBase
 from abstract.Capture import ConfigurableCapture
 from tools.Constants import CameraExtrinsics, InferenceMode, MapConstants
@@ -30,7 +30,6 @@ def ReefAndObjectLocalizerPartial(
         ReefAndObjectLocalizer,
         capture=capture,
         showFrames=showFrames,
-        cameraIntrinsics=capture.getIntrinsics(),
         cameraExtrinsics=cameraExtrinsics,
         inferenceMode=inferenceMode,
     )
