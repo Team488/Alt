@@ -1,8 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import Tuple
-
 import numpy as np
-
 from tools.Constants import CameraIntrinsics
 
 
@@ -40,12 +38,16 @@ class Capture(ABC):
 class ConfigurableCapture(Capture):
     def __init__(self) -> None:
         super().__init__()
-        self.cameraIntrinsics: CameraIntrinsics = CameraIntrinsics()
+        self.cameraIntrinsics: CameraIntrinsics = None  # must be set
 
     def setIntrinsics(self, cameraIntrinsics: CameraIntrinsics) -> None:
         """Set the camera intrinsics"""
         self.cameraIntrinsics = cameraIntrinsics
 
     def getIntrinsics(self) -> CameraIntrinsics:
-        """Get the camera intrinsics"""
+        if self.cameraIntrinsics is None:
+            raise ValueError(
+                "Camera intrinsics is None!. Did you call Capture.create()?"
+            )
+
         return self.cameraIntrinsics

@@ -27,28 +27,30 @@ class ObjectLocalizingAgentBase(TimestampRegulatedAgentBase):
     DETECTIONPOSTFIX = "Detections"
 
     def __init__(self, **kwargs: Any) -> None:
-        self.cameraIntrinsics: Optional[CameraIntrinsics] = kwargs.get("cameraIntrinsics", None)
-        self.cameraExtrinsics: Optional[CameraExtrinsics] = kwargs.get("cameraExtrinsics", None)
+        self.cameraExtrinsics: Optional[CameraExtrinsics] = kwargs.get(
+            "cameraExtrinsics", None
+        )
         self.inferenceMode: Optional[InferenceMode] = kwargs.get("inferenceMode", None)
         self.frameProcessor: Optional[LocalFrameProcessor] = None
         super().__init__(**kwargs)
 
     def create(self) -> None:
         super().create()
+        self.cameraIntrinsics = self.capture.getIntrinsics()
         # self.xdashDebugger = XDashDebugger()
         if self.Sentinel is None:
             raise ValueError("Logger not initialized")
-            
+
         if self.xclient is None:
             raise ValueError("XTablesClient not initialized")
-            
+
         self.Sentinel.info("Creating Frame Processor...")
         currentCoreINFName = self.xclient.getString(Core.COREMODELTABLE)
         currentCoreINFMode = InferenceMode.getFromName(currentCoreINFName, default=None)
-        
+
         if self.inferenceMode is None:
             raise ValueError("InferenceMode not provided")
-            
+
         if currentCoreINFMode is not None:
             # assert you are running same model type as any current core process
             isMatch = InferenceMode.assertModelType(
@@ -70,10 +72,10 @@ class ObjectLocalizingAgentBase(TimestampRegulatedAgentBase):
 
         if self.cameraIntrinsics is None:
             raise ValueError("CameraIntrinsics not provided")
-            
+
         if self.cameraExtrinsics is None:
             raise ValueError("CameraExtrinsics not provided")
-            
+
         self.frameProcessor = LocalFrameProcessor(
             cameraIntrinsics=self.cameraIntrinsics,
             cameraExtrinsics=self.cameraExtrinsics,
@@ -83,31 +85,35 @@ class ObjectLocalizingAgentBase(TimestampRegulatedAgentBase):
 
     def runPeriodic(self) -> None:
         super().runPeriodic()
-        
+
         if self.timer is None:
             raise ValueError("Timer not initialized")
-            
+
         if self.frameProcessor is None:
             raise ValueError("Frame processor not initialized")
-            
+
         if self.updateOp is None:
             raise ValueError("UpdateOperator not initialized")
-            
+
         if self.Sentinel is None:
             raise ValueError("Logger not initialized")
-            
-        if self.positionOffsetXM is None or self.positionOffsetYM is None or self.positionOffsetYAWDEG is None:
+
+        if (
+            self.positionOffsetXM is None
+            or self.positionOffsetYM is None
+            or self.positionOffsetYAWDEG is None
+        ):
             raise ValueError("Position offset properties not initialized")
-            
+
         sendFrame = self.sendFrame
         offsetXCm = self.positionOffsetXM.get() * 100
         offsetYCm = self.positionOffsetYM.get() * 100
         offsetYawRAD = math.radians(self.positionOffsetYAWDEG.get())
-        
+
         if self.latestFrameMain is None:
             self.Sentinel.warning("No latest color frame available")
             return
-            
+
         with self.timer.run("frame-processing"):
             processedResults = self.frameProcessor.processFrame(
                 self.latestFrameMain,
@@ -166,7 +172,6 @@ def ObjectLocalizingAgentPartial(
     return partial(
         ObjectLocalizingAgentBase,
         capture=capture,
-        cameraIntrinsics=capture.getIntrinsics(),
         cameraExtrinsics=cameraExtrinsics,
         inferenceMode=inferenceMode,
         showFrames=showFrames,

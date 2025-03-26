@@ -20,15 +20,14 @@ class D435Capture(depthCamera):
         super().__init__()
         self.res: D435IResolution = res
         self.realsenseHelper: Optional[realsense2Helper] = None
-        self.realsenseHelper = realsense2Helper(self.res)
-        intr: CameraIntrinsics = self.realsenseHelper.getCameraIntrinsics()
-        super().setIntrinsics(intr)
 
     def create(self) -> None:
         """
         Initialize the RealSense camera
         """
-        pass
+        self.realsenseHelper = realsense2Helper(self.res)
+        intr: CameraIntrinsics = self.realsenseHelper.getCameraIntrinsics()
+        super().setIntrinsics(intr)
 
     def getMainFrame(self) -> np.ndarray:
         """

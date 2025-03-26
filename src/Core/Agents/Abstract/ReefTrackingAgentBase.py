@@ -26,17 +26,17 @@ class ReefTrackingAgentBase(CameraUsingAgentBase):
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
-        self.cameraIntrinsics: Optional[CameraIntrinsics] = kwargs.get("cameraIntrinsics", None)
         self.poseSolver: Optional[poseSolver] = None
         self.tracker: Optional[ReefTracker] = None
         self.latestPoseREEF: Optional[Dict[str, Any]] = None
 
     def create(self) -> None:
         super().create()
-        
+        self.cameraIntrinsics = self.capture.getIntrinsics()
+
         if self.cameraIntrinsics is None:
             raise ValueError("CameraIntrinsics not provided")
-            
+
         self.poseSolver = poseSolver()
         self.tracker = ReefTracker(cameraIntrinsics=self.cameraIntrinsics)
 
@@ -45,8 +45,10 @@ class ReefTrackingAgentBase(CameraUsingAgentBase):
     def putNetworkInfo(self) -> None:
         if self.propertyOperator is None:
             raise ValueError("PropertyOperator not initialized")
-            
-        getReadable: Callable[[float], str] = lambda time: datetime.datetime.fromtimestamp(time).strftime(
+
+        getReadable: Callable[
+            [float], str
+        ] = lambda time: datetime.datetime.fromtimestamp(time).strftime(
             "%Y-%m-%d %H:%M:%S"
         )
         purpleHistMtime = reefTracker.purpleHistMTime
@@ -65,19 +67,19 @@ class ReefTrackingAgentBase(CameraUsingAgentBase):
 
     def runPeriodic(self) -> None:
         super().runPeriodic()
-        
+
         if self.tracker is None:
             raise ValueError("Tracker not initialized")
-            
+
         if self.poseSolver is None:
             raise ValueError("PoseSolver not initialized")
-            
+
         if self.updateOp is None:
             raise ValueError("UpdateOperator not initialized")
-            
+
         if self.latestFrameMain is None:
             return
-            
+
         outCoral, outAlgae, atOutput = self.tracker.getAllTracks(
             self.latestFrameMain, drawBoxes=self.showFrames or self.sendFrame
         )
@@ -96,11 +98,12 @@ class ReefTrackingAgentBase(CameraUsingAgentBase):
         return "Gets_Reef_State"
 
 
-def ReefTrackingAgentPartial(capture: ConfigurableCapture, showFrames: bool = False) -> Any:
+def ReefTrackingAgentPartial(
+    capture: ConfigurableCapture, showFrames: bool = False
+) -> Any:
     """Returns a partially completed ReefTrackingAgent agent. All you have to do is pass it into neo"""
     return partial(
         ReefTrackingAgentBase,
         capture=capture,
-        cameraIntrinsics=capture.getIntrinsics(),
         showFrames=showFrames,
     )

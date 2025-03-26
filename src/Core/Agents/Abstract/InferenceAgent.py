@@ -32,17 +32,17 @@ class InferenceAgent(CameraUsingAgentBase):
         super().create()
         if self.Sentinel:
             self.Sentinel.info("Creating Frame Processor...")
-            
+
         if self.inferenceMode is None:
             raise ValueError("InferenceMode not provided")
-            
+
         self.inf = MultiInferencer(
             inferenceMode=self.inferenceMode,
         )
-        
+
         if self.propertyOperator is None:
             raise ValueError("PropertyOperator not initialized")
-            
+
         self.confidence = self.propertyOperator.createProperty(
             "Confidence_Threshold", 0.7
         )
@@ -50,16 +50,16 @@ class InferenceAgent(CameraUsingAgentBase):
 
     def runPeriodic(self) -> None:
         super().runPeriodic()
-        
+
         if self.timer is None:
             raise ValueError("Timer not initialized")
-            
+
         if self.inf is None:
             raise ValueError("Inferencer not initialized")
-            
+
         if self.latestFrameMain is None:
             return
-            
+
         if self.confidence is None or self.drawBoxes is None:
             raise ValueError("Properties not initialized")
 
@@ -84,7 +84,6 @@ def InferenceAgentPartial(
     return partial(
         InferenceAgent,
         capture=capture,
-        cameraIntrinsics=capture.getIntrinsics(),
         inferenceMode=inferenceMode,
         showFrames=showFrames,
     )
