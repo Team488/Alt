@@ -1,5 +1,5 @@
 from Core.Neo import Neo
-from Core.Agents.ReefAndObjectLocalizer import (
+from Core.Agents.Partials.ReefAndObjectLocalizer import (
     ReefAndObjectLocalizerPartial,
 )
 from tools.Constants import (

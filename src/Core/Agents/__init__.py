@@ -8,4 +8,4 @@ from .PathPlanningAgents import (
 from .FrameDisplayer import FrameDisplayer
 from .CalibrationController import CalibrationController
 from .InteractivePathPlanner import InteractivePathPlanner
-from .ReefAndObjectLocalizer import ReefAndObjectLocalizerPartial
+from .Partials.ReefAndObjectLocalizer import ReefAndObjectLocalizerPartial

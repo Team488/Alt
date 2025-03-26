@@ -1,6 +1,6 @@
 from JXTABLES.TempConnectionManager import TempConnectionManager as tcm
 from Alignment.DocTrAlignmentProvider import DocTrAlignmentProvider
-from Core.Agents.AlignmentProviderAgent import partialAlignmentCheck
+from Core.Agents.Partials.AlignmentProviderAgent import partialAlignmentCheck
 from Core.Neo import Neo
 from Core.Agents import OrangePiAgent
 

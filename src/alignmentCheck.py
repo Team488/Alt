@@ -1,4 +1,6 @@
-from Core.Agents.BinnedVerticalAlignmentCheck import partialVerticalAlignmentCheck
+from Core.Agents.Partials.BinnedVerticalAlignmentCheck import (
+    partialVerticalAlignmentCheck,
+)
 from Core.Neo import Neo
 
 alignmentCheckRight = partialVerticalAlignmentCheck(

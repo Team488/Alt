@@ -1,4 +1,4 @@
-from Core.Agents.Abstract.InferenceAgent import InferenceAgentPartial
+from Core.Agents.Partials.InferenceAgent import InferenceAgentPartial
 from Core.Neo import Neo
 from tools.Constants import InferenceMode, CameraIntrinsicsPredefined, CommonVideos
 from Captures import FileCapture, ConfigurableCameraCapture

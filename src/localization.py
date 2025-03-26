@@ -1,4 +1,4 @@
-from Core.Agents.Abstract.ObjectLocalizingAgentBase import ObjectLocalizingAgentPartial
+from Core.Agents.Partials.ObjectLocalizingAgentBase import ObjectLocalizingAgentPartial
 from Core.Neo import Neo
 from tools.Constants import (
     InferenceMode,

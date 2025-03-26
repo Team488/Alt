@@ -1,6 +1,6 @@
 from .CameraUsingAgentBase import CameraUsingAgentBase
-from .InferenceAgent import InferenceAgent, InferenceAgentPartial
-from .ObjectLocalizingAgentBase import (
+from ..Partials.InferenceAgent import InferenceAgent, InferenceAgentPartial
+from ..Partials.ObjectLocalizingAgentBase import (
     ObjectLocalizingAgentBase,
     ObjectLocalizingAgentPartial,
 )

@@ -5,7 +5,9 @@ from tools.Constants import (
     CameraIntrinsicsPredefined,
     InferenceMode,
 )
-from Core.Agents.CSVDemoObjectLocalizingAgent import partialCsvDemoObjectLocalizingAgent
+from Core.Agents.Partials.CSVDemoObjectLocalizingAgent import (
+    partialCsvDemoObjectLocalizingAgent,
+)
 
 agent = partialCsvDemoObjectLocalizingAgent(
     capture=FileCapture(CommonVideos.Comp2024Clip),

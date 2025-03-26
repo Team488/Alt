@@ -1,4 +1,4 @@
-from Core.Agents.ReefAndObjectLocalizer import ReefAndObjectLocalizerPartial
+from Core.Agents.Partials.ReefAndObjectLocalizer import ReefAndObjectLocalizerPartial
 from Captures import D435Capture
 from Core.Neo import Neo
 from tools.Constants import D435IResolution, ColorCameraExtrinsics2024, InferenceMode
