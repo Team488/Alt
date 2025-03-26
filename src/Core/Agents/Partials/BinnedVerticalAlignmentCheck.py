@@ -24,11 +24,11 @@ class BinnedVerticalAlignmentChecker(CameraUsingAgentBase):
             showFrames=showFrames,
         )
 
-        self.shape = (self.TUNEDWIDTH, self.TUNEDHEIGHT) # default
+        self.shape = (self.TUNEDWIDTH, self.TUNEDHEIGHT)  # default
 
     def rescaleWidth(self, value):
         return value * self.shape[1] / self.TUNEDWIDTH
-    
+
     def rescaleHeight(self, value):
         return value * self.shape[0] / self.TUNEDHEIGHT
 
@@ -85,7 +85,6 @@ class BinnedVerticalAlignmentChecker(CameraUsingAgentBase):
                 addOperatorPrefix=False,
             )
 
-        
         self.sobel_threshold = self.propertyOperator.createProperty(
             propertyTable="inital_sobel_thresh",
             propertyDefault=80,
@@ -113,7 +112,7 @@ class BinnedVerticalAlignmentChecker(CameraUsingAgentBase):
         )
         self.lastUsedSize = None
         self.lastValidLeft = None
-        self.lastValidLeftFrameCnt = None 
+        self.lastValidLeftFrameCnt = None
         self.lastValidRight = None
         self.lastValidRightFrameCnt = None
         self.currentFrameCnt = 0
@@ -124,7 +123,6 @@ class BinnedVerticalAlignmentChecker(CameraUsingAgentBase):
 
         frame = self.latestFrameMain
         self.shape = frame.shape
-
 
         self.vresProp.set(frame.shape[0])
         self.hresProp.set(frame.shape[1])
@@ -151,7 +149,7 @@ class BinnedVerticalAlignmentChecker(CameraUsingAgentBase):
 
         # Threshold the edge image
         _, thresh = cv2.threshold(sobel_8u, 100, 255, cv2.THRESH_BINARY)
-        
+
         if self.showFrames:
             cv2.imshow("thresh", thresh)
 
@@ -184,7 +182,7 @@ class BinnedVerticalAlignmentChecker(CameraUsingAgentBase):
                 cv2.rectangle(edge_viz, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
         # fnd the smallest "pair" of sides that is SILL BIG ENOUGH, but not the biggest in general.
-        # This helps distinguish the april tag sides from the side of the april tag paper and the gray background 
+        # This helps distinguish the april tag sides from the side of the april tag paper and the gray background
         bestmatchedPair = None
         sizeLocked = False
         bestsize = -1
@@ -198,21 +196,19 @@ class BinnedVerticalAlignmentChecker(CameraUsingAgentBase):
                 bestsize = size
             elif pairLength == bestPairLength:
                 if self.lastUsedSize is not None:
-                    diff = abs(self.lastUsedSize-size)
+                    diff = abs(self.lastUsedSize - size)
 
                     if diff < self.rescaleHeight(self.threshold_to_last_used.get()):
                         bestsize = size
                         bestmatchedPair = valid_bin[:2]
                         sizeLocked = True
 
-
                 if not sizeLocked and size < bestsize:
                     bestsize = size
                     bestmatchedPair = valid_bin[:2]
-        
+
         # memory for last used bin size
         self.lastUsedSize = bestsize
-
 
         # assign left/right sides
         if bestmatchedPair is not None:
@@ -247,7 +243,7 @@ class BinnedVerticalAlignmentChecker(CameraUsingAgentBase):
 
         elif self.lastValidLeftFrameCnt is not None:
             # try get memory
-            deltaSinceLastValidLeft = self.currentFrameCnt-self.lastValidLeftFrameCnt
+            deltaSinceLastValidLeft = self.currentFrameCnt - self.lastValidLeftFrameCnt
 
             if deltaSinceLastValidLeft < self.distanceMemoryFrames.get():
                 # recent enough to put
@@ -262,13 +258,13 @@ class BinnedVerticalAlignmentChecker(CameraUsingAgentBase):
             selectedRight = newRightDistance
         elif self.lastValidRightFrameCnt is not None:
             # try get memory
-            deltaSinceLastValidRight = self.currentFrameCnt-self.lastValidRightFrameCnt
+            deltaSinceLastValidRight = (
+                self.currentFrameCnt - self.lastValidRightFrameCnt
+            )
 
             if deltaSinceLastValidRight < self.distanceMemoryFrames.get():
                 # recent enough to put
                 selectedRight = self.lastValidRight
-
-        
 
         cv2.putText(
             frame,
@@ -282,7 +278,6 @@ class BinnedVerticalAlignmentChecker(CameraUsingAgentBase):
 
         self.leftDistanceProp.set(selectedLeft)
         self.rightDistanceProp.set(selectedRight)
-
 
         # If showing frames is enabled, display the edge visualization
         if self.showFrames:

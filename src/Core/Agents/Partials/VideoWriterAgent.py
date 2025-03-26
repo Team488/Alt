@@ -26,10 +26,10 @@ class VideoWriterAgent(CameraUsingAgentBase):
 
         if self.writer is None:
             raise ValueError("VideoWriter not initialized")
-            
+
         if self.latestFrameMain is None:
             return
-            
+
         self.writer.write(self.latestFrameMain)
 
     def onClose(self) -> None:
@@ -44,7 +44,9 @@ class VideoWriterAgent(CameraUsingAgentBase):
         return "Ingests-Camera-Writes-Frames-To-File"
 
 
-def partialVideoWriterAgent(capture: Capture, savePath: str, showFrames: bool = False) -> Any:
+def partialVideoWriterAgent(
+    capture: Capture, savePath: str, showFrames: bool = False
+) -> Any:
     """Returns a partially completed VideoWriterAgent that ingests camera frames and writes them to a file"""
     return partial(
         VideoWriterAgent, capture=capture, savePath=savePath, showFrames=showFrames

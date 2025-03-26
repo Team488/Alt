@@ -41,7 +41,6 @@ class ReefVisualizerAgent(Agent):
             self.reef = Reef(Alliance.BLUE)
         else:
             raise Exception("Invalid Team Reading from XTables")
-    
 
     def runPeriodic(self) -> None:
         super().runPeriodic()

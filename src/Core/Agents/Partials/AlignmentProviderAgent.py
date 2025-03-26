@@ -11,7 +11,12 @@ from abstract.AlignmentProvider import AlignmentProvider
 class AlignmentProviderAgent(CameraUsingAgentBase):
     DEFAULTTHRESH = 10
 
-    def __init__(self, alignmentProvider : AlignmentProvider, cameraPath = "http://localhost:1181/stream.mjpg", showFrames = False):
+    def __init__(
+        self,
+        alignmentProvider: AlignmentProvider,
+        cameraPath="http://localhost:1181/stream.mjpg",
+        showFrames=False,
+    ):
         super().__init__(
             capture=FileCapture(videoFilePath=cameraPath), showFrames=showFrames
         )
@@ -21,11 +26,11 @@ class AlignmentProviderAgent(CameraUsingAgentBase):
         super().create()
 
         self.leftDistanceProp = self.propertyOperator.createCustomReadOnlyProperty(
-                propertyTable="verticalEdgeLeftDistancePx",
-                propertyValue=-1,
-                addBasePrefix=True,
-                addOperatorPrefix=False,
-            )
+            propertyTable="verticalEdgeLeftDistancePx",
+            propertyValue=-1,
+            addBasePrefix=True,
+            addOperatorPrefix=False,
+        )
         self.rightDistanceProp = self.propertyOperator.createCustomReadOnlyProperty(
             propertyTable="verticalEdgeRightDistancePx",
             propertyValue=-1,
@@ -33,15 +38,15 @@ class AlignmentProviderAgent(CameraUsingAgentBase):
             addOperatorPrefix=False,
         )
 
-
     def runPeriodic(self) -> None:
         super().runPeriodic()
 
         frame = self.latestFrameMain
-        left, right = self.alignmentProvider.align(frame, self.showFrames or self.sendFrame)
+        left, right = self.alignmentProvider.align(
+            frame, self.showFrames or self.sendFrame
+        )
         self.leftDistanceProp.set(left)
         self.rightDistanceProp.set(right)
-
 
     def getName(self) -> str:
         return "AlignmentProviderAgent"
@@ -50,5 +55,14 @@ class AlignmentProviderAgent(CameraUsingAgentBase):
         return "Looks-Through-Camera-Checks-Alignment"
 
 
-def partialAlignmentCheck(alignmentProvider : AlignmentProvider, cameraPath = "http://localhost:1181/stream.mjpg", showFrames = False):
-    return partial(AlignmentProviderAgent, alignmentProvider=alignmentProvider,cameraPath=cameraPath,showFrames=showFrames)
+def partialAlignmentCheck(
+    alignmentProvider: AlignmentProvider,
+    cameraPath="http://localhost:1181/stream.mjpg",
+    showFrames=False,
+):
+    return partial(
+        AlignmentProviderAgent,
+        alignmentProvider=alignmentProvider,
+        cameraPath=cameraPath,
+        showFrames=showFrames,
+    )
