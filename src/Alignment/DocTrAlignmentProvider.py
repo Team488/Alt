@@ -11,9 +11,8 @@ Sentinel = getLogger("DocTr_Alignment_Provider")
 
 
 class DocTrAlignmentProvider(AlignmentProvider):
-    def __init__(self, propertyOperator: PropertyOperator):
+    def __init__(self):
         super().__init__()
-        self.propertyOperator = propertyOperator
         self.initalizerDetector()
 
     def initalizerDetector(self):

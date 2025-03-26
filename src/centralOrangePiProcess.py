@@ -1,13 +1,16 @@
 from JXTABLES.TempConnectionManager import TempConnectionManager as tcm
-from Core.Agents.BinnedVerticalAlignmentCheck import partialVerticalAlignmentCheck
+from Alignment.DocTrAlignmentProvider import DocTrAlignmentProvider
+from Core.Agents.AlignmentProviderAgent import partialAlignmentCheck
 from Core.Neo import Neo
-# from Core.Agents import OrangePiAgent
+from Core.Agents import OrangePiAgent
 
-alignment = partialVerticalAlignmentCheck(showFrames=False)
+alignment = partialAlignmentCheck(
+    alignmentProvider=DocTrAlignmentProvider(), showFrames=False
+)
 tcm.invalidate()
 
 if __name__ == "__main__":
     n = Neo()
-    n.wakeAgent(alignment, isMainThread=True)
-    # n.wakeAgent(OrangePiAgent, isMainThread=True)
+    n.wakeAgent(alignment, isMainThread=False)
+    n.wakeAgent(OrangePiAgent, isMainThread=True)
     n.shutDown()
