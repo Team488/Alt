@@ -9,53 +9,55 @@ class D435Capture(depthCamera):
     """
     Capture implementation for Intel RealSense D435 depth camera
     """
+
     def __init__(self, res: D435IResolution) -> None:
         """
         Initialize a D435 capture with the specified resolution
-        
+
         Args:
             res: The resolution setting for the camera
         """
         super().__init__()
         self.res: D435IResolution = res
         self.realsenseHelper: Optional[realsense2Helper] = None
+        self.realsenseHelper = realsense2Helper(self.res)
+        intr: CameraIntrinsics = self.realsenseHelper.getCameraIntrinsics()
+        super().setIntrinsics(intr)
 
     def create(self) -> None:
         """
         Initialize the RealSense camera
         """
-        self.realsenseHelper = realsense2Helper(self.res)
-        intr: CameraIntrinsics = self.realsenseHelper.getCameraIntrinsics()
-        super().setIntrinsics(intr)
+        pass
 
     def getMainFrame(self) -> np.ndarray:
         """
         Get the color frame from the camera
-        
+
         Returns:
             The color frame as a numpy array
         """
         if self.realsenseHelper is None:
             raise RuntimeError("Capture not created, call create() first")
-            
+
         return self.realsenseHelper.getDepthAndColor()[1]
 
     def getFps(self) -> int:
         """
         Get the camera frames per second
-        
+
         Returns:
             Camera frame rate
         """
         if self.realsenseHelper is None:
             raise RuntimeError("Capture not created, call create() first")
-            
+
         return self.realsenseHelper.getFps()
 
     def getDepthFrame(self) -> np.ndarray:
         """
         Get the depth frame from the camera
-        
+
         Returns:
             The depth frame as a numpy array
         """
@@ -64,25 +66,25 @@ class D435Capture(depthCamera):
     def getDepthAndColorFrame(self) -> Tuple[np.ndarray, np.ndarray]:
         """
         Get both the depth and color frames from the camera
-        
+
         Returns:
             A tuple containing (depth_frame, color_frame)
         """
         if self.realsenseHelper is None:
             raise RuntimeError("Capture not created, call create() first")
-            
+
         return self.realsenseHelper.getDepthAndColor()
 
     def isOpen(self) -> bool:
         """
         Check if the camera is still open
-        
+
         Returns:
             True if the camera is open, False otherwise
         """
         if self.realsenseHelper is None:
             return False
-            
+
         return self.realsenseHelper.isOpen()
 
     def close(self) -> None:
