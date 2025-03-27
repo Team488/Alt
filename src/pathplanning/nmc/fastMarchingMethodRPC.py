@@ -124,7 +124,7 @@ class FastMarchingPathfinder:
         xs, ys = xs[valid], ys[valid]
         return np.any(self.grid_cost[ys, xs] >= minimum_heat)
 
-    def try_inflate_segment(self, segment, max_offset_pixels=38, tol=1.0):
+    def try_inflate_segment(self, segment, max_offset_pixels=60, tol=1.0):
         """
         Try to inflate (bend) a segment using a binary search on the perpendicular offset
         so that the resulting Bézier curve avoids collisions.
