@@ -1,5 +1,7 @@
 from collections import defaultdict
 import cv2
+import io
+from PIL import Image
 import numpy as np
 from abstract.AlignmentProvider import AlignmentProvider
 from Core import PropertyOperator, getChildLogger
@@ -29,7 +31,7 @@ class DocTrAlignmentProvider(AlignmentProvider):
         self.det_predictor.model.postprocessor.bin_thresh = 0.3
         self.det_predictor.model.postprocessor.box_thresh = 0.1
 
-    def isColorBased():
+    def isColorBased(self):
         return False  # uses april tags so b/w frame
 
     def align(self, inputFrame, draw):
@@ -38,7 +40,11 @@ class DocTrAlignmentProvider(AlignmentProvider):
             # we assume if its not a b/w frame (eg checkframe false), that it means its a cv2 bgr and to change to b/w
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
-        docs = DocumentFile.from_images([frame])
+        pil_image = Image.fromarray(frame)
+        img_byte_arr = io.BytesIO()
+        pil_image.save(img_byte_arr, format="PNG")
+
+        docs = DocumentFile.from_images([img_byte_arr.getvalue()])
         results = self.det_predictor(docs)
 
         for doc, res in zip(docs, results):

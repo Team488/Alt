@@ -2,6 +2,7 @@ import time
 import cv2
 import json
 import numpy as np
+from os.path import join
 from typing import Dict, Optional
 from reefTracking.aprilTagHelper import AprilTagLocal
 from tools.Constants import (
@@ -270,9 +271,20 @@ def backProjWhite(labImage, threshold=120):
 
 # purpleHist = np.load("assets/purpleReefPostHist.npy")
 # # purpleHist = np.load("assets/simulationPurpleReefPost.npy")
-purpleHist, purpleHistMTime = staticLoad("histograms/reef_post_hist.npy")
-whiteHist, whiteHistMTime = staticLoad("histograms/whiteCoralHistBAD.npy")
-algaeHist, algaeHistMTime = staticLoad("histograms/blueAlgaeHist.npy")
+purpleHistLoad = staticLoad(
+    join("assets", "histograms", "reef_post_hist.npy"), isRelativeToSource=True
+)
+purpleHist, purpleHistMTime = (
+    purpleHistLoad if purpleHistLoad is not None else (None, None)
+)
+whiteHistLoad = staticLoad(
+    join("assets", "histograms", "whiteCoralHistBAD.npy"), isRelativeToSource=True
+)
+whiteHist, whiteHistMTime = whiteHistLoad if whiteHistLoad is not None else (None, None)
+algaeHistLoad = staticLoad(
+    join("assets", "histograms", "blueAlgaeHist.npy"), isRelativeToSource=True
+)
+algaeHist, algaeHistMTime = algaeHistLoad if algaeHistLoad is not None else (None, None)
 objThresh = 0.2
 blockerThresh = 0.2
 fullpurpleThresh = 0.7

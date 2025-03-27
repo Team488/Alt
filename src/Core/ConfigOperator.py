@@ -11,7 +11,9 @@ from Core import getChildLogger
 Sentinel = getChildLogger("Config_Operator")
 
 
-def staticLoad(fileName: str) -> Optional[Tuple[Any, float]]:
+def staticLoad(
+    fileName: str, isRelativeToSource: bool = False
+) -> Optional[Tuple[Any, float]]:
     """
     Load a file from one of the configured save paths and return its content and modification time.
 
@@ -21,10 +23,19 @@ def staticLoad(fileName: str) -> Optional[Tuple[Any, float]]:
     Returns:
         A tuple of (file_content, modification_time) or None if file not found or unloadable
     """
+    if isRelativeToSource:
+        basePath = os.path.join(os.path.abspath(os.path.dirname(__file__)), "..")
+        filePath = os.path.join(basePath, fileName)
+        for ending, filetype in ConfigOperator.knownFileEndings:
+            if filePath.endswith(ending):
+                content = filetype.load(filePath)
+                mtime = os.path.getmtime(filePath)
+                return content, mtime
+
     for path in ConfigOperator.SAVEPATHS:
         try:
             filePath = os.path.join(path, fileName)
-            for (ending, filetype) in ConfigOperator.knownFileEndings:
+            for ending, filetype in ConfigOperator.knownFileEndings:
                 if filePath.endswith(ending):
                     content = filetype.load(filePath)
                     mtime = os.path.getmtime(filePath)
@@ -92,7 +103,7 @@ class ConfigOperator:
         try:
             for filename in os.listdir(path):
                 filePath = os.path.join(path, filename)
-                for (ending, filetype) in self.knownFileEndings:
+                for ending, filetype in self.knownFileEndings:
                     if filename.endswith(ending):
                         Sentinel.info(f"Loaded config file from {filePath}")
                         content = filetype.load(filePath)
