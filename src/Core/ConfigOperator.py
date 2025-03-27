@@ -6,17 +6,18 @@ from logging import Logger
 from typing import Dict, List, Any, Optional, Tuple, Union, Type, cast
 import numpy as np
 from enum import Enum
-from Core import getLogger 
+from Core import getChildLogger
 
-Sentinel = getLogger("Config_Operator")
+Sentinel = getChildLogger("Config_Operator")
+
 
 def staticLoad(fileName: str) -> Optional[Tuple[Any, float]]:
     """
     Load a file from one of the configured save paths and return its content and modification time.
-    
+
     Args:
         fileName: The name of the file to load
-        
+
     Returns:
         A tuple of (file_content, modification_time) or None if file not found or unloadable
     """
@@ -76,8 +77,8 @@ class ConfigOperator:
         DEFAULT_PROPERTY_CONFIG_PATH,
     ]
     knownFileEndings: Tuple[Tuple[str, ConfigType], ...] = (
-        (".npy", ConfigType.NUMPY), 
-        (".json", ConfigType.JSON)
+        (".npy", ConfigType.NUMPY),
+        (".json", ConfigType.JSON),
     )
 
     def __init__(self) -> None:
@@ -117,11 +118,11 @@ class ConfigOperator:
     def __saveToFileJSON(self, filepath: str, content: Any) -> bool:  # is success
         """
         Save content to a JSON file at the specified path
-        
+
         Args:
             filepath: Full path to save the file
             content: Any JSON-serializable content to save
-            
+
         Returns:
             True if save was successful, False otherwise
         """
@@ -143,11 +144,11 @@ class ConfigOperator:
     def getContent(self, filename: str, default: Any = None) -> Any:
         """
         Get content for a filename from the config map
-        
+
         Args:
             filename: Name of the config file to retrieve
             default: Default value to return if file not found
-            
+
         Returns:
             Content of the file or default if not found
         """

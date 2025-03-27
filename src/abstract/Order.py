@@ -16,7 +16,6 @@ from Core.TimeOperator import Timer
 
 class Order(ABC):
     def __init__(self) -> None:
-        self.central: Optional[Central] = None
         self.xclient: Optional[XTablesClient] = None
         self.propertyOperator: Optional[PropertyOperator] = None
         self.configOperator: Optional[ConfigOperator] = None
@@ -25,7 +24,6 @@ class Order(ABC):
 
     def inject(
         self,
-        central: Central,
         xclient: XTablesClient,
         propertyOperator: PropertyOperator,
         configOperator: ConfigOperator,
@@ -33,7 +31,6 @@ class Order(ABC):
         timer: Timer,
     ) -> None:
         """ "Injects" arguments into the order. Should not be modified in any subclasses"""
-        self.central = central
         self.xclient = xclient
         self.propertyOperator = propertyOperator
         self.configOperator = configOperator

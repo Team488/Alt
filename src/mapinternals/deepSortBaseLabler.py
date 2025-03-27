@@ -1,10 +1,10 @@
 import numpy as np
 from mapinternals.robotTracker import RobotTracker
-from Core import getLogger
+from Core import getChildLogger
 from tools import UnitConversion
 
 
-Sentinel = getLogger("Deep_Sort_Labler")
+Sentinel = getChildLogger("Deep_Sort_Labler")
 
 
 class DeepSortBaseLabler:

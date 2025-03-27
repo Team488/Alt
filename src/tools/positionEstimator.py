@@ -5,10 +5,10 @@ import numpy as np
 from mapinternals.NumberMapper import NumberMapper
 from tools.Constants import CameraIntrinsics, InferenceMode, Label, ObjectReferences
 from Core.ConfigOperator import staticLoad
-from Core import getLogger
+from Core import getChildLogger
 
 
-Sentinel = getLogger("Position_Estimator")
+Sentinel = getChildLogger("Position_Estimator")
 
 
 class PositionEstimator:

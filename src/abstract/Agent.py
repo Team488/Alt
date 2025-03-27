@@ -14,7 +14,7 @@ from Core.Central import Central
 from Core.PropertyOperator import PropertyOperator
 from Core.ConfigOperator import ConfigOperator
 from Core.ShareOperator import ShareOperator
-from Core.TimeOperator import Timer
+from Core.TimeOperator import TimeOperator, Timer
 from tools.Constants import TEAM
 
 
@@ -25,7 +25,7 @@ class Agent(ABC):
         # nothing should go here
         self.hasShutdown: bool = False
         self.hasClosed: bool = False
-        self.central: Optional[Central] = None
+        self.isCleanedUp: bool = False
         self.xclient: Optional[XTablesClient] = None
         self.propertyOperator: Optional[PropertyOperator] = None
         self.configOperator: Optional[ConfigOperator] = None
@@ -35,29 +35,44 @@ class Agent(ABC):
         self.timer: Optional[Timer] = None
         self.isMainThread: bool = False
 
-    def inject(
+    def _injectCore(self, shareOperator: ShareOperator, isMainThread: bool) -> None:
+        """
+        "Injects" arguments into agent, should not be modified in any classes
+
+        Some things can be passed in from core. The objects are picklable/should be shared
+        For example the shareOperator uses a rpc based dict, should only be one.
+        """
+        self.isMainThread = isMainThread
+        self.shareOp = shareOperator
+
+    def _injectNEW(
         self,
-        central: Central,
-        xclient: XTablesClient,
-        propertyOperator: PropertyOperator,
-        configOperator: ConfigOperator,
-        shareOperator: ShareOperator,
-        updateOperator: UpdateOperator,
-        logger: Logger,
-        timer: Timer,
-        isMainThread: bool,
+        xclient: XTablesClient,  # new
+        propertyOperator: PropertyOperator,  # new
+        configOperator: ConfigOperator,  # new
+        updateOperator: UpdateOperator,  # new
+        timeOperator: TimeOperator,  # new
+        logger: Logger,  # static/new
     ) -> None:
-        """ "Injects" arguments into agent, should not be modified in any classes"""
-        self.central = central
+        """
+        "Injects" arguments into agent, should not be modified in any classes
+
+        Some things will be instantiated just for this agent, they arent picklable/dont play well with process pools
+        """
         self.xclient = xclient
         self.propertyOperator = propertyOperator
         self.configOperator = configOperator
-        self.shareOp = shareOperator
         self.updateOp = updateOperator
+        self.timeOp = timeOperator
         self.Sentinel = logger
-        self.timer = timer
-        self.isMainThread = isMainThread
+        self.timer = self.timeOp.getTimer("agentTimer")
         # other than setting variables, nothing should go here
+
+    def _cleanup(self):
+        # xclient shutdown occasionally failing?
+        # self.xclient.shutdown()
+        self.propertyOperator.deregisterAll()
+        self.updateOp.deregister()
 
     def getTimer(self) -> Timer:
         """Use only when needed, and only when associated with agent"""
@@ -69,7 +84,7 @@ class Agent(ABC):
         """Fetches team from XTables, dont trust at the start when everything is initializing"""
         if self.xclient is None:
             raise ValueError("XTablesClient not initialized")
-            
+
         team: Optional[str] = self.xclient.getString("TEAM")
         if team is None:
             return None

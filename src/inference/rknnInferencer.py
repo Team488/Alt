@@ -6,9 +6,9 @@ from rknnlite.api import RKNNLite
 from inference import utils, yolo11RknnUtils
 from abstract.inferencerBackend import InferencerBackend
 from tools.Constants import ConfigConstants, InferenceMode, YOLOTYPE
-from Core.LogManager import getLogger
+from Core.LogManager import getChildLogger
 
-Sentinel = getLogger("rknn_inferencer")
+Sentinel = getChildLogger("rknn_inferencer")
 
 
 class rknnInferencer(InferencerBackend):

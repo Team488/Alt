@@ -4,7 +4,8 @@ from ..Partials.ObjectLocalizingAgentBase import (
     ObjectLocalizingAgentBase,
     ObjectLocalizingAgentPartial,
 )
-from .PathPlanningAgentBase import PathPlanningAgentBase
+
+# from .PathPlanningAgentBase import PathPlanningAgentBase
 from .PositionLocalizingAgentBase import PositionLocalizingAgentBase
 from .ReefTrackingAgentBase import ReefTrackingAgentBase, ReefTrackingAgentPartial
 from .TimestampRegulatedAgentBase import TimestampRegulatedAgentBase
