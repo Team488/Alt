@@ -6,10 +6,7 @@ from tools.Constants import InferenceMode, MapConstants, CameraIdOffsets2024
 from mapinternals.probmap import ProbMap
 from mapinternals.KalmanLabeler import KalmanLabeler
 from mapinternals.KalmanCache import KalmanCache
-from pathplanning.PathGenerator import PathGenerator
 from reefTracking.ReefState import ReefState
-from Core.ConfigOperator import ConfigOperator
-from Core.PropertyOperator import PropertyOperator
 from Core import getChildLogger, COREINFERENCEMODE
 
 Sentinel = getChildLogger("Central")

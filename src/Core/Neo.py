@@ -13,7 +13,6 @@ from Core.PropertyOperator import PropertyOperator, LambdaHandler, ReadonlyPrope
 from Core.OrderOperator import OrderOperator
 from Core.AgentOperator import AgentOperator
 from Core.ShareOperator import ShareOperator
-from Core.XDashOperator import XDashOperator
 from Core.UpdateOperator import UpdateOperator
 from Core import LogManager, COREMODELTABLE, COREINFERENCEMODE
 from Core.Central import Central
