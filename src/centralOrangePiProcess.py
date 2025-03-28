@@ -11,6 +11,6 @@ tcm.invalidate()
 
 if __name__ == "__main__":
     n = Neo()
-    n.wakeAgent(alignment, isMainThread=False)
-    n.wakeAgent(OrangePiAgent, isMainThread=True)
+    n.wakeAgent(alignment, isMainThread=True)
+    # n.wakeAgent(OrangePiAgent, isMainThread=True)
     n.shutDown()
