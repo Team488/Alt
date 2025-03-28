@@ -10,7 +10,6 @@ class RobotTracker:
         from deep_sort.tracker import Tracker as DeepSortTracker
         from deep_sort_tools import generate_detections as gdet
         from deep_sort import nn_matching
-        from deep_sort.detection import Detection
         max_cosine_distance = 0.4
         nn_budget = None
 
@@ -23,6 +22,7 @@ class RobotTracker:
         self.encoder = gdet.create_box_encoder(encoder_model_filename, batch_size=1)
 
     def update(self, frame, detections) -> None:
+        from deep_sort.detection import Detection
 
         if len(detections) == 0:
             self.tracker.predict()

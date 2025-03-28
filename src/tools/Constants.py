@@ -206,7 +206,7 @@ class Object(Enum):
 class CameraExtrinsics(Enum):
     #   {PositionName} = ((offsetX(in),offsetY(in),offsetZ(in)),(yawOffset(deg),pitchOffset(deg)))
     # Values will be added as enum members when subclassing
-    
+
     @staticmethod
     def getDefaultLengthType() -> LengthType:
         return Units.LengthType.IN
@@ -245,7 +245,9 @@ class CameraExtrinsics(Enum):
     def getPitchOffsetAsRadians(self) -> float:
         return math.radians(self.value[1][1])
 
-    def get4x4AffineMatrix(self, lengthType: LengthType = Units.LengthType.CM) -> NDArray:
+    def get4x4AffineMatrix(
+        self, lengthType: LengthType = Units.LengthType.CM
+    ) -> NDArray:
         """Returns a 4x4 affine transformation matrix for the camera extrinsics"""
 
         x_in, y_in, z_in = self.value[0]
@@ -255,7 +257,7 @@ class CameraExtrinsics(Enum):
         position_result = UnitConversion.convertLength(
             (x_in, y_in, z_in), CameraExtrinsics.getDefaultLengthType(), lengthType
         )
-        
+
         # Ensure we have a 3D position
         if isinstance(position_result, tuple) and len(position_result) == 3:
             x, y, z = position_result
@@ -285,6 +287,12 @@ class ColorCameraExtrinsics2024(CameraExtrinsics, Enum):
     DEPTHLEFT = ((13.018, 2.548, 19.743), (24, -17))
     DEPTHRIGHT = ((13.018, -2.548, 19.743), (-24, -17))
     NONE = ((0, 0, 0), (0, 0))
+
+
+class ColorCameraExtrinsics2025(CameraExtrinsics, Enum):
+    #   {PositionName} = ((offsetX(in),offsetY(in),offsetZ(in)),(yawOffset(deg),pitchOffset(deg)))
+    DEPTH_REAR_LEFT = ((0, 0, 0), (45.0, 10.0))
+    DEPTH_REAR_RIGHT = ((0, 0, 0), (45.0, 10.0))
 
 
 class ColorCameraExtrinsics2025(CameraExtrinsics, Enum):
@@ -733,26 +741,26 @@ class ATLocations(Enum):
         position_result = UnitConversion.convertLength(
             tag.position, cls.getDefaultLengthType(), length
         )
-        
+
         # Get rotation
         rotation_result = UnitConversion.convertRotation(
             tag.rotation, cls.getDefaultRotationType(), rotation_type
         )
-        
+
         # Ensure position is a 3D position tuple
         if isinstance(position_result, tuple) and len(position_result) == 3:
             position = position_result
         else:
             # If not a valid position, return None
             return None
-            
+
         # Ensure rotation is a 2D rotation tuple
         if isinstance(rotation_result, tuple) and len(rotation_result) == 2:
             rotation_angles = rotation_result
         else:
             # If not a valid rotation, return None
             return None
-            
+
         return position, rotation_angles
 
     @classmethod
@@ -768,9 +776,11 @@ class ATLocations(Enum):
         # Make sure the translation is a 3D position
         if not isinstance(translation, tuple) or len(translation) != 3:
             return None
-            
+
         # Convert rotation angles to a rotation matrix
-        rotMatrix = Rotation.from_euler("ZY", rotation_angles, degrees=False).as_matrix()
+        rotMatrix = Rotation.from_euler(
+            "ZY", rotation_angles, degrees=False
+        ).as_matrix()
 
         m = np.eye(4)
         m[:3, :3] = rotMatrix
@@ -838,7 +848,7 @@ class ReefBranches(Enum):
         result = UnitConversion.convertLength(
             self.value[2], self.getDefaultLengthType(), units
         )
-        
+
         # Type check and convert
         if result is None:
             # Default to zero array if conversion fails
@@ -927,9 +937,7 @@ class MapConstants(Enum):
     def getCM(self) -> float:
         return self.value
 
-    def getLength(
-        self, lengthType: Units.LengthType = Units.LengthType.CM
-    ) -> float:
+    def getLength(self, lengthType: Units.LengthType = Units.LengthType.CM) -> float:
         # Since MapConstants values are all floats, we only need to handle float returns
         result = UnitConversion.convertLength(
             self.getCM(), fromType=self.getDefaultLengthType(), toType=lengthType
@@ -1000,3 +1008,8 @@ def getCameraValues2025(
         getCameraExtrinsics2025(cameraName),
         getCameraIfOffset2025(cameraName),
     )
+
+
+class RealSenseSerialIDS(Enum):
+    FRONTLEFTDEPTHSERIALID = "048522074864"
+    FRONTRIGHTDEPTHSERIALID = "843112072752"

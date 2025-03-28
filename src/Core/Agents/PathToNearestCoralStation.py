@@ -78,10 +78,13 @@ class PathToNearestCoralStation(Agent):
         request = XTableValues.RequestVisionCoprocessorMessage(
             start=startPoint, end=endPoint, arguments=arguments, options=options
         )
-        path = fastMarchingMethodRPC.pathplan(request)
-        if path is None:
-            return
-        self.bezierPathToNearestCoralStation.set(path)
+        try:
+            path = fastMarchingMethodRPC.pathplan(request)
+            if path is None:
+                return
+            self.bezierPathToNearestCoralStation.set(path)
+        except Exception as e:
+            print(e)
 
     def getIntervalMs(self):
         return -1

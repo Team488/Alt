@@ -5,16 +5,16 @@ from tools.Constants import (
     ColorCameraExtrinsics2024,
     CameraIntrinsicsPredefined,
     D435IResolution,
+    RealSenseSerialIDS,
     CommonVideos,
 )
 from Captures import D435Capture, FileCapture, ConfigurableCameraCapture
 
-if __name__ == "__main__":
-    agent = ObjectLocalizingAgentPartial(
-        D435Capture(D435IResolution.RS480P),
-        ColorCameraExtrinsics2024.NONE,
-        InferenceMode.ALCOROBEST2025,
-        showFrames=True,
-    )
-    n = Neo()
-    n.wakeAgent(agent, isMainThread=True)
+agent = ObjectLocalizingAgentPartial(
+    D435Capture(D435IResolution.RS480P,RealSenseSerialIDS.FRONTLEFTDEPTHSERIALID.value),
+    ColorCameraExtrinsics2024.NONE,
+    InferenceMode.ONNXMEDIUM2025,
+    showFrames=True,
+)
+n = Neo()
+n.wakeAgent(agent, isMainThread=True)
