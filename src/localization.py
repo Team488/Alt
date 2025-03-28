@@ -9,12 +9,14 @@ from tools.Constants import (
     CommonVideos,
 )
 from Captures import D435Capture, FileCapture, ConfigurableCameraCapture
-
-agent = ObjectLocalizingAgentPartial(
-    D435Capture(D435IResolution.RS480P,RealSenseSerialIDS.FRONTLEFTDEPTHSERIALID.value),
-    ColorCameraExtrinsics2024.NONE,
-    InferenceMode.ONNXMEDIUM2025,
-    showFrames=True,
-)
-n = Neo()
-n.wakeAgent(agent, isMainThread=True)
+if __name__ == "__main__":
+    agent = ObjectLocalizingAgentPartial(
+        # D435Capture(D435IResolution.RS480P,RealSenseSerialIDS.FRONTLEFTDEPTHSERIALID.value),
+        ConfigurableCameraCapture(uniqueId="aa",cameraPath=CommonVideos.Comp2024Clip.path,cameraIntrinsics=CameraIntrinsicsPredefined.OV9782COLOR),
+        ColorCameraExtrinsics2024.NONE,
+        InferenceMode.ONNXSMALL2025,
+        showFrames=True,
+    )
+    n = Neo()
+    n.wakeAgent(agent, isMainThread=False)
+    n.waitForAgentsFinished()

@@ -65,7 +65,7 @@ class Agent(ABC):
         self.updateOp = updateOperator
         self.timeOp = timeOperator
         self.Sentinel = logger
-        self.timer = self.timeOp.getTimer("agentTimer")
+        self.timer = self.timeOp.getTimer("timers")
         # other than setting variables, nothing should go here
 
     def _cleanup(self):
