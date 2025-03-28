@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Optional
 import pyrealsense2 as rs
 import numpy as np
 import cv2
@@ -10,14 +10,21 @@ class realsense2Helper:
     DEPTH = 0
     COLOR = 1
 
-    def __init__(self, res: D435IResolution) -> None:
+    def __init__(self, res: D435IResolution, realSenseSerialId : Optional[str]) -> None:
         self.res = res
         self.pipeline = rs.pipeline()
         self.config = rs.config()
         self.streams = [rs.stream.depth, rs.stream.color]
         self.formats = [rs.format.z16, rs.format.bgr8]
-        for format, stream in zip(self.formats, self.streams):
-            self.config.enable_stream(stream, res.w, res.h, format, res.fps)
+        
+        if realSenseSerialId is not None:
+            if not self.__verifyExistence(realSenseSerialId):
+                raise RuntimeError(f"A device with this serial id does not exist!: {realSenseSerialId}")
+
+            self.config.enable_device(realSenseSerialId) # Filter serial id
+
+        for _format, stream in zip(self.formats, self.streams):
+            self.config.enable_stream(stream, res.w, res.h, _format, res.fps)
 
         pipeline_profile = self.pipeline.start(self.config)
 
@@ -32,6 +39,13 @@ class realsense2Helper:
             self.baked.append((intr, coeffs))
             self.maps.append((mapx, mapy))
 
+    def __verifyExistence(self, serialId : str):
+        """ Checks if a device with a cetain serial is plugged in"""
+        context = rs.context()
+        ids = {dev.get_info(rs.camera_info.serial_number) for dev in context.devices}
+
+        return serialId in ids
+    
     def getFps(self):
         return self.res.fps
 

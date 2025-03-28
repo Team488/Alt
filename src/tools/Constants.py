@@ -1008,3 +1008,8 @@ def getCameraValues2025(
         getCameraExtrinsics2025(cameraName),
         getCameraIfOffset2025(cameraName),
     )
+
+
+class RealSenseSerialIDS(Enum):
+    FRONTLEFTDEPTHSERIALID = "048522074864"
+    FRONTRIGHTDEPTHSERIALID = "843112072752"

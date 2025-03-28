@@ -10,7 +10,7 @@ class D435Capture(depthCamera):
     Capture implementation for Intel RealSense D435 depth camera
     """
 
-    def __init__(self, res: D435IResolution) -> None:
+    def __init__(self, res: D435IResolution, realsenseSerialId = None) -> None:
         """
         Initialize a D435 capture with the specified resolution
 
@@ -19,13 +19,14 @@ class D435Capture(depthCamera):
         """
         super().__init__()
         self.res: D435IResolution = res
+        self.realSenseSerialId = realsenseSerialId
         self.realsenseHelper: Optional[realsense2Helper] = None
 
     def create(self) -> None:
         """
         Initialize the RealSense camera
         """
-        self.realsenseHelper = realsense2Helper(self.res)
+        self.realsenseHelper = realsense2Helper(self.res, self.realSenseSerialId)
         intr: CameraIntrinsics = self.realsenseHelper.getCameraIntrinsics()
         super().setIntrinsics(intr)
 
