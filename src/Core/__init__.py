@@ -1,17 +1,24 @@
+import socket
 import subprocess
 from tools.Constants import InferenceMode
-from .LogManager import getLogger
+from .LogManager import getChildLogger
 import sys
 
 COREMODELTABLE = "MainProcessInferenceMODE"
 COREINFERENCEMODE = InferenceMode.ALCOROBEST2025
+DEVICEHOSTNAME = socket.gethostname()
+
 
 def isHeadless():
     try:
         result = subprocess.run(
-            [sys.executable, "-c", "import cv2; cv2.namedWindow('test'); cv2.destroyWindow('test')"],
+            [
+                sys.executable,
+                "-c",
+                "import cv2; cv2.namedWindow('test'); cv2.destroyWindow('test')",
+            ],
             capture_output=True,
-            text=True
+            text=True,
         )
         if result.returncode == 0:
             return False  # GUI works
@@ -20,6 +27,7 @@ def isHeadless():
             return True  # Headless mode
     except Exception as e:
         print("Subprocess failed:", str(e))
-        return True  # Assume headless if subprocess crashes    
-    
+        return True  # Assume headless if subprocess crashes
+
+
 canCurrentlyDisplay = not isHeadless()

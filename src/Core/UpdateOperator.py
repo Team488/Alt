@@ -8,9 +8,11 @@ from collections import defaultdict
 class UpdateOperator:
     ALLRUNNINGAGENTPATHS: str = "ALL_RUNNING_AGENT_PATHS"
 
-    def __init__(self, xclient: XTablesClient, propertyOperator: PropertyOperator) -> None:
+    def __init__(
+        self, xclient: XTablesClient, propertyOperator: PropertyOperator
+    ) -> None:
         self.__xclient: XTablesClient = xclient
-        self.uniqueUpdateName: str = propertyOperator.getFullPrefix()[:-1]
+        self.uniqueUpdateName: str = propertyOperator.getFullPrefix()
         self.addToAllRunning(self.uniqueUpdateName)
         self.__propertyOp: PropertyOperator = propertyOperator
         self.__subscribedUpdates: DefaultDict[str, Set[str]] = defaultdict(set)
@@ -27,12 +29,14 @@ class UpdateOperator:
 
         self.__xclient.putStringList(self.ALLRUNNINGAGENTPATHS, existingNames)
 
-    def getAllRunning(self, pathFilter: Optional[Callable[[str], bool]] = None) -> List[str]:
+    def getAllRunning(
+        self, pathFilter: Optional[Callable[[str], bool]] = None
+    ) -> List[str]:
         """Get a list of all running agent paths, optionally filtered"""
         stringList = self.__xclient.getStringList(self.ALLRUNNINGAGENTPATHS)
         if stringList is None:
             return []
-            
+
         runningPaths = [
             runningPath
             for runningPath in stringList
@@ -105,14 +109,14 @@ class UpdateOperator:
     ) -> Tuple[List[str], List[str]]:
         """
         Subscribe to global updates with the given name from all running agents
-        
+
         Args:
             updateName: The name of the update to subscribe to
             updateSubscriber: Callback function to handle update notifications
             runOnNewSubscribe: Optional callback to run when new subscriptions are added
             runOnRemoveSubscribe: Optional callback to run when subscriptions are removed
             pathFilter: Optional filter to apply to running agent paths
-            
+
         Returns:
             Tuple of (new_subscribers, removed_subscribers)
         """
@@ -150,14 +154,14 @@ class UpdateOperator:
         return newSubscribers, removedSubscribers
 
     def unsubscribeToAllGlobalUpdates(
-        self, 
-        updateName: str, 
-        updateSubscriber: Callable[[Any], None], 
-        pathFilter: Optional[Callable[[str], bool]] = None
+        self,
+        updateName: str,
+        updateSubscriber: Callable[[Any], None],
+        pathFilter: Optional[Callable[[str], bool]] = None,
     ) -> None:
         """
         Unsubscribe from global updates with the given name from all running agents
-        
+
         Args:
             updateName: The name of the update to unsubscribe from
             updateSubscriber: The subscriber callback that was used to subscribe

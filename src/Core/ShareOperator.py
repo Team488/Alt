@@ -1,25 +1,31 @@
 from logging import Logger
 from threading import Lock
 from typing import Any, Dict, Optional, TypeVar, Generic
+from multiprocessing.managers import DictProxy
+from Core import getChildLogger
 
-T = TypeVar('T')
+Sentinel = getChildLogger("Share_Operator")
+
 
 class ShareOperator:
-    """ "Temporary Memory" to be shared between any agents and orders"""
+    """Uses a multiprocessing dict to "share memory" across any agents and orders locally"""
 
-    def __init__(self, logger: Logger) -> None:
-        self.__sharedMap: Dict[str, Any] = {}
-        self.__sharedLock = Lock()
-        self.Sentinel = logger
+    def __init__(self, dict) -> None:
+        self.__sharedMap = dict
 
     def put(self, key: str, value: Any) -> None:
-        with self.__sharedLock:
-            self.__sharedMap[key] = value
+        self.__sharedMap[key] = value
 
-    def get(self, key: str, default: Optional[T] = None) -> Optional[Any]:
-        with self.__sharedLock:
-            return self.__sharedMap.get(key, default)
+    def get(self, key: str, default: Optional[Any] = None) -> Optional[Any]:
+        return self.__sharedMap.get(key, default)
 
     def has(self, key: str) -> bool:
-        with self.__sharedLock:
-            return key in self.__sharedMap
+        return key in self.__sharedMap
+
+    """ For pickling"""
+
+    def __getstate__(self):
+        return self.__sharedMap
+
+    def __setstate__(self, state):
+        self.__sharedMap = state

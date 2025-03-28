@@ -6,9 +6,9 @@ from logging import Logger
 from typing import Dict, List, Any, Optional, Tuple, Union, Type, cast
 import numpy as np
 from enum import Enum
-from Core import getLogger
+from Core import getChildLogger
 
-Sentinel = getLogger("Config_Operator")
+Sentinel = getChildLogger("Config_Operator")
 
 
 def staticLoad(

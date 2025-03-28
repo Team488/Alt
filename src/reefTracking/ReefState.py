@@ -4,14 +4,15 @@ import json
 
 import numpy as np
 from tools.Constants import ATLocations, ReefBranches, TEAM
-from Core import getLogger
+from Core import getChildLogger
 from tools.Units import LengthType, RotationType
 from coreinterface.ReefPacket import ReefPacket
 from assets.schemas import reefStatePacket_capnp
 
 from JXTABLES import XTableValues_pb2 as XTableValue
 from typing import List
-Sentinel = getLogger("Reef_State")
+
+Sentinel = getChildLogger("Reef_State")
 
 
 class ReefState:
@@ -91,7 +92,7 @@ class ReefState:
 
         col_idx = self.apriltag_to_idx.get(apriltagid)
         row_idx = branchid
-        #print("Added observation", col_idx, row_idx)
+        # print("Added observation", col_idx, row_idx)
 
         # We know 100% that the space is filled.
         # Stop updating to that particular observation. It becomes "locked".
@@ -211,12 +212,12 @@ class ReefState:
         return ReefPacket.createPacket(
             coralTrackerOutput, algaeTrackerOutput, message, timestamp
         )
-    
+
     def getReefMapState_as_protobuf(
-            self, team: TEAM = None, timestamp=0
+        self, team: TEAM = None, timestamp=0
     ) -> XTableValue.ReefState:
         reef_state_proto = XTableValue.ReefState()
-        reef_state_entries : List[XTableValue.ReefEntry] = []
+        reef_state_entries: List[XTableValue.ReefEntry] = []
 
         # Create the Coral Map Output
         offset_col, mapbacking = self.__getMapBacking(team)
@@ -224,7 +225,7 @@ class ReefState:
         for col in range(cols):
             at_id = self.idx_to_apriltag[col + offset_col]
             reef_entry = XTableValue.ReefEntry()
-            branch_coral_state_lst : List[XTableValue.BranchCoralState] = []
+            branch_coral_state_lst: List[XTableValue.BranchCoralState] = []
             for row in range(rows):
                 openness = mapbacking[row, col]
                 branch_coral_state = XTableValue.BranchCoralState()

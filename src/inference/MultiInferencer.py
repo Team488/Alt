@@ -5,20 +5,21 @@ import numpy as np
 from abstract.inferencerBackend import InferencerBackend
 from tools.Constants import ConfigConstants, InferenceMode, Backend
 from tools import UnitConversion
-from Core.LogManager import getLogger
+from Core.LogManager import getChildLogger
 from demos import utils
 
-Sentinel = getLogger("Multi_Inferencer")
+Sentinel = getChildLogger("Multi_Inferencer")
 
 
 class MultiInferencer:
     """
     A unified interface for running inference with different backends (RKNN, ONNX, Ultralytics)
     """
+
     def __init__(self, inferenceMode: InferenceMode) -> None:
         """
         Initialize the multi-inferencer with a specific inference mode
-        
+
         Args:
             inferenceMode: The inference mode to use (defines model, backend, etc.)
         """
@@ -29,41 +30,46 @@ class MultiInferencer:
     def __getBackend(self, inferenceMode: InferenceMode) -> InferencerBackend:
         """
         Get the appropriate backend based on the inference mode
-        
+
         Args:
             inferenceMode: The inference mode to get the backend for
-            
+
         Returns:
             The initialized inferencer backend
-            
+
         Raises:
             RuntimeError: If an invalid backend is specified
         """
         backend = inferenceMode.getBackend()
         if backend == Backend.RKNN:
             from inference.rknnInferencer import rknnInferencer
+
             return rknnInferencer(mode=inferenceMode)
 
         if backend == Backend.ONNX:
             from inference.onnxInferencer import onnxInferencer
+
             return onnxInferencer(mode=inferenceMode)
 
         if backend == Backend.ULTRALYTICS:
             from inference.ultralyticsInferencer import ultralyticsInferencer
+
             return ultralyticsInferencer(mode=inferenceMode)
 
         Sentinel.fatal(f"Invalid backend provided!: {backend}")
         raise RuntimeError(f"Invalid backend provided: {backend}")
 
-    def run(self, frame: np.ndarray, minConf: float, drawBoxes: bool = False) -> Optional[List[Tuple[List[float], float, int]]]:
+    def run(
+        self, frame: np.ndarray, minConf: float, drawBoxes: bool = False
+    ) -> Optional[List[Tuple[List[float], float, int]]]:
         """
         Run inference on a frame
-        
+
         Args:
             frame: The input frame to run inference on
             minConf: Minimum confidence threshold for detections
             drawBoxes: Whether to draw bounding boxes on the frame
-            
+
         Returns:
             A list of tuples containing (bbox, confidence, class_id) or None if inference fails
         """

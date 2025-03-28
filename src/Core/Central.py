@@ -6,51 +6,25 @@ from tools.Constants import InferenceMode, MapConstants, CameraIdOffsets2024
 from mapinternals.probmap import ProbMap
 from mapinternals.KalmanLabeler import KalmanLabeler
 from mapinternals.KalmanCache import KalmanCache
-from pathplanning.PathGenerator import PathGenerator
 from reefTracking.ReefState import ReefState
-from Core.ConfigOperator import ConfigOperator
-from Core.PropertyOperator import PropertyOperator
+from Core import getChildLogger, COREINFERENCEMODE
+
+Sentinel = getChildLogger("Central")
 
 
 class Central:
     def __init__(
         self,
-        logger: Logger,
-        configOp: ConfigOperator,
-        propertyOp: PropertyOperator,
-        inferenceMode: InferenceMode,
+        inferenceMode: InferenceMode = COREINFERENCEMODE,
     ) -> None:
-        self.Sentinel = logger
-        self.configOp = configOp
-        self.propertyOp = propertyOp
         self.inferenceMode = inferenceMode
         self.labels = self.inferenceMode.getLabels()
-
-        self.useObstacles = self.propertyOp.createProperty("Use_Obstacles", True)
 
         self.kalmanCaches = [KalmanCache() for _ in self.labels]
         self.objectmap = ProbMap(self.labels)
         self.reefState = ReefState()
         self.ukf = Ukf()
         self.labler = KalmanLabeler(self.kalmanCaches, self.labels)
-        self.obstacleMap = self.__tryLoadObstacleMap()
-        self.pathGenerator = PathGenerator(self.objectmap, self.obstacleMap)
-
-    def __tryLoadObstacleMap(self):
-        defaultMap = np.zeros(
-            (MapConstants.fieldWidth.value, MapConstants.fieldHeight.value), dtype=bool
-        )
-        if self.useObstacles.get():
-            obstacleMap = self.configOp.getContent("obstacleMap.npy")
-            if obstacleMap is not None:
-                return obstacleMap
-            else:
-                # this will never happen, as we have the obstaclemap in assets too
-                self.Sentinel.warning(
-                    "Failed to load obstacles, defaulting to empty map"
-                )
-
-        return defaultMap
 
     def processReefUpdate(
         self,
