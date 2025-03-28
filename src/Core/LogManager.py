@@ -8,7 +8,7 @@ BASELOGDIR = os.path.join(os.path.expanduser("~"), ".ALTLOGS")
 os.makedirs(BASELOGDIR, exist_ok=True)
 
 
-LOGLEVEL = logging.ERROR
+LOGLEVEL = logging.DEBUG
 
 # Use hostname as a unique identifier for this instance
 UniqueId: Final[str] = socket.gethostname()

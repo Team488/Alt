@@ -302,7 +302,6 @@ class AgentOperator:
             while True:
                 print(self.futures)
                 if self.__runningProcessCount.get() <= 0:
-                    print("AAAAAAAAAAAAAA")
                     break
                 time.sleep(0.01)
             Sentinel.info("Agents have all finished.")
