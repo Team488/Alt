@@ -46,6 +46,8 @@ class DocTrAlignmentProvider(AlignmentProvider):
 
         docs = DocumentFile.from_images([img_byte_arr.getvalue()])
         results = self.det_predictor(docs)
+        left = None
+        right = None
 
         for doc, res in zip(docs, results):
             img_shape = (doc.shape[0], doc.shape[1])
@@ -73,9 +75,16 @@ class DocTrAlignmentProvider(AlignmentProvider):
                         thickness=2,
                     )
 
-        # add final alignment logic here
-        left = None
-        right = None
+                if len(points) > 0:
+                    left = left if left is not None else points[0][0]
+                    right = right if right is not None else points[0][0]
+
+                vals = [point[0] for point in points]
+                vals.append(left)
+                vals.append(right)
+                left = min(vals)
+                right = max(vals)
+
         return left, right
 
     # Helper function to convert relative coordinates to absolute pixel values
