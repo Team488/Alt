@@ -183,16 +183,13 @@ class CameraUsingAgentBase(Agent):
             )
 
             frameShape = self.capture.getFrameShape()
-            wtoh = frameShape[0]/frameShape[1]
+            htow = frameShape[0]/frameShape[1]
 
             self.streamWidth = self.propertyOperator.createProperty(
                 "stream.width", 320, isCustom=True, addOperatorPrefix=True
             )
             self.streamHeight = self.propertyOperator.createProperty(
-                "stream.height", int(320 * wtoh), isCustom=True, addOperatorPrefix=True
-            )
-            self.streamQueueSize = self.propertyOperator.createProperty(
-                "stream.qsize", 10, isCustom=True, addOperatorPrefix=True
+                "stream.height", int(320 * htow), isCustom=True, addOperatorPrefix=True
             )
 
         else:
