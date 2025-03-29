@@ -182,11 +182,17 @@ class CameraUsingAgentBase(Agent):
                 "stream.IP", streamPath, addBasePrefix=True, addOperatorPrefix=True
             )
 
+            frameShape = self.capture.getFrameShape()
+            wtoh = frameShape[0]/frameShape[1]
+
             self.streamWidth = self.propertyOperator.createProperty(
                 "stream.width", 320, isCustom=True, addOperatorPrefix=True
             )
             self.streamHeight = self.propertyOperator.createProperty(
-                "stream.height", 180, isCustom=True, addOperatorPrefix=True
+                "stream.height", int(320 * wtoh), isCustom=True, addOperatorPrefix=True
+            )
+            self.streamQueueSize = self.propertyOperator.createProperty(
+                "stream.qsize", 10, isCustom=True, addOperatorPrefix=True
             )
 
         else:
@@ -345,13 +351,19 @@ class CameraUsingAgentBase(Agent):
                 self.updateOp.addGlobalUpdate(self.FRAMEPOSTFIX, framePacket.to_bytes())
 
             # send to mjpeg stream
+            # clear if above size
+            if self.stream_queue.qsize() > self.streamQueueSize.get():
+                self.stream_queue.get_nowait()
+            
+            streamWidthI = int(self.streamWidth.get())
+            streamHeightI = int(self.streamHeight.get())
             if (
-                self.streamWidth.get() != self.latestFrameMain.shape[1]
-                or self.streamHeight.get() != self.latestFrameMain.shape[0]
+                streamWidthI != self.latestFrameMain.shape[1]
+                or streamHeightI != self.latestFrameMain.shape[0]
             ):
                 resizedFrame = cv2.resize(
                     self.latestFrameMain,
-                    (self.streamWidth.get(), self.streamHeight.get()),
+                    (streamWidthI, streamHeightI),
                 )
                 self.stream_queue.put_nowait(resizedFrame)
             else:

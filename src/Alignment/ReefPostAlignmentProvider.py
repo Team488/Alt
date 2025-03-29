@@ -1,19 +1,18 @@
 import cv2
 import numpy as np
 from abstract.AlignmentProvider import AlignmentProvider
-from Core import PropertyOperator, getChildLogger
+from Core import getChildLogger
 from Core.ConfigOperator import staticLoad
 
 Sentinel = getChildLogger("DocTr_Alignment_Provider")
 
 
 class ReefPostAlignmentProvider(AlignmentProvider):
-    def __init__(self, propertyOperator: PropertyOperator):
+    def __init__(self):
         super().__init__()
-        self.propertyOperator = propertyOperator
-        self.hist = staticLoad("assets/stingerHistogram.npy")
+        self.hist, self.mtime = staticLoad("assets/stingerHistogram.npy",isRelativeToSource=True)
 
-    def isColorBased():
+    def isColorBased(self):
         return True  # HAS to be color
 
     def align(self, frame, draw):

@@ -2,7 +2,6 @@ from abc import ABC, abstractmethod
 
 import numpy as np
 
-from Core import PropertyOperator
 
 class AlignmentProvider(ABC):
     """ Alignment providers will take in a frame and give left right offset values from the center of the frame\n
@@ -15,7 +14,7 @@ class AlignmentProvider(ABC):
         pass
 
     @abstractmethod
-    def isColorBased() -> bool:
+    def isColorBased(self) -> bool:
         """ Returns whether this alignment provider is color based or not"""
         pass
 

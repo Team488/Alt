@@ -1,7 +1,6 @@
 from typing import Union, List
 from functools import partial
 from enum import Enum
-from Core.Agents.Abstract import CameraUsingAgentBase
 from abstract.Capture import Capture
 from abstract.Agent import Agent
 
@@ -25,6 +24,8 @@ class AgentCapabilites(Enum):
 
     @staticmethod
     def __getPartialCapabilites(agentClass: partial) -> List["AgentCapabilites"]:
+        from Core.Agents.Abstract.CameraUsingAgentBase import CameraUsingAgentBase
+        
         # TODO much more here
         capabilites = set()
         for arg in agentClass.args:
@@ -35,10 +36,16 @@ class AgentCapabilites(Enum):
             if issubclass(type(arg), Capture):
                 capabilites.add(AgentCapabilites.STREAM)
 
+        if issubclass(agentClass.func, CameraUsingAgentBase):
+            capabilites.add(AgentCapabilites.STREAM)
+
+
         return list(capabilites)
 
     @staticmethod
     def __getAgentCapabilites(agentClass: type[Agent]) -> List["AgentCapabilites"]:
+        from Core.Agents.Abstract.CameraUsingAgentBase import CameraUsingAgentBase
+        
         # TODO much more here
         capabilites = set()
         if issubclass(agentClass, CameraUsingAgentBase):

@@ -54,7 +54,7 @@ class BinnedVerticalAlignmentChecker(AlignmentProvider):
     def rescaleHeight(self, value):
         return value * self.shape[0] / self.TUNEDHEIGHT
 
-    def isColorBased():
+    def isColorBased(self):
         return False  # uses april tags so b/w frame
 
     def align(self, inputFrame, draw):
