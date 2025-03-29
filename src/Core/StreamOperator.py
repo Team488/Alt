@@ -89,7 +89,7 @@ class StreamOperator:
             self.close_stream(name)
 
         # Shutdown Flask server (sending SIGINT or SIGTERM)
-        os.kill(os.getpid(), signal.SIGTERM)
+        # os.kill(os.getpid(), signal.SIGTERM)
 
         # Ensure server thread stops
         self.server_thread.join()
