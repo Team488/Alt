@@ -1,8 +1,10 @@
+import time
 import cv2
 import numpy as np
 from abstract.AlignmentProvider import AlignmentProvider
 from Core import getChildLogger
 from Core.ConfigOperator import staticLoad
+from tools import generalutils
 
 Sentinel = getChildLogger("DocTr_Alignment_Provider")
 
@@ -14,12 +16,13 @@ class ReefPostAlignmentProvider(AlignmentProvider):
     def create(self):
         super().create()
         self.hist, self.mtime = staticLoad(
-            "assets\stingerHistogram.npy", isRelativeToSource=True
+            "assets/histograms/reef_post_hist.npy", isRelativeToSource=True
         )
         self.threshold = self.propertyOperator.createProperty("Reef_Post_Threshold", 60)
         self.erosioniter = self.propertyOperator.createProperty("Reef_Erosion_iter", 1)
         self.dilationiter = self.propertyOperator.createProperty("Reef_Dilation_iter", 2)
         self.kernelSize = self.propertyOperator.createProperty("SquareKernelLength",3)
+        self.propertyOperator.createReadOnlyProperty("Histogram_Update_Time", generalutils.getTimeStr(time.localtime(self.mtime)))
 
     def isColorBased(self):
         return True  # HAS to be color
