@@ -4,7 +4,7 @@ import os
 import signal
 import cv2
 from flask import Flask, Response
-from multiprocessing import Manager, Queue
+from multiprocessing import Manager, managers
 import threading
 from Core import getChildLogger
 
@@ -17,25 +17,25 @@ class StreamOperator:
     def __init__(self, manager: multiprocessing.managers.SyncManager, host="0.0.0.0"):
         self.app = Flask(__name__)
         self.host = host
-        self.streams = {}  # Dictionary to store queues and processes
+        self.streams = {}  # Dictionary to store
         self.manager = manager  # Multiprocessing Manager
         self.server_thread = threading.Thread(target=self.run_server, daemon=True)
 
-    def register_stream(self, name) -> Queue:
-        """Creates a new stream, registers a route, and returns a Queue for updating frames."""
+    def register_stream(self, name) -> managers.DictProxy:
+        """Creates a new stream, registers a route, and returns a DictProxy for updating frames."""
         if name in self.streams:
             Sentinel.info(f"Stream {name} already exists.")
-            return self.streams[name]["queue"]
+            return self.streams[name]["dict"]
 
-        # Create a new Queue from the manager
-        queue = self.manager.Queue()
-        self.streams[name] = {"queue": queue}
+        # Create a new DictProxy from the manager
+        frameShare = self.manager.dict()
+        self.streams[name] = {"dict": frameShare}
 
         # Define the stream generation function dynamically
-        def generate_frames(queue=queue):
+        def generate_frames(shareddict=frameShare):
             while True:
-                # Get frame from the queue
-                frame = queue.get()  # This will block until a frame is available
+                # Get frame from the DictProxy
+                frame = frameShare.get("frame", None)  # This will block until a frame is available
                 if frame is None:
                     continue
                 ret, jpeg = cv2.imencode(".jpg", frame)
@@ -53,7 +53,7 @@ class StreamOperator:
         )
 
         Sentinel.info(f"Registered new stream: {name} at '{name}/stream.mjpg'")
-        return queue  # Return the queue so external processes/threads can update it
+        return frameShare  # Return the DictProxy so external processes/threads can update it
 
     def _create_view_func(self, generate_frames_func, name):
         """Helper to create a view function for a dynamic stream with functools.wraps."""
@@ -98,7 +98,7 @@ class StreamOperator:
     def close_stream(self, name):
         """Closes a specific stream and releases the resources."""
         if name in self.streams:
-            queue = self.streams[name]["queue"]
-            queue.put(None)  # Send a None frame to stop the stream
+            dict = self.streams[name]["dict"]
+            dict["frame"] = None  # Send a None frame to stop the stream
             del self.streams[name]
             Sentinel.info(f"Closed stream: {name}")

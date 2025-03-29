@@ -16,3 +16,4 @@ if __name__ == "__main__":
     n = Neo()
     n.wakeAgent(agent, isMainThread=False)
     n.waitForAgentsFinished()
+    n.shutDown()

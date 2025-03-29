@@ -172,7 +172,7 @@ class CameraUsingAgentBase(Agent):
                 cv2.namedWindow(self.WINDOWNAMEDEPTH)
 
         if AgentCapabilites.STREAM.objectName in self.extraObjects:
-            self.stream_queue: multiprocessing.queues.Queue = self.extraObjects.get(
+            self.stream_queue: multiprocessing.managers.DictProxy = self.extraObjects.get(
                 AgentCapabilites.STREAM.objectName
             )
 
@@ -361,9 +361,6 @@ class CameraUsingAgentBase(Agent):
 
             # send to mjpeg stream
             # clear if above size
-            if self.stream_queue.qsize() > self.streamQueueSize.get():
-                self.stream_queue.get_nowait()
-            
             streamWidthI = int(self.streamWidth.get())
             streamHeightI = int(self.streamHeight.get())
             if (
@@ -374,9 +371,9 @@ class CameraUsingAgentBase(Agent):
                     self.latestFrameMain,
                     (streamWidthI, streamHeightI),
                 )
-                self.stream_queue.put_nowait(resizedFrame)
+                self.stream_queue["frame"] = resizedFrame
             else:
-                self.stream_queue.put_nowait(self.latestFrameMain)
+                self.stream_queue["frame"] = self.latestFrameMain
 
         with self.timer.run("cap_read"):
             self.hasIngested = True
