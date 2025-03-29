@@ -17,10 +17,10 @@ from tools.depthBasedPositionEstimator import DepthBasedPositionEstimator
 from tools.positionTranslations import CameraToRobotTranslator, transformWithYaw
 from inference.MultiInferencer import MultiInferencer
 from demos import utils
-from Core import getLogger
+from Core import getChildLogger
 
 
-Sentinel = getLogger("Local_Frame_Processor")
+Sentinel = getChildLogger("Local_Frame_Processor")
 
 
 class LocalFrameProcessor:

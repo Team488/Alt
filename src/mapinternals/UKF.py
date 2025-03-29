@@ -2,7 +2,7 @@ import numpy as np
 import cv2
 from filterpy.kalman import UnscentedKalmanFilter
 from filterpy.kalman import MerweScaledSigmaPoints
-from tools.Constants import MapConstants
+from tools import Constants
 
 
 class Ukf:
@@ -12,10 +12,11 @@ class Ukf:
         self,
         Obstacles: list[
             tuple[tuple[int, int], tuple[int, int]]
-        ] = MapConstants.mapObstacles.value.copy(),
-        fieldX=MapConstants.fieldWidth.value,
-        fieldY=MapConstants.fieldHeight.value,
+        ] = Constants.MapConstants.mapObstacles.value.copy(),
+        fieldX=Constants.MapConstants.fieldWidth.value,
+        fieldY=Constants.MapConstants.fieldHeight.value,
     ) -> None:
+
         self.obstacles = Obstacles
         self.__addFieldBoundsAsObstacles(fieldX, fieldY)
 

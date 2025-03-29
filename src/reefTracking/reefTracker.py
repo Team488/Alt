@@ -12,7 +12,7 @@ from tools.Constants import (
     ATCameraExtrinsics,
 )
 from tools import Calculator, UnitConversion
-from Core import getLogger
+from Core import getChildLogger
 from Core.ConfigOperator import staticLoad
 
 
@@ -289,7 +289,7 @@ objThresh = 0.2
 blockerThresh = 0.2
 fullpurpleThresh = 0.7
 
-Sentinel = getLogger("Reef_Post_Estimator")
+Sentinel = getChildLogger("Reef_Post_Estimator")
 AtCorrectionMap = {}
 
 

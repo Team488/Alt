@@ -4,21 +4,21 @@ import numpy as np
 from abstract.AlignmentProvider import AlignmentProvider
 from Captures.FileCapture import FileCapture
 from tools.Constants import SimulationEndpoints
-from Core import PropertyOperator, getLogger
+from Core import PropertyOperator, getChildLogger
 
-Sentinel = getLogger("April_Tag_Alignment_Provider")
+Sentinel = getChildLogger("April_Tag_Alignment_Provider")
+
+
 class BinnedVerticalAlignmentChecker(AlignmentProvider):
     # testHostname = "photonvisionfrontright"  # for testing ONLY
     testHostname = None
     TUNEDWIDTH = 960
     TUNEDHEIGHT = 720
 
-    def __init__(
-        self, propertyOperator :PropertyOperator
-    ):
+    def __init__(self, propertyOperator: PropertyOperator):
         super().__init__()
         self.propertyOperator = propertyOperator
-        self.shape = (self.TUNEDWIDTH, self.TUNEDHEIGHT) # default
+        self.shape = (self.TUNEDWIDTH, self.TUNEDHEIGHT)  # default
 
     def createConstants(self):
         self.threshold_to_last_used = self.propertyOperator.createProperty(
@@ -43,20 +43,20 @@ class BinnedVerticalAlignmentChecker(AlignmentProvider):
         )
         self.lastUsedSize = None
         self.lastValidLeft = None
-        self.lastValidLeftFrameCnt = None 
+        self.lastValidLeftFrameCnt = None
         self.lastValidRight = None
         self.lastValidRightFrameCnt = None
         self.currentFrameCnt = 0
 
     def rescaleWidth(self, value):
         return value * self.shape[1] / self.TUNEDWIDTH
-    
+
     def rescaleHeight(self, value):
         return value * self.shape[0] / self.TUNEDHEIGHT
 
     def isColorBased():
-        return False # uses april tags so b/w frame
-    
+        return False  # uses april tags so b/w frame
+
     def align(self, inputFrame, draw):
         frame = inputFrame
         if not self.checkFrame(frame):
@@ -84,7 +84,7 @@ class BinnedVerticalAlignmentChecker(AlignmentProvider):
 
         # Threshold the edge image
         _, thresh = cv2.threshold(sobel_8u, 100, 255, cv2.THRESH_BINARY)
-        
+
         # Apply morphological operations to enhance vertical edges
         kernel_vertical = np.ones((5, 1), np.uint8)
         vertical_edges = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel_vertical)
@@ -115,7 +115,7 @@ class BinnedVerticalAlignmentChecker(AlignmentProvider):
                     cv2.rectangle(edge_viz, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
         # fnd the smallest "pair" of sides that is SILL BIG ENOUGH, but not the biggest in general.
-        # This helps distinguish the april tag sides from the side of the april tag paper and the gray background 
+        # This helps distinguish the april tag sides from the side of the april tag paper and the gray background
         bestmatchedPair = None
         sizeLocked = False
         bestsize = -1
@@ -129,21 +129,19 @@ class BinnedVerticalAlignmentChecker(AlignmentProvider):
                 bestsize = size
             elif pairLength == bestPairLength:
                 if self.lastUsedSize is not None:
-                    diff = abs(self.lastUsedSize-size)
+                    diff = abs(self.lastUsedSize - size)
 
                     if diff < self.rescaleHeight(self.threshold_to_last_used.get()):
                         bestsize = size
                         bestmatchedPair = valid_bin[:2]
                         sizeLocked = True
 
-
                 if not sizeLocked and size < bestsize:
                     bestsize = size
                     bestmatchedPair = valid_bin[:2]
-        
+
         # memory for last used bin size
         self.lastUsedSize = bestsize
-
 
         # assign left/right sides
         if bestmatchedPair is not None:
@@ -180,7 +178,7 @@ class BinnedVerticalAlignmentChecker(AlignmentProvider):
 
         elif self.lastValidLeftFrameCnt is not None:
             # try get memory
-            deltaSinceLastValidLeft = self.currentFrameCnt-self.lastValidLeftFrameCnt
+            deltaSinceLastValidLeft = self.currentFrameCnt - self.lastValidLeftFrameCnt
 
             if deltaSinceLastValidLeft < self.distanceMemoryFrames.get():
                 # recent enough to put
@@ -195,13 +193,14 @@ class BinnedVerticalAlignmentChecker(AlignmentProvider):
             selectedRight = newRightDistance
         elif self.lastValidRightFrameCnt is not None:
             # try get memory
-            deltaSinceLastValidRight = self.currentFrameCnt-self.lastValidRightFrameCnt
+            deltaSinceLastValidRight = (
+                self.currentFrameCnt - self.lastValidRightFrameCnt
+            )
 
             if deltaSinceLastValidRight < self.distanceMemoryFrames.get():
                 # recent enough to put
                 selectedRight = self.lastValidRight
 
-        
         if draw:
             cv2.putText(
                 frame,
@@ -214,5 +213,3 @@ class BinnedVerticalAlignmentChecker(AlignmentProvider):
             )
 
         return selectedLeft, selectedRight
-
-    

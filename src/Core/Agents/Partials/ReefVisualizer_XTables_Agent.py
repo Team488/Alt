@@ -101,10 +101,6 @@ class ReefVisualizerAgent(Agent):
         """Return a boolean value denoting whether the agent should still be running"""
         return True
 
-    def getName(self) -> str:
-        """Please tell me your name"""
-        return "ReefVisualizerAgent"
-
     def onClose(self) -> None:
         super().onClose()
         self.xclient.unsubscribe("REEFMAP_STATES", consumer=self.__updateVisualizer)

@@ -91,9 +91,6 @@ class ReefTrackingAgentBase(CameraUsingAgentBase):
         )
         self.updateOp.addGlobalUpdate(self.OBSERVATIONPOSTFIX, reefPkt.to_bytes())
 
-    def getName(self) -> str:
-        return "Reef_Tracking_Agent"
-
     def getDescription(self) -> str:
         return "Gets_Reef_State"
 

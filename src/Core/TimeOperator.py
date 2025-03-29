@@ -1,28 +1,31 @@
 import time
 from logging import Logger
 from typing import Dict, Optional, Generator, Any
-from Core.LogManager import getLogger
+from Core.LogManager import getChildLogger
 from Core.PropertyOperator import PropertyOperator, ReadonlyProperty
+from Core import getChildLogger
+
+Sentinel = getChildLogger("Time Operator")
 
 
 class TimeOperator:
     """
     Manages timing operations for performance monitoring
     """
-    TIMEPREFIX: str = "timers"
 
-    def __init__(self, propertyOp: PropertyOperator, logger: Logger) -> None:
-        self.Sentinel: Logger = logger
+    TIMENAME: str = "timers"
+
+    def __init__(self, propertyOp: PropertyOperator) -> None:
         self.__propertyOp: PropertyOperator = propertyOp
-        self.timerMap: Dict[str, 'Timer'] = {}
+        self.timerMap: Dict[str, "Timer"] = {}
 
-    def getTimer(self, timeName: str) -> 'Timer':
+    def getTimer(self, timeName: str = TIMENAME) -> "Timer":
         """
         Get a timer with the given name, creating it if it doesn't exist
-        
+
         Args:
             timeName: The name of the timer to get or create
-            
+
         Returns:
             A Timer instance for the given name
         """
@@ -33,17 +36,17 @@ class TimeOperator:
         self.timerMap[timeName] = timer
         return timer
 
-    def __createTimer(self, timeName: str) -> 'Timer':
+    def __createTimer(self, timeName: str) -> "Timer":
         """
         Create a new timer with the given name
-        
+
         Args:
             timeName: The name of the timer to create
-            
+
         Returns:
             A new Timer instance
         """
-        timeTable = self.__propertyOp.getChild(f"{TimeOperator.TIMEPREFIX}.{timeName}")
+        timeTable = self.__propertyOp.getChild(timeName)
         if timeTable is None:
             raise ValueError(f"Could not create property child for timer {timeName}")
         return Timer(timeName, timeTable)
@@ -51,13 +54,14 @@ class TimeOperator:
 
 from contextlib import contextmanager
 
-Sentinel: Logger = getLogger("Timer_Entry")
+Sentinel: Logger = getChildLogger("Timer_Entry")
 
 
 class Timer:
     """
     Measures and records performance timing information
     """
+
     def __init__(self, name: str, timeTable: PropertyOperator) -> None:
         self.name: str = name
         self.timeMap: Dict[str, float] = {}
@@ -71,7 +75,7 @@ class Timer:
     def resetMeasurement(self, subTimerName: str = "main") -> None:
         """
         Reset the measurement for the given sub-timer
-        
+
         Args:
             subTimerName: Name of the sub-timer to reset (defaults to "main")
         """
@@ -80,7 +84,7 @@ class Timer:
     def measureAndUpdate(self, subTimerName: str = "main") -> None:
         """
         Measure elapsed time since reset and update the timer property
-        
+
         Args:
             subTimerName: Name of the sub-timer to measure (defaults to "main")
         """
@@ -100,7 +104,7 @@ class Timer:
     def markDeactive(self, subTimerName: str = "main") -> None:
         """
         Mark a sub-timer as inactive
-        
+
         Args:
             subTimerName: Name of the sub-timer to mark inactive (defaults to "main")
         """
@@ -119,10 +123,10 @@ class Timer:
         By Doing:
         with timer.run(subTimerName):
             {Timed Code Here}
-            
+
         Args:
             subTimerName: Name of the sub-timer to run (defaults to "main")
-            
+
         Yields:
             Nothing, used as a context manager
         """

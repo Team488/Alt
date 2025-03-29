@@ -1,5 +1,6 @@
 from abc import abstractmethod
 from enum import Enum
+from functools import partial
 import json
 from typing import Union, Any, Dict, List, Tuple, Optional, cast
 from typing import Literal, TypeVar, Generic, Type, Sequence, Callable, overload
@@ -293,12 +294,6 @@ class ColorCameraExtrinsics2025(CameraExtrinsics, Enum):
     #   {PositionName} = ((offsetX(in),offsetY(in),offsetZ(in)),(yawOffset(deg),pitchOffset(deg)))
     DEPTH_REAR_LEFT = ((0, 0, 0), (45.0, 10.0))
     DEPTH_REAR_RIGHT = ((0, 0, 0), (45.0, 10.0))
-
-
-class ColorCameraExtrinsics2025(CameraExtrinsics, Enum):
-    #   {PositionName} = ((offsetX(in),offsetY(in),offsetZ(in)),(yawOffset(deg),pitchOffset(deg)))
-    # TODO
-    pass
 
 
 class ATCameraExtrinsics(CameraExtrinsics):

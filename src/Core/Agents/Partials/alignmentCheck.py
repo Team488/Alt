@@ -127,9 +127,6 @@ class AlignmentChecker(CameraUsingAgentBase):
             self.offAngleProp.set(-1)
             self.isCenteredConfidently.set(False)
 
-    def getName(self) -> str:
-        return "AprilTagReefAlignmentCheck"
-
     def getDescription(self) -> str:
         return "Looks-At-Camera-April-Tag-Checks-Alignment"
 

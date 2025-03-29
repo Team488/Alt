@@ -37,9 +37,6 @@ class VideoWriterAgent(CameraUsingAgentBase):
         if self.writer is not None:
             self.writer.release()
 
-    def getName(self) -> str:
-        return "Video_Writer_Agent"
-
     def getDescription(self) -> str:
         return "Ingests-Camera-Writes-Frames-To-File"
 

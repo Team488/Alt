@@ -77,9 +77,6 @@ class CsvDemoObjectLocalizingAgent(CsvSimulatedAgentBase):
                 # if you are sending frames, you likely want to see bounding boxes aswell
             )
 
-    def getName(self) -> str:
-        return "Object_Localizer_CSVSim"
-
     def getDescription(self) -> str:
         return "Inference_Then_Localize_CSVSim"
 

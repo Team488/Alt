@@ -6,12 +6,12 @@ import time
 from PIL import Image
 import numpy as np
 from abstract.AlignmentProvider import AlignmentProvider
-from Core import PropertyOperator, getLogger
+from Core import PropertyOperator, getChildLogger
 from doctr.models import ocr_predictor
 from doctr.io import DocumentFile
 from doctr.utils.geometry import detach_scores
 
-Sentinel = getLogger("DocTr_Alignment_Provider")
+Sentinel = getChildLogger("DocTr_Alignment_Provider")
 
 
 class DocTrAlignmentProvider(AlignmentProvider):

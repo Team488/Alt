@@ -3,9 +3,9 @@ import cv2
 import depthai as dai
 
 from tools.Constants import CameraIntrinsics, OAKDLITEResolution
-from Core import getLogger
+from Core import getChildLogger
 
-Sentinel = getLogger("DepthAiHelper")
+Sentinel = getChildLogger("DepthAiHelper")
 
 
 class DepthAIHelper:

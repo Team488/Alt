@@ -11,7 +11,7 @@ The following files have been fully type-annotated:
 - `src/abstract/Agent.py`
 - `src/abstract/Order.py`
 - `src/abstract/Capture.py`
-- `src/abstract/inferencerBackend.py` 
+- `src/abstract/inferencerBackend.py`
 - `src/abstract/depthCamera.py`
 - `src/abstract/BaseDemo.py`
 - `src/Core/Agents/Abstract/CameraUsingAgentBase.py`
@@ -19,7 +19,6 @@ The following files have been fully type-annotated:
 - `src/Core/Agents/Abstract/TimestampRegulatedAgentBase.py`
 - `src/Core/Agents/Abstract/PositionLocalizingAgentBase.py`
 - `src/Core/Agents/Abstract/ObjectLocalizingAgentBase.py`
-- `src/Core/Agents/Abstract/PathPlanningAgentBase.py`
 - `src/Core/Agents/Abstract/ReefTrackingAgentBase.py`
 
 ### Implementation Classes

@@ -1,5 +1,6 @@
 import time
 from Core import COREMODELTABLE, COREINFERENCEMODE
+from Core.Central import Central
 from tools.Constants import CameraIdOffsets2024, ATLocations, Units, TEAM
 from coreinterface.DetectionPacket import DetectionPacket
 from coreinterface.ReefPacket import ReefPacket
@@ -24,6 +25,7 @@ class CentralAgent(PositionLocalizingAgentBase):
         self.xclient.putString(COREMODELTABLE, COREINFERENCEMODE.getName())
 
         super().create()
+        self.central = Central()
         # perform agent init here (eg open camera or whatnot)
         print("CREATED HOST")
         self.objectupdateMap = {}
@@ -255,9 +257,6 @@ class CentralAgent(PositionLocalizingAgentBase):
 
     def getDescription(self):
         return "Central-Process-Accumulate-Results-Broadcast-Them"
-
-    def getName(self):
-        return "The-Central-Agent"
 
     def isRunning(self):
         return True

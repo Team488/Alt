@@ -1,18 +1,9 @@
 import cv2
-print("1")
-cap = cv2.VideoCapture(1)
-print("2")
 
 import numpy as np
-hist = np.load("assets/stingerHistogram.npy")
 
 
-
-
-
-
-
-def getReefAlignEstimates(frame: np.ndarray):
+def getReefAlignEstimates(frame: np.ndarray, hist):
     midFrame = frame.shape[1]//2
     lab = cv2.cvtColor(frame, cv2.COLOR_BGR2LAB)
     backProj = cv2.calcBackProject([lab], [1, 2], hist, [0, 256, 0, 256], 1)
@@ -59,14 +50,17 @@ def getReefAlignEstimates(frame: np.ndarray):
     cv2.imshow("out",frame)
 
 
+if __name__ == "__main__":
+    hist = np.load("assets/stingerHistogram.npy")
+    
+    cap = cv2.VideoCapture(1)
 
+    while cap.isOpened():
+        ret, frame = cap.read()
 
-while cap.isOpened():
-    ret, frame = cap.read()
+        getReefAlignEstimates(frame, hist)
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
 
-    getReefAlignEstimates(frame)
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
-
-cap.release()
-cv2.destroyAllWindows()
+    cap.release()
+    cv2.destroyAllWindows()

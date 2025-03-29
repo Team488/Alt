@@ -90,11 +90,7 @@ class PathToNearestCoralStation(Agent):
         return -1
 
     def isRunning(self):
-
         return True
-
-    def getName(self) -> str:
-        return "PathToNearestCoralStation"
 
     def getDescription(self) -> str:
         return "Constant-Path-Generation-To-Nearest-Coral-Station"

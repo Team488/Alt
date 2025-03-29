@@ -101,3 +101,4 @@ depthai==2.29.0.0
 numba==0.60.0
 robotpy-apriltag==2025.3.1.1
 robotpy-wpimath==2025.3.1.1
+Flask==3.1.0

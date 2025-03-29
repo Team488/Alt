@@ -1,38 +1,61 @@
+import math
+import random
+import time
 from typing import Any, Callable, Optional, Dict, Set, List, Tuple, Union, DefaultDict
 from JXTABLES.XTablesClient import XTablesClient
 
-from Core.PropertyOperator import Property, PropertyOperator, ReadonlyProperty
+from Core.PropertyOperator import Property, PropertyOperator
 from collections import defaultdict
 
 
 class UpdateOperator:
     ALLRUNNINGAGENTPATHS: str = "ALL_RUNNING_AGENT_PATHS"
+    PATHLOCK: str = "ALL_RUNNING_AGENT_PATHS.IDLOCK"
+    EMPTYLOCK: int = -1
+    BUSYLOCK: int = 1
 
-    def __init__(self, xclient: XTablesClient, propertyOperator: PropertyOperator) -> None:
+    def __init__(
+        self, xclient: XTablesClient, propertyOperator: PropertyOperator
+    ) -> None:
         self.__xclient: XTablesClient = xclient
-        self.uniqueUpdateName: str = propertyOperator.getFullPrefix()[:-1]
+        self.uniqueUpdateName: str = propertyOperator.getFullPrefix()
         self.addToAllRunning(self.uniqueUpdateName)
         self.__propertyOp: PropertyOperator = propertyOperator
         self.__subscribedUpdates: DefaultDict[str, Set[str]] = defaultdict(set)
         self.__subscribedRunOnClose: Dict[str, Optional[Callable[[str], None]]] = {}
         self.__subscribedSubscriber: Dict[str, Callable[[Any], None]] = {}
 
+    def withLock(self, runnable: Callable[[], None]):
+        if self.__xclient.getDouble(self.PATHLOCK) != None:
+            while self.__xclient.getDouble(self.PATHLOCK) != self.EMPTYLOCK:
+                time.sleep(0.01)  # wait for lock to open
+
+        self.__xclient.putDouble(self.PATHLOCK, self.BUSYLOCK)
+        runnable()
+        self.__xclient.putDouble(self.PATHLOCK, self.EMPTYLOCK)
+
     def addToAllRunning(self, uniqueUpdateName: str) -> None:
         """Add this agent's unique update name to the list of all running agents"""
-        existingNames = self.__xclient.getStringList(self.ALLRUNNINGAGENTPATHS)
-        if existingNames is None:
-            existingNames = []  # "default arg"
-        if uniqueUpdateName not in existingNames:
-            existingNames.append(uniqueUpdateName)
 
-        self.__xclient.putStringList(self.ALLRUNNINGAGENTPATHS, existingNames)
+        def add():
+            existingNames = self.__xclient.getStringList(self.ALLRUNNINGAGENTPATHS)
+            if existingNames is None:
+                existingNames = []  # "default arg"
+            if uniqueUpdateName not in existingNames:
+                existingNames.append(uniqueUpdateName)
 
-    def getAllRunning(self, pathFilter: Optional[Callable[[str], bool]] = None) -> List[str]:
+            self.__xclient.putStringList(self.ALLRUNNINGAGENTPATHS, existingNames)
+
+        self.withLock(add)
+
+    def getAllRunning(
+        self, pathFilter: Optional[Callable[[str], bool]] = None
+    ) -> List[str]:
         """Get a list of all running agent paths, optionally filtered"""
         stringList = self.__xclient.getStringList(self.ALLRUNNINGAGENTPATHS)
         if stringList is None:
             return []
-            
+
         runningPaths = [
             runningPath
             for runningPath in stringList
@@ -105,14 +128,14 @@ class UpdateOperator:
     ) -> Tuple[List[str], List[str]]:
         """
         Subscribe to global updates with the given name from all running agents
-        
+
         Args:
             updateName: The name of the update to subscribe to
             updateSubscriber: Callback function to handle update notifications
             runOnNewSubscribe: Optional callback to run when new subscriptions are added
             runOnRemoveSubscribe: Optional callback to run when subscriptions are removed
             pathFilter: Optional filter to apply to running agent paths
-            
+
         Returns:
             Tuple of (new_subscribers, removed_subscribers)
         """
@@ -150,14 +173,14 @@ class UpdateOperator:
         return newSubscribers, removedSubscribers
 
     def unsubscribeToAllGlobalUpdates(
-        self, 
-        updateName: str, 
-        updateSubscriber: Callable[[Any], None], 
-        pathFilter: Optional[Callable[[str], bool]] = None
+        self,
+        updateName: str,
+        updateSubscriber: Callable[[Any], None],
+        pathFilter: Optional[Callable[[str], bool]] = None,
     ) -> None:
         """
         Unsubscribe from global updates with the given name from all running agents
-        
+
         Args:
             updateName: The name of the update to unsubscribe from
             updateSubscriber: The subscriber callback that was used to subscribe
@@ -170,14 +193,18 @@ class UpdateOperator:
 
     def deregister(self) -> None:
         """Deregister this agent and clean up all subscriptions"""
-        existingNames = self.__xclient.getStringList(self.ALLRUNNINGAGENTPATHS)
-        if existingNames is None:
-            existingNames = []  # "default arg"
-        else:
-            if self.uniqueUpdateName in existingNames:
-                existingNames.remove(self.uniqueUpdateName)
 
-        self.__xclient.putStringList(self.ALLRUNNINGAGENTPATHS, existingNames)
+        def remove():
+            existingNames = self.__xclient.getStringList(self.ALLRUNNINGAGENTPATHS)
+            if existingNames is None:
+                existingNames = []  # "default arg"
+            else:
+                if self.uniqueUpdateName in existingNames:
+                    existingNames.remove(self.uniqueUpdateName)
+
+            self.__xclient.putStringList(self.ALLRUNNINGAGENTPATHS, existingNames)
+
+        self.withLock(remove)
 
         for updateName, fullTables in self.__subscribedUpdates.items():
             runOnClose = self.__subscribedRunOnClose.get(updateName)

@@ -3,7 +3,7 @@ from mapinternals.generalUKF import generalUKF
 from robotpy_apriltag import AprilTagDetection, AprilTagPoseEstimate
 from tools.Constants import ATLocations
 from tools.Units import LengthType
-from Core import getLogger
+from Core import getChildLogger
 from tools import Calculator
 from scipy.spatial.transform import Rotation
 
@@ -76,7 +76,7 @@ def transform_basis_img_to_frc(T):
     return T_new
 
 
-Sentinel = getLogger("Pose_Solver")
+Sentinel = getChildLogger("Pose_Solver")
 
 
 class poseSolver:

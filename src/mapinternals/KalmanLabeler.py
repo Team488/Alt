@@ -14,9 +14,9 @@ from mapinternals.KalmanCache import KalmanCache
 from mapinternals.KalmanEntry import KalmanEntry
 from tools.Constants import CameraIdOffsets2024, LabelingConstants, Label
 from tools import Calculator
-from Core import getLogger
+from Core import getChildLogger
 
-Sentinel = getLogger("Kalman_Labler")
+Sentinel = getChildLogger("Kalman_Labler")
 
 
 class KalmanLabeler:
