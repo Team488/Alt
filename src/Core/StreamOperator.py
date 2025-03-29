@@ -1,12 +1,11 @@
 import functools
 import multiprocessing
-import os
-import signal
 import cv2
-from flask import Flask, Response
+from flask import Flask, Response, request
 from multiprocessing import Manager, managers
 import threading
 from Core import getChildLogger
+from werkzeug.serving import make_server
 
 Sentinel = getChildLogger("Stream_Operator")
 
@@ -19,6 +18,7 @@ class StreamOperator:
         self.host = host
         self.streams = {}  # Dictionary to store
         self.manager = manager  # Multiprocessing Manager
+        self.server = None
         self.server_thread = threading.Thread(target=self.run_server, daemon=True)
 
     def register_stream(self, name) -> managers.DictProxy:
@@ -34,8 +34,7 @@ class StreamOperator:
         # Define the stream generation function dynamically
         def generate_frames(shareddict=frameShare):
             while True:
-                # Get frame from the DictProxy
-                frame = frameShare.get("frame", None)  # This will block until a frame is available
+                frame = shareddict.get("frame", None)
                 if frame is None:
                     continue
                 ret, jpeg = cv2.imencode(".jpg", frame)
@@ -46,32 +45,29 @@ class StreamOperator:
                     b"Content-Type: image/jpeg\r\n\r\n" + jpeg.tobytes() + b"\r\n\r\n"
                 )
 
-        # Register the route with a unique view function using functools.wraps
         self.app.add_url_rule(
             f"/{name}/stream.mjpg",
             view_func=self._create_view_func(generate_frames, name),
         )
 
         Sentinel.info(f"Registered new stream: {name} at '{name}/stream.mjpg'")
-        return frameShare  # Return the DictProxy so external processes/threads can update it
+        return frameShare
 
     def _create_view_func(self, generate_frames_func, name):
         """Helper to create a view function for a dynamic stream with functools.wraps."""
-        # Define the view function
         @functools.wraps(generate_frames_func)
         def view_func():
             return Response(
                 generate_frames_func(),
                 mimetype="multipart/x-mixed-replace; boundary=frame",
             )
-
-        # Set a unique name for the view function based on the stream name
         view_func.__name__ = f"stream_{name}_view"
         return view_func
 
     def run_server(self):
         """Runs the Flask server in a separate thread."""
-        self.app.run(host=self.host, port=self.PORT, threaded=True)
+        self.server = make_server(self.host, self.PORT, self.app)
+        self.server.serve_forever()
 
     def start(self):
         """Starts the Flask server in a background thread."""
@@ -81,24 +77,17 @@ class StreamOperator:
     def shutdown(self):
         """Stops all streams and shuts down the server."""
         Sentinel.info("Shutting down MJPEG server...")
-
-        # Close all active streams
-        for name in list(
-            self.streams.keys()
-        ):  # Convert keys to list to avoid modification issues
+        for name in list(self.streams.keys()):
             self.close_stream(name)
-
-        # Shutdown Flask server (sending SIGINT or SIGTERM)
-        # os.kill(os.getpid(), signal.SIGTERM)
-
-        # Ensure server thread stops
+        if self.server:
+            print("AAAA")
+            self.server.shutdown()
         self.server_thread.join()
         Sentinel.info("MJPEG Server stopped.")
 
     def close_stream(self, name):
         """Closes a specific stream and releases the resources."""
         if name in self.streams:
-            dict = self.streams[name]["dict"]
-            dict["frame"] = None  # Send a None frame to stop the stream
+            self.streams[name]["dict"]["frame"] = None
             del self.streams[name]
             Sentinel.info(f"Closed stream: {name}")

@@ -23,6 +23,14 @@ class ReefPostAlignmentProvider(AlignmentProvider):
         if not self.checkFrame(frame):
             raise ValueError("The frame is not a color frame!")
 
+        fourth = frame.shape[1]//4
+        cut1 = fourth
+        cut2 = 3*fourth
+
+        frameClipped = frame[:,cut1:cut2]
+
+    
+
         midFrame = frame.shape[1] // 2
         lab = cv2.cvtColor(frame, cv2.COLOR_BGR2LAB)
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -74,6 +82,7 @@ class ReefPostAlignmentProvider(AlignmentProvider):
             cv2.putText(frame, f"L: {left} R: {right}", (10, 20), 1, 1, (255))
 
             cv2.imshow("gray",gray)
+            cv2.imshow("roi", frameClipped)
 
 
         return left, right
