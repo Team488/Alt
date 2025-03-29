@@ -212,7 +212,7 @@ class PropertyOperator:
             self.__xclient.putString(propertyTable, "NULLVALUE")
         elif type(propertyValue) is XTableValues.BezierCurves:
             self.__xclient.putBezierCurves(propertyTable, propertyValue)
-        elif type(propertyValue) is Iterable:
+        elif isinstance(propertyValue, Iterable):
             return self.__setNetworkIterable(propertyTable, propertyValue)
         else:
             if mute:

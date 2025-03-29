@@ -211,6 +211,11 @@ class AgentOperator:
 
         """Initialization part #1 Create agent"""
         agent: Agent = agentClass()
+        capabilitesStr = [
+            capability.name
+            for capability in AgentCapabilites.getCapabilites(agentClass)
+        ]
+
         agentName = AgentOperator.getAgentName(agentClass)
 
         """ Initialization part #3. Inject objects in agent"""
@@ -245,6 +250,14 @@ class AgentOperator:
             description
         )
 
+        __setCapabilites: Callable[
+            [str, str], bool
+        ] = lambda capabilites: agent.propertyOperator.createCustomReadOnlyProperty(
+            f"{agentName}.Capabilites", capabilites
+        ).set(
+            capabilites
+        )
+
         def __handleException(exception: Exception) -> None:
             """Handle an exception that occurred during agent execution"""
             message: str = f"Failed! | During {progressStr}: {exception}"
@@ -255,6 +268,7 @@ class AgentOperator:
 
         __setDescription(agent.getDescription())
         __setStatus("starting")
+        __setCapabilites(capabilitesStr)
 
         # variables kept through agents life
         failed: bool = False

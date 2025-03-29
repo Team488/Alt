@@ -176,7 +176,7 @@ class CameraUsingAgentBase(Agent):
                 AgentCapabilites.STREAM.objectName
             )
 
-            streamPath = f"http://{Core.DEVICEIP}:5000/{self.agentName}/stream"
+            streamPath = f"http://{Core.DEVICEIP}:5000/{self.agentName}/stream.mjpg"
 
             self.propertyOperator.createCustomReadOnlyProperty(
                 "stream.IP", streamPath, addBasePrefix=True, addOperatorPrefix=True

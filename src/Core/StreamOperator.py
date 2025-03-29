@@ -48,11 +48,11 @@ class StreamOperator:
 
         # Register the route with a unique view function using functools.wraps
         self.app.add_url_rule(
-            f"/{name}/stream",
+            f"/{name}/stream.mjpg",
             view_func=self._create_view_func(generate_frames, name),
         )
 
-        Sentinel.info(f"Registered new stream: {name} at '{name}/stream'")
+        Sentinel.info(f"Registered new stream: {name} at '{name}/stream.mjpg'")
         return queue  # Return the queue so external processes/threads can update it
 
     def _create_view_func(self, generate_frames_func, name):
