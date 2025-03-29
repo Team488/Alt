@@ -171,8 +171,8 @@ class AgentOperator:
 
         """Initialization part #1 Create agent"""
         agent: Agent = AgentOperator._createAgent(
-            agentClass, shareOperator, isMainThread
-        )
+                agentClass, shareOperator, isMainThread
+            )
         agentName = agent.getName()
 
         """Initialization part #2 Update core log to be agents name (IF not on main thread) """
@@ -224,8 +224,10 @@ class AgentOperator:
         # use agents own timer
         timer: Timer = agent.getTimer()
 
-        """Main part #1 Creation and running"""
+
+        # start loop
         try:
+            """Main part #1 Creation and running"""
             __setErrorLog("None...")
 
             # create
@@ -240,6 +242,7 @@ class AgentOperator:
             while agent.isRunning():
                 with timer.run("runPeriodic"):
                     stop = stopflag.is_set()
+                    Sentinel.info(f"THREAD STOPPED: {stop}")
                     if stop:
                         break
                     progressStr = "runPeriodic"
@@ -255,53 +258,56 @@ class AgentOperator:
             failed = True
             __handleException(e)
 
-        """ Main part #2 possible shutdown"""
-        # if thread was shutdown abruptly (self.__stop flag), perform shutdown
-        # shutdown before onclose
+        finally:
+            """ Main part #2 possible shutdown"""
+            # if thread was shutdown abruptly (self.__stop flag), perform shutdown
+            # shutdown before onclose
 
-        forceStopped: bool = stop
-        if forceStopped:
-            progressStr = "shutdown interrupt"
-            __setStatus(progressStr)
-            Sentinel.debug("Shutting down agent")
+            forceStopped: bool = stop
+            if forceStopped:
+                progressStr = "shutdown interrupt"
+                __setStatus(progressStr)
+                Sentinel.debug("Shutting down agent")
+                try:
+                    with timer.run("forceShutdown"):
+                        agent.forceShutdown()
+                        agent.hasShutdown = True
+                except Exception as e:
+                    failed = True
+                    __handleException(e)
+
+            elif not failed:
+                __setStatus(f"agent isRunning returned false (Not an error)")
+                Sentinel.debug(f"agent isRunning returned false (Not an error)")
+
+            else:
+                __setStatus(f"agent failed during {progressStr}")
+                Sentinel.debug(f"agent failed during {progressStr}")
+
+            """ Main part #3 Cleanup"""
             try:
-                with timer.run("forceShutdown"):
-                    agent.forceShutdown()
-                    agent.hasShutdown = True
+                # cleanup
+                with timer.run("onClose"):
+                    agent.onClose()
+                    agent.hasClosed = True
+
             except Exception as e:
-                failed = True
                 __handleException(e)
 
-        elif not failed:
-            __setStatus(f"agent isRunning returned false (Not an error)")
-            Sentinel.debug(f"agent isRunning returned false (Not an error)")
 
-        else:
-            __setStatus(f"agent failed during {progressStr}")
-            Sentinel.debug(f"agent failed during {progressStr}")
+            agent._cleanup()  # shutdown new created objects in agent
+            agent.isCleanedUp = True
 
-        """ Main part #3 Cleanup"""
-        try:
-            # cleanup
-            with timer.run("onClose"):
-                agent.onClose()
-                agent.hasClosed = True
-
-        except Exception as e:
-            __handleException(e)
-
-        agent._cleanup()  # shutdown new created objects in agent
-        agent.isCleanedUp = True
-        # remove this from running processes
-        processCount.set(processCount.get() - 1)
+            # remove this from running processes
+            processCount.set(processCount.get() - 1)
 
     def waitForAgentsToFinish(self) -> None:
         """Thread blocking method that waits for any running agents"""
         if self.__runningProcessCount.get() > 0:
             Sentinel.info("Waiting for async agent to finish...")
             while True:
-                print(self.futures)
-                if self.__runningProcessCount.get() <= 0:
+                runningProcessCount = self.__runningProcessCount.get()
+                if runningProcessCount <= 0:
                     break
                 time.sleep(0.01)
             Sentinel.info("Agents have all finished.")
