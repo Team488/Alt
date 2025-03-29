@@ -15,10 +15,12 @@ class BinnedVerticalAlignmentChecker(AlignmentProvider):
     TUNEDWIDTH = 960
     TUNEDHEIGHT = 720
 
-    def __init__(self, propertyOperator: PropertyOperator):
+    def __init__(self):
         super().__init__()
-        self.propertyOperator = propertyOperator
         self.shape = (self.TUNEDWIDTH, self.TUNEDHEIGHT)  # default
+
+    def create(self):
+        self.createConstants()
 
     def createConstants(self):
         self.threshold_to_last_used = self.propertyOperator.createProperty(

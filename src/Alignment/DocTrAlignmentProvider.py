@@ -15,6 +15,8 @@ Sentinel = getChildLogger("DocTr_Alignment_Provider")
 class DocTrAlignmentProvider(AlignmentProvider):
     def __init__(self):
         super().__init__()
+
+    def create(self):
         self.initalizerDetector()
 
     def initalizerDetector(self):

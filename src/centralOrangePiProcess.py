@@ -1,11 +1,12 @@
 from JXTABLES.TempConnectionManager import TempConnectionManager as tcm
 from Alignment.DocTrAlignmentProvider import DocTrAlignmentProvider
+from Alignment.AprilTagCornerAlignmentProvider import BinnedVerticalAlignmentChecker
 from Core.Agents.Partials.AlignmentProviderAgent import partialAlignmentCheck
 from Core.Neo import Neo
 from Core.Agents import OrangePiAgent
 
 alignment = partialAlignmentCheck(
-    alignmentProvider=DocTrAlignmentProvider(), showFrames=False
+    alignmentProvider=BinnedVerticalAlignmentChecker(), showFrames=False
 )
 tcm.invalidate()
 

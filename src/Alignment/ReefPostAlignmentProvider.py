@@ -10,7 +10,11 @@ Sentinel = getChildLogger("DocTr_Alignment_Provider")
 class ReefPostAlignmentProvider(AlignmentProvider):
     def __init__(self):
         super().__init__()
-        self.hist, self.mtime = staticLoad("assets/stingerHistogram.npy",isRelativeToSource=True)
+
+    def create(self):
+        self.hist, self.mtime = staticLoad(
+            "assets/stingerHistogram.npy", isRelativeToSource=True
+        )
 
     def isColorBased(self):
         return True  # HAS to be color
