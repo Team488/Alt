@@ -200,6 +200,15 @@ class CameraUsingAgentBase(Agent):
             raise RuntimeError(
                 "FRAME QUEUE WAS NOT PROVIDED TO THE CAMERA USING AGENT! IT HAS STREAM CAPABILITES AND WAS EXPECTING IT"
             )
+            
+        if self.iscv2Configurable:
+            self.setAutoExposure = self.propertyOperator.createProperty("autoExposure",False)
+            self.manualExposureValue = self.propertyOperator.createProperty("exposureValue", -6)
+    
+            self.capture.cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 0.75 if self.setAutoExposure.get() else 0.25)
+            if not self.setAutoExposure.get():
+                self.capture.cap.set(cv2.CAP_PROP_EXPOSURE, self.manualExposureValue.get())
+
 
     def testCapture(self) -> None:
         """Test if the camera is properly functioning"""
