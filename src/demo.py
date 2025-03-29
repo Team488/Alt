@@ -1,3 +1,3 @@
 from demos import exampleSim
-
-exampleSim.startDemo()
+if __name__ == "__main__":
+    exampleSim.startDemo()

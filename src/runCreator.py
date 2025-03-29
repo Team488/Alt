@@ -1,3 +1,3 @@
 from tools import histogramCreator
-
-histogramCreator.main()
+if __name__ == "__main__":
+    histogramCreator.main()

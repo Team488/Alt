@@ -9,24 +9,22 @@ from tools.Constants import (
 )
 from Captures import ConfigurableCameraCapture, OAKCapture, D435Capture, FileCapture
 
-# intr = CameraIntrinsicsPredefined.OAKDLITE4K
-# intr = CameraIntrinsicsPredefined.OV9782COLOR
+if __name__ == "__main":
 
-ReefTracker = ReefTrackingAgentPartial(
-    capture=ConfigurableCameraCapture(uniqueId="1",
-                                      cameraPath="assets/driverStationVideo.mp4", 
-                                      cameraIntrinsics=CameraIntrinsicsPredefined.OAKESTIMATE),
-    showFrames=True
-)
-"""
-ReefTracker = ReefTrackingAgentPartial(
-    capture=OAKCapture(OAKDLITEResolution.OAK1080P),
-    showFrames=True
-)
-"""
-# ReefTracker = ReefTrackingAgentPartial(cameraPath=0, cameraIntrinsics=intr, showFrames=True)
+    ReefTracker = ReefTrackingAgentPartial(
+        capture=ConfigurableCameraCapture(uniqueId="1",
+                                        cameraPath="assets/driverStationVideo.mp4", 
+                                        cameraIntrinsics=CameraIntrinsicsPredefined.OAKESTIMATE),
+        showFrames=True
+    )
+    """
+    ReefTracker = ReefTrackingAgentPartial(
+        capture=OAKCapture(OAKDLITEResolution.OAK1080P),
+        showFrames=True
+    )
+    """
+    # ReefTracker = ReefTrackingAgentPartial(cameraPath=0, cameraIntrinsics=intr, showFrames=True)
 
-n = Neo()
-n.wakeAgent(ReefTracker, isMainThread=True)
-n.shutDown()
-n = Neo()
+    n = Neo()
+    n.wakeAgent(ReefTracker, isMainThread=True)
+    n.shutDown()
