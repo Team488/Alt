@@ -5,6 +5,8 @@ services:
     hostname: ${HOSTNAME}  # Uses the current hostname of the system
     privileged: true  # Equivalent to --privileged flag
     network_mode: "host" # Expose the container to the network
+    environment:
+      USE_TORCH: "1"
     devices:
       - "/dev/dri/renderD129:/dev/dri/renderD129" # rknpu device
     volumes:
