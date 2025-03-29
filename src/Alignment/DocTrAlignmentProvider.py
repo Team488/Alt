@@ -1,11 +1,13 @@
 from collections import defaultdict
 import cv2
 import io
+import re
+import time
 from PIL import Image
 import numpy as np
 from abstract.AlignmentProvider import AlignmentProvider
 from Core import PropertyOperator, getLogger
-from doctr.models import detection_predictor
+from doctr.models import ocr_predictor
 from doctr.io import DocumentFile
 from doctr.utils.geometry import detach_scores
 
@@ -18,84 +20,94 @@ class DocTrAlignmentProvider(AlignmentProvider):
         self.initalizerDetector()
 
     def initalizerDetector(self):
-        self.det_predictor = detection_predictor(
-            arch="fast_small",
+        self.ocr_predictor = ocr_predictor(
+            "fast_tiny",
             pretrained=True,
-            assume_straight_pages=True,
-            symmetric_pad=True,
+            assume_straight_pages=False,
             preserve_aspect_ratio=True,
-            batch_size=1,
+            resolve_blocks=True,
         )  # .cuda().half()  # Uncomment this line if you have a GPU
 
         # Define the postprocessing parameters (optional)
-        self.det_predictor.model.postprocessor.bin_thresh = 0.3
-        self.det_predictor.model.postprocessor.box_thresh = 0.1
+        self.ocr_predictor.det_predictor.model.postprocessor.bin_thresh = 0.3
+        self.ocr_predictor.det_predictor.model.postprocessor.box_thresh = 0.1
 
     def isColorBased(self):
         return False  # uses april tags so b/w frame
 
     def align(self, inputFrame, draw):
+        received_frame = time.time()
+        Sentinel.info(f"Received Time: {received_frame}")
         frame = inputFrame  # move og ref of input frame to draw on original
         if not self.checkFrame(frame):
             # we assume if its not a b/w frame (eg checkframe false), that it means its a cv2 bgr and to change to b/w
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
-        pil_image = Image.fromarray(frame)
-        img_byte_arr = io.BytesIO()
-        pil_image.save(img_byte_arr, format="PNG")
+        frame = cv2.cvtColor(frame, cv2.COLOR_GRAY2RGB)
 
-        docs = DocumentFile.from_images([img_byte_arr.getvalue()])
-        results = self.det_predictor(docs)
+        results = self.ocr_predictor([frame])
         left = None
         right = None
+        if results is not None:
+            Sentinel.info(f"Found results from doctr: {results}")
+            Sentinel.info(f"results export: {results.export()}")
 
-        for doc, res in zip(docs, results):
-            img_shape = (doc.shape[0], doc.shape[1])
-            # Detach the probability scores from the results
-            detached_coords, prob_scores = detach_scores([res.get("words")])
+        processed_frame = time.time()
+        Sentinel.info(f"Processed Time: {processed_frame}")
+        if len(results.pages) < 1:
+            return None, None
 
-            for i, coords in enumerate(detached_coords[0]):
-                coords = (
-                    coords.reshape(2, 2).tolist()
-                    if coords.shape == (4,)
-                    else coords.tolist()
+        for doc, res in zip(frame, results.pages[0].blocks):
+            img_shape = results.pages[0].dimensions
+            matched_words = list(
+                filter(
+                    lambda word: word.value is not None
+                    and (word.value.startswith("ID") or re.search(word.value, r"\d+$")),
+                    [word for line in res.lines for word in line.words],
                 )
+            )
+            if matched_words is None or len(matched_words) == 0:
+                continue
 
-                # Convert relative to absolute pixel coordinates
-                points = np.array(
-                    self._to_absolute(coords, img_shape), dtype=np.int32
-                ).reshape((-1, 1, 2))
+            for word in matched_words:
+                for coords in word.geometry:
+                    Sentinel.info(f"coords: {coords}")
 
-                if draw:
-                    cv2.polylines(
-                        inputFrame,
-                        [points],
-                        isClosed=True,
-                        color=(255, 0, 0),
-                        thickness=2,
+                    # Convert relative to absolute pixel coordinates
+                    points = np.array(
+                        self._to_absolute([coords], img_shape), dtype=np.int32
                     )
+                    Sentinel.info(f"points: {points}")
+                    Sentinel.info(f"draw: {draw}")
 
-                if len(points) > 0:
-                    left = left if left is not None else points[0][0]
-                    right = right if right is not None else points[0][0]
+                    if draw:
+                        cv2.polylines(
+                            inputFrame,
+                            [points],
+                            isClosed=True,
+                            color=(255, 0, 0),
+                            thickness=2,
+                        )
 
-                vals = [point[0] for point in points]
-                vals.append(left)
-                vals.append(right)
-                left = min(vals)
-                right = max(vals)
+                    point_list = points.tolist()
+                    if len(point_list) > 0:
+                        left = left if left is not None else point_list[0][0]
+                        right = right if right is not None else point_list[0][0]
+
+                        vals = [point[0] for point in point_list]
+                        Sentinel.info(f"vals: {vals}")
+                        vals.append(left)
+                        vals.append(right)
+                        left = min(vals)
+                        right = max(vals)
+
+        Sentinel.info("Left: " + str(left) + " Right: " + str(right))
 
         return left, right
 
     # Helper function to convert relative coordinates to absolute pixel values
-    def _to_absolute(self, geom, img_shape: tuple[int, int]) -> list[list[int]]:
+    def _to_absolute(
+        self, coords: list[tuple[float, float]], img_shape: tuple[int, int]
+    ) -> list[list[int]]:
         h, w = img_shape
-        if (
-            len(geom) == 2
-        ):  # Assume straight pages = True -> [[xmin, ymin], [xmax, ymax]]
-            (xmin, ymin), (xmax, ymax) = geom
-            xmin, xmax = int(round(w * xmin)), int(round(w * xmax))
-            ymin, ymax = int(round(h * ymin)), int(round(h * ymax))
-            return [[xmin, ymin], [xmax, ymin], [xmax, ymax], [xmin, ymax]]
-        else:  # For polygons, convert each point to absolute coordinates
-            return [[int(point[0] * w), int(point[1] * h)] for point in geom]
+        return [[int(point[0] * w), int(point[1] * h)] for point in coords]

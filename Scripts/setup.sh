@@ -35,7 +35,7 @@ fi
 
 export PYTHONPATH=$PYTHONPATH:$(realpath $SCRIPT_DIR)/src
 
-pip install -r $SCRIPT_DIR/requirements-py-3-10.txt
+pip install -r $SCRIPT_DIR/../requirements-py-3-10.txt
 pip install -r $SCRIPT_DIR/dev-requirements.txt
 pip install -r $SCRIPT_DIR/non-base-requirements.txt
 pip install --upgrade tensorflow
