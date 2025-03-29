@@ -182,12 +182,11 @@ class CameraUsingAgentBase(Agent):
                 "stream.IP", streamPath, addBasePrefix=True, addOperatorPrefix=True
             )
 
-            captureShape = self.capture.getFrameShape()
             self.streamWidth = self.propertyOperator.createProperty(
-                "stream.width", captureShape[1], isCustom=True, addOperatorPrefix=True
+                "stream.width", 320, isCustom=True, addOperatorPrefix=True
             )
             self.streamHeight = self.propertyOperator.createProperty(
-                "stream.height", captureShape[0], isCustom=True, addOperatorPrefix=True
+                "stream.height", 180, isCustom=True, addOperatorPrefix=True
             )
 
         else:

@@ -1,3 +1,4 @@
+import functools
 import multiprocessing
 import os
 import signal
@@ -30,8 +31,8 @@ class StreamOperator:
         queue = self.manager.Queue()
         self.streams[name] = {"queue": queue}
 
-        # Define and register the route dynamically
-        def generate_frames():
+        # Define the stream generation function dynamically
+        def generate_frames(queue=queue):
             while True:
                 # Get frame from the queue
                 frame = queue.get()  # This will block until a frame is available
@@ -45,15 +46,28 @@ class StreamOperator:
                     b"Content-Type: image/jpeg\r\n\r\n" + jpeg.tobytes() + b"\r\n\r\n"
                 )
 
+        # Register the route with a unique view function using functools.wraps
         self.app.add_url_rule(
             f"/{name}/stream",
-            view_func=lambda: Response(
-                generate_frames(), mimetype="multipart/x-mixed-replace; boundary=frame"
-            ),
+            view_func=self._create_view_func(generate_frames, name),
         )
 
         Sentinel.info(f"Registered new stream: {name} at '{name}/stream'")
         return queue  # Return the queue so external processes/threads can update it
+
+    def _create_view_func(self, generate_frames_func, name):
+        """Helper to create a view function for a dynamic stream with functools.wraps."""
+        # Define the view function
+        @functools.wraps(generate_frames_func)
+        def view_func():
+            return Response(
+                generate_frames_func(),
+                mimetype="multipart/x-mixed-replace; boundary=frame",
+            )
+
+        # Set a unique name for the view function based on the stream name
+        view_func.__name__ = f"stream_{name}_view"
+        return view_func
 
     def run_server(self):
         """Runs the Flask server in a separate thread."""
