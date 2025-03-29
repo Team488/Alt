@@ -32,11 +32,10 @@ class ReefPostAlignmentProvider(AlignmentProvider):
         cut1 = fourth
         cut2 = 3*fourth
 
-        frame = frame[:,cut1:cut2] #clip roi
-
+        focused = frame[:,cut1:cut2] #clip roi
     
 
-        lab = cv2.cvtColor(frame, cv2.COLOR_BGR2LAB)
+        lab = cv2.cvtColor(focused, cv2.COLOR_BGR2LAB)
 
         backProj = cv2.calcBackProject([lab], [1, 2], self.hist, [0, 256, 0, 256], 1)
 
