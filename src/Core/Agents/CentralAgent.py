@@ -258,8 +258,5 @@ class CentralAgent(PositionLocalizingAgentBase):
     def getDescription(self):
         return "Central-Process-Accumulate-Results-Broadcast-Them"
 
-    def getName(self):
-        return "The-Central-Agent"
-
     def isRunning(self):
         return True

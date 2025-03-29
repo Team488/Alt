@@ -6,11 +6,12 @@
 
 from abc import ABC, abstractmethod
 from logging import Logger
+import multiprocessing
+import multiprocessing.managers
 from typing import Optional, Any
 
 from JXTABLES.XTablesClient import XTablesClient
 from Core.UpdateOperator import UpdateOperator
-from Core.Central import Central
 from Core.PropertyOperator import PropertyOperator
 from Core.ConfigOperator import ConfigOperator
 from Core.ShareOperator import ShareOperator
@@ -33,9 +34,13 @@ class Agent(ABC):
         self.updateOp: Optional[UpdateOperator] = None
         self.Sentinel: Optional[Logger] = None
         self.timer: Optional[Timer] = None
+        self.extraObjects = {}
         self.isMainThread: bool = False
+        self.agentName = ""
 
-    def _injectCore(self, shareOperator: ShareOperator, isMainThread: bool) -> None:
+    def _injectCore(
+        self, shareOperator: ShareOperator, isMainThread: bool, agentName: str
+    ) -> None:
         """
         "Injects" arguments into agent, should not be modified in any classes
 
@@ -44,6 +49,7 @@ class Agent(ABC):
         """
         self.isMainThread = isMainThread
         self.shareOp = shareOperator
+        self.agentName = agentName
 
     def _injectNEW(
         self,
@@ -67,6 +73,9 @@ class Agent(ABC):
         self.Sentinel = logger
         self.timer = self.timeOp.getTimer("timers")
         # other than setting variables, nothing should go here
+
+    def _setExtraObjects(self, extraObjects: multiprocessing.managers.DictProxy):
+        self.extraObjects = extraObjects
 
     def _cleanup(self):
         # xclient shutdown occasionally failing?
@@ -115,12 +124,6 @@ class Agent(ABC):
         pass
 
     # ----- properties -----
-
-    @abstractmethod
-    def getName(self) -> str:
-        """Please tell me your name"""
-        # agent name here
-        pass
 
     @abstractmethod
     def getDescription(self) -> str:

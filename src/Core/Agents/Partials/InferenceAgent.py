@@ -68,9 +68,6 @@ class InferenceAgent(CameraUsingAgentBase):
                 self.latestFrameMain, self.confidence.get(), self.drawBoxes.get()
             )
 
-    def getName(self) -> str:
-        return "Inference_Agent_Process"
-
     def getDescription(self) -> str:
         return "Ingest_Camera_Run_Ai_Model"
 

@@ -6,7 +6,7 @@ from logging import Logger
 from typing import Dict, List, Any, Optional, Tuple, Union, Type, cast
 import numpy as np
 from enum import Enum
-from Core import getChildLogger
+from Core.LogManager import getChildLogger
 
 Sentinel = getChildLogger("Config_Operator")
 

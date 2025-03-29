@@ -7,7 +7,7 @@ from JXTABLES import XTableProto_pb2 as XTableProto
 from JXTABLES import XTableValues_pb2 as XTableValues
 from JXTABLES.XTablesByteUtils import XTablesByteUtils
 from Core.ConfigOperator import ConfigOperator
-from Core import getChildLogger, DEVICEHOSTNAME
+from Core.LogManager import getChildLogger
 
 Sentinel = getChildLogger("Property_Operator")
 
@@ -21,6 +21,8 @@ class PropertyOperator:
         configOp: ConfigOperator,
         prefix: str = "",
     ) -> None:
+        from Core import DEVICEHOSTNAME
+
         self.__xclient: XTablesClient = xclient
         self.__configOp: ConfigOperator = configOp
         self.basePrefix: str = DEVICEHOSTNAME

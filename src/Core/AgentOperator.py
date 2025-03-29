@@ -14,26 +14,36 @@ import traceback
 import time
 from logging import Logger
 from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor, Future
-from typing import Any, Dict, Optional, Callable, Set, cast
+from typing import Any, Dict, Optional, Callable, Set, Union, cast
 from JXTABLES.XTablesClient import XTablesClient
 from Core.ConfigOperator import ConfigOperator
 from Core.ShareOperator import ShareOperator
+from Core.StreamOperator import StreamOperator
 from Core.TimeOperator import TimeOperator, Timer
 from Core.UpdateOperator import UpdateOperator
 from abstract.Agent import Agent
 from Core.PropertyOperator import LambdaHandler, PropertyOperator, ReadonlyProperty
 from Core import LogManager
 from Core import getChildLogger
+from tools.AgentConstants import AgentCapabilites
 
 Sentinel = getChildLogger("Agent_Operator")
 
 # subscribes to command request with xtables and then executes when requested
 class AgentOperator:
-    def __init__(self, manager: multiprocessing.managers.SyncManager) -> None:
+    def __init__(
+        self,
+        manager: multiprocessing.managers.SyncManager,
+        shareOp: ShareOperator,
+        streamOp: StreamOperator,
+    ) -> None:
         self.__executor: ProcessPoolExecutor = ProcessPoolExecutor()
         self.__stop: threading.Event = manager.Event()  # flag
         self.futures: list[Future] = []
         self.mainAgent: Optional[Agent] = None
+        self.shareOp = shareOp
+        self.streamOp = streamOp
+        self.manager = manager
 
     def __setStop(self, stop: bool):
         if stop:
@@ -54,25 +64,44 @@ class AgentOperator:
     def __setMainAgent(self, agent: Agent):
         self.mainAgent = agent
 
-    def is_pickleable(self, obj):
-        try:
-            # Try to pickle the object
-            pickle.dumps(obj)
-            return True
-        except pickle.PicklingError:
-            # If it raises a PicklingError, the object is not pickleable
-            return False
+    @staticmethod
+    def getAgentName(agentClass: Union[partial, type[Agent]]):
+        if isinstance(agentClass, partial):
+            return agentClass.func.__name__
+        else:
+            return agentClass.__name__
 
-    def wakeAgent(
-        self, agentClass: type[Agent], shareOperator: ShareOperator, isMainThread: bool
-    ) -> None:
+    def initalizeExtraObjects(
+        self,
+        agentClass: Union[partial, type[Agent]],
+        argumentDict: multiprocessing.managers.DictProxy,
+        streamOperator: StreamOperator,
+    ):
+        for capability in AgentCapabilites.getCapabilites(agentClass):
+            # TODO add more
+            if capability is AgentCapabilites.STREAM:
+                argumentDict[
+                    AgentCapabilites.STREAM.objectName
+                ] = streamOperator.register_stream(
+                    AgentOperator.getAgentName(agentClass)
+                )
+
+        return argumentDict
+
+    def wakeAgent(self, agentClass: type[Agent], isMainThread: bool) -> None:
         Sentinel.info(f"Waking agent!")
+
+        extraObjects = self.initalizeExtraObjects(
+            agentClass, self.manager.dict(), self.streamOp
+        )
+
         if isMainThread:
             AgentOperator._startAgentLoop(
                 agentClass,
-                shareOperator,
+                self.shareOp,
                 True,
                 self.__stop,
+                extraObjects,
                 runOnCreate=self.__setMainAgent,
             )
         else:
@@ -88,9 +117,10 @@ class AgentOperator:
                     self.__executor.submit(
                         AgentOperator._startAgentLoop,
                         agentClass,
-                        shareOperator,
+                        self.shareOp,
                         isMainThread,
                         self.__stop,
+                        extraObjects,
                     )
                 )
             except Exception as e:
@@ -118,13 +148,19 @@ class AgentOperator:
 
     @staticmethod
     def _injectAgent(
-        agent: Agent, shareOperator: ShareOperator, isMainThread: bool
+        agent: Agent,
+        agentName,
+        shareOperator: ShareOperator,
+        extraObjects: multiprocessing.managers.DictProxy,
+        isMainThread: bool,
     ) -> Agent:
 
         # injecting stuff shared from core
-        agent._injectCore(shareOperator, isMainThread)
+        agent._injectCore(shareOperator, isMainThread, agentName)
         # creating new operators just for this agent and injecting them
-        AgentOperator._injectNewOperators(agent)
+        AgentOperator._injectNewOperators(agent, agentName)
+
+        agent._setExtraObjects(extraObjects)
 
         # setup a log handler to go on xtables
         logTable = f"{agent.propertyOperator.getFullPrefix()}.log"
@@ -142,16 +178,16 @@ class AgentOperator:
         return agent
 
     @staticmethod
-    def _injectNewOperators(agent: Agent):
+    def _injectNewOperators(agent: Agent, agentName):
         """Since any agent not on main thread will be in its own process, alot of new objects will have to be created"""
         client = XTablesClient()  # one per process
         configOp = (
             ConfigOperator()
         )  # TODO this might not be 100% necessary to be one per process
-        propertyOp = PropertyOperator(client, configOp, prefix=agent.getName())
+        propertyOp = PropertyOperator(client, configOp, prefix=agentName)
         updateOp = UpdateOperator(client, propertyOp)
         timeOp = TimeOperator(propertyOp)
-        logger = getChildLogger(agent.getName())
+        logger = getChildLogger(agentName)
 
         agent._injectNEW(
             xclient=client,
@@ -168,19 +204,20 @@ class AgentOperator:
         shareOperator: ShareOperator,
         isMainThread: bool,
         stopflag: threading.Event,
+        extraObjects: multiprocessing.managers.DictProxy,
         runOnCreate: Callable[[Agent], None] = None,
     ) -> None:
         """Main agent loop that manages agent lifecycle"""
 
         """Initialization part #1 Create agent"""
         agent: Agent = agentClass()
-        agentName = agent.getName()
+        agentName = AgentOperator.getAgentName(agentClass)
 
         """ Initialization part #3. Inject objects in agent"""
         AgentOperator._injectAgent(
-                agent, shareOperator, isMainThread
-            )
-        
+            agent, agentName, shareOperator, extraObjects, isMainThread
+        )
+
         """ On main thread this is how its set as main agent"""
         if isMainThread and runOnCreate is not None:
             runOnCreate(agent)
@@ -227,7 +264,6 @@ class AgentOperator:
         # use agents own timer
         timer: Timer = agent.getTimer()
 
-
         # start loop
         try:
             """Main part #1 Creation and running"""
@@ -262,7 +298,7 @@ class AgentOperator:
                 __handleException(e)
 
         finally:
-            """ Main part #2 possible shutdown"""
+            """Main part #2 possible shutdown"""
             # if thread was shutdown abruptly (self.__stop flag), perform shutdown
             # shutdown before onclose
 
@@ -296,7 +332,6 @@ class AgentOperator:
 
             except Exception as e:
                 __handleException(e)
-
 
             agent._cleanup()  # shutdown new created objects in agent
             agent.isCleanedUp = True

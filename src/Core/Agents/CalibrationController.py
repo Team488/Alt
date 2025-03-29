@@ -54,8 +54,5 @@ class CalibrationController(Agent):
     def isRunning(self):
         return self.running
 
-    def getName(self) -> str:
-        return "Calibration_Creating_Agent"
-
     def getDescription(self) -> str:
         return "Start_Calibration"

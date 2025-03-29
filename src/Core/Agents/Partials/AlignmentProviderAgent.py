@@ -48,9 +48,6 @@ class AlignmentProviderAgent(CameraUsingAgentBase):
         self.leftDistanceProp.set(left)
         self.rightDistanceProp.set(right)
 
-    def getName(self) -> str:
-        return "AlignmentProviderAgent"
-
     def getDescription(self) -> str:
         return "Looks-Through-Camera-Checks-Alignment"
 

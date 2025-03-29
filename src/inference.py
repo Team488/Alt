@@ -7,7 +7,7 @@ if __name__ == "__main__":
     agent = InferenceAgentPartial(
         ConfigurableCameraCapture(
             "Common_Video",
-            CommonVideos.ArucoCalib.path,
+            CommonVideos.ReefscapeCompilation.path,
             CameraIntrinsicsPredefined.OV9782COLOR,
         ),
         InferenceMode.ONNXSMALL2025,

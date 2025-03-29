@@ -156,9 +156,6 @@ class VerticalAlignmentChecker(CameraUsingAgentBase):
         if self.showFrames:
             cv2.imshow("Vertical Edges", edge_viz)
 
-    def getName(self) -> str:
-        return "VerticalEdgeAlignmentCheck"
-
     def getDescription(self) -> str:
         return "Detects-Vertical-Edges-For-AprilTag-Alignment"
 

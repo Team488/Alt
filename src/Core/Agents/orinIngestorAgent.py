@@ -76,9 +76,6 @@ class orinIngestorAgent(Agent):
         for writer in self.videowriters:
             writer.release()
 
-    def getName(self) -> str:
-        return "Orin_Ingestor_Agent"
-
     def getDescription(self) -> str:
         return "Ingest-Photonvision-Streams-Write-To-File"
 

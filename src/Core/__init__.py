@@ -1,12 +1,29 @@
 import socket
 import subprocess
-from tools.Constants import InferenceMode
-from .LogManager import getChildLogger
+import tools.Constants
 import sys
+from Core.LogManager import getChildLogger
+
 
 COREMODELTABLE = "MainProcessInferenceMODE"
-COREINFERENCEMODE = InferenceMode.ALCOROBEST2025
+COREINFERENCEMODE = tools.Constants.InferenceMode.ALCOROBEST2025
 DEVICEHOSTNAME = socket.gethostname()
+
+
+def get_local_ip():
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s.settimeout(0)
+    try:
+        s.connect(("8.8.8.8", 80))  # Google DNS
+        ip = s.getsockname()[0]
+    except Exception:
+        ip = "127.0.0.1"  # Fallback if no connection is possible
+    finally:
+        s.close()
+    return ip
+
+
+DEVICEIP = get_local_ip()
 
 
 def isHeadless():

@@ -29,7 +29,7 @@ class FrameDisplayer(Agent):
         # perform agent init here (eg open camera or whatnot)
         if self.propertyOperator is None:
             raise ValueError("PropertyOperator not initialized")
-            
+
         self.getSendEnableTable = (
             lambda key: f"{key}.{CameraUsingAgentBase.FRAMETOGGLEPOSTFIX}"
         )
@@ -44,7 +44,7 @@ class FrameDisplayer(Agent):
     def subscribeFrameUpdate(self) -> None:
         if self.updateOp is None:
             raise ValueError("UpdateOperator not initialized")
-            
+
         self.updateOp.subscribeAllGlobalUpdates(
             CameraUsingAgentBase.FRAMEPOSTFIX,
             updateSubscriber=self.__handleUpdate,
@@ -65,10 +65,10 @@ class FrameDisplayer(Agent):
     def __showFrames(self) -> None:
         if self.displayedFrames is None:
             return
-            
+
         showedFrames = False
         if len(self.updateMap.keys()) > 0:
-            copy = dict(self.updateMap.items()) # copy
+            copy = dict(self.updateMap.items())  # copy
             for key, item in copy.items():
                 frame = item
                 if frame is not None:
@@ -83,7 +83,7 @@ class FrameDisplayer(Agent):
     def addKey(self, key: str) -> None:
         if self.xclient is None:
             raise ValueError("XTablesClient not initialized")
-            
+
         cut = key[: key.rfind(".")]
         full = f"{cut}.{CameraUsingAgentBase.FRAMETOGGLEPOSTFIX}"
         self.xclient.putBoolean(full, True)
@@ -94,7 +94,7 @@ class FrameDisplayer(Agent):
     def removeKey(self, key: str) -> None:
         if self.xclient is None:
             raise ValueError("XTablesClient not initialized")
-            
+
         cut = key[: key.rfind(".")]
         full = f"{cut}.{CameraUsingAgentBase.FRAMETOGGLEPOSTFIX}"
         self.xclient.putBoolean(full, False)
@@ -122,9 +122,6 @@ class FrameDisplayer(Agent):
 
     def isRunning(self) -> bool:
         return self.runFlag
-
-    def getName(self) -> str:
-        return "Frame_Displaying_Agent"
 
     def getDescription(self) -> str:
         return "Ingest_Frames_Show_Them"

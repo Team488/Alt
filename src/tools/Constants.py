@@ -1,5 +1,6 @@
 from abc import abstractmethod
 from enum import Enum
+from functools import partial
 import json
 from typing import Union, Any, Dict, List, Tuple, Optional, cast
 from typing import Literal, TypeVar, Generic, Type, Sequence, Callable, overload

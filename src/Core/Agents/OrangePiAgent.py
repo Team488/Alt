@@ -47,9 +47,6 @@ class OrangePiAgent(ReefTrackingAgentBase):
         super().create()
         # self.Sentinel.info(f"Camera Name: {self.device_name}")
 
-    def getName(self) -> str:
-        return "Orange_Pi_Process"
-
     def getDescription(self) -> str:
         return "Ingest_Camera_Run_Ai_Model_Return_Localized_Detections_And_NowAlsoTrackReef"
 

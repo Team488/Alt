@@ -13,7 +13,7 @@ class AgentExample(Agent):
         # for example here i can create a propery to configure what to call myself
         if self.propertyOperator is None:
             raise ValueError("PropertyOperator not initialized")
-            
+
         self.nameProp = self.propertyOperator.createProperty(
             propertyTable="agent_name", propertyDefault="Bob"
         )
@@ -27,10 +27,10 @@ class AgentExample(Agent):
         # for example, i can tell the world what im called
         if self.nameProp is None or self.projectNameProp is None:
             return
-            
+
         if self.Sentinel is None:
             return
-            
+
         self.timesRun += 1
         name = self.nameProp.get()
         self.projectNameProp.set(name)
@@ -52,9 +52,6 @@ class AgentExample(Agent):
         # for this example, there are no things to do here
         # in real code, this is where you could handle things like closing a camera abruptly anything that would normally be done in the tasks lifespan
         print("Shutdown!")
-
-    def getName(self) -> str:
-        return "Agent_Example"
 
     def getDescription(self) -> str:
         return "Agent_Example_Process"

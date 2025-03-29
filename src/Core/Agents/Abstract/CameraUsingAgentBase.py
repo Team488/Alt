@@ -1,4 +1,8 @@
 import datetime
+import multiprocessing
+import multiprocessing.connection
+import multiprocessing.managers
+import multiprocessing.queues
 import os
 import time
 from typing import Union, Optional, Callable, Tuple, Any
@@ -9,6 +13,7 @@ from abstract.Agent import Agent
 from abstract.Capture import Capture
 from coreinterface.FramePacket import FramePacket
 from tools.Constants import CameraIntrinsics
+from tools.AgentConstants import AgentCapabilites
 from tools.depthAiHelper import DepthAIHelper
 from abstract.depthCamera import depthCamera
 from tools import calibration
@@ -40,7 +45,7 @@ class CameraUsingAgentBase(Agent):
         ] = kwargs.get("capture", None)
         if self.capture is None:
             raise ValueError("CameraUsingAgentBase requires a capture object")
-            
+
         self.depthEnabled: bool = issubclass(self.capture.__class__, depthCamera)
         self.iscv2Configurable: bool = issubclass(
             self.capture.__class__, ConfigurableCameraCapture
@@ -87,7 +92,7 @@ class CameraUsingAgentBase(Agent):
         """Set up initial camera intrinsics properties"""
         if self.propertyOperator is None:
             raise ValueError("PropertyOperator not initialized")
-            
+
         if self.iscv2Configurable:
             self.Sentinel.info("Detected cv2 configurable capture..")
             if self.customLoaded:
@@ -103,7 +108,7 @@ class CameraUsingAgentBase(Agent):
             self.propertyOperator.createReadOnlyProperty("CameraIntrinsics", "").set(
                 str(self.capture.getIntrinsics())
             )
-            
+
         if isinstance(self.calibMTime, float):
             readable_time = datetime.datetime.fromtimestamp(self.calibMTime).strftime(
                 "%Y-%m-%d %H:%M:%S"
@@ -123,7 +128,6 @@ class CameraUsingAgentBase(Agent):
             self.Sentinel.warning("This enviorment cannot display frames!")
             self.showFrames = False
 
-
         self.capture.create()
         self.sendInitialUpdate()
 
@@ -141,7 +145,7 @@ class CameraUsingAgentBase(Agent):
 
         if self.updateOp is None:
             raise ValueError("UpdateOperator not initialized")
-            
+
         self.sendFrameProp = self.updateOp.createGlobalUpdate(
             self.FRAMETOGGLEPOSTFIX, default=False, loadIfSaved=False
         )
@@ -167,6 +171,31 @@ class CameraUsingAgentBase(Agent):
             if self.depthEnabled:
                 cv2.namedWindow(self.WINDOWNAMEDEPTH)
 
+        if AgentCapabilites.STREAM.objectName in self.extraObjects:
+            self.stream_queue: multiprocessing.queues.Queue = self.extraObjects.get(
+                AgentCapabilites.STREAM.objectName
+            )
+
+            streamPath = f"http://{Core.DEVICEIP}:5000/{self.agentName}/stream"
+
+            self.propertyOperator.createCustomReadOnlyProperty(
+                "stream.IP", streamPath, addBasePrefix=True, addOperatorPrefix=True
+            )
+
+            captureShape = self.capture.getFrameShape()
+            self.streamWidth = self.propertyOperator.createProperty(
+                "stream.width", captureShape[1], isCustom=True, addOperatorPrefix=True
+            )
+            self.streamHeight = self.propertyOperator.createProperty(
+                "stream.height", captureShape[0], isCustom=True, addOperatorPrefix=True
+            )
+
+        else:
+            # raise better error
+            raise RuntimeError(
+                "FRAME QUEUE WAS NOT PROVIDED TO THE CAMERA USING AGENT! IT HAS STREAM CAPABILITES AND WAS EXPECTING IT"
+            )
+
     def testCapture(self) -> None:
         """Test if the camera is properly functioning"""
         if self.capture.isOpen():
@@ -180,9 +209,9 @@ class CameraUsingAgentBase(Agent):
 
     def runPeriodic(self) -> None:
         super().runPeriodic()
-        if not hasattr(self, 'sendFrameProp') or not hasattr(self, 'calibProp'):
+        if not hasattr(self, "sendFrameProp") or not hasattr(self, "calibProp"):
             raise ValueError("Properties not initialized properly")
-            
+
         self.sendFrame = self.sendFrameProp.get()
         self.calib = self.calibProp.get()
 
@@ -315,6 +344,19 @@ class CameraUsingAgentBase(Agent):
                     time.time() * 1000, "Frame", self.latestFrameMain
                 )
                 self.updateOp.addGlobalUpdate(self.FRAMEPOSTFIX, framePacket.to_bytes())
+
+            # send to mjpeg stream
+            if (
+                self.streamWidth.get() != self.latestFrameMain.shape[1]
+                or self.streamHeight.get() != self.latestFrameMain.shape[0]
+            ):
+                resizedFrame = cv2.resize(
+                    self.latestFrameMain,
+                    (self.streamWidth.get(), self.streamHeight.get()),
+                )
+                self.stream_queue.put_nowait(resizedFrame)
+            else:
+                self.stream_queue.put_nowait(self.latestFrameMain)
 
         with self.timer.run("cap_read"):
             self.hasIngested = True

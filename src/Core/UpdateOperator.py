@@ -4,7 +4,7 @@ import time
 from typing import Any, Callable, Optional, Dict, Set, List, Tuple, Union, DefaultDict
 from JXTABLES.XTablesClient import XTablesClient
 
-from Core.PropertyOperator import Property, PropertyOperator, ReadonlyProperty
+from Core.PropertyOperator import Property, PropertyOperator
 from collections import defaultdict
 
 
@@ -25,20 +25,18 @@ class UpdateOperator:
         self.__subscribedRunOnClose: Dict[str, Optional[Callable[[str], None]]] = {}
         self.__subscribedSubscriber: Dict[str, Callable[[Any], None]] = {}
 
-    
-    def withLock(self, runnable : Callable[[],None]):
+    def withLock(self, runnable: Callable[[], None]):
         if self.__xclient.getDouble(self.PATHLOCK) != None:
             while self.__xclient.getDouble(self.PATHLOCK) != self.EMPTYLOCK:
-                time.sleep(0.01) # wait for lock to open
+                time.sleep(0.01)  # wait for lock to open
 
-        self.__xclient.putDouble(self.PATHLOCK,self.BUSYLOCK)
+        self.__xclient.putDouble(self.PATHLOCK, self.BUSYLOCK)
         runnable()
-        self.__xclient.putDouble(self.PATHLOCK,self.EMPTYLOCK)
+        self.__xclient.putDouble(self.PATHLOCK, self.EMPTYLOCK)
 
-    
     def addToAllRunning(self, uniqueUpdateName: str) -> None:
         """Add this agent's unique update name to the list of all running agents"""
-        
+
         def add():
             existingNames = self.__xclient.getStringList(self.ALLRUNNINGAGENTPATHS)
             if existingNames is None:
@@ -196,7 +194,7 @@ class UpdateOperator:
     def deregister(self) -> None:
         """Deregister this agent and clean up all subscriptions"""
 
-        def remove():        
+        def remove():
             existingNames = self.__xclient.getStringList(self.ALLRUNNINGAGENTPATHS)
             if existingNames is None:
                 existingNames = []  # "default arg"
@@ -205,7 +203,7 @@ class UpdateOperator:
                     existingNames.remove(self.uniqueUpdateName)
 
             self.__xclient.putStringList(self.ALLRUNNINGAGENTPATHS, existingNames)
-        
+
         self.withLock(remove)
 
         for updateName, fullTables in self.__subscribedUpdates.items():

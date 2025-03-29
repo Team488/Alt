@@ -13,7 +13,7 @@ from Core.PropertyOperator import PropertyOperator, LambdaHandler, ReadonlyPrope
 from Core.OrderOperator import OrderOperator
 from Core.AgentOperator import AgentOperator
 from Core.ShareOperator import ShareOperator
-from Core.UpdateOperator import UpdateOperator
+from Core.StreamOperator import StreamOperator
 from Core import LogManager, COREMODELTABLE, COREINFERENCEMODE
 from Core.Central import Central
 from abstract.Agent import Agent
@@ -60,6 +60,10 @@ class Neo:
             dict=self.__manager.dict(),
         )
 
+        Sentinel.info("Creating Stream Operator")
+        self.__streamOp = StreamOperator(manager=self.__manager)
+        self.__streamOp.start()
+
         # Sentinel.info("Creating Order operator")
         # self.__orderOp = OrderOperator(
         #     self.__xclient,
@@ -67,7 +71,7 @@ class Neo:
         # )
 
         Sentinel.info("Creating Agent operator")
-        self.__agentOp = AgentOperator(self.__manager)
+        self.__agentOp = AgentOperator(self.__manager, self.__shareOp, self.__streamOp)
 
         self.__isShutdown = False  # runnable
         signal.signal(signal.SIGINT, handler=self.__handleArchitectKill)
@@ -105,7 +109,7 @@ class Neo:
     def wakeAgent(self, agentClass: type[Agent], isMainThread=False) -> None:
         """NOTE: if isMainThread=True, this will threadblock indefinitely"""
         if not self.isShutdown():
-            self.__agentOp.wakeAgent(agentClass, self.__shareOp, isMainThread)
+            self.__agentOp.wakeAgent(agentClass, isMainThread)
         else:
             Sentinel.warning("Neo is already shutdown!")
 
@@ -121,6 +125,7 @@ class Neo:
             self.Sentinel.warning("Neo has already been shut down!")
 
     def __cleanup(self) -> None:
+        self.__streamOp.shutdown()
         self.__agentOp.waitForAgentsToFinish()
         self.__agentOp.shutDownNow()
 
