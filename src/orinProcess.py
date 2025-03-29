@@ -6,6 +6,10 @@ from tools.Constants import InferenceMode, D435IResolution, ColorCameraExtrinsic
 from Captures import D435Capture
 
 if __name__ == "__main__":
+
+    import signal
+    signal.signal(signal.SIGINT, signal.SIG_DFL)
+
     n = Neo()
 
     n.wakeAgent(CentralAgent, isMainThread=False)
@@ -26,6 +30,8 @@ if __name__ == "__main__":
     # )
 
     # start pathplanning rpc
-    from pathplanning.nmc import fastMarchingMethodRPC
+    # from pathplanning.nmc import fastMarchingMethodRPC
 
-    fastMarchingMethodRPC.serve()
+
+    # fastMarchingMethodRPC.serve()
+    n.waitForAgentsFinished()

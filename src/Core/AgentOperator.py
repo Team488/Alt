@@ -1,4 +1,5 @@
 import ctypes
+from functools import partial
 import logging
 import multiprocessing
 import multiprocessing.context
@@ -30,9 +31,6 @@ Sentinel = getChildLogger("Agent_Operator")
 class AgentOperator:
     def __init__(self, manager: multiprocessing.managers.SyncManager) -> None:
         self.__executor: ProcessPoolExecutor = ProcessPoolExecutor()
-        self.__runningProcessCount: multiprocessing.managers.ValueProxy = manager.Value(
-            "i", 0
-        )
         self.__stop: threading.Event = manager.Event()  # flag
         self.futures: list[Future] = []
         self.mainAgent: Optional[Agent] = None
@@ -75,12 +73,17 @@ class AgentOperator:
                 shareOperator,
                 True,
                 self.__stop,
-                self.__runningProcessCount,
                 runOnCreate=self.__setMainAgent,
             )
         else:
+            # set new logger before fork
+            # if isinstance(agentClass, partial):
+            #     name = agentClass.func.__name__
+            # else:
+            #     name = agentClass.__name__
+            # LogManager.createAndSetMain(name)
+
             try:
-                self.__runningProcessCount.value += 1
                 self.futures.append(
                     self.__executor.submit(
                         AgentOperator._startAgentLoop,
@@ -88,13 +91,15 @@ class AgentOperator:
                         shareOperator,
                         isMainThread,
                         self.__stop,
-                        self.__runningProcessCount,
                     )
                 )
             except Exception as e:
                 print(e)
-                exit()
-        # grace period for thread to start
+            finally:
+                # go back to core logger
+                # LogManager.initMainLogger()
+                pass
+
         Sentinel.info("The agent is alive!")
 
     @staticmethod
@@ -112,10 +117,9 @@ class AgentOperator:
         logProperty.set(msg)
 
     @staticmethod
-    def _createAgent(
-        agentClass: type[Agent], shareOperator: ShareOperator, isMainThread: bool
+    def _injectAgent(
+        agent: Agent, shareOperator: ShareOperator, isMainThread: bool
     ) -> Agent:
-        agent = agentClass()
 
         # injecting stuff shared from core
         agent._injectCore(shareOperator, isMainThread)
@@ -164,21 +168,20 @@ class AgentOperator:
         shareOperator: ShareOperator,
         isMainThread: bool,
         stopflag: threading.Event,
-        processCount: multiprocessing.managers.ValueProxy,
         runOnCreate: Callable[[Agent], None] = None,
     ) -> None:
         """Main agent loop that manages agent lifecycle"""
 
         """Initialization part #1 Create agent"""
-        agent: Agent = AgentOperator._createAgent(
-                agentClass, shareOperator, isMainThread
-            )
+        agent: Agent = agentClass()
         agentName = agent.getName()
 
-        """Initialization part #2 Update core log to be agents name (IF not on main thread) """
-        if not isMainThread:
-            LogManager.createAndSetMain(agent.getName())
-
+        """ Initialization part #3. Inject objects in agent"""
+        AgentOperator._injectAgent(
+                agent, shareOperator, isMainThread
+            )
+        
+        """ On main thread this is how its set as main agent"""
         if isMainThread and runOnCreate is not None:
             runOnCreate(agent)
 
@@ -242,7 +245,6 @@ class AgentOperator:
             while agent.isRunning():
                 with timer.run("runPeriodic"):
                     stop = stopflag.is_set()
-                    Sentinel.info(f"THREAD STOPPED: {stop}")
                     if stop:
                         break
                     progressStr = "runPeriodic"
@@ -255,8 +257,9 @@ class AgentOperator:
                         time.sleep(sleepTime)
 
         except Exception as e:
-            failed = True
-            __handleException(e)
+            if type(e) is not KeyboardInterrupt:
+                failed = True
+                __handleException(e)
 
         finally:
             """ Main part #2 possible shutdown"""
@@ -298,16 +301,15 @@ class AgentOperator:
             agent._cleanup()  # shutdown new created objects in agent
             agent.isCleanedUp = True
 
-            # remove this from running processes
-            processCount.set(processCount.get() - 1)
+    def allFinished(self):
+        return all(f.done() for f in self.futures)
 
     def waitForAgentsToFinish(self) -> None:
         """Thread blocking method that waits for any running agents"""
-        if self.__runningProcessCount.get() > 0:
+        if not self.allFinished():
             Sentinel.info("Waiting for async agent to finish...")
             while True:
-                runningProcessCount = self.__runningProcessCount.get()
-                if runningProcessCount <= 0:
+                if self.allFinished():
                     break
                 time.sleep(0.01)
             Sentinel.info("Agents have all finished.")

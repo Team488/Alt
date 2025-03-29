@@ -295,12 +295,6 @@ class ColorCameraExtrinsics2025(CameraExtrinsics, Enum):
     DEPTH_REAR_RIGHT = ((0, 0, 0), (45.0, 10.0))
 
 
-class ColorCameraExtrinsics2025(CameraExtrinsics, Enum):
-    #   {PositionName} = ((offsetX(in),offsetY(in),offsetZ(in)),(yawOffset(deg),pitchOffset(deg)))
-    # TODO
-    pass
-
-
 class ATCameraExtrinsics(CameraExtrinsics):
     def getPhotonCameraName(self):
         return self.value[2]

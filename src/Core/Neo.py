@@ -110,8 +110,8 @@ class Neo:
             Sentinel.warning("Neo is already shutdown!")
 
     def __printAndCleanup(self) -> None:
-        self.__cleanup()
         self.__printFinish()
+        self.__cleanup()
 
     def waitForAgentsFinished(self) -> None:
         """Thread blocking method that waits for a running agent (if any is running)"""
@@ -121,7 +121,7 @@ class Neo:
             self.Sentinel.warning("Neo has already been shut down!")
 
     def __cleanup(self) -> None:
-        self.__agentOp.stopAndWait()
+        self.__agentOp.waitForAgentsToFinish()
         self.__agentOp.shutDownNow()
 
     def isShutdown(self) -> bool:

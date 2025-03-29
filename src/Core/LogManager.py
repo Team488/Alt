@@ -15,12 +15,13 @@ UniqueId: Final[str] = socket.gethostname()
 
 
 def createLogger(loggerName: str):
-    logger = logging.getLogger(loggerName)
+    fullName = f"{loggerName}[{UniqueId}]"
+    logger = logging.getLogger(fullName)
     logger.setLevel(LOGLEVEL)
 
     if not logger.handlers:
         log_filename = os.path.join(
-            BASELOGDIR, f"{loggerName}_{generalutils.getTimeStr()}.log"
+            BASELOGDIR, f"{fullName}_{generalutils.getTimeStr()}.log"
         )
         file_handler = logging.FileHandler(log_filename, mode="a", encoding="utf-8")
         file_handler.setFormatter(
@@ -43,7 +44,10 @@ def createAndSetMain(loggerName: str):
 
 
 # create and set inital logger
-createAndSetMain(f"Core[{UniqueId}]")
+def initMainLogger():
+    createAndSetMain(f"Core")
+
+initMainLogger()
 
 
 def setLogLevel(level: Union[int, str]) -> None:
@@ -67,3 +71,5 @@ def getChildLogger(name: str) -> logging.Logger:
         A Logger instance with the given name as a child of the central logger
     """
     return Sentinel.getChild(name)
+
+
