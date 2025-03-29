@@ -2,9 +2,7 @@ from collections import defaultdict
 import cv2
 import numpy as np
 from abstract.AlignmentProvider import AlignmentProvider
-from Captures.FileCapture import FileCapture
-from tools.Constants import SimulationEndpoints
-from Core import PropertyOperator, getChildLogger
+from Core import getChildLogger
 
 Sentinel = getChildLogger("April_Tag_Alignment_Provider")
 
@@ -23,6 +21,11 @@ class BinnedVerticalAlignmentChecker(AlignmentProvider):
         self.createConstants()
 
     def createConstants(self):
+        self.sobel_threshold = self.propertyOperator.createProperty(
+            propertyTable="sobelThreshold",
+            propertyDefault=70,
+            setDefaultOnNetwork=True,
+        )
         self.threshold_to_last_used = self.propertyOperator.createProperty(
             propertyTable="threshold_to_last_used_size",
             propertyDefault=25,
