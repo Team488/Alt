@@ -10,7 +10,7 @@ Sentinel = getChildLogger("DocTr_Alignment_Provider")
 class ReefPostAlignmentProvider(AlignmentProvider):
     def __init__(self):
         super().__init__()
-        self.hist, self.mtime = staticLoad("assets/stingerHistogram.npy",isRelativeToSource=True)
+        self.hist, self.mtime = staticLoad("assets\stingerHistogram.npy",isRelativeToSource=True)
 
     def isColorBased(self):
         return True  # HAS to be color
@@ -21,6 +21,8 @@ class ReefPostAlignmentProvider(AlignmentProvider):
 
         midFrame = frame.shape[1] // 2
         lab = cv2.cvtColor(frame, cv2.COLOR_BGR2LAB)
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
         backProj = cv2.calcBackProject([lab], [1, 2], self.hist, [0, 256, 0, 256], 1)
 
         # left side ========
@@ -66,5 +68,8 @@ class ReefPostAlignmentProvider(AlignmentProvider):
 
         if draw:
             cv2.putText(frame, f"L: {left} R: {right}", (10, 20), 1, 1, (255))
+
+            cv2.imshow("gray",gray)
+
 
         return left, right
