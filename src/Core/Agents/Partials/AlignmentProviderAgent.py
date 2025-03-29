@@ -24,6 +24,8 @@ class AlignmentProviderAgent(CameraUsingAgentBase):
 
     def create(self):
         super().create()
+        self.alignmentProvider._inject(self.propertyOperator)
+        self.alignmentProvider.create()
 
         self.leftDistanceProp = self.propertyOperator.createCustomReadOnlyProperty(
             propertyTable="verticalEdgeLeftDistancePx",
