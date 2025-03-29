@@ -358,6 +358,7 @@ class AgentOperator:
         if not self.allFinished():
             Sentinel.info("Waiting for async agent to finish...")
             while True:
+                Sentinel.debug(f"waiting for futures: {self.futures}")
                 if self.allFinished():
                     break
                 time.sleep(0.01)
