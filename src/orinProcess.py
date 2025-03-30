@@ -2,26 +2,30 @@ from Core.Agents.Abstract import ObjectLocalizingAgentPartial
 from Core.Agents.CentralAgent import CentralAgent
 from Core.Neo import Neo
 from Core.Agents.PathToNearestCoralStation import PathToNearestCoralStation
+from Core.Agents.PathToNearestBarge import PathToNearestBarge
+
 from tools.Constants import InferenceMode, D435IResolution, ColorCameraExtrinsics2025
 from Captures import D435Capture
 
 if __name__ == "__main__":
 
-    import signal
-    signal.signal(signal.SIGINT, signal.SIG_DFL)
-
+    # import signal
+    # signal.signal(signal.SIGINT, signal.SIG_DFL)
+    #
     n = Neo()
-
-    n.wakeAgent(CentralAgent, isMainThread=False)
+    #
+    # n.wakeAgent(CentralAgent, isMainThread=False)
     n.wakeAgent(PathToNearestCoralStation, isMainThread=False)
+    n.wakeAgent(PathToNearestBarge, isMainThread=False)
 
-    object_localization = ObjectLocalizingAgentPartial(
-        inferenceMode=InferenceMode.ALCOROBEST2025GPUONLY,
-        capture=D435Capture(res=D435IResolution.RS720P),
-        cameraExtrinsics=ColorCameraExtrinsics2025.DEPTH_REAR_LEFT,
-    )
+    #
+    # object_localization = ObjectLocalizingAgentPartial(
+    #     inferenceMode=InferenceMode.ALCOROBEST2025GPUONLY,
+    #     capture=D435Capture(res=D435IResolution.RS720P),
+    #     cameraExtrinsics=ColorCameraExtrinsics2025.DEPTH_REAR_LEFT,
+    # )
 
-    n.wakeAgent(object_localization, isMainThread=False)
+    # n.wakeAgent(object_localization, isMainThread=False)
 
     # n.wakeAgent(orinIngestorAgent,isMainThread=False)
     # n.wakeAgent(
@@ -30,8 +34,7 @@ if __name__ == "__main__":
     # )
 
     # start pathplanning rpc
-    # from pathplanning.nmc import fastMarchingMethodRPC
+    from pathplanning.nmc import fastMarchingMethodRPC
 
-
-    # fastMarchingMethodRPC.serve()
+    fastMarchingMethodRPC.serve()
     n.waitForAgentsFinished()
