@@ -250,9 +250,9 @@ class Window(QMainWindow):
             print("Syncing")
             customDialog = CustomInputDialog(
                 {
-                    "ReefHistogram": "histograms/reef_post_hist.npy",
-                    "CoralHistogram": "histograms/whiteCoralHistBAD.npy",
-                    "AlgaeHistogram": "histograms/blueAlgaeHist.npy",
+                    "ReefHistogram": os.path.join("histograms","reef_post_hist.npy"),
+                    "CoralHistogram": os.path.join("histograms","whiteCoralHistBAD.npy"),
+                    "AlgaeHistogram": os.path.join("histograms","blueAlgaeHist.npy"),
                 }
             )
 
@@ -263,7 +263,7 @@ class Window(QMainWindow):
                     saveToTempNpy(filepath, self.maskedAbHist)
                     syncPis(filepath)
                 except Exception as e:
-                    print(f"Error!: \n{e.with_traceback()}")
+                    print(f"Error!: \n{e}")
 
     def onLocalSave(self) -> None:
         from tools.piSync import saveNpy
@@ -272,9 +272,9 @@ class Window(QMainWindow):
             print("Saving To Local")
             customDialog = CustomInputDialog(
                 {
-                    "ReefHistogram": "histograms/reef_post_hist.npy",
-                    "CoralHistogram": "histograms/whiteCoralHistBAD.npy",
-                    "AlgaeHistogram": "histograms/blueAlgaeHist.npy",
+                    "ReefHistogram": os.path.join("histograms","reef_post_hist.npy"),
+                    "CoralHistogram": os.path.join("histograms","whiteCoralHistBAD.npy"),
+                    "AlgaeHistogram": os.path.join("histograms","blueAlgaeHist.npy"),
                 }
             )
 

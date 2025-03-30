@@ -42,17 +42,16 @@ class AlignmentProviderAgent(CameraUsingAgentBase):
 
     def runPeriodic(self) -> None:
         super().runPeriodic()
-
         frame = self.latestFrameMain
         left, right = self.alignmentProvider.align(
-            frame, self.showFrames or self.sendFrame
+            frame, self.showFrames or self.sendFrame or self.stream_queue is not None
         )
         self.leftDistanceProp.set(left)
         self.rightDistanceProp.set(right)
 
     def getDescription(self) -> str:
         return "Looks-Through-Camera-Checks-Alignment"
-
+    
 
 def partialAlignmentCheck(
     alignmentProvider: AlignmentProvider,
