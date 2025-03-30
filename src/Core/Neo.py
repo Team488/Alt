@@ -125,9 +125,10 @@ class Neo:
             self.Sentinel.warning("Neo has already been shut down!")
 
     def __cleanup(self) -> None:
-        self.__streamOp.shutdown()
         self.__agentOp.waitForAgentsToFinish()
         self.__agentOp.shutDownNow()
+        self.__manager.shutdown()
+        self.__streamOp.shutdown()
 
     def isShutdown(self) -> bool:
         return self.__isShutdown

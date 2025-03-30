@@ -40,6 +40,7 @@ class AgentOperator:
         self.__executor: ProcessPoolExecutor = ProcessPoolExecutor()
         self.__stop: threading.Event = manager.Event()  # flag
         self.futures: list[Future] = []
+        self.activeAgentNames = {}
         self.mainAgent: Optional[Agent] = None
         self.shareOp = shareOp
         self.streamOp = streamOp
@@ -64,16 +65,28 @@ class AgentOperator:
     def __setMainAgent(self, agent: Agent):
         self.mainAgent = agent
 
-    @staticmethod
-    def getAgentName(agentClass: Union[partial, type[Agent]]):
+    def getUniqueAgentName(self, agentClass: Union[partial, type[Agent]]):
+        """Handles duplicate agent names"""
         if isinstance(agentClass, partial):
-            return agentClass.func.__name__
+            name = agentClass.func.__name__
         else:
-            return agentClass.__name__
+            name = agentClass.__name__
+
+        currentRunningWithThatName = self.activeAgentNames.get(name, 0)
+
+        if currentRunningWithThatName > 0:
+            # already existing instances, so add a differentiator
+            name = f"{name}_{currentRunningWithThatName}"
+
+        currentRunningWithThatName += 1
+        self.activeAgentNames[name] = currentRunningWithThatName
+
+        return name
 
     def initalizeExtraObjects(
         self,
         agentClass: Union[partial, type[Agent]],
+        agentName: str,
         argumentDict: multiprocessing.managers.DictProxy,
         streamOperator: StreamOperator,
     ):
@@ -82,22 +95,23 @@ class AgentOperator:
             if capability is AgentCapabilites.STREAM:
                 argumentDict[
                     AgentCapabilites.STREAM.objectName
-                ] = streamOperator.register_stream(
-                    AgentOperator.getAgentName(agentClass)
-                )
+                ] = streamOperator.register_stream(agentName)
 
         return argumentDict
 
     def wakeAgent(self, agentClass: type[Agent], isMainThread: bool) -> None:
         Sentinel.info(f"Waking agent!")
 
+        agentName = self.getUniqueAgentName(agentClass)
+
         extraObjects = self.initalizeExtraObjects(
-            agentClass, self.manager.dict(), self.streamOp
+            agentClass, agentName, self.manager.dict(), self.streamOp
         )
 
         if isMainThread:
             AgentOperator._startAgentLoop(
                 agentClass,
+                agentName,
                 self.shareOp,
                 True,
                 self.__stop,
@@ -117,6 +131,7 @@ class AgentOperator:
                     self.__executor.submit(
                         AgentOperator._startAgentLoop,
                         agentClass,
+                        agentName,
                         self.shareOp,
                         isMainThread,
                         self.__stop,
@@ -201,6 +216,7 @@ class AgentOperator:
     @staticmethod
     def _startAgentLoop(
         agentClass: type[Agent],
+        agentName: str,
         shareOperator: ShareOperator,
         isMainThread: bool,
         stopflag: threading.Event,
@@ -215,8 +231,6 @@ class AgentOperator:
             capability.name
             for capability in AgentCapabilites.getCapabilites(agentClass)
         ]
-
-        agentName = AgentOperator.getAgentName(agentClass)
 
         """ Initialization part #3. Inject objects in agent"""
         AgentOperator._injectAgent(

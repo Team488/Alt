@@ -16,9 +16,11 @@ class AlignmentProviderAgent(CameraUsingAgentBase):
         alignmentProvider: AlignmentProvider,
         cameraPath="http://localhost:1181/stream.mjpg",
         showFrames=False,
+        flushCamMs=-1,
     ):
         super().__init__(
-            capture=FileCapture(videoFilePath=cameraPath), showFrames=showFrames
+            capture=FileCapture(videoFilePath=cameraPath, flushTimeMS=flushCamMs),
+            showFrames=showFrames,
         )
         self.alignmentProvider = alignmentProvider
 
@@ -51,16 +53,18 @@ class AlignmentProviderAgent(CameraUsingAgentBase):
 
     def getDescription(self) -> str:
         return "Looks-Through-Camera-Checks-Alignment"
-    
+
 
 def partialAlignmentCheck(
     alignmentProvider: AlignmentProvider,
     cameraPath="http://localhost:1181/stream.mjpg",
     showFrames=False,
+    flushCamMs=-1,
 ):
     return partial(
         AlignmentProviderAgent,
         alignmentProvider=alignmentProvider,
         cameraPath=cameraPath,
         showFrames=showFrames,
+        flushCamMs=flushCamMs,
     )
