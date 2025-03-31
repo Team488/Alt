@@ -384,7 +384,7 @@ class AgentOperator:
             if not self.mainAgent.hasShutdown:
                 with self.mainAgent.getTimer().run("shutdown"):
                     Sentinel.info("Shutting agent down with sigint")
-                self.mainAgent.forceShutdown()
+                    self.mainAgent.forceShutdown()
             if not self.mainAgent.hasClosed:
                 Sentinel.info("Closing agent with sigint")
                 with self.mainAgent.getTimer().run("cleanup"):

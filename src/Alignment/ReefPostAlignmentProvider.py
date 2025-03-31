@@ -6,7 +6,7 @@ from Core import getChildLogger
 from Core.ConfigOperator import staticLoad
 from tools import generalutils
 
-Sentinel = getChildLogger("DocTr_Alignment_Provider")
+logger = getChildLogger("ReefPostAlignment")
 
 
 class ReefPostAlignmentProvider(AlignmentProvider):
@@ -14,85 +14,195 @@ class ReefPostAlignmentProvider(AlignmentProvider):
         super().__init__()
 
     def create(self):
+        """Initialize alignment parameters and load the reference histogram."""
         super().create()
+
+        # Load precomputed color histogram
         self.hist, self.mtime = staticLoad(
-            "assets/histograms/reef_post_hist.npy", isRelativeToSource=True
+            "assets/s_reef_hist.npy", isRelativeToSource=True
         )
-        self.threshold = self.propertyOperator.createProperty("Reef_Post_Thresh", 150)
-        self.roi = self.propertyOperator.createProperty("Roi", 0.5)
-        self.minLineLength = self.propertyOperator.createProperty("MinLinelength", 50)
-        self.angleRange = self.propertyOperator.createProperty("Angle_Range",10)
-        self.propertyOperator.createReadOnlyProperty("Histogram_Update_Time", generalutils.getTimeStr(time.localtime(self.mtime)))
+
+        # Adjustable processing parameters
+        self.threshold_pre = self.propertyOperator.createProperty(
+            "Reef_Post_Thresh", 150
+        )
+        self.threshold_post = self.propertyOperator.createProperty("Sobel_Thresh", 150)
+        self.roi_fraction = self.propertyOperator.createProperty("ROI_Fraction", 0.5)
+        self.min_line_length = self.propertyOperator.createProperty(
+            "Min_Line_Length", 50
+        )
+        self.max_line_length = self.propertyOperator.createProperty(
+            "Max_Line_Length", 60
+        )
+        self.angle_range = self.propertyOperator.createProperty("Angle_Range", 10)
+        self.cluster_threshold = self.propertyOperator.createProperty(
+            "Cluster_Threshold", 25
+        )
+        self.min_lines_per_cluster = self.propertyOperator.createProperty(
+            "Min_Lines_Per_Cluster", 3
+        )
+        self.cluster_size_tolerance = self.propertyOperator.createProperty(
+            "Cluster_Size_Tolerance", 10
+        )
+
+        # Read-only property for histogram update time
+        self.propertyOperator.createReadOnlyProperty(
+            "Histogram_Update_Time", generalutils.getTimeStr(time.localtime(self.mtime))
+        )
 
     def isColorBased(self):
-        return True  # HAS to be color
+        """Indicate that alignment is color-based."""
+        return True
 
     def align(self, frame, draw):
+        """Aligns the frame based on detected vertical structures."""
         if not self.checkFrame(frame):
             raise ValueError("The frame is not a color frame!")
 
-        half = frame.shape[1]//2
-        roi = int(half * self.roi.get())
-        cut1 = half-roi
-        cut2 = half+roi
+        # Define region of interest (ROI)
+        half_width = frame.shape[1] // 2
+        roi_width = int(half_width * self.roi_fraction.get())
+        left_bound, right_bound = half_width - roi_width, half_width + roi_width
+        roi_frame = frame[:, left_bound:right_bound]
 
-        focused = frame[:,cut1:cut2] #clip roi
-    
+        # Convert to LAB color space and apply back projection
+        lab = cv2.cvtColor(roi_frame, cv2.COLOR_BGR2LAB)
+        back_proj = cv2.calcBackProject([lab], [1, 2], self.hist, [0, 256, 0, 256], 1)
 
-        lab = cv2.cvtColor(focused, cv2.COLOR_BGR2LAB)
+        # Apply thresholding
+        _, binary_thresh = cv2.threshold(
+            back_proj, self.threshold_pre.get(), 255, cv2.THRESH_BINARY
+        )
 
-        backProj = cv2.calcBackProject([lab], [1, 2], self.hist, [0, 256, 0, 256], 1)
+        # Sobel edge detection (detect vertical edges)
+        sobel_x = cv2.Sobel(binary_thresh, cv2.CV_64F, 1, 0, ksize=3)
+        sobel_abs = np.uint8(np.absolute(sobel_x) / np.absolute(sobel_x).max() * 255)
+        _, edge_thresh = cv2.threshold(
+            sobel_abs, self.threshold_post.get(), 255, cv2.THRESH_BINARY
+        )
 
+        # Morphological closing to enhance vertical edges
+        vertical_kernel = np.ones((5, 1), np.uint8)
+        vertical_edges = cv2.morphologyEx(edge_thresh, cv2.MORPH_CLOSE, vertical_kernel)
 
-        _, thresh = cv2.threshold(backProj, self.threshold.get(), 255, type=cv2.THRESH_BINARY)
-
-        sobelx = cv2.Sobel(thresh, cv2.CV_64F, 1, 0, ksize=3)
-        abs_sobelx = np.absolute(sobelx)
-        sobel_8u = np.uint8(abs_sobelx / abs_sobelx.max() * 255)
-
-        _, thresh = cv2.threshold(sobel_8u, self.threshold.get(), 255, cv2.THRESH_BINARY)
-
-        # Apply morphological operations to enhance vertical edges
-        kernel_vertical = np.ones((5, 1), np.uint8)
-        vertical_edges = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel_vertical)
-
+        # Detect contours (for visualization)
         contours, _ = cv2.findContours(
             vertical_edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
         )
-
-        contours = [contour + (cut1, 0) for contour in contours]
-
+        contours = [contour + (left_bound, 0) for contour in contours]
         if draw:
-            cv2.drawContours(frame, contours, -1, (255,255,255), 1)
+            cv2.drawContours(frame, contours, -1, (255, 0, 0), 1)
 
+        # Detect vertical lines using Hough Transform
+        lines = cv2.HoughLinesP(
+            vertical_edges,
+            rho=1,
+            theta=np.pi / 180,
+            threshold=50,
+            minLineLength=self.min_line_length.get(),
+            maxLineGap=10,
+        )
 
-        lines = cv2.HoughLinesP(vertical_edges, rho=1, theta=np.pi/180, threshold=50, minLineLength=30, maxLineGap=10)
-        
-        left, right = None, None
+        # Group detected lines into clusters
+        clusters = []
+        cluster_threshold = self.cluster_threshold.get()
+        min_lines_per_cluster = self.min_lines_per_cluster.get()
+        line_frame = np.zeros_like(sobel_abs)
 
-        bestLines = []
         if lines is not None:
             for line in lines:
                 x1, y1, x2, y2 = line[0]
-                avgX = (x1+x2)/2
-                dist = np.linalg.norm((x2-x1,y2-y1))
-                angle = np.arctan2(abs(y2 - y1), abs(x2 - x1)) * 180 / np.pi
-                if dist > self.minLineLength.get() and 90-self.angleRange.get() < angle < 90+self.angleRange.get():  # Keep nearly vertical lines
-                    bestLines.append(line)
+                distance = np.linalg.norm((x2 - x1, y2 - y1))
+                angle = np.degrees(np.arctan2(abs(y2 - y1), abs(x2 - x1)))
+                avg_x = (x1 + x2) / 2
+
+                # Filter nearly vertical lines within length constraints
+                if (
+                    self.min_line_length.get() < distance < self.max_line_length.get()
+                    and (90 - self.angle_range.get())
+                    < angle
+                    < (90 + self.angle_range.get())
+                ):
+
                     if draw:
-                        cv2.line(frame, (x1+cut1, y1), (x2+cut1, y2), (0, 255, 0), 2)
+                        cv2.line(
+                            frame,
+                            (x1 + left_bound, y1),
+                            (x2 + left_bound, y2),
+                            (0, 255, 0),
+                            2,
+                        )
 
-                    if left is None or left > avgX:
-                        left = avgX
-                    
-                    if right is None or right < avgX:
-                        right = avgX
-        if left is not None:
-            left += cut1
-        if right is not None:
-            right += cut1
-        if draw:
-            cv2.putText(frame, f"L: {left} R: {right}", (10, 20), 1, 1, (255))
+                    cv2.line(line_frame, (x1, y1), (x2, y2), 255, 2)
 
-        return left, right
+                    # Cluster lines based on proximity
+                    added = False
+                    for cluster in clusters:
+                        if abs(cluster["avg_x"] - avg_x) < cluster_threshold:
+                            cluster["lines"].append(line)
+                            cluster["avg_x"] = np.mean(
+                                [((l[0][0] + l[0][2]) / 2) for l in cluster["lines"]]
+                            )
+                            added = True
+                            break
+                    if not added:
+                        clusters.append({"lines": [line], "avg_x": avg_x})
 
+        # Identify the best cluster
+        best_cluster = None
+        max_width = 0
+        cluster_size_tolerance = self.cluster_size_tolerance.get()
+
+        for cluster in clusters:
+            if len(cluster["lines"]) >= min_lines_per_cluster:
+                x_positions = [l[0][0] for l in cluster["lines"]] + [
+                    l[0][2] for l in cluster["lines"]
+                ]
+                leftmost = min(x_positions) + left_bound
+                rightmost = max(x_positions) + left_bound
+                width = rightmost - leftmost
+                center_dist = abs((leftmost + rightmost) / 2 - half_width)
+
+                # Choose the widest cluster
+                if width > max_width:
+                    max_width = width
+                    best_cluster = (leftmost, rightmost, center_dist)
+
+        # Compare clusters within size tolerance
+        for cluster in clusters:
+            if len(cluster["lines"]) >= min_lines_per_cluster:
+                x_positions = [l[0][0] for l in cluster["lines"]] + [
+                    l[0][2] for l in cluster["lines"]
+                ]
+                leftmost = min(x_positions) + left_bound
+                rightmost = max(x_positions) + left_bound
+                width = rightmost - leftmost
+                center_dist = abs((leftmost + rightmost) / 2 - half_width)
+
+                # If this cluster is close in size to the widest, pick the more central one
+                if (
+                    width >= max_width - cluster_size_tolerance
+                    and center_dist < best_cluster[2]
+                ):
+                    best_cluster = (leftmost, rightmost, center_dist)
+
+        # Draw the best cluster if enabled
+        if draw and best_cluster:
+            cv2.rectangle(
+                frame,
+                (best_cluster[0], 0),
+                (best_cluster[1], frame.shape[0]),
+                (0, 0, 255),
+                3,
+            )
+            cv2.putText(
+                frame,
+                "SELECTED",
+                (best_cluster[0], 50),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.8,
+                (0, 0, 255),
+                2,
+            )
+
+        return best_cluster[:2] if best_cluster else (None, None)

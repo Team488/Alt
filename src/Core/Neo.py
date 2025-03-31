@@ -127,6 +127,7 @@ class Neo:
     def __cleanup(self) -> None:
         self.__manager.shutdown()
         self.__streamOp.shutdown()
+        self.__agentOp.stopPermanent()
         self.__agentOp.waitForAgentsToFinish()
         self.__agentOp.shutDownNow()
 
