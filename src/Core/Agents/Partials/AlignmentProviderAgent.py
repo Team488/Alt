@@ -29,16 +29,29 @@ class AlignmentProviderAgent(CameraUsingAgentBase):
         self.alignmentProvider._inject(self.propertyOperator)
         self.alignmentProvider.create()
 
+        # self.leftDistanceProp = self.propertyOperator.createCustomReadOnlyProperty(
+        #     propertyTable="verticalEdgeLeftDistancePx",
+        #     propertyValue=-1,
+        #     addBasePrefix=True,
+        #     addOperatorPrefix=False,
+        # )
+        # self.rightDistanceProp = self.propertyOperator.createCustomReadOnlyProperty(
+        #     propertyTable="verticalEdgeRightDistancePx",
+        #     propertyValue=-1,
+        #     addBasePrefix=True,
+        #     addOperatorPrefix=False,
+        # )
+
         self.leftDistanceProp = self.propertyOperator.createCustomReadOnlyProperty(
-            propertyTable="verticalEdgeLeftDistancePx",
+            propertyTable="photonvisionfrontleft.verticalEdgeLeftDistancePx",
             propertyValue=-1,
-            addBasePrefix=True,
+            addBasePrefix=False,
             addOperatorPrefix=False,
         )
         self.rightDistanceProp = self.propertyOperator.createCustomReadOnlyProperty(
-            propertyTable="verticalEdgeRightDistancePx",
+            propertyTable="photonvisionfrontleft.verticalEdgeRightDistancePx",
             propertyValue=-1,
-            addBasePrefix=True,
+            addBasePrefix=False,
             addOperatorPrefix=False,
         )
 
