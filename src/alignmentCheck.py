@@ -6,9 +6,10 @@ from Core.Neo import Neo
 if __name__ == "__main__":
     alignmentCheckReefLeft = partialAlignmentCheck(
         alignmentProvider=ReefPostAlignmentProvider(),
+        # cameraPath=CommonVideos.StingerCam.path,
         cameraPath=SimulationEndpoints.FRONTRIGHTSIM.path,
         showFrames=True,
-        flushCamMs=50,
+        # flushCamMs=50,
     )
 
     n = Neo()

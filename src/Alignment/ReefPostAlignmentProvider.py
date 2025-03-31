@@ -103,26 +103,28 @@ class ReefPostAlignmentProvider(AlignmentProvider):
             maxLineGap=10,
         )
 
-        # Group detected lines into clusters
+        # Group detected lines into clusters based on both x value and angle
         clusters = []
         cluster_threshold = self.cluster_threshold.get()
         min_lines_per_cluster = self.min_lines_per_cluster.get()
         line_frame = np.zeros_like(sobel_abs)
 
         if lines is not None:
+            line_info = []
             for line in lines:
                 x1, y1, x2, y2 = line[0]
                 distance = np.linalg.norm((x2 - x1, y2 - y1))
                 angle = np.degrees(np.arctan2(abs(y2 - y1), abs(x2 - x1)))
                 avg_x = (x1 + x2) / 2
 
-                # Filter nearly vertical lines within length constraints
+                # Only consider valid lines based on distance and angle
                 if (
                     self.min_line_length.get() < distance < self.max_line_length.get()
                     and (90 - self.angle_range.get())
                     < angle
                     < (90 + self.angle_range.get())
                 ):
+                    line_info.append((avg_x, angle, line))
 
                     if draw:
                         cv2.line(
@@ -133,22 +135,43 @@ class ReefPostAlignmentProvider(AlignmentProvider):
                             2,
                         )
 
-                    cv2.line(line_frame, (x1, y1), (x2, y2), 255, 2)
+            # Sort lines first by their average x-coordinate and then by angle
+            line_info.sort(key=lambda x: (x[0], x[1]))
 
-                    # Cluster lines based on proximity
-                    added = False
-                    for cluster in clusters:
-                        if abs(cluster["avg_x"] - avg_x) < cluster_threshold:
-                            cluster["lines"].append(line)
-                            cluster["avg_x"] = np.mean(
-                                [((l[0][0] + l[0][2]) / 2) for l in cluster["lines"]]
-                            )
-                            added = True
-                            break
-                    if not added:
-                        clusters.append({"lines": [line], "avg_x": avg_x})
+            # Cluster lines based on proximity to each other in both x-coordinate and angle
+            clusters = []
+            for avg_x, angle, line in line_info:
+                # Check if the line can be added to an existing cluster based on both x and angle
+                added = False
+                for cluster in clusters:
+                    # Check if the line is close enough to the cluster both by x and angle
+                    if (
+                        abs(cluster["avg_x"] - avg_x) < cluster_threshold
+                        and abs(cluster["avg_angle"] - angle) < self.angle_range.get()
+                    ):
+                        cluster["lines"].append(line)
+                        cluster["avg_x"] = np.mean(
+                            [((l[0][0] + l[0][2]) / 2) for l in cluster["lines"]]
+                        )
+                        cluster["avg_angle"] = np.mean(
+                            [
+                                np.degrees(
+                                    np.arctan2(
+                                        abs(l[0][1] - l[0][3]), abs(l[0][0] - l[0][2])
+                                    )
+                                )
+                                for l in cluster["lines"]
+                            ]
+                        )
+                        added = True
+                        break
+                # If it wasn't added to any cluster, create a new cluster
+                if not added:
+                    clusters.append(
+                        {"lines": [line], "avg_x": avg_x, "avg_angle": angle}
+                    )
 
-        # Identify the best cluster
+        # Identify the best cluster based on size and centrality
         best_cluster = None
         max_width = 0
         cluster_size_tolerance = self.cluster_size_tolerance.get()
@@ -205,4 +228,17 @@ class ReefPostAlignmentProvider(AlignmentProvider):
                 2,
             )
 
-        return best_cluster[:2] if best_cluster else (None, None)
+        result = best_cluster[:2] if best_cluster else (None, None)
+
+        if draw:
+            cv2.putText(
+                frame,
+                f"Left: {result[0]} Right {result[1]}",
+                (10, 20),
+                1,
+                1,
+                (255, 255, 255),
+                2,
+            )
+
+        return result
