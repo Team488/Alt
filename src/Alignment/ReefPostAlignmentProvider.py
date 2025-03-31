@@ -20,7 +20,7 @@ class ReefPostAlignmentProvider(AlignmentProvider):
 
         # Load precomputed color histogram
         self.hist, self.mtime = staticLoad(
-            "assets/s_reef_hist.npy", isRelativeToSource=True
+            "assets/histograms/reef_post_hist.npy", isRelativeToSource=True
         )
 
         # Adjustable processing parameters
