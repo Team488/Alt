@@ -16,9 +16,11 @@ class AlignmentProviderAgent(CameraUsingAgentBase):
         alignmentProvider: AlignmentProvider,
         cameraPath="http://localhost:1181/stream.mjpg",
         showFrames=False,
+        flushCamMs=-1,
     ):
         super().__init__(
-            capture=FileCapture(videoFilePath=cameraPath), showFrames=showFrames
+            capture=FileCapture(videoFilePath=cameraPath, flushTimeMS=flushCamMs),
+            showFrames=showFrames,
         )
         self.alignmentProvider = alignmentProvider
 
@@ -27,25 +29,37 @@ class AlignmentProviderAgent(CameraUsingAgentBase):
         self.alignmentProvider._inject(self.propertyOperator)
         self.alignmentProvider.create()
 
+        # self.leftDistanceProp = self.propertyOperator.createCustomReadOnlyProperty(
+        #     propertyTable="verticalEdgeLeftDistancePx",
+        #     propertyValue=-1,
+        #     addBasePrefix=True,
+        #     addOperatorPrefix=False,
+        # )
+        # self.rightDistanceProp = self.propertyOperator.createCustomReadOnlyProperty(
+        #     propertyTable="verticalEdgeRightDistancePx",
+        #     propertyValue=-1,
+        #     addBasePrefix=True,
+        #     addOperatorPrefix=False,
+        # )
+
         self.leftDistanceProp = self.propertyOperator.createCustomReadOnlyProperty(
-            propertyTable="verticalEdgeLeftDistancePx",
+            propertyTable="photonvisionfrontleft.verticalEdgeLeftDistancePx",
             propertyValue=-1,
-            addBasePrefix=True,
+            addBasePrefix=False,
             addOperatorPrefix=False,
         )
         self.rightDistanceProp = self.propertyOperator.createCustomReadOnlyProperty(
-            propertyTable="verticalEdgeRightDistancePx",
+            propertyTable="photonvisionfrontleft.verticalEdgeRightDistancePx",
             propertyValue=-1,
-            addBasePrefix=True,
+            addBasePrefix=False,
             addOperatorPrefix=False,
         )
 
     def runPeriodic(self) -> None:
         super().runPeriodic()
-
         frame = self.latestFrameMain
         left, right = self.alignmentProvider.align(
-            frame, self.showFrames or self.sendFrame
+            frame, self.showFrames or self.sendFrame or self.stream_queue is not None
         )
         self.leftDistanceProp.set(left)
         self.rightDistanceProp.set(right)
@@ -58,10 +72,12 @@ def partialAlignmentCheck(
     alignmentProvider: AlignmentProvider,
     cameraPath="http://localhost:1181/stream.mjpg",
     showFrames=False,
+    flushCamMs=-1,
 ):
     return partial(
         AlignmentProviderAgent,
         alignmentProvider=alignmentProvider,
         cameraPath=cameraPath,
         showFrames=showFrames,
+        flushCamMs=flushCamMs,
     )

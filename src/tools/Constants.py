@@ -584,6 +584,7 @@ class CommonVideos(Enum):
     ReefscapeCompilation = "assets/reefscapevid.mp4"
     Comp2024Clip = "assets/video12qual25clipped.mp4"
     ArucoCalib = "assets/arucoCalib.mp4"
+    StingerCam = "assets/StingerCam.mp4"
 
     @property
     def path(self):

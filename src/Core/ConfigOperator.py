@@ -23,15 +23,7 @@ def staticLoad(
     Returns:
         A tuple of (file_content, modification_time) or None if file not found or unloadable
     """
-    if isRelativeToSource:
-        basePath = os.path.join(os.path.abspath(os.path.dirname(__file__)), "..")
-        filePath = os.path.join(basePath, fileName)
-        for ending, filetype in ConfigOperator.knownFileEndings:
-            if filePath.endswith(ending):
-                content = filetype.load(filePath)
-                mtime = os.path.getmtime(filePath)
-                return content, mtime
-
+    # first look in override pathW
     for path in ConfigOperator.SAVEPATHS:
         try:
             filePath = os.path.join(path, fileName)
@@ -46,6 +38,20 @@ def staticLoad(
             )
         except Exception as agentSmith:
             # probably override config path dosent exist
+            Sentinel.debug(agentSmith)
+            Sentinel.debug(f"{path} does not exist!")
+
+    # try relative to source after trying override paths
+    if isRelativeToSource:
+        try:
+            basePath = os.path.join(os.path.abspath(os.path.dirname(__file__)), "..")
+            filePath = os.path.join(basePath, fileName)
+            for ending, filetype in ConfigOperator.knownFileEndings:
+                if filePath.endswith(ending):
+                    content = filetype.load(filePath)
+                    mtime = os.path.getmtime(filePath)
+                    return content, mtime
+        except Exception as agentSmith:
             Sentinel.debug(agentSmith)
             Sentinel.debug(f"{path} does not exist!")
 

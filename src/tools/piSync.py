@@ -3,9 +3,9 @@ import numpy as np
 import paramiko
 
 
-TMPSYNCPATH = "assets/TMPSync"
-REGULARSYNCPATH = "assets"
-TARGETSYNCPATH = "/xbot/config"
+TMPSYNCPATH = os.path.join("assets","TMPSync")
+REGULARSYNCPATH ="assets"
+TARGETSYNCPATH = "/home/pi/Alt/src/assets"
 
 
 def send_file(hostname, username, password, local_file, remote_file):
@@ -20,7 +20,7 @@ def send_file(hostname, username, password, local_file, remote_file):
         sftp.put(local_file, remote_file)
         sftp.close()
 
-        print(f"File sent to {hostname}")
+        print(f"File sent to {hostname} {local_file=} {remote_file=}")
         client.close()
     except Exception as e:
         print(f"Error on {hostname}: {e}")
@@ -31,12 +31,12 @@ def saveNpy(fileName: str, npObj, filePath=REGULARSYNCPATH):
         fileName = f"{fileName}.npy"
 
     fullPath = os.path.join(filePath, fileName)
-    slashIdx1 = fullPath.rfind("\\\\")
-    slashIdx2 = fullPath.rfind("//")
+    
+    slashIdx = fullPath.rfind(os.path.sep)
 
-    bestSlash = slashIdx1 if slashIdx1 > slashIdx2 else slashIdx2
-    if bestSlash != -1:
-        pathOnly = fullPath[:bestSlash]
+
+    if slashIdx != -1:
+        pathOnly = fullPath[:slashIdx]
         os.makedirs(pathOnly, exist_ok=True)
 
     np.save(fullPath, npObj)
@@ -44,10 +44,10 @@ def saveNpy(fileName: str, npObj, filePath=REGULARSYNCPATH):
 
 
 def saveToTempNpy(fileName: str, npObj):
-    saveNpy(fileName, npObj, fileName=TMPSYNCPATH)
+    saveNpy(fileName, npObj, filePath=TMPSYNCPATH)
 
 
-def syncPis(fileName, targetName=None):
+def syncPis(fileName, targetName=None, tmpSyncPath = TMPSYNCPATH, targetSyncPath= TARGETSYNCPATH):
     if targetName is None:
         targetName = fileName
 
@@ -76,8 +76,8 @@ def syncPis(fileName, targetName=None):
                 target["hostname"],
                 target["username"],
                 target["password"],
-                os.path.join(TMPSYNCPATH, targetName),
-                os.path.join(TMPSYNCPATH, targetName),
+                os.path.join(tmpSyncPath, fileName),
+                f"{targetSyncPath}/{targetName}",
             )
         except Exception as e:
             print(

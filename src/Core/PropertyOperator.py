@@ -215,7 +215,7 @@ class PropertyOperator:
         elif isinstance(propertyValue, Iterable):
             return self.__setNetworkIterable(propertyTable, propertyValue)
         else:
-            if mute:
+            if not mute:
                 Sentinel.error(f"Invalid property type!: {type(propertyValue)}")
             return False
         return True
