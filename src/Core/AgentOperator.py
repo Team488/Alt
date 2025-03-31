@@ -180,7 +180,9 @@ class AgentOperator:
     @staticmethod
     def _injectNewOperators(agent: Agent, agentName):
         """Since any agent not on main thread will be in its own process, alot of new objects will have to be created"""
-        client = XTablesClient()  # one per process
+        client = XTablesClient(debug_mode=True)  # one per process
+        client.add_client_version_property(f"MATRIX-ALT-{agentName}")
+
         configOp = (
             ConfigOperator()
         )  # TODO this might not be 100% necessary to be one per process
