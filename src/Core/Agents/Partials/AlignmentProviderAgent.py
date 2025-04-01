@@ -32,26 +32,26 @@ class AlignmentProviderAgent(CameraUsingAgentBase):
         self.leftDistanceProp = self.propertyOperator.createCustomReadOnlyProperty(
             propertyTable="verticalEdgeLeftDistancePx",
             propertyValue=-1,
-            addBasePrefix=True,
+            addBasePrefix=False,
             addOperatorPrefix=False,
         )
         self.rightDistanceProp = self.propertyOperator.createCustomReadOnlyProperty(
             propertyTable="verticalEdgeRightDistancePx",
             propertyValue=-1,
-            addBasePrefix=True,
+            addBasePrefix=False,
             addOperatorPrefix=False,
         )
 
         self.hresProp = self.propertyOperator.createCustomReadOnlyProperty(
-            propertyTable="cameraHres",
+            propertyTable="alignmentCameraHres",
             propertyValue=640,
-            addBasePrefix=True,
+            addBasePrefix=False,
             addOperatorPrefix=False,
         )
         self.vresProp = self.propertyOperator.createCustomReadOnlyProperty(
-            propertyTable="cameraVres",
+            propertyTable="alignmentCameraVres",
             propertyValue=480,
-            addBasePrefix=True,
+            addBasePrefix=False,
             addOperatorPrefix=False,
         )
 
