@@ -20,11 +20,16 @@ class ReefPostAlignmentProvider(AlignmentProvider):
 
         # Load precomputed color histogram
         self.hist, self.mtime = staticLoad(
-            "assets/histograms/reef_post_hist.npy", isRelativeToSource=True
+            "assets/histograms/reef_post_hist.npy",
+            isRelativeToSource=True
+            # "assets/s_reef_hist.npy", isRelativeToSource=True
         )
 
         # Adjustable processing parameters
         self.sobelksize = self.propertyOperator.createProperty("sobelksize", 3)
+        self.threshold_pre = self.propertyOperator.createProperty(
+            "backproject_threshold", 150
+        )
         self.threshold_sobel = self.propertyOperator.createProperty("Sobel_Thresh", 150)
         self.roi_fraction = self.propertyOperator.createProperty("ROI_Fraction", 0.5)
         self.min_line_length = self.propertyOperator.createProperty(
@@ -94,8 +99,14 @@ class ReefPostAlignmentProvider(AlignmentProvider):
         lab = cv2.cvtColor(roi_frame, cv2.COLOR_BGR2LAB)
         back_proj = cv2.calcBackProject([lab], [1, 2], self.hist, [0, 256, 0, 256], 1)
 
+        _, threshold_pre = cv2.threshold(
+            back_proj, self.threshold_pre.get(), 255, cv2.THRESH_BINARY
+        )
+
         # Sobel edge detection
-        sobel_x = cv2.Sobel(back_proj, cv2.CV_64F, 1, 0, ksize=self.sobelksize.get())
+        sobel_x = cv2.Sobel(
+            threshold_pre, cv2.CV_64F, 1, 0, ksize=self.sobelksize.get()
+        )
         sobel_abs = np.uint8(np.absolute(sobel_x) / np.absolute(sobel_x).max() * 255)
         _, edge_thresh = cv2.threshold(
             sobel_abs, self.threshold_sobel.get(), 255, cv2.THRESH_BINARY
