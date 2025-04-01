@@ -29,29 +29,29 @@ class AlignmentProviderAgent(CameraUsingAgentBase):
         self.alignmentProvider._inject(self.propertyOperator)
         self.alignmentProvider.create()
 
-        # self.leftDistanceProp = self.propertyOperator.createCustomReadOnlyProperty(
-        #     propertyTable="verticalEdgeLeftDistancePx",
-        #     propertyValue=-1,
-        #     addBasePrefix=True,
-        #     addOperatorPrefix=False,
-        # )
-        # self.rightDistanceProp = self.propertyOperator.createCustomReadOnlyProperty(
-        #     propertyTable="verticalEdgeRightDistancePx",
-        #     propertyValue=-1,
-        #     addBasePrefix=True,
-        #     addOperatorPrefix=False,
-        # )
-
         self.leftDistanceProp = self.propertyOperator.createCustomReadOnlyProperty(
-            propertyTable="photonvisionfrontleft.verticalEdgeLeftDistancePx",
+            propertyTable="verticalEdgeLeftDistancePx",
             propertyValue=-1,
-            addBasePrefix=False,
+            addBasePrefix=True,
             addOperatorPrefix=False,
         )
         self.rightDistanceProp = self.propertyOperator.createCustomReadOnlyProperty(
-            propertyTable="photonvisionfrontleft.verticalEdgeRightDistancePx",
+            propertyTable="verticalEdgeRightDistancePx",
             propertyValue=-1,
-            addBasePrefix=False,
+            addBasePrefix=True,
+            addOperatorPrefix=False,
+        )
+
+        self.hresProp = self.propertyOperator.createCustomReadOnlyProperty(
+            propertyTable="cameraHres",
+            propertyValue=640,
+            addBasePrefix=True,
+            addOperatorPrefix=False,
+        )
+        self.vresProp = self.propertyOperator.createCustomReadOnlyProperty(
+            propertyTable="cameraVres",
+            propertyValue=480,
+            addBasePrefix=True,
             addOperatorPrefix=False,
         )
 
@@ -63,6 +63,8 @@ class AlignmentProviderAgent(CameraUsingAgentBase):
         )
         self.leftDistanceProp.set(left)
         self.rightDistanceProp.set(right)
+        self.hresProp.set(frame.shape[1])
+        self.vresProp.set(frame.shape[0])
 
     def getDescription(self) -> str:
         return "Looks-Through-Camera-Checks-Alignment"
