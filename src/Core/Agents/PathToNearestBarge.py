@@ -52,9 +52,9 @@ class PathToNearestBarge(Agent):
         # If start_y falls between the red and blue min values, snap it
         # to the closest boundary.
         if alliance == XTableValues.Alliance.BLUE:
-            if start_y >= self.blueMin:
+            if start_y <= self.blueRobotMin:
                 start_y = self.blueRobotMin
-        elif start_y >= self.redMin:
+        elif start_y >= self.redRobotMin:
             start_y = self.redRobotMin
 
         # Compute the X coordinate based on the alliance.
