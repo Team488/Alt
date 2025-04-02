@@ -68,7 +68,6 @@ class PathToNearestBarge(Agent):
         return x, start_y, 180 if alliance == XTableValues.Alliance.BLUE else 0
 
     def runPeriodic(self) -> None:
-        self.Sentinel.info("PathToNearestBarge")
         start = self.pose.get()
         if start is None:
             return
