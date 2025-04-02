@@ -1,6 +1,6 @@
 from Core.Agents.Partials.AlignmentProviderAgent import partialAlignmentCheck
 from tools.Constants import SimulationEndpoints, CommonVideos
-from Alignment.ReefPostAlignmentProvider import ReefPostAlignmentProvider
+from Alignment.ReefPostAlignmentProviderBlobs import ReefPostAlignmentProvider
 from Core.Neo import Neo
 
 if __name__ == "__main__":
