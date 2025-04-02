@@ -124,7 +124,7 @@ class FastMarchingPathfinder:
         xs, ys = xs[valid], ys[valid]
         return np.any(self.grid_cost[ys, xs] >= minimum_heat)
 
-    def try_inflate_segment(self, segment, max_offset_pixels=60, tol=1.0):
+    def try_inflate_segment(self, segment, max_offset_pixels=80, tol=1.0):
         """
         Try to inflate (bend) a segment using a binary search on the perpendicular offset
         so that the resulting Bézier curve avoids collisions.
@@ -381,8 +381,8 @@ fieldWidthMeters = 17.55
 grid_width = 690
 grid_height = 316
 ROBOT_SIZE_LENGTH_INCHES = 36
-ROBOT_SIZE_WIDTH_INCHES = 36
-DEFAULT_SAFE_DISTANCE_INCHES = 15
+ROBOT_SIZE_WIDTH_INCHES = 35
+DEFAULT_SAFE_DISTANCE_INCHES = 3
 # ----------- CONSTANTS (DO NOT CHANGE UNLESS KNOWN) -------------
 
 

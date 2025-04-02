@@ -1,5 +1,4 @@
 import traceback
-from logging import Logger
 from typing import Any, Set, Callable, Dict, Protocol, TypeVar, cast
 from JXTABLES.XTablesClient import XTablesClient
 from abstract.Order import Order

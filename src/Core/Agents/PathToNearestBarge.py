@@ -10,6 +10,13 @@ from JXTABLES import XTableValues_pb2 as XTableValues, XTableValues_pb2
 
 class PathToNearestBarge(Agent):
     midFieldX = 8.75665
+    robotWidthXInches = 35
+    robotCenterXInches = robotWidthXInches / 2
+    robotCenterXMeters = robotCenterXInches * 0.0254
+    blueMin = 4.20
+    redMin = 3.85
+    blueRobotMin = blueMin + robotCenterXMeters
+    redRobotMin = redMin - robotCenterXMeters
 
     def create(self) -> None:
         self.bezierPathToNearestBarge = (
@@ -41,14 +48,27 @@ class PathToNearestBarge(Agent):
         )
 
     def get_nearest_point(self, start_y, alliance):
+
+        # If start_y falls between the red and blue min values, snap it
+        # to the closest boundary.
+        if alliance == XTableValues.Alliance.BLUE:
+            if start_y >= self.blueMin:
+                start_y = self.blueRobotMin
+        elif start_y >= self.redMin:
+            start_y = self.redRobotMin
+
+        # Compute the X coordinate based on the alliance.
         x = (
             self.midFieldX - self.distanceFromBarge.get()
             if alliance == XTableValues.Alliance.BLUE
-            else (self.midFieldX + self.distanceFromBarge.get())
+            else self.midFieldX + self.distanceFromBarge.get()
         )
+
+        # Return the computed coordinates and the heading based on alliance.
         return x, start_y, 180 if alliance == XTableValues.Alliance.BLUE else 0
 
     def runPeriodic(self) -> None:
+        self.Sentinel.info("PathToNearestBarge")
         start = self.pose.get()
         if start is None:
             return

@@ -13,7 +13,6 @@ import numpy as np
 from mapinternals.KalmanCache import KalmanCache
 from mapinternals.KalmanEntry import KalmanEntry
 from tools.Constants import CameraIdOffsets2024, LabelingConstants, Label
-from tools import Calculator
 from Core import getChildLogger
 
 Sentinel = getChildLogger("Kalman_Labler")
@@ -34,6 +33,8 @@ class KalmanLabeler:
         cameraIdOffset: int,
         timeStepSeconds: float,
     ) -> None:
+        from tools import Calculator
+
         allkeys: list[set] = [cache.getKeySet() for cache in self.kalmanCaches]
         allmarkedIndexs = [[] for _ in range(len(self.kalmanCaches))]
 
