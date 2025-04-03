@@ -124,7 +124,7 @@ class FastMarchingPathfinder:
         xs, ys = xs[valid], ys[valid]
         return np.any(self.grid_cost[ys, xs] >= minimum_heat)
 
-    def try_inflate_segment(self, segment, max_offset_pixels=60, tol=1.0):
+    def try_inflate_segment(self, segment, max_offset_pixels=80, tol=1.0):
         """
         Try to inflate (bend) a segment using a binary search on the perpendicular offset
         so that the resulting Bézier curve avoids collisions.
@@ -186,7 +186,7 @@ class FastMarchingPathfinder:
             return best_candidate
         return None
 
-    def generate_safe_bezier_paths(self, control_points):
+    def generate_safe_bezier_paths(self, control_points, inflation_max=None):
         """
         Build segments of Bézier curves from control_points.
         Instead of immediately splitting a segment when a collision is detected, try to inflate
@@ -201,7 +201,10 @@ class FastMarchingPathfinder:
             segment.append(control_points[i])
             curve = self.bezier_curve(segment, num_points=100)
             if self.check_collision(curve):
-                inflated_segment = self.try_inflate_segment(segment)
+                if inflation_max is not None:
+                    inflated_segment = self.try_inflate_segment(segment, inflation_max)
+                else:
+                    inflated_segment = self.try_inflate_segment(segment)
                 if inflated_segment is not None:
                     segment = inflated_segment
                     curve = self.bezier_curve(segment, num_points=100)
@@ -381,8 +384,8 @@ fieldWidthMeters = 17.55
 grid_width = 690
 grid_height = 316
 ROBOT_SIZE_LENGTH_INCHES = 36
-ROBOT_SIZE_WIDTH_INCHES = 36
-DEFAULT_SAFE_DISTANCE_INCHES = 15
+ROBOT_SIZE_WIDTH_INCHES = 35
+DEFAULT_SAFE_DISTANCE_INCHES = 3
 # ----------- CONSTANTS (DO NOT CHANGE UNLESS KNOWN) -------------
 
 
@@ -431,7 +434,7 @@ static_hang_obs_blue_close = get_static_obstacles(
 print("Finished loading pre-set static obstacles...")
 
 
-def pathplan(request):
+def pathplan(request, inflation_max=None):
     base_grid = np.ones((grid_height, grid_width), dtype=float)
     start = (request.start.x, request.start.y)
     goal = (request.end.x, request.end.y)
@@ -496,9 +499,15 @@ def pathplan(request):
 
     print("Finding safe bezier paths...")
     t = time.time()
-    safe_bezier_segments = pathfinder.generate_safe_bezier_paths(
-        smoothed_control_points
-    )
+    if inflation_max is not None:
+        safe_bezier_segments = pathfinder.generate_safe_bezier_paths(
+            smoothed_control_points,
+            inflation_max=inflation_max,
+        )
+    else:
+        safe_bezier_segments = pathfinder.generate_safe_bezier_paths(
+            smoothed_control_points,
+        )
     print(f"Finished finding safe bezier paths in {(time.time() - t) * 1000:.3f} ms.")
     safe_bezier_segments_poses = [
         segment / np.array([PIXELS_PER_METER_X, PIXELS_PER_METER_Y])

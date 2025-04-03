@@ -10,6 +10,13 @@ from JXTABLES import XTableValues_pb2 as XTableValues, XTableValues_pb2
 
 class PathToNearestBarge(Agent):
     midFieldX = 8.75665
+    robotWidthXInches = 35
+    robotCenterXInches = robotWidthXInches / 2
+    robotCenterXMeters = robotCenterXInches * 0.0254
+    blueMin = 4.20
+    redMin = 3.85
+    blueRobotMin = blueMin + robotCenterXMeters
+    redRobotMin = redMin - robotCenterXMeters
 
     def create(self) -> None:
         self.bezierPathToNearestBarge = (
@@ -40,13 +47,27 @@ class PathToNearestBarge(Agent):
             isCustom=True,
         )
 
-    def get_nearest_point(self, start_y, alliance):
-        x = (
-            self.midFieldX - self.distanceFromBarge.get()
-            if alliance == XTableValues.Alliance.BLUE
-            else (self.midFieldX + self.distanceFromBarge.get())
-        )
-        return x, start_y, 180 if alliance == XTableValues.Alliance.BLUE else 0
+    def get_nearest_point(self, start_x, start_y, alliance):
+
+        # If start_y falls between the red and blue min values, snap it
+        # to the closest boundary.
+        if alliance == XTableValues.Alliance.BLUE:
+            if start_y <= self.blueRobotMin:
+                start_y = self.blueRobotMin
+        elif start_y >= self.redRobotMin:
+            start_y = self.redRobotMin
+
+        # Compute the X coordinate based on the alliance.
+
+        if start_x < self.midFieldX:
+            x = self.midFieldX - self.distanceFromBarge.get()
+            rot = 180
+        else:
+            x = self.midFieldX + self.distanceFromBarge.get()
+            rot = 0
+
+        # Return the computed coordinates and the heading based on alliance.
+        return x, start_y, rot
 
     def runPeriodic(self) -> None:
         start = self.pose.get()
@@ -63,7 +84,7 @@ class PathToNearestBarge(Agent):
             else XTableValues.Alliance.RED
         )
         startPoint = XTableValues.ControlPoint(x=start_x, y=start_y)
-        end = self.get_nearest_point(start_y, xtableAlliance)
+        end = self.get_nearest_point(start_x, start_y, xtableAlliance)
         endPoint = XTableValues.ControlPoint(x=end[0], y=end[1])
         arguments = XTableValues.AdditionalArguments(alliance=xtableAlliance)
         options = XTableValues.TraversalOptions(
@@ -75,7 +96,7 @@ class PathToNearestBarge(Agent):
             start=startPoint, end=endPoint, arguments=arguments, options=options
         )
         try:
-            path = fastMarchingMethodRPC.pathplan(request)
+            path = fastMarchingMethodRPC.pathplan(request, inflation_max=90)
             if path is None:
                 return
             self.bezierPathToNearestBarge.set(path)
