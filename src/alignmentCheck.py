@@ -7,7 +7,7 @@ if __name__ == "__main__":
     alignmentCheckReefLeft = partialAlignmentCheck(
         alignmentProvider=ReefPostAlignmentProvider(),
         # cameraPath=CommonVideos.StingerCam.path,
-        cameraPath=SimulationEndpoints.FRONTRIGHTSIM.path,
+        cameraPath=0,
         showFrames=True,
         # flushCamMs=50,
     )
