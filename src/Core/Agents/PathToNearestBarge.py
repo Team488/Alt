@@ -47,7 +47,7 @@ class PathToNearestBarge(Agent):
             isCustom=True,
         )
 
-    def get_nearest_point(self, start_y, alliance):
+    def get_nearest_point(self, start_x, start_y, alliance):
 
         # If start_y falls between the red and blue min values, snap it
         # to the closest boundary.
@@ -58,14 +58,16 @@ class PathToNearestBarge(Agent):
             start_y = self.redRobotMin
 
         # Compute the X coordinate based on the alliance.
-        x = (
-            self.midFieldX - self.distanceFromBarge.get()
-            if alliance == XTableValues.Alliance.BLUE
-            else self.midFieldX + self.distanceFromBarge.get()
-        )
+
+        if start_x < self.midFieldX:
+            x = self.midFieldX - self.distanceFromBarge.get()
+            rot = 180
+        else:
+            x = self.midFieldX + self.distanceFromBarge.get()
+            rot = 0
 
         # Return the computed coordinates and the heading based on alliance.
-        return x, start_y, 180 if alliance == XTableValues.Alliance.BLUE else 0
+        return x, start_y, rot
 
     def runPeriodic(self) -> None:
         start = self.pose.get()
@@ -82,7 +84,7 @@ class PathToNearestBarge(Agent):
             else XTableValues.Alliance.RED
         )
         startPoint = XTableValues.ControlPoint(x=start_x, y=start_y)
-        end = self.get_nearest_point(start_y, xtableAlliance)
+        end = self.get_nearest_point(start_x, start_y, xtableAlliance)
         endPoint = XTableValues.ControlPoint(x=end[0], y=end[1])
         arguments = XTableValues.AdditionalArguments(alliance=xtableAlliance)
         options = XTableValues.TraversalOptions(
@@ -94,7 +96,7 @@ class PathToNearestBarge(Agent):
             start=startPoint, end=endPoint, arguments=arguments, options=options
         )
         try:
-            path = fastMarchingMethodRPC.pathplan(request)
+            path = fastMarchingMethodRPC.pathplan(request, inflation_max=90)
             if path is None:
                 return
             self.bezierPathToNearestBarge.set(path)

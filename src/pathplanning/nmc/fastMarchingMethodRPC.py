@@ -186,7 +186,7 @@ class FastMarchingPathfinder:
             return best_candidate
         return None
 
-    def generate_safe_bezier_paths(self, control_points):
+    def generate_safe_bezier_paths(self, control_points, inflation_max=None):
         """
         Build segments of Bézier curves from control_points.
         Instead of immediately splitting a segment when a collision is detected, try to inflate
@@ -201,7 +201,10 @@ class FastMarchingPathfinder:
             segment.append(control_points[i])
             curve = self.bezier_curve(segment, num_points=100)
             if self.check_collision(curve):
-                inflated_segment = self.try_inflate_segment(segment)
+                if inflation_max is not None:
+                    inflated_segment = self.try_inflate_segment(segment, inflation_max)
+                else:
+                    inflated_segment = self.try_inflate_segment(segment)
                 if inflated_segment is not None:
                     segment = inflated_segment
                     curve = self.bezier_curve(segment, num_points=100)
@@ -431,7 +434,7 @@ static_hang_obs_blue_close = get_static_obstacles(
 print("Finished loading pre-set static obstacles...")
 
 
-def pathplan(request):
+def pathplan(request, inflation_max=None):
     base_grid = np.ones((grid_height, grid_width), dtype=float)
     start = (request.start.x, request.start.y)
     goal = (request.end.x, request.end.y)
@@ -496,9 +499,15 @@ def pathplan(request):
 
     print("Finding safe bezier paths...")
     t = time.time()
-    safe_bezier_segments = pathfinder.generate_safe_bezier_paths(
-        smoothed_control_points
-    )
+    if inflation_max is not None:
+        safe_bezier_segments = pathfinder.generate_safe_bezier_paths(
+            smoothed_control_points,
+            inflation_max=inflation_max,
+        )
+    else:
+        safe_bezier_segments = pathfinder.generate_safe_bezier_paths(
+            smoothed_control_points,
+        )
     print(f"Finished finding safe bezier paths in {(time.time() - t) * 1000:.3f} ms.")
     safe_bezier_segments_poses = [
         segment / np.array([PIXELS_PER_METER_X, PIXELS_PER_METER_Y])
