@@ -84,10 +84,6 @@ class ReefPostAlignmentProvider(AlignmentProvider):
             iterations=self.erosionIter.get(),
         )
 
-        # Black out area blocked by stinger for testing
-        if draw:
-            cv2.rectangle(eroded, (0, 150), (eroded.shape[1], 200), (0), -1)
-            cv2.rectangle(frame, (0, 150), (frame.shape[1], 200), (0, 0, 0), -1)
 
         # Find contours
         contours, _ = cv2.findContours(

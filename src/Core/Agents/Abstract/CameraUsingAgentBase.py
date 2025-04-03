@@ -9,6 +9,7 @@ from typing import Union, Optional, Callable, Tuple, Any
 import cv2
 import numpy as np
 from Captures.CameraCapture import ConfigurableCameraCapture
+from Captures.FileCapture import FileCapture
 from abstract.Agent import Agent
 from abstract.Capture import Capture
 from coreinterface.FramePacket import FramePacket
@@ -186,10 +187,10 @@ class CameraUsingAgentBase(Agent):
             htow = frameShape[0]/frameShape[1]
 
             self.streamWidth = self.propertyOperator.createProperty(
-                "stream.width", 320, isCustom=True, addOperatorPrefix=True
+                "stream.width", 320, isCustom=True, addOperatorPrefix=True, loadIfSaved=False
             )
             self.streamHeight = self.propertyOperator.createProperty(
-                "stream.height", int(320 * htow), isCustom=True, addOperatorPrefix=True
+                "stream.height", int(320 * htow), isCustom=True, addOperatorPrefix=True, loadIfSaved=False
             )
 
         else:
@@ -198,13 +199,19 @@ class CameraUsingAgentBase(Agent):
                 "FRAME QUEUE WAS NOT PROVIDED TO THE CAMERA USING AGENT! IT HAS STREAM CAPABILITES AND WAS EXPECTING IT"
             )
             
-        if self.iscv2Configurable:
+        if self.iscv2Configurable or issubclass(self.capture.__class__, FileCapture):
             self.setAutoExposure = self.propertyOperator.createProperty("autoExposure",False)
             self.manualExposureValue = self.propertyOperator.createProperty("exposureValue", -6)
     
             self.capture.cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 0.75 if self.setAutoExposure.get() else 0.25)
             if not self.setAutoExposure.get():
                 self.capture.cap.set(cv2.CAP_PROP_EXPOSURE, self.manualExposureValue.get())
+
+        
+            self.capture.cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*"MJPG"))
+            self.capture.cap.set(cv2.CAP_PROP_FPS, 100)
+            self.capture.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+            self.capture.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 
 
     def testCapture(self) -> None:

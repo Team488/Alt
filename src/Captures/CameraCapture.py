@@ -40,15 +40,15 @@ class ConfigurableCameraCapture(ConfigurableCapture):
         Raises:
             BrokenPipeError: If the camera cannot be opened
         """
-        self.cap = cv2.VideoCapture(self.path)
+        self.cap = cv2.VideoCapture(self.path, cv2.CAP_V4L2)
         if not self.__testCapture(self.cap):
             raise BrokenPipeError(f"Failed to open video camera! {self.path=}")
         
         # add configurable settings
         # Use getattr to satisfy mypy
-        video_writer_fourcc = getattr(cv2, 'VideoWriter_fourcc')
-        fourcc = video_writer_fourcc(*"MJPG")  # or 'XVID', 'MP4V'
-        self.cap.set(cv2.CAP_PROP_FOURCC, fourcc)
+        # video_writer_fourcc = getattr(cv2, 'VideoWriter_fourcc')
+        # fourcc = video_writer_fourcc(*"MJPG")  # or 'XVID', 'MP4V'
+        # self.cap.set(cv2.CAP_PROP_FOURCC, fourcc)
         CameraIntrinsics.setCapRes(self.cameraIntrinsics, self.cap)
 
     def __testCapture(self, cap: cv2.VideoCapture) -> bool:

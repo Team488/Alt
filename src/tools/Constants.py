@@ -500,8 +500,8 @@ class CameraIntrinsics:
 
     @staticmethod
     def setCapRes(cameraIntrinsics: "CameraIntrinsics", cap: cv2.VideoCapture):
-        cap.set(cv2.CAP_PROP_FRAME_WIDTH, cameraIntrinsics.getHres())
-        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, cameraIntrinsics.getVres())
+        # cap.set(cv2.CAP_PROP_FRAME_WIDTH, cameraIntrinsics.getHres())
+        # cap.set(cv2.CAP_PROP_FRAME_HEIGHT, cameraIntrinsics.getVres())
         return cap
 
 
