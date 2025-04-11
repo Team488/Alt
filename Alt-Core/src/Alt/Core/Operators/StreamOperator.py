@@ -1,11 +1,17 @@
 import threading
 import functools
 import multiprocessing
+import time
 import cv2
+import hashlib
 from flask import Flask, Response, stream_with_context
 from multiprocessing import managers
+import numpy as np
 from werkzeug.serving import make_server
 from .LogOperator import getChildLogger
+
+
+
 
 
 Sentinel = getChildLogger("Stream_Operator")
@@ -23,6 +29,9 @@ class StreamOperator:
         self.server_thread = threading.Thread(target=self.run_server, daemon=True)
         self.running = False
 
+    def _frame_hash(self, frame):
+        return hashlib.md5(frame).digest()
+
     def register_stream(self, name) -> managers.DictProxy:
         """Creates a new stream, registers a route, and returns a DictProxy for updating frames."""
         if name in self.streams:
@@ -36,10 +45,15 @@ class StreamOperator:
         # Define the stream generation function dynamically
         def generate_frames(shareddict=frameShare):
             """Generator function to yield MJPEG frames."""
+            lastHashF = None
             while self.running:
                 frame = shareddict.get("frame", None)
-                if frame is None:
+                hashf = self._frame_hash(frame)
+                if frame is None or hashf == lastHashF:
+                    time.sleep(0.01)
                     continue
+
+                lastHashF = hashf
                 ret, jpeg = cv2.imencode(".jpg", frame)
                 if not ret:
                     continue

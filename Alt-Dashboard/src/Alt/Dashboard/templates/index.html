@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>Status Dashboard</title>
+  <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
   <script src="{{ url_for('static', filename='socket.io.min.js') }}"></script>
   <style>
     /* Basic layout and styles similar to original */
@@ -163,7 +164,7 @@
       box.dataset.activeTab = 'errors';
 
       const header = createElement('div', 'status-header');
-      const nameDiv = createElement('div', 'status-name', status.displayName);
+      const nameDiv = createElement('div', 'status-name', status.name);
       const indicator = createElement('span', 'status-indicator');
       const statusText = createElement('div', 'status-text', status.status);
       header.append(indicator, nameDiv, statusText);
@@ -192,7 +193,17 @@
         streamContent.dataset.tab = 'stream';
 
         const img = createElement('img', 'camera-stream');
-        img.src = status.streamIp;
+
+        document.addEventListener('visibilitychange', () => {
+          if (!img) return;
+          const isCameraTabVisible = streamContent?.classList.contains('active');
+          if (document.hidden || !isCameraTabVisible) {
+            img.src = "";
+          } else {
+            img.src = status.streamIp;
+          }
+        });
+
         img.dataset.lastIp = status.streamIp;
         streamContent.appendChild(img);
       }
@@ -217,17 +228,32 @@
       box.append(header, description, capabilities, tabbedSection, timers);
 
       innerTabs.addEventListener('click', function(event) {
-        const target = event.target;
-        if (target.classList.contains('inner-tab')) {
-          innerTabs.querySelectorAll('.inner-tab').forEach(t => t.classList.remove('active'));
-          target.classList.add('active');
-          const tabId = target.dataset.tab;
-          tabbedSection.querySelectorAll('.inner-content').forEach(content => {
-            content.classList.toggle('active', content.dataset.tab === tabId);
-          });
-          box.dataset.activeTab = tabId;
+      const target = event.target;
+      if (target.classList.contains('inner-tab')) {
+        const tabId = target.dataset.tab;
+
+        // Remove active class from all tabs and contents
+        innerTabs.querySelectorAll('.inner-tab').forEach(t => t.classList.remove('active'));
+        tabbedSection.querySelectorAll('.inner-content').forEach(content => {
+          content.classList.remove('active');
+        });
+
+        // Set active tab and content
+        target.classList.add('active');
+        const activeContent = tabbedSection.querySelector(`.inner-content[data-tab="${tabId}"]`);
+        if (activeContent) activeContent.classList.add('active');
+
+        box.dataset.activeTab = tabId;
+
+        // If it's the stream tab, set img.src, otherwise clear it
+        if (tabId === 'stream' && boxObj.streamImg) {
+          boxObj.streamImg.src = boxObj.streamImg.dataset.lastIp;
+        } else if (boxObj.streamImg) {
+          boxObj.streamImg.src = '';
         }
+      }
       });
+
 
       const boxObj = { container: box, indicator, statusText, description, errorsBox, streamImg: streamContent?.querySelector('img'), timerCreate, timerPeriodic, timerShutdown, timerClose };
       updateStatusBox(boxObj, status);
