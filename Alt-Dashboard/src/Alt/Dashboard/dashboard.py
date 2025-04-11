@@ -1,37 +1,38 @@
 from flask import Flask, render_template
 from flask_socketio import SocketIO
-import asyncio
 import threading
+import time
 from .AgentManager import AgentManager, AgentSubscription
 
 
 def main():
-    print(f"-----------------------------Starting-Dashboard-----------------------------")
+    print(
+        f"-----------------------------Starting-Dashboard-----------------------------"
+    )
     app = Flask(__name__)
-    socketio = SocketIO(app, async_mode='threading')
+    socketio = SocketIO(app, async_mode="threading")  # remains the same
 
     manager = AgentManager()
 
-
-    @app.route('/')
+    @app.route("/")
     def index():
-        return render_template('index.html')
+        return render_template("index.html")
 
-    async def status_updater():
-        
-
-
+    def status_updater():
         while True:
             allRunningAgents = set(manager.getAllRunningAgents())
             curRunningAgents = set(manager.getCurrentlyRunningAgents())
-
 
             statuses = []
 
             for agent in allRunningAgents:
                 status = {}
                 agentSubcription = manager.getSubscription(agent)
-                status["name"] = agent
+                dotIdx = agent.find(".")
+                group = agent[:dotIdx]
+                name = agent[dotIdx + 1 :]
+                status["group"] = group
+                status["name"] = name
                 status["active"] = "Active" if agent in curRunningAgents else "Inactive"
                 status["status"] = agentSubcription.getStatus()
                 status["description"] = agentSubcription.getDescription()
@@ -46,16 +47,17 @@ def main():
 
                 statuses.append(status)
 
-            socketio.emit('status_update', statuses)
-            await asyncio.sleep(0.05)
+            import json
 
-    def start_background_task():
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        loop.run_until_complete(status_updater())
+            print(f"Payload size: {len(json.dumps(statuses))} bytes")
 
-    # Launch background task in separate thread with its own event loop
-    threading.Thread(target=start_background_task, daemon=True).start()
+            socketio.emit("status_update", statuses)
+
+            # Sleep for 500ms instead of 50ms to ease CPU load and avoid frontend spam
+            time.sleep(0.1)
+
+    # Launch background task in separate thread
+    threading.Thread(target=status_updater, daemon=True).start()
 
     socketio.run(app, debug=True, port=9000)
 
