@@ -29,7 +29,7 @@ class FileCapture(Capture):
         Raises:
             BrokenPipeError: If the video file cannot be opened
         """
-        self.cap = cv2.VideoCapture(self.path, cv2.CAP_V4L2)
+        self.cap = cv2.VideoCapture(self.path)
 
         if not self.__testCapture(self.cap):
             raise BrokenPipeError(f"Failed to open video camera! {self.path=}")

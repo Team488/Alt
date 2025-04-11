@@ -110,9 +110,9 @@ class ConfigOperator:
                 filePath = os.path.join(path, filename)
                 for ending, filetype in self.knownFileEndings:
                     if filename.endswith(ending):
-                        Sentinel.info(f"Loaded config file from {filePath}")
+                        # Sentinel.info(f"Loaded config file from {filePath}")
                         content = filetype.load(filePath)
-                        Sentinel.debug(f"File content: {content}")
+                        # Sentinel.debug(f"File content: {content}")
                         self.configMap[filename] = content
         except Exception as agentSmith:
             # override config path dosent exist

@@ -224,8 +224,8 @@ class PropertyOperator:
             return False
 
         if not propertyIterable:
-            # eg empty so can use any put method
-            self.__xclient.putIntegerList(propertyTable, [])
+            # NEEDS FIX, need to know empty list type 
+            self.__xclient.putStringList(propertyTable, [])
             return True
 
         firstType = type(propertyIterable[0])
@@ -277,6 +277,10 @@ class PropertyOperator:
             return XTablesByteUtils.unpack_probability_mapping_detections(propertyValue)
         elif type == XTableProto.XTableMessage.Type.POSE2D:
             return XTablesByteUtils.unpack_pose2d(propertyValue)
+        elif type == XTableProto.XTableMessage.Type.STRING_LIST:
+            return XTablesByteUtils.to_string_list(propertyValue)
+        elif type == XTableProto.XTableMessage.Type.INTEGER_LIST:
+            return XTablesByteUtils.to_integer_list(propertyValue)
 
         else:
             Sentinel.error(

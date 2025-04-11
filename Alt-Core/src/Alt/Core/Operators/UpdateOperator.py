@@ -3,12 +3,14 @@ from collections import defaultdict
 from typing import Any, Callable, Optional, Dict, Set, List, Tuple, DefaultDict
 from JXTABLES.XTablesClient import XTablesClient
 from .PropertyOperator import Property, PropertyOperator
+from .LogOperator import getChildLogger
 
-
-
+Sentinel = getChildLogger("Update_Operator")
 class UpdateOperator:
     ALLRUNNINGAGENTPATHS: str = "ALL_RUNNING_AGENT_PATHS"
-    PATHLOCK: str = "ALL_RUNNING_AGENT_PATHS.IDLOCK"
+    ALLPATHLOCK: str = "ALL_RUNNING_AGENT_PATHS.IDLOCK"
+    CURRENTLYRUNNINGAGENTPATHS: str = "CURRENTLY_RUNNING_AGENT_PATHS"
+    CURRENTPATHLOCK: str = "CURRENTLY_RUNNING_AGENT_PATHS.IDLOCK"
     EMPTYLOCK: int = -1
     BUSYLOCK: int = 1
 
@@ -17,39 +19,50 @@ class UpdateOperator:
     ) -> None:
         self.__xclient: XTablesClient = xclient
         self.uniqueUpdateName: str = propertyOperator.getFullPrefix()
-        self.addToAllRunning(self.uniqueUpdateName)
+        self.addToRunning(self.uniqueUpdateName)
         self.__propertyOp: PropertyOperator = propertyOperator
         self.__subscribedUpdates: DefaultDict[str, Set[str]] = defaultdict(set)
         self.__subscribedRunOnClose: Dict[str, Optional[Callable[[str], None]]] = {}
         self.__subscribedSubscriber: Dict[str, Callable[[Any], None]] = {}
 
-    def withLock(self, runnable: Callable[[], None]):
-        if self.__xclient.getDouble(self.PATHLOCK) != None:
-            while self.__xclient.getDouble(self.PATHLOCK) != self.EMPTYLOCK:
+    def withLock(self, runnable: Callable[[], None], isAllRunning : bool):
+        PATHLOCK = self.ALLPATHLOCK if isAllRunning else self.CURRENTPATHLOCK
+        
+        if self.__xclient.getDouble(PATHLOCK) != None:
+            while self.__xclient.getDouble(PATHLOCK) != self.EMPTYLOCK:
                 time.sleep(0.01)  # wait for lock to open
 
-        self.__xclient.putDouble(self.PATHLOCK, self.BUSYLOCK)
-        runnable()
-        self.__xclient.putDouble(self.PATHLOCK, self.EMPTYLOCK)
+        self.__xclient.putDouble(PATHLOCK, self.BUSYLOCK)
+        try:
+            runnable()
+        except Exception as e:
+            Sentinel.fatal(e)
+        finally:
+            self.__xclient.putDouble(PATHLOCK, self.EMPTYLOCK)
 
-    def addToAllRunning(self, uniqueUpdateName: str) -> None:
+    def addToRunning(self, uniqueUpdateName: str) -> None:
         """Add this agent's unique update name to the list of all running agents"""
 
-        def add():
-            existingNames = self.__xclient.getStringList(self.ALLRUNNINGAGENTPATHS)
+        def add(isAllRunning : bool):
+            RUNNINGPATH = self.ALLRUNNINGAGENTPATHS if isAllRunning else self.CURRENTLYRUNNINGAGENTPATHS
+            existingNames = self.__xclient.getStringList(RUNNINGPATH)
             if existingNames is None:
                 existingNames = []  # "default arg"
             if uniqueUpdateName not in existingNames:
                 existingNames.append(uniqueUpdateName)
 
-            self.__xclient.putStringList(self.ALLRUNNINGAGENTPATHS, existingNames)
+            self.__xclient.putStringList(RUNNINGPATH, existingNames)
 
-        self.withLock(add)
+        addAll = lambda : add(True)
+        addCur = lambda : add(False)
 
-    def getAllRunning(
+        self.withLock(addAll, isAllRunning=True) # always add to all running
+        self.withLock(addCur, isAllRunning=False) # also always add to current running
+
+    def getCurrentlyRunning(
         self, pathFilter: Optional[Callable[[str], bool]] = None
     ) -> List[str]:
-        """Get a list of all running agent paths, optionally filtered"""
+        """Get a list of currently running agent paths, optionally filtered"""
         stringList = self.__xclient.getStringList(self.ALLRUNNINGAGENTPATHS)
         if stringList is None:
             return []
@@ -88,7 +101,7 @@ class UpdateOperator:
     ) -> List[Tuple[str, Any]]:
         """Read global updates with the given name from all running agents"""
         updates: List[Tuple[str, Any]] = []
-        for runningPath in self.getAllRunning(pathFilter):
+        for runningPath in self.getCurrentlyRunning(pathFilter):
             value = self.__propertyOp.createProperty(
                 f"{runningPath}.{updateName}",
                 propertyDefault=None,
@@ -108,7 +121,7 @@ class UpdateOperator:
         pathFilter: Optional[Callable[[str], bool]] = None,
     ) -> None:
         """Set a global update with the given name and value for all running agents"""
-        for runningPath in self.getAllRunning(pathFilter):
+        for runningPath in self.getCurrentlyRunning(pathFilter):
             self.__propertyOp.createCustomReadOnlyProperty(
                 f"{runningPath}.{globalUpdateName}",
                 propertyValue=None,
@@ -138,7 +151,7 @@ class UpdateOperator:
             Tuple of (new_subscribers, removed_subscribers)
         """
         newSubscribers: List[str] = []
-        runningPaths = self.getAllRunning(pathFilter)
+        runningPaths = self.getCurrentlyRunning(pathFilter)
         fullTables: Set[str] = set()
         for runningPath in runningPaths:
             fullTable = f"{runningPath}.{updateName}"
@@ -184,7 +197,7 @@ class UpdateOperator:
             updateSubscriber: The subscriber callback that was used to subscribe
             pathFilter: Optional filter to apply to running agent paths
         """
-        runningPaths = self.getAllRunning(pathFilter)
+        runningPaths = self.getCurrentlyRunning(pathFilter)
         for runningPath in runningPaths:
             fullTable = f"{runningPath}.{updateName}"
             self.__xclient.unsubscribe(fullTable, updateSubscriber)
@@ -193,16 +206,16 @@ class UpdateOperator:
         """Deregister this agent and clean up all subscriptions"""
 
         def remove():
-            existingNames = self.__xclient.getStringList(self.ALLRUNNINGAGENTPATHS)
+            existingNames = self.__xclient.getStringList(self.CURRENTLYRUNNINGAGENTPATHS)
             if existingNames is None:
                 existingNames = []  # "default arg"
             else:
                 if self.uniqueUpdateName in existingNames:
                     existingNames.remove(self.uniqueUpdateName)
 
-            self.__xclient.putStringList(self.ALLRUNNINGAGENTPATHS, existingNames)
+            self.__xclient.putStringList(self.CURRENTLYRUNNINGAGENTPATHS, existingNames)
 
-        self.withLock(remove)
+        self.withLock(remove, isAllRunning=False) # only currently running removes paths
 
         for updateName, fullTables in self.__subscribedUpdates.items():
             runOnClose = self.__subscribedRunOnClose.get(updateName)

@@ -23,6 +23,7 @@ from ...Constants.AgentConstants import AgentCapabilites
 
 class Agent(ABC):
     DEFAULT_LOOP_TIME: int = 0  # 0 ms
+    TIMERS = "timers"
 
     def __init__(self, **kwargs: Any) -> None:
         # nothing should go here
@@ -73,7 +74,7 @@ class Agent(ABC):
         self.updateOp = updateOperator
         self.timeOp = timeOperator
         self.Sentinel = logger
-        self.timer = self.timeOp.getTimer("timers")
+        self.timer = self.timeOp.getTimer(self.TIMERS)
         # other than setting variables, nothing should go here
 
     def _setExtraObjects(self, extraObjects: multiprocessing.managers.DictProxy):

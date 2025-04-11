@@ -22,6 +22,18 @@ Sentinel = getChildLogger("Agent_Operator")
 
 # subscribes to command request with xtables and then executes when requested
 class AgentOperator:
+    STATUS = "status"
+    DESCRIPTION = "description"
+    ERRORS = "errors"
+    CAPABILITES = "capabilites"
+
+    CREATETIMER = "create"
+    PERIODICTIMER = "runPeriodic"
+    SHUTDOWNTIMER = "shutdown"
+    CLOSETIMER = "close"
+
+
+    
     def __init__(
         self,
         manager: multiprocessing.managers.SyncManager,
@@ -229,7 +241,6 @@ class AgentOperator:
         AgentOperator._injectAgent(
             agent, agentName, shareOperator, extraObjects, isMainThread
         )
-
         """ On main thread this is how its set as main agent"""
         if isMainThread and runOnCreate is not None:
             runOnCreate(agent)
@@ -238,21 +249,21 @@ class AgentOperator:
         __setStatus: Callable[
             [str, str], bool
         ] = lambda status: agent.propertyOperator.createCustomReadOnlyProperty(
-            f"{agentName}.Status", status
+            f"{agentName}.{AgentOperator.STATUS}", status
         ).set(
             status
         )
         __setErrorLog: Callable[
             [str, str], bool
         ] = lambda error: agent.propertyOperator.createCustomReadOnlyProperty(
-            f"{agentName}.Errors", error
+            f"{agentName}.{AgentOperator.ERRORS}", error
         ).set(
             error
         )
         __setDescription: Callable[
             [str, str], bool
         ] = lambda description: agent.propertyOperator.createCustomReadOnlyProperty(
-            f"{agentName}.Description", description
+            f"{agentName}.{AgentOperator.DESCRIPTION}", description
         ).set(
             description
         )
@@ -260,7 +271,7 @@ class AgentOperator:
         __setCapabilites: Callable[
             [str, str], bool
         ] = lambda capabilites: agent.propertyOperator.createCustomReadOnlyProperty(
-            f"{agentName}.Capabilites", capabilites
+            f"{agentName}.{AgentOperator.CAPABILITES}", capabilites
         ).set(
             capabilites
         )
@@ -294,13 +305,13 @@ class AgentOperator:
             progressStr = "create"
             __setStatus("creating")
 
-            with timer.run("create"):
+            with timer.run(AgentOperator.CREATETIMER):
                 agent.create()
 
             __setStatus("running")
             progressStr = "isRunning"
             while agent.isRunning():
-                with timer.run("runPeriodic"):
+                with timer.run(AgentOperator.PERIODICTIMER):
                     stop = stopflag.is_set()
                     if stop:
                         break
@@ -329,7 +340,7 @@ class AgentOperator:
                 __setStatus(progressStr)
                 Sentinel.debug("Shutting down agent")
                 try:
-                    with timer.run("forceShutdown"):
+                    with timer.run(AgentOperator.SHUTDOWNTIMER):
                         agent.forceShutdown()
                         agent.hasShutdown = True
                 except Exception as e:
@@ -347,7 +358,7 @@ class AgentOperator:
             """ Main part #3 Cleanup"""
             try:
                 # cleanup
-                with timer.run("onClose"):
+                with timer.run(AgentOperator.CLOSETIMER):
                     agent.onClose()
                     agent.hasClosed = True
 
@@ -383,7 +394,8 @@ class AgentOperator:
                 with self.mainAgent.getTimer().run("cleanup"):
                     self.mainAgent.onClose()
             if not self.mainAgent.isCleanedUp:
-                self.mainAgent._cleanup
+                Sentinel.info("cleaning agent with sigint")
+                self.mainAgent._cleanup()
 
             Sentinel.info("Main agent finished")
 
