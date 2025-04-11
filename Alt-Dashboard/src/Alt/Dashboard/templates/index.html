@@ -181,7 +181,6 @@
 
       let streamContent = null;
 
-      console.log(status.streamIp)
       if (status.streamIp) {
         // Create the camera tab
         const cameraTab = createElement('div', 'inner-tab', 'Camera');
@@ -285,7 +284,6 @@
 
 
     socket.on('status_update', data => {
-      console.log("1")
       data.forEach(status => {
         const group = status.group || 'default';
         if (!groupContainers.has(group)) {

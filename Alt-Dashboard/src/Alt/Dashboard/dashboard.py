@@ -47,10 +47,6 @@ def main():
 
                 statuses.append(status)
 
-            import json
-
-            print(f"Payload size: {len(json.dumps(statuses))} bytes")
-
             socketio.emit("status_update", statuses)
 
             # Sleep for 500ms instead of 50ms to ease CPU load and avoid frontend spam
