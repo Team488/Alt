@@ -1,6 +1,7 @@
 import logging
 import multiprocessing
 import multiprocessing.managers
+import queue
 import threading
 import traceback
 import time
@@ -13,6 +14,7 @@ from .ShareOperator import ShareOperator
 from .StreamOperator import StreamOperator
 from .TimeOperator import TimeOperator, Timer
 from .UpdateOperator import UpdateOperator
+from .LogStreamOperator import LogStreamOperator
 from ..Agents.Agent import Agent
 from .PropertyOperator import LambdaHandler, PropertyOperator, ReadonlyProperty
 from .LogOperator import getChildLogger
@@ -39,6 +41,7 @@ class AgentOperator:
         manager: multiprocessing.managers.SyncManager,
         shareOp: ShareOperator,
         streamOp: StreamOperator,
+        logStreamOp : LogStreamOperator
     ) -> None:
         self.__executor: ProcessPoolExecutor = ProcessPoolExecutor()
         self.__stop: threading.Event = manager.Event()  # flag
@@ -47,6 +50,7 @@ class AgentOperator:
         self.mainAgent: Optional[Agent] = None
         self.shareOp = shareOp
         self.streamOp = streamOp
+        self.logStreamOp = logStreamOp
         self.manager = manager
 
     def __setStop(self, stop: bool):
@@ -91,14 +95,17 @@ class AgentOperator:
         agentClass: Union[partial, type[Agent]],
         agentName: str,
         argumentDict: multiprocessing.managers.DictProxy,
-        streamOperator: StreamOperator,
     ):
         for capability in AgentCapabilites.getCapabilites(agentClass):
             # TODO add more
-            if capability is AgentCapabilites.STREAM:
+            if capability is AgentCapabilites.stream:
                 argumentDict[
-                    AgentCapabilites.STREAM.objectName
-                ] = streamOperator.register_stream(agentName)
+                    AgentCapabilites.stream.objectName
+                ] = self.streamOp.register_stream(agentName)
+        
+        # always create log queue
+
+        argumentDict[AgentCapabilites.log.objectName] = self.logStreamOp.register_log_stream(agentName)
 
         return argumentDict
 
@@ -108,7 +115,7 @@ class AgentOperator:
         agentName = self.getUniqueAgentName(agentClass)
 
         extraObjects = self.initalizeExtraObjects(
-            agentClass, agentName, self.manager.dict(), self.streamOp
+            agentClass, agentName, self.manager.dict()
         )
 
         if isMainThread:
@@ -176,7 +183,7 @@ class AgentOperator:
         # injecting stuff shared from core
         agent._injectCore(shareOperator, isMainThread, agentName)
         # creating new operators just for this agent and injecting them
-        AgentOperator._injectNewOperators(agent, agentName)
+        AgentOperator._injectNewOperators(agent, agentName, extraObjects)
 
         agent._setExtraObjects(extraObjects)
 
@@ -196,7 +203,11 @@ class AgentOperator:
         return agent
 
     @staticmethod
-    def _injectNewOperators(agent: Agent, agentName):
+    def _injectNewOperators(
+        agent: Agent,
+        agentName: str,
+        extraObjects: multiprocessing.managers.DictProxy,
+    ) -> None:
         """Since any agent not on main thread will be in its own process, alot of new objects will have to be created"""
         client = XTablesClient(debug_mode=True)  # one per process
         client.add_client_version_property(f"MATRIX-ALT-{agentName}")
@@ -208,6 +219,19 @@ class AgentOperator:
         updateOp = UpdateOperator(client, propertyOp)
         timeOp = TimeOperator(propertyOp)
         logger = getChildLogger(agentName)
+
+        logQueue : queue.Queue = extraObjects.get(AgentCapabilites.log.objectName)
+        
+        # add sse handling automatically
+        class SSELogHandler(logging.Handler):
+            def emit(self, record):
+                log_entry = self.format(record)
+                logQueue.put(log_entry)
+
+        sse_handler = SSELogHandler()
+        sse_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
+
+        logger.addHandler(sse_handler)
 
         agent._injectNEW(
             xclient=client,
@@ -306,6 +330,7 @@ class AgentOperator:
             __setStatus("creating")
 
             with timer.run(AgentOperator.CREATETIMER):
+                agent._runOwnCreate()
                 agent.create()
 
             __setStatus("running")
@@ -402,3 +427,4 @@ class AgentOperator:
     def shutDownNow(self) -> None:
         """Threadblocks until executor is finished"""
         self.__executor.shutdown(wait=True, cancel_futures=True)
+

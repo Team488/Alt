@@ -18,16 +18,12 @@ Sentinel = getChildLogger("Stream_Operator")
 
 
 class StreamOperator:
-    PORT = 5000
 
-    def __init__(self, manager: multiprocessing.managers.SyncManager, host="0.0.0.0"):
-        self.app = Flask(__name__)
-        self.host = host
+    def __init__(self, app : Flask, manager: multiprocessing.managers.SyncManager):
+        self.app = app
         self.streams = {}  # Dictionary to store streams
         self.manager = manager  # Multiprocessing Manager
-        self.server = None
-        self.server_thread = threading.Thread(target=self.run_server, daemon=True)
-        self.running = False
+        self.running = True
 
     def _frame_hash(self, frame):
         return hashlib.md5(frame).digest()
@@ -83,29 +79,14 @@ class StreamOperator:
         view_func.__name__ = f"stream_{name}_view"
         return view_func
 
-    def run_server(self):
-        """Runs the Flask server using a WSGI server with shutdown capability."""
-        self.running = True
-        self.server = make_server(self.host, self.PORT, self.app, threaded=True)
-        self.server.serve_forever()
-
-    def start(self):
-        """Starts the Flask server in a background thread."""
-        self.server_thread.start()
-        Sentinel.info(f"MJPEG Server running at {self.host}:{self.PORT}")
 
     def shutdown(self):
         """Stops all streams and shuts down the server."""
         Sentinel.info("Shutting down MJPEG server...")
-        self.running = False
         for name in list(self.streams.keys()):
             self.close_stream(name)
 
-        if self.server:
-            self.server.shutdown()  # Properly shuts down the server
-
-        self.server_thread.join()
-        Sentinel.info("MJPEG Server stopped.")
+        self.running = False
 
     def close_stream(self, name):
         """Closes a specific stream and releases the resources."""

@@ -6,7 +6,8 @@ from Alt.Core.Agents import Agent
 
 class AgentCapabilites(Enum):
 
-    STREAM = "stream_queue"
+    stream = "stream_queue"
+    log = "log_queue"
 
     @property
     def objectName(self):

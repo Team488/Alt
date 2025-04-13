@@ -3,9 +3,11 @@ import os
 import signal
 from multiprocessing import Manager
 from JXTABLES.TempConnectionManager import TempConnectionManager as tcm
+from .Operators.FlaskOperator import FlaskOperator
 from .Operators.AgentOperator import AgentOperator
 from .Operators.ShareOperator import ShareOperator
 from .Operators.StreamOperator import StreamOperator
+from .Operators.LogStreamOperator import LogStreamOperator
 from .Operators import LogOperator
 from .Agents.Agent import Agent
 from .Orders.Order import Order
@@ -28,12 +30,19 @@ class Neo:
             dict=self.__manager.dict(),
         )
 
+        Sentinel.info("Creating flask server")
+        self.__flaskOp = FlaskOperator()
+        Sentinel.info("Starting flask server")
+        self.__flaskOp.start()
+
         Sentinel.info("Creating Stream Operator")
-        self.__streamOp = StreamOperator(manager=self.__manager)
-        self.__streamOp.start()
+        self.__streamOp = StreamOperator(app=self.__flaskOp.getApp(), manager=self.__manager)
+
+        Sentinel.info("Creating log stream operator")
+        self.__logStreamOp = LogStreamOperator(app=self.__flaskOp.getApp(), manager=self.__manager)
 
         Sentinel.info("Creating Agent operator")
-        self.__agentOp = AgentOperator(self.__manager, self.__shareOp, self.__streamOp)
+        self.__agentOp = AgentOperator(self.__manager, self.__shareOp, self.__streamOp, self.__logStreamOp)
 
         self.__isShutdown = False
 
@@ -92,6 +101,7 @@ class Neo:
         self.__agentOp.stopPermanent()
         self.__manager.shutdown()
         self.__streamOp.shutdown()
+        self.__flaskOp.shutdown()
         self.__agentOp.waitForAgentsToFinish()
         self.__agentOp.shutDownNow()
 

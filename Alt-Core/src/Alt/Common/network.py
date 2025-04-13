@@ -1,9 +1,4 @@
 import socket
-from .Operators import LogOperator, ConfigOperator
-from .Neo import Neo
-
-getChildLogger = LogOperator.getChildLogger
-staticLoad = ConfigOperator.staticLoad
 
 DEVICEHOSTNAME = socket.gethostname()
 

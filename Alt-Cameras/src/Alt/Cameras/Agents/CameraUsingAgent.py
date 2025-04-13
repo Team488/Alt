@@ -170,9 +170,9 @@ class CameraUsingAgent(Agent):
             if self.depthEnabled:
                 cv2.namedWindow(self.WINDOWNAMEDEPTH)
 
-        if AgentCapabilites.STREAM.objectName in self.extraObjects:
+        if AgentCapabilites.stream.objectName in self.extraObjects:
             self.stream_queue: multiprocessing.managers.DictProxy = (
-                self.extraObjects.get(AgentCapabilites.STREAM.objectName)
+                self.extraObjects.get(AgentCapabilites.stream.objectName)
             )
 
             streamPath = f"http://{DEVICEIP}:5000/{self.agentName}/stream.mjpg"
@@ -440,4 +440,4 @@ class CameraUsingAgent(Agent):
 
     @classmethod
     def getCapabilites(cls):
-        return super().getCapabilites() + [AgentCapabilites.STREAM]
+        return super().getCapabilites() + [AgentCapabilites.stream]

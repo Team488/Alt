@@ -2,7 +2,6 @@ import os
 import socket
 import logging
 from typing import Union, Final
-from ...Common import timeFmt
 
 BASELOGDIR = os.path.join(os.path.expanduser("~"), ".ALTLOGS")
 os.makedirs(BASELOGDIR, exist_ok=True)
@@ -15,13 +14,15 @@ UniqueId: Final[str] = socket.gethostname()
 
 
 def createLogger(loggerName: str):
+    from ...Common.timeFmt import getTimeStr
+
     fullName = f"{loggerName}[{UniqueId}]"
     logger = logging.getLogger(fullName)
     logger.setLevel(LOGLEVEL)
 
     if not logger.handlers:
         log_filename = os.path.join(
-            BASELOGDIR, f"{fullName}_{timeFmt.getTimeStr()}.log"
+            BASELOGDIR, f"{fullName}_{getTimeStr()}.log"
         )
         file_handler = logging.FileHandler(log_filename, mode="a", encoding="utf-8")
         file_handler.setFormatter(

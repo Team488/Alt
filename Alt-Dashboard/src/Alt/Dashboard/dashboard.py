@@ -37,13 +37,14 @@ def main():
                 status["status"] = agentSubcription.getStatus()
                 status["description"] = agentSubcription.getDescription()
                 status["errors"] = agentSubcription.getErrors()
-                status["capabilites"] = list(agentSubcription.getCapabilites())
+                status["capabilites"] = list(agentSubcription.getCapabilities())
 
                 for timerSub in AgentSubscription.TIMERSUBBASES:
                     status[timerSub] = agentSubcription.getTimer(timerSub)
 
                 status["streamIp"] = agentSubcription.getStreamIp()
                 status["streamShape"] = list(agentSubcription.getStreamShape())
+                status["logIp"] = agentSubcription.getLogIp()
 
                 statuses.append(status)
 
@@ -55,7 +56,7 @@ def main():
     # Launch background task in separate thread
     threading.Thread(target=status_updater, daemon=True).start()
 
-    socketio.run(app, debug=True, port=9000)
+    socketio.run(app, host='0.0.0.0', debug=True, port=9000)
 
 
 if __name__ == "__main__":

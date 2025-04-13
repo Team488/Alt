@@ -7,7 +7,7 @@ class TestAgent(Agent):
         pass
 
     def runPeriodic(self):
-        pass
+        self.Sentinel.info("Test looogog")
 
     def getIntervalMs(self):
         return 1000

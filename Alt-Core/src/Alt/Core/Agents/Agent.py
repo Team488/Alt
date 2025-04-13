@@ -10,7 +10,10 @@ import multiprocessing
 import multiprocessing.managers
 from typing import Optional, Any
 
+
+from ...Common.network import DEVICEIP
 from JXTABLES.XTablesClient import XTablesClient
+from ..Operators.LogStreamOperator import LogStreamOperator
 from ..Operators.UpdateOperator import UpdateOperator
 from ..Operators.PropertyOperator import PropertyOperator
 from ..Operators.ConfigOperator import ConfigOperator
@@ -105,6 +108,13 @@ class Agent(ABC):
             return TEAM.BLUE
         else:
             return TEAM.RED
+        
+    def _runOwnCreate(self):
+        """ The agent wants to do its own stuff too... okay."""
+
+        logIp = f"http://{DEVICEIP}:5000/{self.agentName}/{LogStreamOperator.LOGPATH}"
+
+        self.propertyOperator.createCustomReadOnlyProperty("logIP", logIp, addBasePrefix=True, addOperatorPrefix=True)
 
     @classmethod
     def getName(cls):

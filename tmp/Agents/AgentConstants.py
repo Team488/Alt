@@ -7,7 +7,7 @@ from abstract.Agent import Agent
 
 class AgentCapabilites(Enum):
 
-    STREAM = "stream_queue"
+    stream = "stream_queue"
 
     @property
     def objectName(self):
@@ -30,14 +30,14 @@ class AgentCapabilites(Enum):
         capabilites = set()
         for arg in agentClass.args:
             if issubclass(type(arg), Capture):
-                capabilites.add(AgentCapabilites.STREAM)
+                capabilites.add(AgentCapabilites.stream)
 
         for arg in agentClass.keywords.values():
             if issubclass(type(arg), Capture):
-                capabilites.add(AgentCapabilites.STREAM)
+                capabilites.add(AgentCapabilites.stream)
 
         if issubclass(agentClass.func, CameraUsingAgentBase):
-            capabilites.add(AgentCapabilites.STREAM)
+            capabilites.add(AgentCapabilites.stream)
 
         return list(capabilites)
 
@@ -48,6 +48,6 @@ class AgentCapabilites(Enum):
         # TODO much more here
         capabilites = set()
         if issubclass(agentClass, CameraUsingAgentBase):
-            capabilites.add(AgentCapabilites.STREAM)
+            capabilites.add(AgentCapabilites.stream)
 
         return list(capabilites)

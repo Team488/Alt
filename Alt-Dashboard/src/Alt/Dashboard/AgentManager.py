@@ -51,6 +51,7 @@ class AgentSubscription:
         self.capabilitesSub = self._getSub(propertyGenerator, f"{agentBaseName}.{AgentOperator.CAPABILITES}",client.getStringList, "...")
 
         self.streamIP = self._getSub(propertyGenerator, f"{agentBaseName}.stream.IP",client.getString, None)
+        self.logIP = self._getSub(propertyGenerator, f"{agentBaseName}.logIP",client.getString, None)
         self.streamW = propertyGenerator.createReadExistingNetworkValueProperty(f"{agentBaseName}.stream.width", None)
         self.streamH = propertyGenerator.createReadExistingNetworkValueProperty(f"{agentBaseName}.stream.height", None)
         
@@ -77,11 +78,14 @@ class AgentSubscription:
     def getErrors(self) -> str:
         return self.errorsSub.get()
     
-    def getCapabilites(self) -> list[str]:
+    def getCapabilities(self) -> list[str]:
         return self.capabilitesSub.get()
     
     def getStreamIp(self) -> str:
         return self.streamIP.get()
+    
+    def getLogIp(self) -> str:
+        return self.logIP.get()
     
     def getStreamShape(self) -> tuple[int,int]:
         return (self.streamW.get(), self.streamH.get())
