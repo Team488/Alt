@@ -1,3 +1,7 @@
+:root{
+    --innerHeight: 300px;
+}
+
 /* Basic layout and styles similar to original */
 body {
 font-family: Arial, sans-serif;
@@ -115,10 +119,10 @@ font-size: 0.85em;
 margin-top: 10px;
 background-color: #111; color: #0f0; font-family: monospace;
 font-size: 0.8em; padding: 8px; border-radius: 4px;
-max-height: 120px; overflow-y: auto;  min-height: 120px;
+max-height: var(--innerHeight); overflow-y: auto;  min-height: var(--innerHeight);
 }
 .camera-stream {
-height: 120px;
+height: var(--innerHeight);
 width: auto;
 aspect-ratio: 16 / 9;
 border-radius: 4px;
