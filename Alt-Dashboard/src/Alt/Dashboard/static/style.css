@@ -51,7 +51,7 @@ font-size: 0.9em; /* Slightly smaller font */
 display: flex;
 flex-wrap: wrap;
 gap: 10px; /* Reduce gap */
-flex-direction: row; 
+flex-direction: row;
 align-items: center;
 justify-content: center;
 
@@ -118,7 +118,8 @@ font-size: 0.8em; padding: 8px; border-radius: 4px;
 max-height: 120px; overflow-y: auto;  min-height: 120px;
 }
 .camera-stream {
-width: 100%;
+height: 120px;
+width: auto;
 aspect-ratio: 16 / 9;
 border-radius: 4px;
 background-color: #ccc;

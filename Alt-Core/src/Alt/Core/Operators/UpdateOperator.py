@@ -1,3 +1,4 @@
+import random
 import time
 from collections import defaultdict
 from typing import Any, Callable, Optional, Dict, Set, List, Tuple, DefaultDict
@@ -6,6 +7,8 @@ from .PropertyOperator import Property, PropertyOperator
 from .LogOperator import getChildLogger
 
 Sentinel = getChildLogger("Update_Operator")
+
+
 class UpdateOperator:
     ALLRUNNINGAGENTPATHS: str = "ALL_RUNNING_AGENT_PATHS"
     ALLPATHLOCK: str = "ALL_RUNNING_AGENT_PATHS.IDLOCK"
@@ -25,9 +28,13 @@ class UpdateOperator:
         self.__subscribedRunOnClose: Dict[str, Optional[Callable[[str], None]]] = {}
         self.__subscribedSubscriber: Dict[str, Callable[[Any], None]] = {}
 
-    def withLock(self, runnable: Callable[[], None], isAllRunning : bool):
+    def withLock(self, runnable: Callable[[], None], isAllRunning: bool):
         PATHLOCK = self.ALLPATHLOCK if isAllRunning else self.CURRENTPATHLOCK
-        
+
+        # add uniform random delay to avoid collision in reading empty lock. need a much better method for atomic operations over the network
+        delay = random.uniform(0, 0.1)  # max 100ms
+        time.sleep(delay)
+
         if self.__xclient.getDouble(PATHLOCK) != None:
             while self.__xclient.getDouble(PATHLOCK) != self.EMPTYLOCK:
                 time.sleep(0.01)  # wait for lock to open
@@ -43,8 +50,12 @@ class UpdateOperator:
     def addToRunning(self, uniqueUpdateName: str) -> None:
         """Add this agent's unique update name to the list of all running agents"""
 
-        def add(isAllRunning : bool):
-            RUNNINGPATH = self.ALLRUNNINGAGENTPATHS if isAllRunning else self.CURRENTLYRUNNINGAGENTPATHS
+        def add(isAllRunning: bool):
+            RUNNINGPATH = (
+                self.ALLRUNNINGAGENTPATHS
+                if isAllRunning
+                else self.CURRENTLYRUNNINGAGENTPATHS
+            )
             existingNames = self.__xclient.getStringList(RUNNINGPATH)
             if existingNames is None:
                 existingNames = []  # "default arg"
@@ -53,11 +64,11 @@ class UpdateOperator:
 
             self.__xclient.putStringList(RUNNINGPATH, existingNames)
 
-        addAll = lambda : add(True)
-        addCur = lambda : add(False)
+        addAll = lambda: add(True)
+        addCur = lambda: add(False)
 
-        self.withLock(addAll, isAllRunning=True) # always add to all running
-        self.withLock(addCur, isAllRunning=False) # also always add to current running
+        self.withLock(addAll, isAllRunning=True)  # always add to all running
+        self.withLock(addCur, isAllRunning=False)  # also always add to current running
 
     def getCurrentlyRunning(
         self, pathFilter: Optional[Callable[[str], bool]] = None
@@ -206,7 +217,9 @@ class UpdateOperator:
         """Deregister this agent and clean up all subscriptions"""
 
         def remove():
-            existingNames = self.__xclient.getStringList(self.CURRENTLYRUNNINGAGENTPATHS)
+            existingNames = self.__xclient.getStringList(
+                self.CURRENTLYRUNNINGAGENTPATHS
+            )
             if existingNames is None:
                 existingNames = []  # "default arg"
             else:
@@ -215,7 +228,9 @@ class UpdateOperator:
 
             self.__xclient.putStringList(self.CURRENTLYRUNNINGAGENTPATHS, existingNames)
 
-        self.withLock(remove, isAllRunning=False) # only currently running removes paths
+        self.withLock(
+            remove, isAllRunning=False
+        )  # only currently running removes paths
 
         for updateName, fullTables in self.__subscribedUpdates.items():
             runOnClose = self.__subscribedRunOnClose.get(updateName)
