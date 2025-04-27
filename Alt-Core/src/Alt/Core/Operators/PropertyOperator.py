@@ -67,12 +67,12 @@ class PropertyOperator:
         # Sentinel.debug(f"Property updated | Name: {ret.key} Value : {ret.value}")
 
     def createReadExistingNetworkValueProperty(
-        self, propertyTable: str, propertyDefault: Any
+        self, propertyTable: str, propertyDefault: Any = None
     ):
-        """Same as calling createProperty() with isCustom = True, and addBasePrefix/addOperatorPrefix = False\n
-        shorter method for when you just want to read from an existing propertyTable
         """
-        return self.createProperty(
+        Use to get a property that reads from an existing table on XTables
+        """
+        return self._createProperty(
             propertyTable,
             propertyDefault,
             loadIfSaved=False,
@@ -81,21 +81,40 @@ class PropertyOperator:
             addOperatorPrefix=False,
             setDefaultOnNetwork=False,
         )
-
+    
+    def createCustomProperty(
+        self,
+        propertyTable: str,
+        propertyDefault: Any,
+        loadIfSaved: bool = True,
+        addBasePrefix: bool = True,
+        addOperatorPrefix: bool = True,
+        setDefaultOnNetwork: bool = True,   
+    ) -> "Property":
+        return self._createProperty(propertyTable, propertyDefault, loadIfSaved, True, addBasePrefix, addOperatorPrefix, setDefaultOnNetwork)
+    
     def createProperty(
         self,
         propertyTable: str,
-        propertyDefault,
-        loadIfSaved=True,
-        isCustom: bool = False,
-        addBasePrefix: bool = True,
-        addOperatorPrefix: bool = False,
+        propertyDefault: Any,
+        loadIfSaved: bool = True,
         setDefaultOnNetwork: bool = True,
+    ):
+        return self._createProperty(propertyTable, propertyDefault, loadIfSaved, False, True, True, setDefaultOnNetwork)
+
+    def _createProperty(
+        self,
+        propertyTable: str,
+        propertyDefault,
+        loadIfSaved: bool,
+        isCustom: bool,
+        addBasePrefix: bool,
+        addOperatorPrefix: bool,
+        setDefaultOnNetwork: bool,
     ) -> "Property":
         """Creates a network property that you can read from. To avoid conflicts, this property can only be read from, so its not writable.\n
         For a writable property, use whats called a '''ReadonlyProperty''' \n
 
-        NOTE if you want to read from an existing table, and you are providing the absolute path in propertyTable, then mark isCustom True, and set the add...prefix arguments below it to False
         Args:
             propertyTable: str = The table name you wish to read from
             propertyDefault: Any = What default should it fallback to
@@ -157,6 +176,13 @@ class PropertyOperator:
     ) -> "ReadonlyProperty":
         propertyTable = self.__getReadOnlyPropertyTable(propertyName)
         return self.__createReadOnly(propertyTable, propertyValue)
+    
+    def setPropertyTable(
+        self,
+        propertyTable,
+        propertyValue=None,
+    ):
+        self.createCustomReadOnlyProperty(propertyTable, propertyValue, False, False).set(propertyValue)
 
     def createCustomReadOnlyProperty(
         self,
@@ -192,7 +218,7 @@ class PropertyOperator:
         return readOnlyProp
 
     def __setNetworkValue(self, propertyTable, propertyValue, mute=False) -> bool:
-        # send out default to network (assuming it initially does not exist. It shoudn't)
+        # send out default to network (could and would overwrite any existing thing in the propertyTable)
         if type(propertyValue) is str:
             self.__xclient.putString(propertyTable, propertyValue)
         elif type(propertyValue) is int:
@@ -291,7 +317,7 @@ class PropertyOperator:
     def getChild(self, prefix: str) -> Optional["PropertyOperator"]:
         if not prefix:
             raise ValueError(
-                "PropertyOperator getChild must have a nonempty as a prefix!"
+                "PropertyOperator getChild must have a nonempty prefix!"
             )
 
         fullPrefix = f"{self.__getSaveFile()}.{prefix}"

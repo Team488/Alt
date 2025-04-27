@@ -94,8 +94,8 @@ class AgentSubscription:
             "...",
         )
 
-        self.streamIP = self._getSub(
-            propertyGenerator, f"{agentBaseName}.stream.IP", client.getString, None
+        self.streamPaths = self._getSub(
+            propertyGenerator, f"{agentBaseName}.streamPaths", client.getStringList, []
         )
         self.logIP = self._getSub(
             propertyGenerator, f"{agentBaseName}.logIP", client.getString, None
@@ -140,11 +140,8 @@ class AgentSubscription:
     def getCapabilities(self) -> list[str]:
         return self.capabilitesSub.get()
 
-    def getStreamIp(self) -> str:
-        return self.streamIP.get()
+    def getStreamPaths(self) -> list[list[str,str]]:
+        return [path.split("|") for path in self.streamPaths.get()]
 
     def getLogIp(self) -> str:
         return self.logIP.get()
-
-    def getStreamShape(self) -> tuple[int, int]:
-        return (self.streamW.get(), self.streamH.get())

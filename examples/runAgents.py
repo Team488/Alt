@@ -33,6 +33,6 @@ if __name__ == "__main__":
 
     n = Neo()
     n.wakeAgent(TestAgent, isMainThread=False)
-    n.wakeAgent(CamTest, isMainThread=False)
-    n.wakeAgent(TestAgent, isMainThread=True)
+    n.wakeAgent(TestAgent, isMainThread=False)
+    n.wakeAgent(CamTest, isMainThread=True)
     n.shutDown()

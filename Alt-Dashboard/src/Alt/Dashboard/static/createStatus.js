@@ -63,15 +63,18 @@ function createStatusBox(status, key) {
   innerTabs.appendChild(errorsTab);
 
   let streamContent = null;
-  if (status.streamIp) {
-    const cameraTab = createElement('div', 'inner-tab', 'Camera');
+
+  status.streamPaths.forEach(pathList => {
+    streamName = pathList[0];
+    streamPath = pathList[1];
+    const cameraTab = createElement('div', 'inner-tab', streamName);
     cameraTab.dataset.tab = 'stream';
     innerTabs.appendChild(cameraTab);
 
     streamContent = createElement('div', 'inner-content stream-content');
     streamContent.dataset.tab = 'stream';
     const img = createElement('img', 'camera-stream');
-    img.dataset.lastIp = status.streamIp;
+    img.dataset.lastIp = streamPath;
     streamContent.appendChild(img);
 
     document.addEventListener('visibilitychange', () => {
@@ -79,7 +82,7 @@ function createStatusBox(status, key) {
       const visible = streamContent?.classList.contains('active');
       img.src = document.hidden || !visible ? "" : img.dataset.lastIp;
     });
-  }
+  });
 
   const errorsContent = createElement('div', 'inner-content errors-content');
   errorsContent.dataset.tab = 'errors';

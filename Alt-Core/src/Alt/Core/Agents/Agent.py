@@ -6,21 +6,20 @@
 
 from abc import ABC, abstractmethod
 from logging import Logger
-import multiprocessing
-import multiprocessing.managers
-from typing import Optional, Any
+from typing import Dict, Optional, Any
 
+from JXTABLES.XTablesClient import XTablesClient
 
 from ...Common.network import DEVICEIP
-from JXTABLES.XTablesClient import XTablesClient
 from ..Operators.LogStreamOperator import LogStreamOperator
 from ..Operators.UpdateOperator import UpdateOperator
 from ..Operators.PropertyOperator import PropertyOperator
 from ..Operators.ConfigOperator import ConfigOperator
 from ..Operators.ShareOperator import ShareOperator
+from ..Operators.StreamOperator import StreamProxy
 from ..Operators.TimeOperator import TimeOperator, Timer
 from ...Constants.Teams import TEAM
-from ...Constants.AgentConstants import AgentCapabilites
+from ...Constants.AgentConstants import Proxy, ProxyType
 
 
 
@@ -40,9 +39,10 @@ class Agent(ABC):
         self.updateOp: Optional[UpdateOperator] = None
         self.Sentinel: Optional[Logger] = None
         self.timer: Optional[Timer] = None
-        self.extraObjects = {}
         self.isMainThread: bool = False
         self.agentName = ""
+        self.__proxies : Dict[str, Proxy] = {}
+
 
     def _injectCore(
         self, shareOperator: ShareOperator, isMainThread: bool, agentName: str
@@ -80,8 +80,28 @@ class Agent(ABC):
         self.timer = self.timeOp.getTimer(self.TIMERS)
         # other than setting variables, nothing should go here
 
-    def _setExtraObjects(self, extraObjects: multiprocessing.managers.DictProxy):
-        self.extraObjects = extraObjects
+    def _setProxies(self, proxies):
+        self.__proxies = proxies
+        self._updateNetworkProxyInfo()
+
+    def _updateNetworkProxyInfo(self):
+        """ Put information about the proxies used on xtables. This can be used for the dashboard, and other things"""
+        streamPaths = []
+        for proxyName, proxy in self.__proxies.items():
+            if isinstance(proxy, StreamProxy):
+                streamPaths.append(f"{proxyName}|{proxy.getStreamPath()}")
+
+        print(f"{streamPaths=}")
+        self.propertyOperator.createCustomReadOnlyProperty("streamPaths", streamPaths, addBasePrefix=True, addOperatorPrefix=True)
+
+        
+        # more to add here
+
+
+
+
+    def getProxy(self, proxyName : str) -> Optional[Proxy]:
+        return self.__proxies.get(proxyName)
 
     def _cleanup(self):
         # xclient shutdown occasionally failing?
@@ -166,7 +186,26 @@ class Agent(ABC):
         """Runs once when the agent is finished"""
         # optional agent cleanup here
         pass
+
+    # ----- proxy methods -----
+
     @classmethod
-    def getCapabilites(cls) -> list[AgentCapabilites]:
-        return [] 
+    def requestProxies(cls):
+        """ Override this, and all all of your proxy requests"""
+        pass
+
+    @classmethod
+    def addProxyRequest(cls, streamName : str, proxyType: ProxyType) -> None:
+        """ Method to request that a stream proxy will be given to this agent to display streams
+            NOTE: you must override requestProxies() and add your calls to this there, or else it will not be used!
+        """
+        if hasattr(cls, '_proxyRequests'):
+            cls._proxyRequests[streamName] = proxyType
+        else:
+            cls._proxyRequests = {}
+            cls._proxyRequests[streamName] = proxyType
+
+    @classmethod
+    def _getProxyRequests(cls) -> Dict[str, ProxyType]:
+        return getattr(cls, '_proxyRequests', {})
 

@@ -97,7 +97,7 @@ class UpdateOperator:
     def createGlobalUpdate(
         self, updateName: str, default: Any = None, loadIfSaved: bool = True
     ) -> Property:
-        return self.__propertyOp.createProperty(
+        return self.__propertyOp._createProperty(
             propertyTable=updateName,
             propertyDefault=default,
             loadIfSaved=loadIfSaved,
@@ -113,7 +113,7 @@ class UpdateOperator:
         """Read global updates with the given name from all running agents"""
         updates: List[Tuple[str, Any]] = []
         for runningPath in self.getCurrentlyRunning(pathFilter):
-            value = self.__propertyOp.createProperty(
+            value = self.__propertyOp._createProperty(
                 f"{runningPath}.{updateName}",
                 propertyDefault=None,
                 isCustom=True,

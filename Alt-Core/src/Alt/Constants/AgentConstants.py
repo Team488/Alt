@@ -1,32 +1,44 @@
-from typing import Union, List
+from abc import abstractmethod
+import multiprocessing
+from typing import Any, Dict, Union
 from functools import partial
 from enum import Enum
-from Alt.Core.Agents import Agent
 
 
-class AgentCapabilites(Enum):
+class ProxyType(Enum):
 
-    stream = "stream_queue"
-    log = "log_queue"
+    STREAM = "stream_proxy" 
+    LOG = "log_proxy"
 
     @property
     def objectName(self):
         return self.value
-
+    
     @staticmethod
-    def getCapabilites(
-        agentClass: Union[partial, type[Agent]]
-    ) -> List["AgentCapabilites"]:
+    def getProxyRequests(
+        agentClass: Union[partial]
+    ) -> Dict[str, "ProxyType"]:
         if isinstance(agentClass, partial):
-            return AgentCapabilites.__getPartialCapabilites(agentClass)
+            return ProxyType.__getPartialProxyRequests(agentClass)
 
-        return AgentCapabilites.__getAgentCapabilites(agentClass)
-
-    @staticmethod
-    def __getPartialCapabilites(agentClass: partial) -> List["AgentCapabilites"]:
-        return list(set(agentClass.func.getCapabilites()))
+        return ProxyType.__getAgentProxyRequests(agentClass)
 
     @staticmethod
-    def __getAgentCapabilites(agentClass: type[Agent]) -> List["AgentCapabilites"]:
-        return list(set(agentClass.getCapabilites()))
+    def __getPartialProxyRequests(agentClass: partial) -> Dict[str, "ProxyType"]:
+        agentClass.func.requestProxies()
+        return agentClass.func._getProxyRequests()
 
+    @staticmethod
+    def __getAgentProxyRequests(agentClass) -> Dict[str, "ProxyType"]:
+        agentClass.requestProxies()
+        return agentClass._getProxyRequests()
+
+
+class Proxy:
+    @abstractmethod
+    def put(self, value : Any):
+        pass
+
+    @abstractmethod
+    def get(self) -> Any:
+        pass

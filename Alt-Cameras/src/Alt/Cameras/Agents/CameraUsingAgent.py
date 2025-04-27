@@ -16,7 +16,8 @@ from .. import canCurrentlyDisplay
 from ..Captures.tools import calibration
 from Alt.Core.Agents import Agent
 from Alt.Core import staticLoad, DEVICEIP
-from Alt.Constants.AgentConstants import AgentCapabilites
+from Alt.Constants.AgentConstants import ProxyType
+from Alt.Core.Operators.StreamOperator import StreamProxy
 
 
 
@@ -29,6 +30,13 @@ class CameraUsingAgent(Agent):
     CALIBIDEALCOUNT = "NUMCALIBPICTURES"
     DEFAULTCALIBCOUNT = 100
     CALIBRATIONPREFIX = "Calibrations"
+    CAMERASTREAMNAME = "cameraStream"
+
+    @classmethod
+    def requestProxies(cls):
+        super().requestProxies()
+        super().addProxyRequest(cls.CAMERASTREAMNAME, ProxyType.STREAM)
+
 
     """Agent -> CameraUsingAgentBase
 
@@ -38,6 +46,7 @@ class CameraUsingAgent(Agent):
     """
 
     def __init__(self, **kwargs: Any) -> None:
+
         super().__init__(**kwargs)
         self.capture: Union[
             Capture, depthCamera, ConfigurableCameraCapture
@@ -170,12 +179,9 @@ class CameraUsingAgent(Agent):
             if self.depthEnabled:
                 cv2.namedWindow(self.WINDOWNAMEDEPTH)
 
-        if AgentCapabilites.stream.objectName in self.extraObjects:
-            self.stream_queue: multiprocessing.managers.DictProxy = (
-                self.extraObjects.get(AgentCapabilites.stream.objectName)
-            )
-
-            streamPath = f"http://{DEVICEIP}:5000/{self.agentName}/stream.mjpg"
+        self.streamProxy: StreamProxy = self.getProxy(self.CAMERASTREAMNAME)
+        if self.streamProxy is not None:
+            streamPath = self.streamProxy.getStreamPath()
 
             self.propertyOperator.createCustomReadOnlyProperty(
                 "stream.IP", streamPath, addBasePrefix=True, addOperatorPrefix=True
@@ -184,17 +190,15 @@ class CameraUsingAgent(Agent):
             frameShape = self.capture.getFrameShape()
             htow = frameShape[0] / frameShape[1]
 
-            self.streamWidth = self.propertyOperator.createProperty(
+            self.streamWidth = self.propertyOperator.createCustomProperty(
                 "stream.width",
                 320,
-                isCustom=True,
                 addOperatorPrefix=True,
                 loadIfSaved=False,
             )
-            self.streamHeight = self.propertyOperator.createProperty(
+            self.streamHeight = self.propertyOperator.createCustomProperty(
                 "stream.height",
                 int(320 * htow),
-                isCustom=True,
                 addOperatorPrefix=True,
                 loadIfSaved=False,
             )
@@ -387,9 +391,9 @@ class CameraUsingAgent(Agent):
                     self.latestFrameMain,
                     (streamWidthI, streamHeightI),
                 )
-                self.stream_queue["frame"] = resizedFrame
+                self.streamProxy.put(resizedFrame)
             else:
-                self.stream_queue["frame"] = self.latestFrameMain
+                self.streamProxy.put(self.latestFrameMain)
 
         with self.timer.run("cap_read"):
             self.hasIngested = True
@@ -437,7 +441,3 @@ class CameraUsingAgent(Agent):
     def forceShutdown(self) -> None:
         super().forceShutdown()
         self.capture.close()
-
-    @classmethod
-    def getCapabilites(cls):
-        return super().getCapabilites() + [AgentCapabilites.stream]

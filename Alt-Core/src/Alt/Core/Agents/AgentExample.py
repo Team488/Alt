@@ -33,7 +33,7 @@ class AgentExample(Agent):
         # task cleanup here
         # for example, i can tell the world that my time has come
         if self.nameProp is not None:
-            print(f"My time has come. Never forget the name {self.nameProp.get()}!")
+            self.Sentinel(f"My time has come. Never forget the name {self.nameProp.get()}!")
 
     def isRunning(self) -> bool:
         # condition to keep task running here
@@ -43,7 +43,7 @@ class AgentExample(Agent):
     def forceShutdown(self) -> None:
         # code to kill task immediately here
         # in real code, this is where you could handle things like closing a camera abruptly or anything that would normally be done in the tasks lifespan
-        print("Shutdown!")
+        self.Sentinel("Shutdown!")
 
     def getDescription(self) -> str:
         return "Agent_Example_Process"

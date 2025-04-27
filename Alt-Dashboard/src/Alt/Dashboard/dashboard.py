@@ -3,10 +3,12 @@ from flask_socketio import SocketIO
 import threading
 import time
 from .AgentManager import AgentManager, AgentSubscription
+from Alt.Core import getChildLogger
 
+Sentinel = getChildLogger("Dashboard_Logger")
 
 def main():
-    print(
+    Sentinel.info(
         f"-----------------------------Starting-Dashboard-----------------------------"
     )
     app = Flask(__name__)
@@ -15,10 +17,10 @@ def main():
     manager = AgentManager()
 
     @app.route("/")
-    def index():
+    def index() -> str:
         return render_template("index.html")
 
-    def status_updater():
+    def status_updater() -> None:
         while True:
             allRunningAgents = set(manager.getAllRunningAgents())
             curRunningAgents = set(manager.getCurrentlyRunningAgents())
@@ -42,21 +44,23 @@ def main():
                 for timerSub in AgentSubscription.TIMERSUBBASES:
                     status[timerSub] = agentSubcription.getTimer(timerSub)
 
-                status["streamIp"] = agentSubcription.getStreamIp()
-                status["streamShape"] = list(agentSubcription.getStreamShape())
+                status["streamPaths"] = agentSubcription.getStreamPaths()
                 status["logIp"] = agentSubcription.getLogIp()
 
                 statuses.append(status)
 
             socketio.emit("status_update", statuses)
 
-            # Sleep for 500ms instead of 50ms to ease CPU load and avoid frontend spam
-            time.sleep(0.1)
+            time.sleep(0.05)
 
     # Launch background task in separate thread
     threading.Thread(target=status_updater, daemon=True).start()
 
-    socketio.run(app, host='0.0.0.0', debug=True, port=9000)
+    socketio.run(app, host='0.0.0.0', debug=False, use_reloader=False, port=9000)
+
+def mainAsync() -> None:
+    Sentinel.info("Starting dasboard on daemon thread...")
+    threading.Thread(target=main, daemon=True).start()
 
 
 if __name__ == "__main__":

@@ -45,6 +45,8 @@ class Neo:
         self.__agentOp = AgentOperator(self.__manager, self.__shareOp, self.__streamOp, self.__logStreamOp)
 
         self.__isShutdown = False
+        self.__isDashboardRunning = False
+
 
         # intercept shutdown signals to handle abrupt cleanup
         signal.signal(signal.SIGINT, handler=self.__handleArchitectKill)
@@ -52,12 +54,13 @@ class Neo:
 
     def __handleArchitectKill(self, sig, frame) -> None:
         Sentinel.info("The architect has caused our demise! Shutting down any agent")
+        print("A")
+
         self.shutDown()
         os._exit(1)
 
     def shutDown(self) -> None:
         if not self.__isShutdown:
-            self.__agentOp.stopPermanent()
             self.__printAndCleanup()
             self.__isShutdown = True
         else:
@@ -86,10 +89,6 @@ class Neo:
         else:
             Sentinel.warning("Neo is already shutdown!")
 
-    def __printAndCleanup(self) -> None:
-        self.__printFinish()
-        self.__cleanup()
-
     def waitForAgentsFinished(self) -> None:
         """Thread blocking method that waits for a running agent (if any is running)"""
         if not self.isShutdown():
@@ -97,12 +96,27 @@ class Neo:
         else:
             self.Sentinel.warning("Neo has already been shut down!")
 
+    def runDashboard(self) -> None:
+        if not self.isShutdown() and not self.__isDashboardRunning:
+            self.__isDashboardRunning = True
+            try:
+                from Alt.Dashboard import dashboard
+                dashboard.mainAsync()
+            except ImportError:
+                Sentinel.fatal("To run the dashboard you must first install the pip package!\nRun:\npip install Alt-Dashboard")
+        else:
+            Sentinel.debug("Dashboard already running or neo shutdown")
+
+    def __printAndCleanup(self) -> None:
+        self.__printFinish()
+        self.__cleanup()
+
     def __cleanup(self) -> None:
         self.__agentOp.stopPermanent()
-        self.__manager.shutdown()
         self.__streamOp.shutdown()
         self.__flaskOp.shutdown()
         self.__agentOp.waitForAgentsToFinish()
+        self.__manager.shutdown()
         self.__agentOp.shutDownNow()
 
     def isShutdown(self) -> bool:

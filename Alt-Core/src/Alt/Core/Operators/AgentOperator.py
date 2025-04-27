@@ -2,12 +2,13 @@ import logging
 import multiprocessing
 import multiprocessing.managers
 import queue
+import signal
 import threading
 import traceback
 import time
 from functools import partial
 from concurrent.futures import ProcessPoolExecutor, Future
-from typing import Optional, Callable, Union
+from typing import Any, Dict, Optional, Callable, Union
 from JXTABLES.XTablesClient import XTablesClient
 from .ConfigOperator import ConfigOperator
 from .ShareOperator import ShareOperator
@@ -18,7 +19,7 @@ from .LogStreamOperator import LogStreamOperator
 from ..Agents.Agent import Agent
 from .PropertyOperator import LambdaHandler, PropertyOperator, ReadonlyProperty
 from .LogOperator import getChildLogger
-from ...Constants.AgentConstants import AgentCapabilites
+from ...Constants.AgentConstants import ProxyType
 
 Sentinel = getChildLogger("Agent_Operator")
 
@@ -54,10 +55,13 @@ class AgentOperator:
         self.manager = manager
 
     def __setStop(self, stop: bool):
-        if stop:
-            self.__stop.set()
-        else:
-            self.__stop.clear()
+        try:
+            if stop:
+                self.__stop.set()
+            else:
+                self.__stop.clear()
+        except BrokenPipeError:
+            pass
 
     def stopAndWait(self) -> None:
         """Stop all agents but allow them to clean up, and wait for them to finish"""
@@ -90,31 +94,30 @@ class AgentOperator:
 
         return name
 
-    def initalizeExtraObjects(
+    def initalizeProxies(
         self,
         agentClass: Union[partial, type[Agent]],
         agentName: str,
-        argumentDict: multiprocessing.managers.DictProxy,
-    ):
-        for capability in AgentCapabilites.getCapabilites(agentClass):
+        proxyDict: multiprocessing.managers.DictProxy,
+    ) -> Dict[str, Any]:
+        for requestName, proxyType in ProxyType.getProxyRequests(agentClass).items():
             # TODO add more
-            if capability is AgentCapabilites.stream:
-                argumentDict[
-                    AgentCapabilites.stream.objectName
+            if proxyType is ProxyType.STREAM:
+                proxyDict[
+                    requestName
                 ] = self.streamOp.register_stream(agentName)
         
         # always create log queue
+        logProxy = self.logStreamOp.register_log_stream(agentName)
 
-        argumentDict[AgentCapabilites.log.objectName] = self.logStreamOp.register_log_stream(agentName)
-
-        return argumentDict
+        return proxyDict, logProxy
 
     def wakeAgent(self, agentClass: type[Agent], isMainThread: bool) -> None:
         Sentinel.info(f"Waking agent!")
 
         agentName = self.getUniqueAgentName(agentClass)
 
-        extraObjects = self.initalizeExtraObjects(
+        proxies, logProxy = self.initalizeProxies(
             agentClass, agentName, self.manager.dict()
         )
 
@@ -125,7 +128,8 @@ class AgentOperator:
                 self.shareOp,
                 True,
                 self.__stop,
-                extraObjects,
+                proxies,
+                logProxy,
                 runOnCreate=self.__setMainAgent,
             )
         else:
@@ -145,11 +149,12 @@ class AgentOperator:
                         self.shareOp,
                         isMainThread,
                         self.__stop,
-                        extraObjects,
+                        proxies,
+                        logProxy,
                     )
                 )
             except Exception as e:
-                print(e)
+                Sentinel.fatal(e)
             finally:
                 # go back to core logger
                 # LogManager.initMainLogger()
@@ -176,16 +181,17 @@ class AgentOperator:
         agent: Agent,
         agentName,
         shareOperator: ShareOperator,
-        extraObjects: multiprocessing.managers.DictProxy,
+        proxies: multiprocessing.managers.DictProxy,
+        logProxy: multiprocessing.Queue,
         isMainThread: bool,
     ) -> Agent:
 
         # injecting stuff shared from core
         agent._injectCore(shareOperator, isMainThread, agentName)
         # creating new operators just for this agent and injecting them
-        AgentOperator._injectNewOperators(agent, agentName, extraObjects)
+        AgentOperator._injectNewOperators(agent, agentName, logProxy)
 
-        agent._setExtraObjects(extraObjects)
+        agent._setProxies(proxies)
 
         # setup a log handler to go on xtables
         logTable = f"{agent.propertyOperator.getFullPrefix()}.log"
@@ -206,7 +212,7 @@ class AgentOperator:
     def _injectNewOperators(
         agent: Agent,
         agentName: str,
-        extraObjects: multiprocessing.managers.DictProxy,
+        logProxy: multiprocessing.Queue
     ) -> None:
         """Since any agent not on main thread will be in its own process, alot of new objects will have to be created"""
         client = XTablesClient(debug_mode=True)  # one per process
@@ -219,14 +225,12 @@ class AgentOperator:
         updateOp = UpdateOperator(client, propertyOp)
         timeOp = TimeOperator(propertyOp)
         logger = getChildLogger(agentName)
-
-        logQueue : queue.Queue = extraObjects.get(AgentCapabilites.log.objectName)
         
         # add sse handling automatically
         class SSELogHandler(logging.Handler):
             def emit(self, record):
                 log_entry = self.format(record)
-                logQueue.put(log_entry)
+                logProxy.put(log_entry)
 
         sse_handler = SSELogHandler()
         sse_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
@@ -249,27 +253,18 @@ class AgentOperator:
         shareOperator: ShareOperator,
         isMainThread: bool,
         stopflag: threading.Event,
-        extraObjects: multiprocessing.managers.DictProxy,
+        proxies: multiprocessing.managers.DictProxy,
+        logProxy: multiprocessing.Queue,
         runOnCreate: Callable[[Agent], None] = None,
     ) -> None:
+        if not isMainThread:
+            signal.signal(signal.SIGINT, signal.SIG_IGN)    
+            signal.signal(signal.SIGTERM, signal.SIG_IGN)    
+            # we use our own interrupts to stop the pool, so ignore signals from sigint
+
         """Main agent loop that manages agent lifecycle"""
 
-        """Initialization part #1 Create agent"""
-        agent: Agent = agentClass()
-        capabilitesStr = [
-            capability.name
-            for capability in AgentCapabilites.getCapabilites(agentClass)
-        ]
-
-        """ Initialization part #3. Inject objects in agent"""
-        AgentOperator._injectAgent(
-            agent, agentName, shareOperator, extraObjects, isMainThread
-        )
-        """ On main thread this is how its set as main agent"""
-        if isMainThread and runOnCreate is not None:
-            runOnCreate(agent)
-
-        # helper lambdas
+         # helper lambdas
         __setStatus: Callable[
             [str, str], bool
         ] = lambda status: agent.propertyOperator.createCustomReadOnlyProperty(
@@ -292,14 +287,6 @@ class AgentOperator:
             description
         )
 
-        __setCapabilites: Callable[
-            [str, str], bool
-        ] = lambda capabilites: agent.propertyOperator.createCustomReadOnlyProperty(
-            f"{agentName}.{AgentOperator.CAPABILITES}", capabilites
-        ).set(
-            capabilites
-        )
-
         def __handleException(exception: Exception) -> None:
             """Handle an exception that occurred during agent execution"""
             message: str = f"Failed! | During {progressStr}: {exception}"
@@ -308,14 +295,36 @@ class AgentOperator:
             __setErrorLog(tb)
             Sentinel.error(tb)
 
-        __setDescription(agent.getDescription())
-        __setStatus("starting")
-        __setCapabilites(capabilitesStr)
+        
 
         # variables kept through agents life
         failed: bool = False
         progressStr: str = "starting"
         stop = False
+
+
+        """Initialization part #1 Create agent"""
+        try:
+            agent: Agent = agentClass()
+
+            """ Initialization part #3. Inject objects in agent"""
+            AgentOperator._injectAgent(
+                agent, agentName, shareOperator, proxies, logProxy, isMainThread
+            )
+            """ On main thread this is how its set as main agent"""
+            if isMainThread and runOnCreate is not None:
+                runOnCreate(agent)
+        
+        except Exception as e:
+            __handleException(e)
+            failed = True
+            stop = True
+            progressStr = "critical core agent code exception"
+            # means a bug in the core agent initalization code
+
+        __setDescription(agent.getDescription())
+        __setStatus(progressStr)
+       
 
         # use agents own timer
         timer: Timer = agent.getTimer()
@@ -421,6 +430,12 @@ class AgentOperator:
             if not self.mainAgent.isCleanedUp:
                 Sentinel.info("cleaning agent with sigint")
                 self.mainAgent._cleanup()
+
+            self.mainAgent.propertyOperator.createCustomReadOnlyProperty(
+            f"{self.mainAgent.agentName}.{AgentOperator.STATUS}", ""
+            ).set(
+                "shutdown interrupt"
+            )
 
             Sentinel.info("Main agent finished")
 
