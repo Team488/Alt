@@ -3,6 +3,11 @@ from .Agent import Agent
 
 
 class AgentExample(Agent):
+    """ This example agent shows how simple it can be to create a task.
+        
+        This agent creates a name property (which allows you to change its name), and then it tells it to you 50 times before ending. 
+
+    """
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.nameProp = None

@@ -8,16 +8,16 @@ class Field(Enum):
 
     @staticmethod
     def getDefaultRotationType():
-        return Types.Rotation.Deg
+        return Types.Rotation.Rad
 
     fieldWidth = 1755  # 54' 3" in cm
     fieldHeight = 805  # 26' 3" in cm
 
-    def _getCM(self) -> float:
+    def __getCM(self) -> float:
         return self.value
 
     def getLength(self, lengthType: Types.Length = Types.Length.CM) -> float:
         result = Conversions.convertLength(
-            self._getCM(), fromType=self.getDefaultLengthType(), toType=lengthType
+            self.__getCM(), fromType=self.getDefaultLengthType(), toType=lengthType
         )
         return result
