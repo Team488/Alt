@@ -6,6 +6,7 @@ from typing import Dict, List, Any, Optional, Tuple
 import numpy as np
 from enum import Enum
 from .LogOperator import getChildLogger
+from ...Common.files import user_data_dir
 
 Sentinel = getChildLogger("Config_Operator")
 
@@ -83,8 +84,8 @@ class ConfigOperator:
         "/xbot/config"  # if you want to override any json configs, put here
     )
     OVERRIDE_PROPERTY_CONFIG_PATH: str = "/xbot/config/PROPERTIES"
-    DEFAULT_CONFIG_PATH: str = "assets"  # default configs
-    DEFAULT_PROPERTY_CONFIG_PATH: str = "assets/PROPERTIES"
+    DEFAULT_CONFIG_PATH: str = user_data_dir / "Assets"
+    DEFAULT_PROPERTY_CONFIG_PATH: str = user_data_dir / "PROPERTIES"
     SAVEPATHS: List[str] = [OVERRIDE_CONFIG_PATH, DEFAULT_CONFIG_PATH]
     READPATHS: List[str] = [
         OVERRIDE_CONFIG_PATH,

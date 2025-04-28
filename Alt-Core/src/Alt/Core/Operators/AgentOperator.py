@@ -390,8 +390,8 @@ class AgentOperator:
                     __handleException(e)
 
             elif not failed:
-                __setStatus(f"agent isRunning returned false (Not an error)")
-                Sentinel.debug(f"agent isRunning returned false (Not an error)")
+                __setStatus(f"agent finished normally")
+                Sentinel.debug(f"agent finished normally")
 
             else:
                 __setStatus(f"agent failed during {progressStr}")

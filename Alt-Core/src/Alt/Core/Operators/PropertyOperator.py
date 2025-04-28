@@ -343,9 +343,9 @@ class PropertyOperator:
             )
 
         # save property values
-        # self.__configOp.savePropertyToFileJSON(
-        #     self.__getSaveFile(), self.__propertyValueMap
-        # )
+        self.__configOp.savePropertyToFileJSON(
+            self.__getSaveFile(), self.__propertyValueMap
+        )
         # now clear
         self.__propertyValueMap.clear()
 
