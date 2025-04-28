@@ -87,12 +87,14 @@ class AgentOperator:
 
         if currentRunningWithThatName > 0:
             # already existing instances, so add a differentiator
-            name = f"{name}_{currentRunningWithThatName}"
+            newName = f"{name}_{currentRunningWithThatName}"
+        else:
+            newName = name
 
         currentRunningWithThatName += 1
         self.activeAgentNames[name] = currentRunningWithThatName
 
-        return name
+        return newName
 
     def initalizeProxies(
         self,
