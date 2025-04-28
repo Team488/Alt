@@ -228,9 +228,15 @@ class AgentOperator:
         
         # add sse handling automatically
         class SSELogHandler(logging.Handler):
+            closed = False
+            
             def emit(self, record):
-                log_entry = self.format(record)
-                logProxy.put(log_entry)
+                if not self.closed:
+                    try:
+                        log_entry = self.format(record)
+                        logProxy.put(log_entry)
+                    except BrokenPipeError:
+                        self.closed = True
 
         sse_handler = SSELogHandler()
         sse_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))

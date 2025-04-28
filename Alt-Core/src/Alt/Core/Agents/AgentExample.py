@@ -6,7 +6,6 @@ class AgentExample(Agent):
     """ This example agent shows how simple it can be to create a task.
         
         This agent creates a name property (which allows you to change its name), and then it tells it to you 50 times before ending. 
-
     """
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
@@ -38,7 +37,7 @@ class AgentExample(Agent):
         # task cleanup here
         # for example, i can tell the world that my time has come
         if self.nameProp is not None:
-            self.Sentinel(f"My time has come. Never forget the name {self.nameProp.get()}!")
+            self.Sentinel.info(f"My time has come. Never forget the name {self.nameProp.get()}!")
 
     def isRunning(self) -> bool:
         # condition to keep task running here
@@ -48,7 +47,7 @@ class AgentExample(Agent):
     def forceShutdown(self) -> None:
         # code to kill task immediately here
         # in real code, this is where you could handle things like closing a camera abruptly or anything that would normally be done in the tasks lifespan
-        self.Sentinel("Shutdown!")
+        self.Sentinel.info("Shutdown!")
 
     def getDescription(self) -> str:
         return "Agent_Example_Process"

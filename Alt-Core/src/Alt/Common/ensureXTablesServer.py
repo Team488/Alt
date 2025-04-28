@@ -5,6 +5,7 @@ import subprocess
 from pathlib import Path
 
 __LATESTXTABLEPATH = "https://github.com/Kobeeeef/XTABLES/releases/download/v5.0.0/XTABLES.jar"
+
 def __check_mdns_exists(hostname):
     import socket
     try:
@@ -15,7 +16,7 @@ def __check_mdns_exists(hostname):
         print(f"{hostname} not found")
         return False
 
-def __get_user_data_dir(appname : str):
+def __get_user_data_dir(appname: str):
     system = platform.system()
 
     if system == "Windows":
@@ -29,11 +30,10 @@ def __get_user_data_dir(appname : str):
     app_dir.mkdir(parents=True, exist_ok=True)
     return app_dir
 
-def __download_file(url, target_path : Path):
+def __download_file(url, target_path: Path):
     response = requests.get(url)
     response.raise_for_status()
     target_path.write_bytes(response.content)
-
     print(f"Downloaded to {target_path}")
 
 def ensureXTablesServer():
@@ -53,7 +53,17 @@ def ensureXTablesServer():
             return
 
     try:
-        subprocess.run(["java", "-jar", str(xtables_path)], check=True)
+        # Use Popen to run the process asynchronously
+        process = subprocess.Popen(["java", "-jar", str(xtables_path)], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        print(f"Started xtables server in the background with PID {process.pid}")
+
+        # Optionally, you can read the process output asynchronously if you need
+        # stdout, stderr = process.communicate()  # You can skip this if you don't need to capture output
+        # if process.returncode != 0:
+        #     print(f"Java ran but xtables failed to start properly! Error: {stderr.decode()}")
+        # else:
+        #     print("xtables server started successfully.")
+
     except FileNotFoundError as e:
         print(f"Java not found or xtables jar missing!\n{e}")
     except subprocess.CalledProcessError as e:

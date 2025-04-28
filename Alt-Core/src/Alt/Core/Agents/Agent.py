@@ -91,11 +91,8 @@ class Agent(ABC):
             if isinstance(proxy, StreamProxy):
                 streamPaths.append(f"{proxyName}|{proxy.getStreamPath()}")
 
-        print(f"{streamPaths=}")
         self.propertyOperator.createCustomReadOnlyProperty("streamPaths", streamPaths, addBasePrefix=True, addOperatorPrefix=True)
 
-        
-        # more to add here
 
 
 

@@ -1,23 +1,24 @@
 import time
-from ..Agents import AgentExample
-from ..Neo import Neo
-from ...Common.ensureXTablesServer import ensureXTablesServer
+from Alt.Core.Agents import AgentExample
+from Alt.Core.Neo import Neo
+from Alt.Common.ensureXTablesServer import ensureXTablesServer
 
 def test_interrupting_running_agents():
+    print("---------------Starting test_interrupting_running_agents()---------------")
     ensureXTablesServer()
-
     n = Neo()
     n.wakeAgent(AgentExample)
     n.wakeAgent(AgentExample)
     n.wakeAgent(AgentExample)
     n.wakeAgent(AgentExample)
     for i in range(10):
-        print(f"Test loop #{i}") 
+        print(f"Waiting loop #{i}") 
         time.sleep(1)
 
     n.shutDown()
 
 def test_many_main_agents():
+    print("---------------Starting test_many_main_agents()---------------")
     ensureXTablesServer()
 
 
@@ -26,17 +27,15 @@ def test_many_main_agents():
             return 1 # make it go very fast
 
     n = Neo()
-    
-    n.wakeAgent(superFastAgent, isMainThread=True)
-    n.wakeAgent(superFastAgent, isMainThread=True)
-    n.wakeAgent(superFastAgent, isMainThread=True)
-    n.wakeAgent(superFastAgent, isMainThread=True)
-    n.wakeAgent(superFastAgent, isMainThread=True)
-    n.wakeAgent(superFastAgent, isMainThread=True)
+    for i in range(10):
+        print(f"Test iteration #{i}")
+        n.wakeAgent(superFastAgent, isMainThread=True)
 
     n.shutDown()
 
 def test_simple_running_agent_main():
+    print("---------------Starting test_simple_running_agent_main()---------------")
+    
     ensureXTablesServer()
 
 
@@ -50,6 +49,8 @@ def test_simple_running_agent_main():
     n.shutDown()
 
 def test_simple_running_agent_async():
+    print("---------------Starting test_simple_running_agent_async()---------------")
+    
     ensureXTablesServer()
 
     class superFastAgent(AgentExample):
