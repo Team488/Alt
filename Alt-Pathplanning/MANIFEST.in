@@ -1,0 +1,8 @@
+include src\Alt\Pathplanning\static_obstacles.json
+include src\Alt\Pathplanning\nmc\static_obstacles_inch_blue_close.json
+include src\Alt\Pathplanning\nmc\static_obstacles_inch_blue_far.json
+include src\Alt\Pathplanning\nmc\static_obstacles_inch_blue_mid.json
+include src\Alt\Pathplanning\nmc\static_obstacles_inch_red_close.json
+include src\Alt\Pathplanning\nmc\static_obstacles_inch_red_far.json
+include src\Alt\Pathplanning\nmc\static_obstacles_inch_red_mid.json
+include src\Alt\Pathplanning\nmc\static_obstacles_inch.json
