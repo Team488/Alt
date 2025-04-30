@@ -1,7 +1,7 @@
 import numpy as np
 import depthai as dai
 
-from ...Parameters.Intrinsics import CameraIntrinsics
+from ...Parameters.CameraIntrinsics import CameraIntrinsics
 from ...Constants.resolution import OAKDLITEResolution
 from Alt.Core import getChildLogger
 
@@ -45,7 +45,7 @@ class DepthAIHelper:
         cy = intrinsic_matrix[1][2]
 
         intr = CameraIntrinsics(
-            hres_pix=res.w, vres_pix=res.h, fx_pix=fx, fy_pix=fy, cx_pix=cx, cy_pix=cy
+            width_pix=res.w, height_pix=res.h, fx_pix=fx, fy_pix=fy, cx_pix=cx, cy_pix=cy
         )
         return intr
 

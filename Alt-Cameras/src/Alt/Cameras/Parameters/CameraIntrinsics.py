@@ -1,14 +1,16 @@
 import math
 import json
-from typing import Union
+from typing import Optional, Union
 from enum import Enum
+
+from ..Parameters.CameraCalibration import CameraCalibration
 
 
 class CameraIntrinsics:
     def __init__(
         self,
-        hres_pix: int = -1,
-        vres_pix: int = -1,
+        width_pix: int = -1,
+        height_pix: int = -1,
         hfov_rad: float = -1,
         vfov_rad: Union[float, int] = -1,
         focal_length_mm: float = -1,
@@ -20,7 +22,7 @@ class CameraIntrinsics:
         cy_pix: Union[int, float] = -1,
     ) -> None:
         self.value = (
-            (hres_pix, vres_pix),  # Resolution
+            (width_pix, height_pix),  # Resolution
             (hfov_rad, vfov_rad),  # FOV
             (focal_length_mm, pixel_size_mm, sensor_size_mm),  # Physical Constants
             (fx_pix, fy_pix),  # Calibrated Fx, Fy
@@ -93,7 +95,7 @@ class CameraIntrinsics:
         return math.degrees(rad)
 
     @staticmethod
-    def fromPhotonConfig(photonConfigPath):
+    def fromPhotonConfig(photonConfigPath) -> Optional["CameraIntrinsics"]:
         try:
             with open(photonConfigPath) as PV_config:
                 data = json.load(PV_config)
@@ -108,8 +110,8 @@ class CameraIntrinsics:
                 height = int(data["resolution"]["height"])
 
                 return CameraIntrinsics(
-                    hres_pix=width,
-                    vres_pix=height,
+                    width_pix=width,
+                    height_pix=height,
                     fx_pix=fx,
                     fy_pix=fy,
                     cx_pix=cx,
@@ -121,7 +123,7 @@ class CameraIntrinsics:
             return None
 
     @staticmethod
-    def fromCustomConfig(customConfigPath):
+    def fromCustomConfig(customConfigPath : str) -> Optional["CameraIntrinsics"]:
         try:
             with open(customConfigPath) as custom_config:
                 data = json.load(custom_config)
@@ -136,8 +138,8 @@ class CameraIntrinsics:
                 height = int(data["resolution"]["height"])
 
                 return CameraIntrinsics(
-                    hres_pix=width,
-                    vres_pix=height,
+                    width_pix=width,
+                    height_pix=height,
                     fx_pix=fx,
                     fy_pix=fy,
                     cx_pix=cx,
@@ -149,30 +151,44 @@ class CameraIntrinsics:
             return None
 
     @staticmethod
-    def fromCustomConfigLoaded(loadedConfig):
-        try:
-            data = loadedConfig
+    def fromCustomConfigLoaded(loadedConfig : dict):
+        data = loadedConfig
 
-            cameraIntrinsics = data["CameraMatrix"]
-            fx = cameraIntrinsics[0][0]
-            fy = cameraIntrinsics[1][1]
-            cx = cameraIntrinsics[0][2]
-            cy = cameraIntrinsics[1][2]
+        cameraIntrinsics = data["CameraMatrix"]
+        fx = cameraIntrinsics[0][0]
+        fy = cameraIntrinsics[1][1]
+        cx = cameraIntrinsics[0][2]
+        cy = cameraIntrinsics[1][2]
 
-            width = int(data["resolution"]["width"])
-            height = int(data["resolution"]["height"])
+        width = int(data["resolution"]["width"])
+        height = int(data["resolution"]["height"])
 
-            return CameraIntrinsics(
-                hres_pix=width,
-                vres_pix=height,
-                fx_pix=fx,
-                fy_pix=fy,
-                cx_pix=cx,
-                cy_pix=cy,
-            )
-        except Exception as e:
-            print(f"Failed to create config! {e}")
-            return None
+        return CameraIntrinsics(
+            width_pix=width,
+            height_pix=height,
+            fx_pix=fx,
+            fy_pix=fy,
+            cx_pix=cx,
+            cy_pix=cy,
+        )
+        
+    @staticmethod
+    def fromCameraCalibration(calibration : CameraCalibration):
+
+        fx = calibration.cameraMatrix[0][0]
+        fy = calibration.cameraMatrix[1][1]
+        cx = calibration.cameraMatrix[0][2]
+        cy = calibration.cameraMatrix[1][2]
+
+
+        return CameraIntrinsics(
+            width_pix=calibration.resolutionWH[0],
+            height_pix=calibration.resolutionWH[1],
+            fx_pix=fx,
+            fy_pix=fy,
+            cx_pix=cx,
+            cy_pix=cy,
+        )
 
 
 
@@ -208,8 +224,8 @@ class CameraIntrinsicsPredefined:
     )
 
     OAKESTIMATE = CameraIntrinsics(
-        hres_pix=1920,
-        vres_pix=1080,  # Resolution
+        width_pix=1920,
+        height_pix=1080,  # Resolution
         fx_pix=900,
         fy_pix=850,  # Calibrated Fx, Fy
         cx_pix=981,

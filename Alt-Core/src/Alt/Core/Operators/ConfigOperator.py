@@ -5,58 +5,11 @@ from pathlib import Path
 from typing import Dict, List, Any, Optional, Tuple
 import numpy as np
 from enum import Enum
+
 from .LogOperator import getChildLogger
-from ...Common.files import user_data_dir
+from ..Utils.files import user_data_dir
 
 Sentinel = getChildLogger("Config_Operator")
-
-
-def staticLoad(
-    fileName: str, isRelativeToSource: bool = False
-) -> Optional[Tuple[Any, float]]:
-    """
-    Load a file from one of the configured save paths and return its content and modification time.
-
-    Args:
-        fileName: The name of the file to load
-
-    Returns:
-        A tuple of (file_content, modification_time) or None if file not found or unloadable
-    """
-    # first look in override pathW
-    for path in ConfigOperator.SAVEPATHS:
-        try:
-            filePath = os.path.join(path, fileName)
-            for ending, filetype in ConfigOperator.knownFileEndings:
-                if filePath.endswith(ending):
-                    content = filetype.load(filePath)
-                    mtime = os.path.getmtime(filePath)
-                    return content, mtime
-
-            Sentinel.fatal(
-                f"Invalid file ending. Options are: {[ending[0] for ending in ConfigOperator.knownFileEndings]}"
-            )
-        except Exception as agentSmith:
-            # probably override config path dosent exist
-            Sentinel.debug(agentSmith)
-            Sentinel.debug(f"{path} does not exist!")
-
-    # try relative to source after trying override paths
-    if isRelativeToSource:
-        try:
-            basePath = os.path.join(os.path.abspath(os.path.dirname(__file__)), "..")
-            filePath = os.path.join(basePath, fileName)
-            for ending, filetype in ConfigOperator.knownFileEndings:
-                if filePath.endswith(ending):
-                    content = filetype.load(filePath)
-                    mtime = os.path.getmtime(filePath)
-                    return content, mtime
-        except Exception as agentSmith:
-            Sentinel.debug(agentSmith)
-            Sentinel.debug(f"{path} does not exist!")
-
-    return None
-
 
 class ConfigType(Enum):
     NUMPY = "numpy"
@@ -70,6 +23,15 @@ class ConfigType(Enum):
     def load_json(path: str) -> Any:
         return json.load(codecs.open(path, "r", encoding="utf-8"))
 
+    @staticmethod
+    def save_numpy(path: str, content: Any) -> None:
+        np.save(path, content)
+
+    @staticmethod
+    def save_json(path: str, content: Any) -> None:
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(content, f)
+
     def load(self, path: str) -> Any:
         if self == ConfigType.NUMPY:
             return ConfigType.load_numpy(path)
@@ -78,14 +40,23 @@ class ConfigType(Enum):
         else:
             raise ValueError(f"Unsupported config type: {self}")
 
+    def save(self, path: str, content: Any) -> None:
+        if self == ConfigType.NUMPY:
+            return ConfigType.save_numpy(path, content)
+        elif self == ConfigType.JSON:
+            return ConfigType.save_json(path, content)
+        else:
+            raise ValueError(f"Unsupported config type: {self}")
+
+
 
 class ConfigOperator:
     OVERRIDE_CONFIG_PATH: str = (
-        "/xbot/config"  # if you want to override any json configs, put here
+        "/xbot/Alt"  # if you want to override any json configs, put here
     )
-    OVERRIDE_PROPERTY_CONFIG_PATH: str = "/xbot/config/PROPERTIES"
-    DEFAULT_CONFIG_PATH: str = user_data_dir / "Assets"
-    DEFAULT_PROPERTY_CONFIG_PATH: str = user_data_dir / "PROPERTIES"
+    OVERRIDE_PROPERTY_CONFIG_PATH: str = "/xbot/Alt/PROPERTIES"
+    DEFAULT_CONFIG_PATH: str = str(user_data_dir)
+    DEFAULT_PROPERTY_CONFIG_PATH: str = str(user_data_dir / "PROPERTIES")
     SAVEPATHS: List[str] = [OVERRIDE_CONFIG_PATH, DEFAULT_CONFIG_PATH]
     READPATHS: List[str] = [
         OVERRIDE_CONFIG_PATH,
@@ -174,3 +145,66 @@ class ConfigOperator:
     def getAllFileNames(self) -> List[str]:
         """Get a list of all loaded config file names"""
         return list(self.configMap.keys())
+    
+    @staticmethod
+    def staticLoad(
+        fileName: str
+    ) -> Optional[Tuple[Any, float]]:
+        """
+        Load a file from one of the configured save paths and return its content and modification time.
+
+        Args:
+            fileName: The name of the file to load
+
+        Returns:
+            A tuple of (file_content, modification_time) or None if file not found or unloadable
+        """
+        # first look in override pathW
+        for path in ConfigOperator.SAVEPATHS:
+            try:
+                filePath = os.path.join(path, fileName)
+                for ending, filetype in ConfigOperator.knownFileEndings:
+                    if filePath.endswith(ending):
+                        content = filetype.load(filePath)
+                        mtime = os.path.getmtime(filePath)
+                        return content, mtime
+
+                Sentinel.fatal(
+                    f"Invalid file ending. Options are: {[ending[0] for ending in ConfigOperator.knownFileEndings]}"
+                )
+            except Exception as agentSmith:
+                # probably override config path dosent exist
+                Sentinel.debug(agentSmith)
+                Sentinel.debug(f"{path} does not exist!")
+
+        return None
+    
+    @staticmethod
+    def staticWrite(
+        filename: str, content: Any, config_type: ConfigType
+    ) -> bool:
+        """
+        Try to save content to all configured save paths using the given config type.
+
+        Args:
+            filename: Name of the file to write (should include correct extension)
+            content: The data to be saved
+            config_type: The format in which to save the data (e.g. JSON, NUMPY)
+
+        Returns:
+            True if save to at least one path succeeded, False otherwise
+        """
+        success = False
+        for path in ConfigOperator.SAVEPATHS:
+            try:
+                file_path = os.path.join(path, filename)
+                dir_path = os.path.dirname(file_path)
+                os.makedirs(dir_path, exist_ok=True)
+                config_type.save(file_path, content)
+                success = True
+            except Exception as e:
+                Sentinel.debug(e)
+                Sentinel.info(f"Failed to write to {file_path}")
+        return success
+
+

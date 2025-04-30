@@ -1,7 +1,7 @@
 import time
 from Alt.Core.Agents import AgentExample
 from Alt.Core.Neo import Neo
-from Alt.Common.ensureXTablesServer import ensureXTablesServer
+from Alt.Core.Tests.ensureXTablesServer import ensureXTablesServer
 
 def test_interrupting_running_agents():
     print("---------------Starting test_interrupting_running_agents()---------------")

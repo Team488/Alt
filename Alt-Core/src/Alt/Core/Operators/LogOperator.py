@@ -14,7 +14,7 @@ UniqueId: Final[str] = socket.gethostname()
 
 
 def createLogger(loggerName: str):
-    from ...Common.timeFmt import getTimeStr
+    from ..Utils.timeFmt import getTimeStr
 
     fullName = f"{loggerName}[{UniqueId}]"
     logger = logging.getLogger(fullName)

@@ -1,23 +1,24 @@
 from typing import Tuple, Optional
 import numpy as np
 from .depthCamera import depthCamera
+from .Capture import CaptureWIntrinsics
 from ..Constants.resolution import OAKDLITEResolution
 from .tools.depthAiHelper import DepthAIHelper
 
 
-class OAKCapture(depthCamera):
+class OAKCapture(depthCamera, CaptureWIntrinsics):
     """
     Capture implementation for OpenCV AI Kit (OAK-D) camera
     """
 
-    def __init__(self, res: OAKDLITEResolution) -> None:
+    def __init__(self, name : str, res: OAKDLITEResolution) -> None:
         """
         Initialize OAK capture with specified resolution
 
         Args:
             res: Resolution setting for the camera
         """
-        super().__init__()
+        super().__init__(name)
         self.res: OAKDLITEResolution = res
         self.depthAiHelper: Optional[DepthAIHelper] = None
 

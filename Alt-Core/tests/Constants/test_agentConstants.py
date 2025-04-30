@@ -1,7 +1,7 @@
 def test_get_proxy_requests():
     from functools import partial
     from Alt.Core.Agents import Agent
-    from Alt.Constants.AgentConstants import ProxyType
+    from Alt.Core.Constants.AgentConstants import ProxyType
 
     class TestAgent(Agent):
         @classmethod

@@ -1,7 +1,7 @@
 
 
 def test_get_local_ip():
-    from Alt.Common.timeFmt import getTimeStr
+    from Alt.Core.Utils.timeFmt import getTimeStr
     import time
     print(getTimeStr())
     print("\n\n")

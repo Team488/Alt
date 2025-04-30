@@ -3,7 +3,7 @@ import requests
 import platform
 import subprocess
 from pathlib import Path
-from .files import __get_user_data_dir, download_file
+from ..Utils.files import __get_user_data_dir, download_file
 
 __LATESTXTABLEPATH = "https://github.com/Kobeeeef/XTABLES/releases/download/v5.0.0/XTABLES.jar"
 

@@ -1,24 +1,25 @@
 from typing import Tuple, Optional
 import numpy as np
 from .depthCamera import depthCamera
-from ..Parameters.Intrinsics import CameraIntrinsics
+from ..Parameters.CameraIntrinsics import CameraIntrinsics
+from .Capture import CaptureWIntrinsics
 from ..Constants.resolution import D435IResolution
 from .tools.realsense2Helper import realsense2Helper
 
 
-class D435Capture(depthCamera):
+class D435Capture(depthCamera, CaptureWIntrinsics):
     """
     Capture implementation for Intel RealSense D435 depth camera
     """
 
-    def __init__(self, res: D435IResolution, realsenseSerialId=None) -> None:
+    def __init__(self, name : str, res: D435IResolution, realsenseSerialId=None) -> None:
         """
         Initialize a D435 capture with the specified resolution
 
         Args:
             res: The resolution setting for the camera
         """
-        super().__init__()
+        super().__init__(name)
         self.res: D435IResolution = res
         self.realSenseSerialId = realsenseSerialId
         self.realsenseHelper: Optional[realsense2Helper] = None
@@ -103,7 +104,7 @@ def startDemo() -> None:
     """
     import cv2
 
-    cap = D435Capture(D435IResolution.RS480P)
+    cap = D435Capture("test", D435IResolution.RS480P)
     cap.create()
 
     while cap.isOpen():

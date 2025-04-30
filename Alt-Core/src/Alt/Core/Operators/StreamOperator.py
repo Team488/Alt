@@ -16,8 +16,8 @@ from typing import Dict, Optional
 from flask import Flask, Response, stream_with_context
 from werkzeug.serving import make_server
 from .LogOperator import getChildLogger
-from ...Constants.AgentConstants import Proxy
-from ...Common.network import DEVICEIP
+from ..Constants.AgentConstants import Proxy
+from ..Utils.network import DEVICEIP
 
 Sentinel = getChildLogger("Stream_Operator")
 

@@ -1,6 +1,6 @@
 from enum import Enum
 import math
-from Alt.Units import Types, Conversions
+from Alt.Core.Units import Types, Conversions
 import numpy as np
 from scipy.spatial.transform import Rotation
 

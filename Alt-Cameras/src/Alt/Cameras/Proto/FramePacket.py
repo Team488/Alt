@@ -1,6 +1,7 @@
 import base64
 import io
 import time
+from typing import Optional
 import capnp
 import cv2
 from . import frameNetPacket_capnp
@@ -9,7 +10,7 @@ import numpy as np
 
 class FramePacket:
     @staticmethod
-    def createPacket(timeStamp, message, frame) -> frameNetPacket_capnp.DataPacket:
+    def createPacket(timeStamp : int, message : str, frame : np.ndarray) -> frameNetPacket_capnp.DataPacket:
         packet = frameNetPacket_capnp.DataPacket.new_message()
         packet.message = message
         packet.timestamp = timeStamp
@@ -29,7 +30,7 @@ class FramePacket:
         return packet
 
     @staticmethod
-    def toBase64(packet):
+    def toBase64(packet : frameNetPacket_capnp.DataPacket):
         # Write the packet to a byte string directly
         byte_str = packet.to_bytes()
 
@@ -38,7 +39,7 @@ class FramePacket:
         return encoded_str
 
     @staticmethod
-    def fromBase64(base64str):
+    def fromBase64(base64str : str) -> Optional[frameNetPacket_capnp.DataPacket]:
         decoded_bytes = base64.b64decode(base64str)
         with frameNetPacket_capnp.DataPacket.from_bytes(decoded_bytes) as packet:
             return packet
@@ -46,13 +47,13 @@ class FramePacket:
         return None
 
     @staticmethod
-    def fromBytes(bytes):
+    def fromBytes(bytes) -> Optional[frameNetPacket_capnp.DataPacket]:
         with frameNetPacket_capnp.DataPacket.from_bytes(bytes) as packet:
             return packet
 
         return None
 
-    def getFrame(packet):
+    def getFrame(packet : frameNetPacket_capnp.DataPacket) -> np.ndarray:
         # Decompress the JPEG data
         compressed_frame = np.array(packet.frame.data, dtype=np.uint8)
         decompressed_frame = cv2.imdecode(compressed_frame, cv2.IMREAD_COLOR)

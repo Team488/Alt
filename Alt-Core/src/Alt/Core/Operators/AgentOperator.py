@@ -19,7 +19,7 @@ from .LogStreamOperator import LogStreamOperator
 from ..Agents.Agent import Agent
 from .PropertyOperator import LambdaHandler, PropertyOperator, ReadonlyProperty
 from .LogOperator import getChildLogger
-from ...Constants.AgentConstants import ProxyType
+from ..Constants.AgentConstants import ProxyType
 
 Sentinel = getChildLogger("Agent_Operator")
 

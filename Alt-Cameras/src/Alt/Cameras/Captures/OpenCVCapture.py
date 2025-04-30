@@ -2,15 +2,16 @@ import numpy as np
 from typing import Optional
 from . import utils
 from .Capture import Capture
+
 import cv2
+from Alt.Core import Platform, DEVICEPLATFORM
+DefaultUseV4L2 = DEVICEPLATFORM == Platform.LINUX
 
-
-class FileCapture(Capture):
+class OpenCVCapture(Capture):
     """
-    Capture implementation that reads frames from a video file
     """
 
-    def __init__(self, videoFilePath: str, flushTimeMS: int = -1) -> None:
+    def __init__(self, name : str, capturePath: str, useV4L2Backend : bool = DefaultUseV4L2, flushTimeMS: int = -1) -> None:
         """
         Initialize a file capture with the specified video file path
 
@@ -18,7 +19,9 @@ class FileCapture(Capture):
             videoFilePath: Path to the video file
             flushTimeMS: Time in milliseconds to flush the capture buffer (default: -1, no flush)
         """
-        self.path: str = videoFilePath
+        super().__init__(name)
+        self.path: str = capturePath
+        self.useV4L2Backend = useV4L2Backend
         self.flushTimeMS: int = flushTimeMS
         self.cap: Optional[cv2.VideoCapture] = None
 
@@ -29,10 +32,15 @@ class FileCapture(Capture):
         Raises:
             BrokenPipeError: If the video file cannot be opened
         """
-        self.cap = cv2.VideoCapture(self.path)
+        if self.useV4L2Backend:
+            self.cap = cv2.VideoCapture(self.path, cv2.CAP_V4L2)
+        else:
+            self.cap = cv2.VideoCapture(self.path)
 
         if not self.__testCapture(self.cap):
-            raise BrokenPipeError(f"Failed to open video camera! {self.path=}")
+            raise BrokenPipeError(f"Failed to open video camera! {self.path=} {self.useV4L2Backend=}")
+
+                
 
     def __testCapture(self, cap: cv2.VideoCapture) -> bool:
         """
@@ -44,12 +52,16 @@ class FileCapture(Capture):
         Returns:
             True if the capture can be read from, False otherwise
         """
-        retTest = True
+        retTest = False
+
         if cap.isOpened():
             retTest, _ = cap.read()
-        else:
-            retTest = False
+
         return retTest
+        
+    def __ensureCap(self) -> None:
+        if self.cap is None:
+            raise RuntimeError("Capture not created, call create() first")
 
     def getMainFrame(self) -> np.ndarray:
         """
@@ -58,8 +70,7 @@ class FileCapture(Capture):
         Returns:
             The next frame as a numpy array
         """
-        if self.cap is None:
-            raise RuntimeError("Capture not created, call create() first")
+        self.__ensureCap()
 
         if self.flushTimeMS > 0:
             utils.flushCapture(self.cap, self.flushTimeMS)
@@ -77,8 +88,7 @@ class FileCapture(Capture):
         Returns:
             The frames per second as an integer
         """
-        if self.cap is None:
-            raise RuntimeError("Capture not created, call create() first")
+        self.__ensureCap()
 
         return int(self.cap.get(cv2.CAP_PROP_FPS))
 
@@ -102,23 +112,36 @@ class FileCapture(Capture):
             self.cap.release()
             self.cap = None
 
+    def setFps(self, fps : int) -> bool:
+        self.__ensureCap()
+        return self.cap.set(cv2.CAP_PROP_FPS, fps)
+    
+    def setVideoWriter(self, videoWriter: str = "MJPG") -> bool:
+        self.__ensureCap()
+        return self.cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*videoWriter))
+    
+    def setWidth(self, width : int) -> bool:
+        self.__ensureCap()
+        return self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
 
-def startDemo(videoFilePath: str) -> None:
-    """
-    Start a demo that shows frames from a video file
+    def setHeight(self, height : int) -> bool:
+        self.__ensureCap()
+        return self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
+    
+    def setAutoExposure(self, autoExposure : bool, manualExposure : float = None) -> bool:
+        self.__ensureCap()
+        propertySet = self.cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 0.75 if autoExposure else 0.25)
+        
+        if not autoExposure:
+            if manualExposure is None:
+                raise RuntimeError("If you are setting autoExposure to false, you must provide a manualExposure!")
+            
+            manualSet = self.capture.cap.set(
+                cv2.CAP_PROP_EXPOSURE, manualExposure
+            )
 
-    Args:
-        videoFilePath: Path to the video file to display
-    """
-    cap = FileCapture(videoFilePath)
-    cap.create()
+            propertySet = propertySet and manualSet
+        
+        return propertySet
 
-    while cap.isOpen():
-        frame = cap.getMainFrame()
 
-        cv2.imshow("Video", frame)
-
-        if cv2.waitKey(1) & 0xFF == ord("q"):
-            break
-
-    cap.close()

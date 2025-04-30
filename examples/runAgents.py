@@ -1,6 +1,6 @@
 from Alt.Core.Agents import Agent
-from Alt.Cameras.Agents import CameraUsingAgent
-from Alt.Cameras.Captures.FileCapture import FileCapture
+from Alt.Cameras.CameraUsingAgent import CameraUsingAgentBase
+from Alt.Cameras.Captures.OpenCVCapture import OpenCVCapture
 
 
 class TestAgent(Agent):
@@ -20,9 +20,9 @@ class TestAgent(Agent):
         return "Test"
 
 
-class CamTest(CameraUsingAgent):
+class CamTest(CameraUsingAgentBase):
     def __init__(self, **kwargs):
-        super().__init__(capture=FileCapture(0))
+        super().__init__(capture=OpenCVCapture("test",0))
 
     def getDescription(self):
         return "test-read-webcam"

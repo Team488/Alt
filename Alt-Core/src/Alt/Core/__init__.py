@@ -2,16 +2,21 @@
 Attributes:
     getChildLogger (callable): Provides a logger instance derivied from the central logger.
     staticLoad (callable): Load a saved file.
+    staticLoad (callable): Load a saved file.
     DEVICEHOSTNAME (str): The hostname of the current device.
     DEVICEIP (str): The IP address of the current device, determined at runtime.
 """
 
 import socket
+import platform
+from enum import Enum
 from .Operators import LogOperator, ConfigOperator
-from .Neo import Neo
+from . import Neo
 
+Neo = Neo.Neo 
 getChildLogger = LogOperator.getChildLogger
-staticLoad = ConfigOperator.staticLoad
+staticLoad = ConfigOperator.ConfigOperator.staticLoad
+staticWrite = ConfigOperator.ConfigOperator.staticWrite
 
 DEVICEHOSTNAME = socket.gethostname()
 
@@ -40,5 +45,23 @@ def get_local_ip():
 
 DEVICEIP = get_local_ip()
 
+
+
+class Platform(Enum):
+    WINDOWS = "w"
+    LINUX = "l"
+    MACOS = "m"
+
+def get_platform() -> Platform:
+    system = platform.system()
+
+    if system == "Windows":
+        return Platform.WINDOWS
+    elif system == "Darwin":  # MacOS
+        return Platform.MACOS
+    else:  # Linux and others
+        return Platform.LINUX
+    
+DEVICEPLATFORM = get_platform()
 
 

@@ -10,7 +10,7 @@ from typing import Dict, Optional, Any
 
 from JXTABLES.XTablesClient import XTablesClient
 
-from ...Common.network import DEVICEIP
+from ..Utils.network import DEVICEIP
 from ..Operators.LogStreamOperator import LogStreamOperator
 from ..Operators.UpdateOperator import UpdateOperator
 from ..Operators.PropertyOperator import PropertyOperator
@@ -18,8 +18,8 @@ from ..Operators.ConfigOperator import ConfigOperator
 from ..Operators.ShareOperator import ShareOperator
 from ..Operators.StreamOperator import StreamProxy
 from ..Operators.TimeOperator import TimeOperator, Timer
-from ...Constants.Teams import TEAM
-from ...Constants.AgentConstants import Proxy, ProxyType
+from ..Constants.Teams import TEAM
+from ..Constants.AgentConstants import Proxy, ProxyType
 
 
 
@@ -82,7 +82,6 @@ class Agent(ABC):
 
     def _setProxies(self, proxies):
         self.__proxies = proxies
-        self._updateNetworkProxyInfo()
 
     def _updateNetworkProxyInfo(self):
         """ Put information about the proxies used on xtables. This can be used for the dashboard, and other things"""
@@ -92,9 +91,6 @@ class Agent(ABC):
                 streamPaths.append(f"{proxyName}|{proxy.getStreamPath()}")
 
         self.propertyOperator.createCustomReadOnlyProperty("streamPaths", streamPaths, addBasePrefix=True, addOperatorPrefix=True)
-
-
-
 
 
     def getProxy(self, proxyName : str) -> Optional[Proxy]:
@@ -110,6 +106,7 @@ class Agent(ABC):
         """Use only when needed, and only when associated with agent"""
         if self.timer is None:
             raise ValueError("Timer not initialized")
+        
         return self.timer
 
     def getTeam(self) -> Optional[TEAM]:
@@ -132,6 +129,10 @@ class Agent(ABC):
         logIp = f"http://{DEVICEIP}:5000/{self.agentName}/{LogStreamOperator.LOGPATH}"
 
         self.propertyOperator.createCustomReadOnlyProperty("logIP", logIp, addBasePrefix=True, addOperatorPrefix=True)
+
+        self.__ensureProxies()
+        self._updateNetworkProxyInfo()
+
 
     @classmethod
     def getName(cls):
@@ -185,22 +186,27 @@ class Agent(ABC):
         pass
 
     # ----- proxy methods -----
+    def __ensureProxies(self):
+        for proxyName, proxyType in self._getProxyRequests().items():
+            if proxyName not in self.__proxies or type(self.__proxies[proxyName]) is proxyType:
+                print(type(self.__proxies[proxyName]) is proxyType)
+                raise RuntimeError(f"Agent proxies are not correcty initialized!\n{self._getProxyRequests()=}\n{self.__proxies.items()=}")
 
     @classmethod
     def requestProxies(cls):
-        """ Override this, and all all of your proxy requests"""
+        """ Override this, and add all of your proxy requests"""
         pass
 
     @classmethod
-    def addProxyRequest(cls, streamName : str, proxyType: ProxyType) -> None:
+    def addProxyRequest(cls, proxyName : str, proxyType: ProxyType) -> None:
         """ Method to request that a stream proxy will be given to this agent to display streams
             NOTE: you must override requestProxies() and add your calls to this there, or else it will not be used!
         """
         if hasattr(cls, '_proxyRequests'):
-            cls._proxyRequests[streamName] = proxyType
+            cls._proxyRequests[proxyName] = proxyType
         else:
             cls._proxyRequests = {}
-            cls._proxyRequests[streamName] = proxyType
+            cls._proxyRequests[proxyName] = proxyType
 
     @classmethod
     def _getProxyRequests(cls) -> Dict[str, ProxyType]:

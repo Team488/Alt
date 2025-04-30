@@ -1,379 +1,188 @@
-import codecs
-import json
 import os
-import time
-from typing import Any, Callable
 import numpy as np
 import cv2
 
-# from Captures.CameraCapture import ConfigurableCameraCapture
-# from abstract.Capture import ConfigurableCapture
-# from tools.Constants import CameraIntrinsics
+from Alt.Core.Utils.files import user_tmp_dir
+from Alt.Core import getChildLogger
 
-DEFAULTSAVEPATH = "assets/TMPCalibration"
-
-
-def __SaveOutput(calibPath: str, mtx, dist, shape) -> None:
-    if not calibPath.endswith(".json"):
-        calibPath = f"{calibPath}.json"
-    os.makedirs(calibPath, exist_ok=True)
-    calibrationJSON = {
-        "CameraMatrix": mtx.tolist(),
-        "DistortionCoeff": dist.tolist(),
-        "resolution": {"width": shape[1], "height": shape[0]},
-    }
-
-    json.dump(
-        calibrationJSON,
-        codecs.open(calibPath, "w", encoding="utf-8"),
-        separators=(",", ":"),
-        sort_keys=True,
-        indent=4,
-    )
+from ...Parameters.CameraCalibration import CameraCalibration
 
 
-def chessboard_calibration(
-    calibPath, imagesPath=DEFAULTSAVEPATH, chessBoardDim=(7, 10)
-) -> None:
-    images = []
-    calibshape = None
-    for image_file in sorted(os.listdir(imagesPath)):
-        if image_file.endswith(".jpg") or image_file.endswith(".png"):
-            img = cv2.imread(os.path.join(imagesPath, image_file))
-            calibshape = img.shape
-            images.append(img)
+Sentinel = getChildLogger("Calibrator")
 
-    # Arrays to store object points and image points from all the images.
-    objpoints = []  # 3d point in real world space
-    imgpoints = []  # 2d points in image plane.
-
-    # termination criteria
-    criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
-    # prepare object points, like (0,0,0), (1,0,0), (2,0,0) ....,(6,5,0)
-    objp = np.zeros((chessBoardDim[0] * chessBoardDim[1], 3), np.float32)
-    objp[:, :2] = (
-        np.mgrid[0 : chessBoardDim[0], 0 : chessBoardDim[1]].T.reshape(-1, 2) * 2
-    )
-
-    for image in images:
-        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        # Find the chess board corners
-        ret, corners = cv2.findChessboardCorners(gray, chessBoardDim, None)
-        # If found, add object points, image points (after refining them)
-        if ret == True:
-            objpoints.append(objp)
-
-            corners2 = cv2.cornerSubPix(gray, corners, (11, 11), (-1, -1), criteria)
-            imgpoints.append(corners2)
-
-    if imgpoints:
-        print(f"Using: {len(imgpoints)} points")
-        ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(
-            objpoints, imgpoints, gray.shape[::-1], None, None
-        )
-        __SaveOutput(calibPath, mtx, dist, calibshape)
-        print(f"Saved calibration to {calibPath}")
-    else:
-        print("Failed to find chessboard points!")
-
-
-def charuco_calibration(
-    calibPath,
-    imagesPath=DEFAULTSAVEPATH,
-    arucoboarddim=(15, 15),
-    runOnLoop: Callable[[np.ndarray, int], None] = None,
-):
-    images = []
-    calibshape = None
-    for image_file in sorted(os.listdir(imagesPath)):
-        if image_file.endswith((".jpg", ".png")):
-            img = cv2.imread(os.path.join(imagesPath, image_file))
-            calibshape = img.shape[:2][::-1]  # (width, height)
-            images.append(img)
-
-    board = cv2.aruco.CharucoBoard(
-        size=arucoboarddim,
-        squareLength=30,
-        markerLength=22,
-        dictionary=cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_100),
-    )
-    arucoParams = cv2.aruco.DetectorParameters()
-    arucoParams.cornerRefinementMethod = cv2.aruco.CORNER_REFINE_SUBPIX
-
-    detector = cv2.aruco.CharucoDetector(board)
-    detector.setDetectorParameters(arucoParams)
-    obj_points = []
-    img_points = []
-    imgCount = 1
-
-    for img in images:
-        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        charuco_corners, charuco_ids, _, _ = detector.detectBoard(gray)
-        print(f"{charuco_corners=} {charuco_ids=}")
-
-        if charuco_corners is not None and len(charuco_corners) > 0:
-            obj_pt, img_pt = board.matchImagePoints(charuco_corners, charuco_ids)
-            if len(img_pt) > 0:
-                obj_points.append(obj_pt)
-                img_points.append(img_pt)
-                cv2.aruco.drawDetectedCornersCharuco(img, charuco_corners, charuco_ids)
-
-        if runOnLoop is not None:
-            runOnLoop(img, imgCount)
-        imgCount += 1
-
-    print(f"Found {len(obj_points)} object points and {len(img_points)} image points")
-
-    if obj_points and img_points:
-        print(f"Using {len(img_points)} valid images for calibration")
-        ret, mtx, dist, rvecs, tvecs = cv2.calibrateCameraExtended(
-            obj_points, img_points, calibshape, None, None
-        )[:5]
-
-        __SaveOutput(calibPath, mtx, dist, calibshape)
-        print("Calibration saved to", calibPath)
-        return True
-    else:
-        print("Failed to find enough Charuco points")
-        return False
-    
-
-def charuco_calibration_videos(
-    calibPath : str,
-    videoPath : Any,
-    arucoboarddim=(15, 15),
-):
-    cap = cv2.VideoCapture(videoPath)
-
-
-    board = cv2.aruco.CharucoBoard(
-        size=arucoboarddim,
-        squareLength=30,
-        markerLength=22,
-        dictionary=cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_1000),
-    )
-    arucoParams = cv2.aruco.DetectorParameters()
-    arucoParams.cornerRefinementMethod = cv2.aruco.CORNER_REFINE_SUBPIX
-
-    detector = cv2.aruco.CharucoDetector(board)
-    detector.setDetectorParameters(arucoParams)
-    obj_points = []
-    img_points = []
-    maxPoints = 200
-    calibshape = None
-    while cap.isOpened():
-        ret, frame = cap.read()
-        maxPoints-=1
-        
-        if not ret or maxPoints <=0:
-            break
-        if calibshape is None:
-            calibshape = frame.shape[:2][::-1]
-
-
-        print(calibshape)
-
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        charuco_corners, charuco_ids, _, _ = detector.detectBoard(gray)
-        # print(f"{charuco_corners=} {charuco_ids=}")
-
-        if charuco_corners is not None and len(charuco_corners) > 0:
-            obj_pt, img_pt = board.matchImagePoints(charuco_corners, charuco_ids)
-            if len(img_pt) > 4  and len(obj_pt) > 4:
-                obj_points.append(obj_pt)
-                img_points.append(img_pt)
-                cv2.aruco.drawDetectedCornersCharuco(frame, charuco_corners, charuco_ids)
-        
-        cv2.imshow("frame",frame)
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break        
-
-    print(f"Found {len(obj_points)} object points and {len(img_points)} image points")
-
-    if obj_points and img_points:
-        print(f"Using {len(img_points)} valid images for calibration")
-        ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(
-            obj_points, img_points, calibshape, None, None
-        )[:5]
-
-        __SaveOutput(calibPath, mtx, dist, calibshape)
-        print("Calibration saved to", calibPath)
-        return True
-    else:
-        print("Failed to find enough Charuco points")
-        return False
-
-
-def createMapXYForUndistortionFromCalib(loadedCalibration):
-    resolution = loadedCalibration["resolution"]
-
-    cameraMatrix = np.array(loadedCalibration["CameraMatrix"])
-    distCoeffs = np.array(loadedCalibration["DistortionCoeff"])
-    # print(cameraMatrix)
-    # Compute the optimal new camera matrix
-    w = resolution["width"]
-    h = resolution["height"]
-
-    newCameraMatrix, roi = cv2.getOptimalNewCameraMatrix(
-        cameraMatrix, distCoeffs, (w, h), 1, (w, h)
-    )
-
-    # Generate undistortion and rectification maps
-    mapx, mapy = cv2.initUndistortRectifyMap(
-        cameraMatrix, distCoeffs, None, newCameraMatrix, (w, h), cv2.CV_32FC1
-    )
-
-    return mapx, mapy
-
-
-# def createMapXYForUndistortion(distCoeffs, cameraIntrinsics: CameraIntrinsics):
-def createMapXYForUndistortion(distCoeffs, cameraIntrinsics):
-    cameraMatrix = np.array(
-        [
-            [cameraIntrinsics.getFx(), 0, cameraIntrinsics.getCx()],
-            [0, cameraIntrinsics.getFy(), cameraIntrinsics.getCy()],
-            [0, 0, 1],
-        ],
-        dtype=np.float32,
-    )
-
-    # Compute the optimal new camera matrix
-    newCameraMatrix, roi = cv2.getOptimalNewCameraMatrix(
-        cameraMatrix,
-        distCoeffs,
-        (cameraIntrinsics.getHres(), cameraIntrinsics.getVres()),
-        1,
-        (cameraIntrinsics.getHres(), cameraIntrinsics.getVres()),
-    )
-
-    # Generate undistortion and rectification maps
-    mapx, mapy = cv2.initUndistortRectifyMap(
-        cameraMatrix,
-        distCoeffs,
-        None,
-        newCameraMatrix,
-        (cameraIntrinsics.getHres(), cameraIntrinsics.getVres()),
-        cv2.CV_32FC1,
-    )
-
-    return mapx, mapy
-
-
-def undistortFrame(frame, mapx, mapy):
-    return cv2.remap(frame, mapx, mapy, cv2.INTER_LINEAR)
-
-
-def takeCalibrationPhotos(
-    cameraPath, photoPath=DEFAULTSAVEPATH, timePerPicture=3, frameShape=(640, 480)
-) -> None:
-    windowName = "Calibration View"
-
-    timePassed = 0  # ms
-
-    cap = cv2.VideoCapture(cameraPath)
-    cap.set(cv2.CAP_PROP_FRAME_WIDTH, frameShape[0])
-    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, frameShape[1])
-
-    # opencv might not be able to set the frame shape you want for various reasons
-    realFrameShape = (
-        cap.get(cv2.CAP_PROP_FRAME_WIDTH),
-        cap.get(cv2.CAP_PROP_FRAME_HEIGHT),
-    )
-
-    frameRate = cap.get(cv2.CAP_PROP_FPS)
-    print(f"fps: {frameRate}")
-    print(f"W: {realFrameShape[1]} H: {realFrameShape[1]}")
-
-    secondPerFrame = 1 / frameRate
-
-    frameIdx = 0
-    os.makedirs(photoPath, exist_ok=True)
-    while cap.isOpened():
-        r, frame = cap.read()
-
-        if r:
-            timePassed += secondPerFrame
-
-            if timePassed > timePerPicture:
-                frameIdx += 1
-                timePassed = 0
-                cv2.imwrite(os.path.join(photoPath, f"Frame#{frameIdx}.jpg"), frame)
-                cv2.putText(
-                    frame, f"Picture Taken!", (10, 30), 0, 1, (255, 255, 255), 2
-                )
-            else:
-                cv2.putText(
-                    frame,
-                    f"Time Left: {(timePerPicture-timePassed):2f}",
-                    (10, 30),
-                    0,
-                    1,
-                    (255, 255, 255),
-                    2,
-                )
-
-            cv2.imshow(windowName, frame)
-            if timePassed == 0:
-                time.sleep(1)
-
-            if cv2.waitKey(1) & 0xFF == ord("q"):
-                break
-
-
-class CustomCalibrator:
+CALIBRATIONPHOTOPATH = str(user_tmp_dir / "ALT" / "Calibration")
+CALIBRATIONPHOTOFILEENDING = ".jpg"
+os.makedirs(CALIBRATIONPHOTOPATH, exist_ok=True)
+class Calibrator:
     def __init__(
         self,
-        # capture: ConfigurableCameraCapture,
-        photoPath=DEFAULTSAVEPATH,
-        timePerPicture=3,
-        targetResolution=(640, 480),
-    ):
-        os.makedirs(photoPath, exist_ok=True)
-        self.capture = capture
-        self.photoPath = photoPath
-        self.timePerPicture = timePerPicture
-        self.targetResolution = targetResolution
-        self.fps = self.initCapture()
-        self.secondPerFrame = 1 / self.fps
+        nFrames : int,
+        targetW: int,
+        targetH: int,
+        isCharucoBoard: bool = True
+    ): 
+        self.nFrames = nFrames
+        self.targetW = targetW
+        self.targetH = targetH
         self.frameIdx = 0
-        self.timeSincePic = 0
+        self.isCharucoBoard = isCharucoBoard
+        Sentinel.warning("Clearing any old calibration images!")
+        Calibrator.__clearCalibrationPath(CALIBRATIONPHOTOPATH)
 
-    def initCapture(self):
-        self.capture.cap.set(cv2.CAP_PROP_FRAME_WIDTH, self.targetResolution[0])
-        self.capture.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self.targetResolution[1])
+    def savePicture(self, frame : np.ndarray):
+        if self.isFinished():
+            raise RuntimeError("Taking pictures already finished. Please now start the calibration")
 
-        # opencv might not be able to set the frame shape you want for various reasons
-        realFrameShape = (
-            self.capture.cap.get(cv2.CAP_PROP_FRAME_WIDTH),
-            self.capture.cap.get(cv2.CAP_PROP_FRAME_HEIGHT),
+        if frame.shape[:2][::-1] != (self.targetW, self.targetH):
+            raise RuntimeError("Calibration frame dimension does not match target dimensions!")
+
+        self.frameIdx += 1
+        Calibrator.saveCalibrationPicture(frame, f"Frame#{self.frameIdx}{CALIBRATIONPHOTOFILEENDING}")
+
+    def isFinished(self):
+        return self.frameIdx >= self.nFrames
+    
+    def startCalibration(self) -> CameraCalibration:
+        if not self.isFinished():
+            raise RuntimeError("Taking pictures has not finished!")
+        
+        if self.isCharucoBoard:
+            return Calibrator.charuco_calibration()
+        else:
+            return Calibrator.chessboard_calibration()
+        
+    
+    @staticmethod
+    def chessboard_calibration(
+        chessBoardDim=(7, 10)
+    ) -> CameraCalibration:
+        images, imageWH = Calibrator.__collectImages(CALIBRATIONPHOTOPATH)
+        
+        # Arrays to store object points and image points from all the images.
+        objpoints = []  # 3d point in real world space
+        imgpoints = []  # 2d points in image plane.
+
+        # termination criteria
+        criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
+        
+        # prepare object points, like (0,0,0), (1,0,0), (2,0,0) ....,(6,5,0)
+        objp = np.zeros((chessBoardDim[0] * chessBoardDim[1], 3), np.float32)
+        objp[:, :2] = (
+            np.mgrid[0 : chessBoardDim[0], 0 : chessBoardDim[1]].T.reshape(-1, 2) * 2
         )
 
-        frameRate = self.capture.cap.get(cv2.CAP_PROP_FPS)
-        print(f"fps: {frameRate}")
-        print(f"W: {realFrameShape[1]} H: {realFrameShape[1]}")
-        return frameRate
+        for image in images:
+            gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+            # Find the chess board corners
+            ret, corners = cv2.findChessboardCorners(gray, chessBoardDim, None)
+            # If found, add object points, image points (after refining them)
+            if ret == True:
+                objpoints.append(objp)
+                corners2 = cv2.cornerSubPix(gray, corners, (11, 11), (-1, -1), criteria)
+                imgpoints.append(corners2)
 
-    def calibrationCycle(self):
-        frame = self.capture.getColorFrame()
-
-        self.timeSincePic += self.secondPerFrame
-
-        if self.timeSincePic > self.timePerPicture:
-
-            self.frameIdx += 1
-            self.timeSincePic = 0
-            cv2.imwrite(
-                os.path.join(self.photoPath, f"Frame#{self.frameIdx}.jpg"), frame
+        if imgpoints:
+            Sentinel.info(f"Using: {len(imgpoints)} points")
+            ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(
+                objpoints, imgpoints, gray.shape[::-1], None, None
             )
-            cv2.putText(frame, f"Picture Taken!", (10, 30), 0, 1, (255, 255, 255), 2)
-        else:
-            cv2.putText(
-                frame,
-                f"Time Left: {(self.timePerPicture-self.timeSincePic):2f}",
-                (10, 30),
-                0,
-                1,
-                (255, 255, 255),
-                2,
-            )
-        return frame
+            calibration = CameraCalibration(mtx, dist, imageWH)
+            return calibration
+
+        Sentinel.warning("Failed to find chessboard points!")
+        return None
+
+    @staticmethod
+    def charuco_calibration(
+        arucoboarddim=(15, 15),
+        squareLengthMM = 30,
+        markerLengthMM = 22,
+        dictionary=cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_100),
+    ) -> CameraCalibration:
+        images, imageWH = Calibrator.__collectImages(CALIBRATIONPHOTOPATH)
+
+        board = cv2.aruco.CharucoBoard(
+            size=arucoboarddim,
+            squareLength=squareLengthMM,
+            markerLength=markerLengthMM,
+            dictionary=dictionary,
+        )
+        arucoParams = cv2.aruco.DetectorParameters()
+        arucoParams.cornerRefinementMethod = cv2.aruco.CORNER_REFINE_SUBPIX
+
+        detector = cv2.aruco.CharucoDetector(board)
+        detector.setDetectorParameters(arucoParams)
+        obj_points = []
+        img_points = []
+
+        for img in images:
+            gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+            charuco_corners, charuco_ids, _, _ = detector.detectBoard(gray)
+
+            if charuco_corners is not None and len(charuco_corners) > 0:
+                obj_pt, img_pt = board.matchImagePoints(charuco_corners, charuco_ids)
+                if len(img_pt) > 0:
+                    obj_points.append(obj_pt)
+                    img_points.append(img_pt)
+                    cv2.aruco.drawDetectedCornersCharuco(img, charuco_corners, charuco_ids)
+
+        if obj_points and img_points:
+            Sentinel.info(f"Using {len(img_points)} valid images for calibration")
+            ret, mtx, dist, rvecs, tvecs = cv2.calibrateCameraExtended(
+                obj_points, img_points, imageWH, None, None
+            )[:5]
+
+            calibration = CameraCalibration(mtx, dist, imageWH)
+            return calibration
+
+        Sentinel.warning("Failed to find enough Charuco points")
+        return None
+    
+    @staticmethod
+    def saveCalibrationPicture(frame : np.ndarray, pictureName : str):
+        cv2.imwrite(
+            os.path.join(CALIBRATIONPHOTOPATH, pictureName), frame
+        )
+    
+    @staticmethod
+    def __collectImages(imagePath : str) -> tuple[list[np.ndarray], tuple[int,int]]:
+        images = []
+        calibshape = None
+        
+        # sorted not really necessary. It just helps keep calibration in order if taken with the Calibratior.savePicture()
+        for image_file in sorted(os.listdir(imagePath)): 
+            if image_file.endswith(CALIBRATIONPHOTOFILEENDING):
+                img = cv2.imread(os.path.join(imagePath, image_file))
+                images.append(img)
+
+                imgShape = img.shape[:2][::-1]  # (width, height)
+                
+                if calibshape is None:
+                    calibshape = imgShape 
+                elif calibshape == imgShape:
+                    pass
+                else:
+                    raise RuntimeError("Calibration photo image shapes dont match!")
+                
+        if not images:
+            raise RuntimeError(f"CALIBRATIONPHOTOPATH: {CALIBRATIONPHOTOPATH} does not have any pictures! Did you take some pictures first!")
+                
+        return images, calibshape
+    
+    @staticmethod
+    def __clearCalibrationPath(imagePath : str):
+        removedCnt = 0
+        for image_file in os.listdir(imagePath):
+            if image_file.endswith(CALIBRATIONPHOTOFILEENDING):
+                os.remove(os.path.join(imagePath, image_file))
+                removedCnt+=1
+
+        Sentinel.info(f"Cleared {removedCnt} {CALIBRATIONPHOTOFILEENDING} images from {imagePath}")
+        
+    
+     
+                    
+            
+
+            
+        

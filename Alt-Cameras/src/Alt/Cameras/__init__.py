@@ -1,7 +1,6 @@
 from .Captures.OAKCapture import OAKCapture
 from .Captures.D435Capture import D435Capture
-from .Captures.CameraCapture import ConfigurableCameraCapture
-from .Captures.FileCapture import FileCapture
+from .Captures.OpenCVCapture import OpenCVCapture
 
 
 

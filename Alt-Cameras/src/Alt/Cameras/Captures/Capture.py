@@ -1,10 +1,17 @@
 from abc import ABC, abstractmethod
 from typing import Tuple
 import numpy as np
-from ..Parameters.Intrinsics import CameraIntrinsics
+from ..Parameters.CameraIntrinsics import CameraIntrinsics
+from ..Parameters.CameraConfig import CameraConfig
 
 
 class Capture(ABC):
+    def __init__(self, name : str):
+        self.__name = f"{name}_{self.__class__.__name__}"
+    
+    def getName(self):
+        return self.__name
+
     @abstractmethod
     def create(self) -> None:
         """Opens the capture, or throwing an exception if it cannot be opened"""
@@ -35,19 +42,30 @@ class Capture(ABC):
         pass
 
 
-class ConfigurableCapture(Capture):
-    def __init__(self) -> None:
-        super().__init__()
-        self.cameraIntrinsics: CameraIntrinsics = None  # must be set
+class ConfigurableCapture:
+    def setConfig(self, cameraConfig: CameraConfig) -> None:
+        """Set the camera config"""
+        self.cameraConfig = cameraConfig
 
+    def getConfig(self) -> CameraConfig:
+        if not hasattr(self, 'cameraConfig') or self.cameraConfig is None:
+            raise ValueError(
+                "Camera is missing cameraConfig!"
+            )
+
+        return self.cameraConfig
+    
+
+class CaptureWIntrinsics:
     def setIntrinsics(self, cameraIntrinsics: CameraIntrinsics) -> None:
         """Set the camera intrinsics"""
         self.cameraIntrinsics = cameraIntrinsics
 
     def getIntrinsics(self) -> CameraIntrinsics:
-        if self.cameraIntrinsics is None:
+        if not hasattr(self, 'cameraIntrinsics') or self.cameraIntrinsics is None:
             raise ValueError(
-                "Camera intrinsics is None!. Did you call Capture.create()?"
+                "Camera is missing cameraIntrinsics!"
             )
 
         return self.cameraIntrinsics
+    

@@ -1,6 +1,6 @@
 import math
 from dataclasses import dataclass
-from Alt.Units import Types, Conversions
+from Alt.Core.Units import Types, Conversions
 
 @dataclass
 class Length:

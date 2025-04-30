@@ -1,8 +1,7 @@
-from typing import Any, Optional
+from typing import Optional
 import pyrealsense2 as rs
 import numpy as np
-import cv2
-from ...Parameters.Intrinsics import CameraIntrinsics
+from ...Parameters.CameraIntrinsics import CameraIntrinsics
 from ...Constants.resolution import D435IResolution
 from . import calibration
 
@@ -66,8 +65,8 @@ class realsense2Helper:
         print(f"Distortion Model: {intrinsics.model}")
         print(f"Distortion Coefficients: {intrinsics.coeffs}")
         intr = CameraIntrinsics(
-            hres_pix=intrinsics.width,
-            vres_pix=intrinsics.height,
+            width_pix=intrinsics.width,
+            height_pix=intrinsics.height,
             cx_pix=intrinsics.ppx,
             cy_pix=intrinsics.ppy,
             fx_pix=intrinsics.fx,
