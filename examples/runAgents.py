@@ -19,10 +19,15 @@ class TestAgent(Agent):
     def getDescription(self):
         return "Test"
 
+import cv2
 
 class CamTest(CameraUsingAgentBase):
     def __init__(self, **kwargs):
         super().__init__(capture=OpenCVCapture("test",0))
+
+    def runPeriodic(self):
+        super().runPeriodic()
+        cv2.putText(self.latestFrameMain, "This test will be displayed on top of the frame", (10, 20), 1, 1, (255,255,255), 1)
 
     def getDescription(self):
         return "test-read-webcam"
