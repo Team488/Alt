@@ -34,13 +34,3 @@ if __name__ == "__main__":
     n.wakeAgent(CamTest, isMainThread=True)
     n.shutDown()
 ```
-
-🎯 Features
-
-    🔌 Pluggable Camera Captures: Easily switch between OpenCV, Intel RealSense (D435), Luxonis OAK-D, or even synthetic captures.
-
-    📸 Frame Access: Automatically stores the latest frame as self.latestFrameMain for real-time processing.
-
-    🧠 Agent Integration: Full integration with the Alt Agent model; camera agents can run in parallel and interact with other agents.
-
-    🔍 Calibration Utilities: Built-in support for camera intrinsics, extrinsics, and calibration tools.
