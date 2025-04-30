@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Status Dashboard</title>
+  <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <script src="{{ url_for('static', filename='socket.io.min.js') }}"></script>
+</head>
+<body>
+  <div class="frosted-overlay"></div>
+
+  <div class="content">
+  <h1>Status Dashboard</h1>
+  <div class="tabs" id="tab-bar"></div>
+  <div id="status-container"></div>
+  <script src="{{ url_for('static', filename='createStatus.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,2 @@
+include src/Alt/Dashboard/static/*
+include src/Alt/Dashboard/templates/*
