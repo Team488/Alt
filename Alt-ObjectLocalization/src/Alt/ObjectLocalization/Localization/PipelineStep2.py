@@ -27,7 +27,7 @@ class PipelineStep2:
         self.labler = KalmanLabeler(self.kalmanCaches, self.nClasses)
         
 
-    def processFrameUpdate(
+    def runStep2(
         self,
         deviceResults: list[DeviceLocalizationResult],
         timeStepMs,

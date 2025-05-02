@@ -1,0 +1,136 @@
+import math
+from typing import Optional, Any
+import time
+from functools import partial
+
+from JXTABLES import XTableProto_pb2 as XTableProto
+from JXTABLES import XTableValues_pb2 as XTableValue
+from typing import List
+
+from Alt.Core import DEVICEHOSTNAME
+from Alt.Core.Agents.Agent import Agent
+from Alt.Core.Units.Poses import Pose2d
+from Alt.Core.Constants.Field import Field
+from Alt.Cameras.Agents.CameraUsingAgentBase import CameraUsingAgentBase
+from Alt.Cameras.Parameters.CameraExtrinsics import CameraExtrinsics
+
+from ..Detections.DetectionPacket import DetectionPacket
+from ..Inference.ModelConfig import ModelConfig
+from ..Localization.PipelineStep2 import PipelineStep2
+from ..Localization.LocalizationResult import DeviceLocalizationResult
+from .ObjectLocalizingStep1AgentBase import ObjectLocalizingStep1AgentBase
+
+
+class ObjectLocalizingStep2AgentBase(Agent):
+    """Agent -> (CameraUsingAgentBase, PositionLocalizingAgentBase) -> ObjectLocalizingAgentBase
+
+    Adds inference and object localization capabilites to an agent, processing frames and sending detections
+    NOTE: Requires extra arguments passed in somehow, for example using Functools partial or extending the class"""
+
+    DETECTIONPOSTFIX = "Detections"
+
+    # TODO this subscriber into a map then check if its updated and then grab latest from the map stuff (below), needs to be consolidated into a single class
+
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__(**kwargs)
+        self.field : Field = kwargs.get("field")
+        self.modelConfig: ModelConfig = kwargs.get("modelConfig")
+        self.finalPipeline: Optional[PipelineStep2] = None
+
+        self.objectupdateMap = {}
+        self.localObjectUpdateMap = {}
+        self.lastUpdateTimeMs = -1
+
+        self.iterationsPerUpdate = 50
+        self.iter_count = 0
+
+    def create(self) -> None:
+        super().create()
+
+        self.finalPipeline = PipelineStep2(
+            self.modelConfig,
+            self.field
+        )
+
+    def __addKeyObject(self, key):
+        self.objectupdateMap[key] = ([], 0)
+        self.localObjectUpdateMap[key] = 0
+
+    # handles a subscriber update from one of the cameras
+    def __handleObjectUpdate(self, ret) -> None:
+        val = ret.value
+        key = ret.key
+
+        lastidx = self.objectupdateMap[key][2]
+        lastidx += 1
+        if not val or val == b"":
+            return
+        
+        det_packet = DetectionPacket.fromBytes(val)
+        # print(f"{det_packet.timestamp=}")
+        packet = (DetectionPacket.toResults(det_packet), lastidx)
+        self.objectupdateMap[key] = packet
+
+    def __centralUpdate(self) -> None:
+        currentTime = time.time() * 1000
+        if self.lastUpdateTimeMs == -1:
+            timePerLoopMS = 50  # random default value
+        else:
+            timePerLoopMS = currentTime - self.lastUpdateTimeMs
+        self.lastUpdateTimeMs = currentTime
+
+        accumulatedObjectResults = []
+        for key in self.localObjectUpdateMap.keys():
+            # objects
+            localidx = self.localObjectUpdateMap[key]
+            resultpacket = self.objectupdateMap[key]
+            res, packetidx = resultpacket[:1], resultpacket[1]
+            if packetidx != localidx:
+                # only update if change
+                self.localObjectUpdateMap[key] = packetidx
+                accumulatedObjectResults.append(res)
+
+        # update objects
+        self.finalPipeline.runStep2(
+            cameraResults=accumulatedObjectResults, timeStepMs=timePerLoopMS
+        )
+
+    def __periodicSubscribe(self):
+        self.updateOp.subscribeAllGlobalUpdates(
+            ObjectLocalizingStep1AgentBase.DETECTIONPOSTFIX,
+            self.__handleObjectUpdate,
+            runOnNewSubscribe=self.__addKeyObject,
+        )
+
+    def runPeriodic(self) -> None:
+        super().runPeriodic()
+        self.__centralUpdate()
+        self.iter_count += 1
+        if self.iter_count == self.iterationsPerUpdate:
+            # reset the count
+            self.iter_count = 0
+            self.__periodicSubscribe()
+
+    def onClose(self) -> None:
+        super().onClose()
+        self.updateOp.unsubscribeToAllGlobalUpdates(
+            ObjectLocalizingStep1AgentBase.DETECTIONPOSTFIX, self.__handleObjectUpdate
+        )
+
+    def getDescription(self):
+        return "Central-Process-Accumulate-Results-Broadcast-Them"
+
+    def isRunning(self):
+        return True
+
+
+def ObjectLocalizingStep2AgentPartial(
+    modelConfig: ModelConfig,
+    field: Field,
+) -> Any:
+    """Returns a partially completed frame processing agent. All you have to do is pass it into neo"""
+    return partial(
+        ObjectLocalizingStep2AgentBase,
+        modelConfig=modelConfig,
+        field=field,
+    )

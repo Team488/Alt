@@ -15,7 +15,7 @@ from ..Inference.ModelConfig import ModelConfig
 from ..Localization.PipelineStep1 import PipelineStep1
 from ..Localization.LocalizationResult import DeviceLocalizationResult
 
-class ObjectLocalizingAgentBase(CameraUsingAgentBase, PositionLocalizingAgentBase):
+class ObjectLocalizingStep1AgentBase(CameraUsingAgentBase, PositionLocalizingAgentBase):
     """Agent -> (CameraUsingAgentBase, PositionLocalizingAgentBase) -> ObjectLocalizingAgentBase
 
     Adds inference and object localization capabilites to an agent, processing frames and sending detections
@@ -24,12 +24,12 @@ class ObjectLocalizingAgentBase(CameraUsingAgentBase, PositionLocalizingAgentBas
     DETECTIONPOSTFIX = "Detections"
 
     def __init__(self, **kwargs: Any) -> None:
+        super().__init__(**kwargs)
         self.cameraExtrinsics: Optional[CameraExtrinsics] = kwargs.get(
             "cameraExtrinsics", None
         )
         self.modelConfig: Optional[ModelConfig] = kwargs.get("modelConfig", None)
         self.localPipeline: Optional[PipelineStep1] = None
-        super().__init__(**kwargs)
 
     def create(self) -> None:
         super().create()
@@ -57,29 +57,8 @@ class ObjectLocalizingAgentBase(CameraUsingAgentBase, PositionLocalizingAgentBas
                 # if you are sending frames, you likely want to see bounding boxes aswell
             )
 
-        # add highest detection telemetry
-        # if processedResults:
-        #     best_idx = max(
-        #         range(len(processedResults)), key=lambda i: processedResults[i][2]
-        #     )
-        #     best_result = processedResults[best_idx]
-        #     x, y, z = best_result[1]
-        #     self.propertyOperator.createReadOnlyProperty(
-        #         "BestResult.BestX", ""
-        #     ).set(float(x))
-        #     self.propertyOperator.createReadOnlyProperty(
-        #         "BestResult.BestY", ""
-        #     ).set(float(y))
-        #     self.propertyOperator.createReadOnlyProperty(
-        #         "BestResult.BestZ", ""
-        #     ).set(float(z))
-
         timestampMs = time.time() * 1000
-
-
         deviceResult = DeviceLocalizationResult(localizedresults, DEVICEHOSTNAME)
-
-
 
         detectionPacket = DetectionPacket.createPacket(
             deviceResult, "Detection", timestampMs
@@ -88,9 +67,12 @@ class ObjectLocalizingAgentBase(CameraUsingAgentBase, PositionLocalizingAgentBas
 
     def getDescription(self) -> str:
         return "Inference_Then_Localize(Step1)"
+    
+    def isRunning(self):
+        return True
 
 
-def ObjectLocalizingAgentPartial(
+def ObjectLocalizingStep1AgentPartial(
     capture: CaptureWIntrinsics,
     cameraExtrinsics: CameraExtrinsics,
     modelConfig: ModelConfig,
@@ -98,7 +80,7 @@ def ObjectLocalizingAgentPartial(
 ) -> Any:
     """Returns a partially completed frame processing agent. All you have to do is pass it into neo"""
     return partial(
-        ObjectLocalizingAgentBase,
+        ObjectLocalizingStep1AgentBase,
         capture=capture,
         cameraExtrinsics=cameraExtrinsics,
         modelConfig=modelConfig,
