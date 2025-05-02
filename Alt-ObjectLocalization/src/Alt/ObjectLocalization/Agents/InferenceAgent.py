@@ -8,11 +8,12 @@ import numpy as np
 
 # from JXTABLES.XDashDebugger import XDashDebugger
 
-from Core.Agents.Abstract.CameraUsingAgentBase import CameraUsingAgentBase
-from abstract.Capture import Capture, ConfigurableCapture
-from inference.MultiInferencer import MultiInferencer
-from tools.Constants import CameraIntrinsics, InferenceMode
-from coreinterface.FramePacket import FramePacket
+from Alt.Cameras.Agents.CameraUsingAgentBase import CameraUsingAgentBase
+from Alt.Cameras.Captures import CaptureWIntrinsics
+
+from ..Inference.ModelConfig import ModelConfig
+from ..Inference.MultiInferencer import MultiInferencer
+from ..Detections.DetectionResult import DetectionResult
 
 
 class InferenceAgent(CameraUsingAgentBase):
@@ -22,46 +23,31 @@ class InferenceAgent(CameraUsingAgentBase):
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
-        self.inferenceMode: Optional[InferenceMode] = kwargs.get("inferenceMode", None)
+        self.modelConfig: ModelConfig = kwargs.get("modelConfig", None)
         self.inf: Optional[MultiInferencer] = None
         self.confidence = None
         self.drawBoxes = None
-        self.results: Optional[Dict[str, Any]] = None
+        self.results: Optional[list[DetectionResult]] = None
 
     def create(self) -> None:
         super().create()
         if self.Sentinel:
             self.Sentinel.info("Creating Frame Processor...")
 
-        if self.inferenceMode is None:
-            raise ValueError("InferenceMode not provided")
+        if self.modelConfig is None:
+            raise ValueError("modelConfig not provided")
 
         self.inf = MultiInferencer(
-            inferenceMode=self.inferenceMode,
+            modelConfig=self.modelConfig,
         )
-
-        if self.propertyOperator is None:
-            raise ValueError("PropertyOperator not initialized")
 
         self.confidence = self.propertyOperator.createProperty(
             "Confidence_Threshold", 0.7
         )
-        self.drawBoxes = self.propertyOperator.createProperty("Draw_Boxes", True)
+        self.drawBoxes = self.propertyOperator.createProperty("Draw_Boxes", self.showFrames) # if the camera using agent has show frames, then draw as default
 
     def runPeriodic(self) -> None:
         super().runPeriodic()
-
-        if self.timer is None:
-            raise ValueError("Timer not initialized")
-
-        if self.inf is None:
-            raise ValueError("Inferencer not initialized")
-
-        if self.latestFrameMain is None:
-            return
-
-        if self.confidence is None or self.drawBoxes is None:
-            raise ValueError("Properties not initialized")
 
         with self.timer.run("inference"):
             self.results = self.inf.run(
@@ -73,14 +59,14 @@ class InferenceAgent(CameraUsingAgentBase):
 
 
 def InferenceAgentPartial(
-    capture: ConfigurableCapture,
-    inferenceMode: InferenceMode,
+    capture: CaptureWIntrinsics,
+    modelConfig: ModelConfig,
     showFrames: bool = False,
 ) -> Any:
     """Returns a partially completed frame processing agent. All you have to do is pass it into neo"""
     return partial(
         InferenceAgent,
         capture=capture,
-        inferenceMode=inferenceMode,
+        modelConfig=modelConfig,
         showFrames=showFrames,
     )

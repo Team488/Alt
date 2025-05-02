@@ -1,6 +1,7 @@
-from typing import Tuple, Any, Optional
-from abstract.Agent import Agent
-from tools import NtUtils
+from typing import Tuple, Any
+
+from .Agent import Agent
+from ..Utils import NtUtils
 
 
 class PositionLocalizingAgentBase(Agent):

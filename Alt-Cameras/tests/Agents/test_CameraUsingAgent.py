@@ -1,9 +1,7 @@
-from Alt.Core import Neo
 from Alt.Core.Tests import AgentTests
-from Alt.Cameras.CameraUsingAgent import CameraUsingAgentBase
+from Alt.Cameras.Agents import CameraUsingAgentBase
 from Alt.Cameras.Captures import FakeCamera, FakeDepthCamera
 
-from Alt.Core.Agents import Agent
 
 
 

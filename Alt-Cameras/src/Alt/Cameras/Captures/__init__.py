@@ -1,5 +1,5 @@
 # ABC's
-from .Capture import Capture, ConfigurableCapture
+from .Capture import Capture, ConfigurableCapture, CaptureWIntrinsics
 from .depthCamera import depthCamera
 
 # implementations

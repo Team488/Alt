@@ -42,7 +42,7 @@ class Capture(ABC):
         pass
 
 
-class ConfigurableCapture:
+class ConfigurableCapture(Capture):
     def setConfig(self, cameraConfig: CameraConfig) -> None:
         """Set the camera config"""
         self.cameraConfig = cameraConfig
@@ -56,7 +56,7 @@ class ConfigurableCapture:
         return self.cameraConfig
     
 
-class CaptureWIntrinsics:
+class CaptureWIntrinsics(Capture):
     def setIntrinsics(self, cameraIntrinsics: CameraIntrinsics) -> None:
         """Set the camera intrinsics"""
         self.cameraIntrinsics = cameraIntrinsics

@@ -16,7 +16,7 @@ from ..Proto.FramePacket import FramePacket
 from ..Parameters.CameraIntrinsics import CameraIntrinsics
 from .. import canCurrentlyDisplay
 from ..Captures.tools import calibration
-from .CalibrationUtil import CalibrationUtil
+from ..Calibration.CalibrationUtil import CalibrationUtil
 
 
 class CameraUsingAgentBase(Agent):

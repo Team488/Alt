@@ -1,13 +1,14 @@
 from functools import partial
 from typing import Any, Optional
 import cv2
-from Core.Agents.Abstract.CameraUsingAgentBase import CameraUsingAgentBase
-from abstract.Capture import Capture
+
+from .CameraUsingAgentBase import CameraUsingAgentBase
+from ..Captures import Capture
 
 
 class VideoWriterAgent(CameraUsingAgentBase):
-    def __init__(self, capture: Capture, savePath: str, showFrames: bool):
-        super().__init__(capture=capture, showFrames=showFrames)
+    def __init__(self, capture: Capture, savePath: str, showFrames: bool, **kwargs):
+        super().__init__(capture=capture, showFrames=showFrames, **kwargs)
         self.filePath: str = savePath
         self.writer: Optional[cv2.VideoWriter] = None
 
