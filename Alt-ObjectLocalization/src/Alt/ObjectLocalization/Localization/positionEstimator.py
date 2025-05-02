@@ -88,7 +88,7 @@ class RelativePositionEstimator:
         Takes hDist, bearing H/V (radians) and returns x,y,z
     """
 
-    #TODO Cheeck this
+    #TODO Account for this assumption not working with a depth camera.
 
     def __componentizeHDistAndBearingHV(self, hDist : float, bearingH : float, bearingV : float):
         x = hDist
