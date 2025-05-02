@@ -1,6 +1,5 @@
 from typing import Any
 
-
 class KalmanEntry:
     def __init__(self, X: Any, P: Any) -> None:
         self.X = X

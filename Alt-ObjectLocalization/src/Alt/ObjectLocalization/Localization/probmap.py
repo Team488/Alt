@@ -2,52 +2,43 @@ from typing import Union
 import numpy as np
 import cv2
 from decimal import Decimal, ROUND_FLOOR
-from tools.Constants import TEAM, Label, MapConstants
-from Core import getChildLogger
-
-largeValue = 10000000000000000000  # for cv2 thresholding
+from Alt.Core import getChildLogger
+from Alt.Core.Constants.Teams import TEAM
+from ..Constants.Inference import Object
 
 Sentinel = getChildLogger("ProbMap")
-# This whole thing is axis aligned for speed, but that may not work great
 class ProbMap:
-    """A class for managing probability maps of game objects and robots.
-
-    This class maintains two separate probability maps - one for game objects and one for robots.
-    It provides methods for adding detections, retrieving probability data, and visualizing the maps.
-    """
 
     def __init__(
         self,
-        labels: list[Label],
-        x=MapConstants.fieldWidth.value,
-        y=MapConstants.fieldHeight.value,
-        resolution=MapConstants.res.value,
+        objects: list[Object],
+        width: int,
+        height : int,
+        resolution : int = 5,
         sigma=0.9,
         alpha=0.8,
     ) -> None:
 
         # exposed constants
-        self.width = x
-        self.height = y
-        self.labels = labels
-        self.sizes = [label.getSizeCm() for label in self.labels]
+        self.width = width
+        self.height = height
+        self.objects = objects
+        self.sizes = [object_.sizeCM for object_ in self.objects]
 
         # flip values due to numpy using row,col (y,x)
         # internal values (some resolution adjusted)
-        self.__internalWidth = y // resolution
-        self.__internalHeight = x // resolution
+        self.__internalWidth = self.height // resolution
+        self.__internalHeight = self.width // resolution
 
         self.sigma = sigma  # dissipation rate for gaussian blur
         self.alpha = alpha  # weight of new inputs
         self.resolution = resolution
-        self.gameObjWindowName = "GameObject Map"
-        self.robotWindowName = "Robot Map"
         # create blank probability maps
 
         # game objects
         self.probmaps = [
             np.zeros((self.__internalWidth, self.__internalHeight), dtype=np.float64)
-            for _ in self.labels
+            for _ in self.objects
         ]
 
     """ RC = row,col format | CR = col,row format"""
@@ -84,27 +75,27 @@ class ProbMap:
         obj_y = tmpX // self.resolution
 
         if self.__isOutOfMap(x, y, obj_x, obj_y):
-            print("Error! Detection completely out of map!")
+            Sentinel.warning("Error! Detection completely out of map!")
             return
 
         # print(f"internal values :  {x},{y} with size {obj_x},{obj_y}")
         if x >= self.__internalWidth:
-            print("Error X too large! clipping")
+            Sentinel.debug("Error X too large! clipping")
             x = self.__internalWidth - 1
             # return
 
         if x < 0:
-            print("Error X too small! clipping")
+            Sentinel.debug("Error X too small! clipping")
             x = 0
             # return
 
         if y >= self.__internalHeight:
-            print("Error y too large! clipping")
+            Sentinel.debug("Error y too large! clipping")
             y = self.__internalHeight - 1
             # return
 
         if y < 0:
-            print("Error y too small! clipping")
+            Sentinel.debug("Error y too small! clipping")
             y = 0
             # return
 
@@ -137,8 +128,8 @@ class ProbMap:
         coords = np.argwhere(mask)
 
         if coords.size <= 0:
-            print("Failed to extract smaller mask!")
-            print(
+            Sentinel.warning("Failed to extract smaller mask!")
+            Sentinel.warning(
                 f"{mask=} \n {threshold=} \n {gaussian_blob=} \n {prob=} \n {gauss_x=} \n {gauss_y=} \n {scale=} \n {sigma=}"
             )
             return
@@ -355,7 +346,7 @@ class ProbMap:
     def displayHeatMaps(self) -> None:
         # self.__displayHeatMap(self.probmapGameObj, self.gameObjWindowName)
         """Display visualization of both probability maps using OpenCV windows."""
-        for probmap, label in zip(self.probmaps, self.labels):
+        for probmap, label in zip(self.probmaps, self.objects):
             self.__displayHeatMap(probmap, str(label))
 
     def displayMap(self, class_idx) -> None:
@@ -433,7 +424,7 @@ class ProbMap:
         chunk = self.__getChunkOfMap(probmap, x, y, rangeX, rangeY)
         # for now just traversing the array manually but the hashmap idea sounds very powerfull
         if chunk is None:
-            print("Empty Chunk!")
+            Sentinel.warning("Empty Chunk!")
             return (0, 0, 0)
         flat_index = np.argmax(chunk)
         # Convert the flattened index to 2D coordinates
@@ -458,8 +449,7 @@ class ProbMap:
         )
 
     def __getHighestT(self, probmap, Threshold) -> tuple[int, int, np.float64]:
-        # for now just traversing the array manually but the hashmap idea sounds very powerfull
-        _, mapThresh = cv2.threshold(probmap, Threshold, largeValue, cv2.THRESH_TOZERO)
+        _, mapThresh = cv2.threshold(probmap, Threshold, Threshold+1, cv2.THRESH_TOZERO)
         flat_index = np.argmax(mapThresh)
         # Convert the flattened index to 2D coordinates
 
@@ -477,9 +467,9 @@ class ProbMap:
     ) -> tuple[int, int, np.float64]:
         chunk = self.__getChunkOfMap(probmap, x, y, rangeX, rangeY)
         if chunk is None:
-            print("Empty Chunk!")
+            Sentinel.warning("Empty Chunk!")
             return (0, 0, 0)
-        _, chunkThresh = cv2.threshold(chunk, Threshold, largeValue, cv2.THRESH_TOZERO)
+        _, chunkThresh = cv2.threshold(chunk, Threshold, 1, cv2.THRESH_TOZERO)
         # for now just traversing the array manually but the hashmap idea sounds very powerfull
         flat_index = np.argmax(chunkThresh)
         # Convert the flattened index to 2D coordinates
@@ -635,7 +625,7 @@ class ProbMap:
     ) -> list[tuple[int, int, int, np.float64]]:
         chunk = self.__getChunkOfMap(probmap, x, y, rangeX, rangeY)
         if chunk is None:
-            print("Empty Chunk!")
+            Sentinel.warning("Empty Chunk!")
             return []
         _, binary = cv2.threshold(chunk, threshold, 255, cv2.THRESH_BINARY)
         # float 64 to uint
@@ -886,8 +876,8 @@ class ProbMap:
             or i_Y < 0
             or i_Y >= self.__internalHeight
         ):
-            print(
-                f"Warning! Invalid coordinates provided! | {x=} {y=} | {self.width=} {self.height=}"
+            Sentinel.warning(
+                f"Invalid coordinates provided! | {x=} {y=} | {self.width=} {self.height=}"
             )
             return None
 
@@ -918,9 +908,11 @@ class ProbMap:
         isOk = lambda x: True
         if team is not None:
             if team == TEAM.BLUE:
-                isOk = lambda x: x <= MapConstants.fieldWidth.getCM() / 2
+                isOk = lambda x: x <= self.width / 2
             else:
-                isOk = lambda x: x >= MapConstants.fieldWidth.getCM() / 2
+                isOk = lambda x: x >= self.width / 2
+            
+            # which side gets x = self.width/2. None?
         okPoints = [point for point in allPoints if isOk(point[0])]
 
         nearest = None

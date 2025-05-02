@@ -1,23 +1,25 @@
-import cv2
-import time
-import numpy as np
-import tensorrt as trt
-import pycuda.autoinit
-import pycuda.driver as cuda
-
 from typing import Any
-from inference.utils import getAdjustBoxesMethod
-from tools.Constants import InferenceMode
-from abstract.inferencerBackend import InferencerBackend
+
+import numpy as np
+try:
+    import tensorrt as trt
+    import pycuda.driver as cuda
+except ImportError as e:
+    raise RuntimeError(f"TensorRT only supported on linux (x86 + arm64)!\n{e}")
+
+from ...Constants.Inference import InferenceMode
+from ..inferencerBackend import InferencerBackend
+from ...Detections.DetectionResult import DetectionResult
+from ..ModelConfig import ModelConfig
 
 EXPLICIT_BATCH = 1 << int(trt.NetworkDefinitionCreationFlag.EXPLICIT_BATCH)
 TRT_LOGGER = trt.Logger(trt.Logger.INFO)
 
 
 class TensorrtInferencer(InferencerBackend):
-    def __init__(self, mode: InferenceMode) -> None:
-        super().__init__(mode)
-        self.engine_path = mode.getModelPath()
+    def __init__(self, modelConfig : ModelConfig) -> None:
+        super().__init__(modelConfig)
+        self.engine_path = modelConfig.getPath()
         self.engine = None
         self.context = None
         self.stream = None
@@ -70,4 +72,5 @@ class TensorrtInferencer(InferencerBackend):
         self, results, frame, minConf
     ) -> list[tuple[list[float, float, float, float], float, int]]:
         """Processes raw output from the model to return bounding boxes, confidences, and class IDs."""
-        return self.adjustBoxes(results, frame, minConf)
+        results = self.adjustBoxes(results, frame, minConf)
+        return [DetectionResult(results[0], results[1], results[2]) for result in results]

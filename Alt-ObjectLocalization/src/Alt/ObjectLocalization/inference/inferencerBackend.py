@@ -1,18 +1,20 @@
 from abc import ABC, abstractmethod
-from typing import Any, List, Tuple, Callable
+from typing import Any, List, Callable
 
 import numpy as np
-from tools.Constants import YOLOTYPE, InferenceMode
-from inference import utils
+
+from ..Detections.DetectionResult import DetectionResult
+from .ModelConfig import ModelConfig
+from . import utils
 
 
 class InferencerBackend(ABC):
-    def __init__(self, mode: InferenceMode) -> None:
-        self.mode: InferenceMode = mode
-        self.yoloType: YOLOTYPE = self.mode.getYoloType()
-        self.labels: List[str] = self.mode.getLabelsAsStr()
+    def __init__(self, modelConfig: ModelConfig) -> None:
+        self.modelConfig = modelConfig
+        self.yoloType = self.model.getYoloType()
+        self.labels = self.model.getLabels()
         self.adjustBoxes: Callable = utils.getAdjustBoxesMethod(
-            self.mode.getYoloType(), self.mode.getBackend()
+            self.yoloType, self.model.getBackend()
         )
 
     @abstractmethod
@@ -32,7 +34,7 @@ class InferencerBackend(ABC):
     @abstractmethod
     def postProcessBoxes(
         self, results: Any, frame: np.ndarray, minConf: float
-    ) -> List[Tuple[List[float], float, int]]:
+    ) -> List[DetectionResult]:
         """Place postprocess here.\n
         Should take in raw model output, and return a list of list[boxes,confidences,classIds]
         """

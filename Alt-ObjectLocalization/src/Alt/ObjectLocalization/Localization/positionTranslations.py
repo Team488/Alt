@@ -1,12 +1,11 @@
-from tools.Constants import CameraExtrinsics
 import math
-from typing import Tuple, Union, List, Any, cast
 import numpy as np
 
-Vector = Union[np.ndarray, List[Union[float, int]], Tuple[Union[float, int], ...]]
+from Alt.Core.Units.Poses import Transform3d
+from Alt.Cameras.Parameters.CameraExtrinsics import CameraExtrinsics
 
 
-def transformWithYaw(posVector: Vector, yaw: float) -> np.ndarray:
+def transformWithYaw(position: Transform3d, yaw: float) -> Transform3d:
     """
     Apply a yaw rotation to a position vector
     
@@ -25,9 +24,13 @@ def transformWithYaw(posVector: Vector, yaw: float) -> np.ndarray:
             [0, 0, 1],
         ]
     )
+
+    posVector = np.array[position.x, position.y, position.z]
     
     # Apply the transformation
-    return yawTransform @ posVector
+    resultT = yawTransform @ posVector
+
+    return Transform3d(resultT[0], resultT[1], resultT[2])
 
 
 class CameraToRobotTranslator:
@@ -41,18 +44,17 @@ class CameraToRobotTranslator:
         pass
 
     def turnCameraCoordinatesIntoRobotCoordinates(
-        self, relativeX: float, relativeY: float, cameraExtrinsics: CameraExtrinsics
-    ) -> Tuple[float, float, float]:
+        self, relativeTransform : Transform3d, cameraExtrinsics: CameraExtrinsics
+    ) -> Transform3d:
         """
         Transform coordinates from camera frame to robot frame
         
         Args:
-            relativeX: X coordinate in camera frame (in centimeters)
-            relativeY: Y coordinate in camera frame (in centimeters)
+            relativeTransform: Transform3d in camera frame
             cameraExtrinsics: Camera extrinsic parameters (position and orientation)
             
         Returns:
-            A tuple of (x, y, z) coordinates in robot frame (in centimeters)
+            A Transform3d coordinates in robot frame (in centimeters)
         """
         # Get camera position and orientation
         dx = cameraExtrinsics.getOffsetXCM()
@@ -62,10 +64,11 @@ class CameraToRobotTranslator:
         pitch = cameraExtrinsics.getPitchOffsetAsRadians()
         # print(f"camera offset: [{dx}, {dy}, {dz}] pitch: {yaw} yaw: {pitch}")
 
-        # Create position vector (z is 0 because we are not factoring in 
-        # target height relative to camera)
-        noteVector = np.array(
-            [[relativeX], [relativeY], [0]]
+        # TODO check relativeTransform units and change if not cm
+        # if relativeTransform.units...
+
+        relativeVector = np.array(
+            [[relativeTransform.x], [relativeTransform.y], [relativeTransform.z]]
         )
 
         # Define rotation matrices
@@ -89,7 +92,7 @@ class CameraToRobotTranslator:
         rotationMatrix = pitchTransform @ yawTransform
 
         # Apply rotation to the position vector
-        rotatedNoteVector = rotationMatrix @ noteVector
+        rotatedNoteVector = rotationMatrix @ relativeVector
         # print(f"After rotation: x {rotatedNoteVector[0]} y {rotatedNoteVector[1]}")
 
         # Define translation vector (camera position in robot frame)
@@ -105,4 +108,4 @@ class CameraToRobotTranslator:
 
         # print(f"After rotation and translation: x {robotRelativeNoteVector[0]} y {robotRelativeNoteVector[1]}")
 
-        return (finalX, finalY, finalZ)
+        return Transform3d(finalX, finalY, finalZ)

@@ -1,51 +1,47 @@
 import base64
-import io
+
+# necessary for the below import of the detection packet!
 import capnp
-from assets.schemas import detectionNetPacket_capnp
+
 import numpy as np
-import traceback
-import sys
+from Alt.Core.Units.Poses import Transform3d
+
+from ..Localization.LocalizationResult import DeviceLocalizationResult, LocalizationResult
+from . import detectionNetPacket_capnp
 
 
 class DetectionPacket:
     @staticmethod
     # id,(absX,absY,absZ),conf,class_idx,features
     def createPacket(
-        detections: list[list[int, tuple[int, int, int], float, int, np.ndarray]],
-        message,
+        result: DeviceLocalizationResult,
+        message : str,
         timeStamp,
     ) -> detectionNetPacket_capnp.DataPacket:
-        numDetections = len(detections)
+        
+        numDetections = len(result.localizedResults)
         packet = detectionNetPacket_capnp.DataPacket.new_message()
         packet.message = message
+        packet.deviceName = result.deviceUniqueName
         packet.timestamp = timeStamp
         packet_detections = packet.init("detections", numDetections)
 
         for i in range(numDetections):
-            detection = detections[i]
+            localizedResult = result.localizedResults[i]
             packet_detection = packet_detections[i]
-
-            packet_detection.id = detection[0]
+            packet_detection.id = localizedResult.deepsort_id
 
             xyz = packet_detection.init("coordinates")
-            coords = detection[1]
-            xyz.x = int(coords[0])
-            xyz.y = int(coords[1])
-            xyz.z = int(coords[2])
+            xyz.x = int(localizedResult.location.x)
+            xyz.y = int(localizedResult.location.y)
+            xyz.z = int(localizedResult.location.z)
 
-            packet_detection.confidence = float(detection[2])
+            packet_detection.confidence = float(localizedResult.conf)
 
-            packet_detection.classidx = int(detection[3])
+            packet_detection.classidx = int(localizedResult.class_idx)
 
-            features = detection[4]
             packet_features = packet_detection.init("features")
-
-            featurelen = len(features)
-            packet_features.length = featurelen
-
-            packet_features_data = packet_features.init("data", featurelen)
-            for j in range(featurelen):
-                packet_features_data[j] = float(features[j])
+            packet_features.init("data", len(localizedResult.features))[:] = localizedResult.features.astype(float)
 
         return packet
 
@@ -72,42 +68,36 @@ class DetectionPacket:
         return None
 
     @staticmethod
-    def toDetections(packet):
-        detections = []
+    def toResults(packet) -> DeviceLocalizationResult:
+        localizedResults = []
 
         for packet_detection in packet.detections:
             # Extract the detection id
-            detection_id = packet_detection.id
+            deepsort_id = packet_detection.id
 
             # Extract the coordinates (absX, absY, absZ)
             coordinates = packet_detection.coordinates
-            absX, absY, absZ = (
+            x, y, z = (
                 int(coordinates.x),
                 int(coordinates.y),
                 int(coordinates.z),
             )
 
             # Extract the confidence
-            confidence = float(packet_detection.confidence)
+            conf = float(packet_detection.confidence)
 
             # Extract the class_idx flag
             class_idx = int(packet_detection.classidx)
 
             # Extract the features
             packet_features = packet_detection.features
-            features = np.array([float(f) for f in packet_features.data])
+            features = np.array(packet_features.data, dtype=np.float64)
+
 
             # Combine into a tuple (id, (absX, absY, absZ), conf, class_idx, features)
-            detection = [
-                detection_id,
-                (absX, absY, absZ),
-                confidence,
-                class_idx,
-                features,
-            ]
-            detections.append(detection)
+            localizedResults.append(LocalizationResult(Transform3d(x, y, z), class_idx, conf, deepsort_id, features))
 
-        return detections
+        return DeviceLocalizationResult(localizedResults, packet.deviceName)
 
 
 def test_packet() -> None:
@@ -119,7 +109,7 @@ def test_packet() -> None:
     print("sucessful b64")
     outPacket = DetectionPacket.fromBase64(b64)
     print(outPacket)
-    print(DetectionPacket.toDetections(outPacket))
+    print(DetectionPacket.toResults(outPacket))
 
 
 if __name__ == "__main__":

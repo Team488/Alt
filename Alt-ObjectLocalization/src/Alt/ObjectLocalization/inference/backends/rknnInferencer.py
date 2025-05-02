@@ -1,12 +1,17 @@
-import os
-import time
 import cv2
 import numpy as np
-from rknnlite.api import RKNNLite
-from inference import utils, yolo11RknnUtils
-from abstract.inferencerBackend import InferencerBackend
-from tools.Constants import ConfigConstants, InferenceMode, YOLOTYPE
-from Core.LogManager import getChildLogger
+
+try:
+    from rknnlite.api import RKNNLite
+except ImportError as e:
+    raise RuntimeError(f"The rknn lite package is only supported on arm64!\n{e}")
+        
+from Alt.Core import getChildLogger
+
+from . import utils, yolo11RknnUtils
+from ..inferencerBackend import InferencerBackend
+from ...Constants.Inference import YoloType
+from ...Detections.DetectionResult import DetectionResult
 
 Sentinel = getChildLogger("rknn_inferencer")
 
@@ -28,6 +33,7 @@ class rknnInferencer(InferencerBackend):
 
     # Initialize the RKNN model
     def load_rknn_model(self, model_path):
+       
         rknn = RKNNLite()
         print("Loading RKNN model...")
 
@@ -57,34 +63,15 @@ class rknnInferencer(InferencerBackend):
     def runInference(self, inputTensor):
         return self.model.inference(inputs=inputTensor)
 
-    def postProcessBoxes(self, results, frame, minConf):
-        if self.mode.getYoloType() == YOLOTYPE.V5:
+    def postProcessBoxes(self, results, frame, minConf) -> list[DetectionResult]:
+        if self.mode.getYoloType() == YoloType.V5:
             adjusted = self.adjustBoxes(results[0], frame.shape, minConf)
             nmsResults = utils.non_max_suppression(adjusted, conf_threshold=minConf)
-            return nmsResults
+            return [DetectionResult(nmsResult[0], nmsResult[1], nmsResult[2]) for nmsResult in nmsResults]
+
         else:
             boxes, classes, scores = yolo11RknnUtils.post_process(results, frame.shape)
             if boxes is not None:
-                return list(zip(boxes, classes, scores))
+                return [DetectionResult(result[0], result[1], result[2]) for result in zip(boxes, classes, scores)]
             return []
 
-
-def startDemo() -> None:
-    from inference.MultiInferencer import MultiInferencer
-    from tools.Constants import InferenceMode
-
-    inf = MultiInferencer(inferenceMode=InferenceMode.RKNN2025INT8)
-    cap = cv2.VideoCapture("assets/reefscapevid.mp4")
-
-    while cap.isOpened():
-        ret, frame = cap.read()
-        if ret:
-            results = inf.run(frame, 0.7, drawBoxes=True)
-            cv2.imshow("rknn", frame)
-
-        if cv2.waitKey(1) & 0xFF == ord("q"):
-            break
-
-
-if __name__ == "__main__":
-    startDemo()

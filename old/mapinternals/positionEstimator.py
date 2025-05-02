@@ -441,6 +441,34 @@ class PositionEstimator:
                 print("Failed estimation")
 
         return estimatesOut
+    
+    from ..Constants.Inference import Object
+    def __estimateRelativePosition(
+        self, frame : np.ndarray, boundingBox, cameraIntrinsics: CameraIntrinsics, label : Object
+    ) -> tuple[float, float]:
+        x1, y1, x2, y2 = boundingBox
+        w = x2 - x1
+        h = y2 - y1
+        midW = int(w / 2)
+        midH = int(h / 2)
+        centerX = x1 + midW
+        croppedImg = self.__crop_image(frame, (x1, y1), (x2, y2), safety_margin=0.07)
+        
+        depth = label.depthMethod.getDepthEstimateCM(croppedImg, cameraIntrinsics)
+        if not depth:
+            return None
+        
+        bearing = self.__calcBearing(
+            cameraIntrinsics.getHFovRad(),
+            cameraIntrinsics.getHres(),
+            int(centerX - cameraIntrinsics.getCx()),
+        )
+
+        Sentinel.debug(f"{depth=} {bearing=}")
+
+        estCoords = self.componentizeHDistAndBearing(depth, bearing)
+        return estCoords
+
 
     """ This follows the idea that the distance we calculate is independent to bearing. This means that the distance value we get is the X dist. Thus  y will be calculated using bearing
         Takes hDist, bearing (radians) and returns x,y
@@ -455,3 +483,5 @@ class PositionEstimator:
         x = math.cos(bearing) * magnitude
         y = math.sin(bearing) * magnitude
         return x, y
+
+

@@ -1,10 +1,12 @@
 import cv2
 import numpy as np
 import onnxruntime as ort
-from inference import utils
-from abstract.inferencerBackend import InferencerBackend
-from tools.Constants import ConfigConstants, InferenceMode
-from Core.LogManager import getChildLogger
+
+from Alt.Core import getChildLogger
+
+from ...inference import utils
+from ..inferencerBackend import InferencerBackend
+from ...Detections.DetectionResult import DetectionResult
 
 Sentinel = getChildLogger("onnx_inferencer")
 
@@ -15,7 +17,7 @@ class onnxInferencer(InferencerBackend):
         Sentinel.info(f"Using provider {providers[0]}")
         session_options = ort.SessionOptions()
         self.session = ort.InferenceSession(
-            self.mode.getModelPath(), sess_options=session_options, providers=providers
+            self.modelConfig.getPath(), sess_options=session_options, providers=providers
         )
         # Get input/output names from the ONNX model
         self.inputName = self.session.get_inputs()[0].name
@@ -33,10 +35,11 @@ class onnxInferencer(InferencerBackend):
     def runInference(self, inputTensor):
         return self.session.run([self.outputName], {self.inputName: inputTensor})
 
-    def postProcessBoxes(self, results, frame, minConf):
+    def postProcessBoxes(self, results, frame, minConf) -> list[DetectionResult]:
         adjusted = self.adjustBoxes(results[0], frame.shape, minConf)
         nmsResults = utils.non_max_suppression(adjusted, minConf)
-        return nmsResults
+
+        return [DetectionResult(nmsResult[0], nmsResult[1], nmsResult[2]) for nmsResult in nmsResults]
 
 
 def startDemo() -> None:

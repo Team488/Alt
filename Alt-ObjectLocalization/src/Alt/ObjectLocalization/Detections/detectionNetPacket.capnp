@@ -4,6 +4,7 @@ struct DataPacket {
     message @0 :Text;                     # String message
     timestamp @1 :Float64;                 # Timestamp for the frame
     detections @2 :List(Detection);                  # List of detections
+    deviceName @3 :Text;                     # Unique device name
 }
 
 struct Detection {
@@ -21,6 +22,5 @@ struct XYZ {
 }
 
 struct DataArray {
-    length @0 :Int16;                      # Length of the data
     data @1 :List(Float64);                   # Raw data as a list of signed 8-bit integers
 }

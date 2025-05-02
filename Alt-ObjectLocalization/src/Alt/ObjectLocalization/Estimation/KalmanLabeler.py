@@ -1,63 +1,62 @@
-""" Goals for this class
-
-    Known data: XYCoordinate of new Detection, Detection Type(Robot/Game Object), (If Robot then bumper color), and previous maps
-
-    Goals: Take the new information given, and assign the new detection a label, this label will persist throught detections
-    Ex: given new red robot detection at coord (100,121) -> figure out that this is the same robot that was at position (80,80) on the previous map. We use the SAME label so if in our cache it was called
-    robot#2, then this will also be robot#2
-
-    Expected output: A Label String that will help us know which robot is which
-
-"""
 import numpy as np
-from mapinternals.KalmanCache import KalmanCache
-from mapinternals.KalmanEntry import KalmanEntry
-from tools.Constants import CameraIdOffsets2024, LabelingConstants, Label
-from Core import getChildLogger
+
+from Alt.Core import getChildLogger
+
+from .KalmanCache import KalmanCache
+from ..Constants.Kalman import LabelingConstants
+from ..Localization.LocalizationResult import DeviceLocalizationResult
 
 Sentinel = getChildLogger("Kalman_Labler")
 
 
 class KalmanLabeler:
-    def __init__(self, kalmanCaches: list[KalmanCache], labels: list[Label]) -> None:
+    def __init__(self, kalmanCaches: list[KalmanCache], nClasses: int, idOffset: int = 30) -> None:
         self.kalmanCaches = kalmanCaches
-        self.labels = labels
+        self.nClasses = nClasses
+        self.idOffsets = {}
+        self.idStart = 0
+        self.idOffset = idOffset
 
     """ Replaces relative ids in list provided with their absolute id, handling new detections by trying to find old ids"""
 
     def updateRealIds(
         self,
-        singleCameraResults: list[
-            list[int, tuple[int, int, int], float, int, np.ndarray]
-        ],
-        cameraIdOffset: int,
-        timeStepSeconds: float,
+        deviceResult: DeviceLocalizationResult,
+        timeStepMs: float,
     ) -> None:
-        from tools import Calculator
+        # get or create a id offset for this device
+        uuid = deviceResult.deviceUniqueName
+        if uuid in self.idOffsets:
+            offset = self.idOffsets.get(uuid)
+        else:
+            offset = self.idStart
+            self.idStart += self.idOffset
+            self.idOffsets[uuid] = offset
 
+        # initialize containers for id reassignment
         allkeys: list[set] = [cache.getKeySet() for cache in self.kalmanCaches]
-        allmarkedIndexs = [[] for _ in range(len(self.kalmanCaches))]
+        allmarkedIndexs : list[list[int]] = [[] for _ in range(self.nClasses)]
 
-        for i in range(len(singleCameraResults)):
-            singleCameraResult = singleCameraResults[i]
-            singleCameraResult[0] += cameraIdOffset
-            # adjust id by a fixed camera offset, so that id collisions dont happen
-            (realId, (x, y, z), conf, class_idx, features) = singleCameraResult
+        for idx, localizationResult in enumerate(deviceResult.localizedResults):
+            # adjust id by the fixed camera offset, so that id collisions dont happen
+            localizationResult.deepsort_id += offset
 
-            if class_idx < 0 or class_idx > len(self.kalmanCaches):
+            if localizationResult.class_idx < 0 or localizationResult.class_idx >= self.nClasses:
                 Sentinel.warning(
-                    f"Update real ids got invalid class_idx! : {class_idx}"
+                    f"Update real ids got invalid class_idx! : {localizationResult.class_idx}"
                 )
                 continue
-            cache = self.kalmanCaches[class_idx]
-            keySetOfChoice = allkeys[class_idx]
-            data = cache.getSavedKalmanData(realId)
+
+            cache = self.kalmanCaches[localizationResult.class_idx]
+            keySetOfChoice = allkeys[localizationResult.class_idx]
+            data = cache.getSavedKalmanData(localizationResult.deepsort_id)
 
             if data is None:
-                allmarkedIndexs[class_idx].append(i)
+                # mark it as a missing entry
+                allmarkedIndexs[localizationResult.class_idx].append(idx)
             else:
-                # we want to isolate entries not seen
-                keySetOfChoice.remove(realId)
+                # remove from available optios
+                keySetOfChoice.remove(localizationResult.deepsort_id)
 
         # iterate over remaining keys to see if any of the new detections are within a delta and match
         # todo add robot color as a matching factor
@@ -66,36 +65,31 @@ class KalmanLabeler:
             allmarkedIndexs, allkeys, self.kalmanCaches
         ):
             for index in markedIndexs:
-                (realId, (x, y, z), conf, class_idx, features) = singleCameraResults[
-                    index
-                ]
+                localizationResult = deviceResult.localizedResults[index]
 
-                closestId = None
-                closestDistance = 100000
-                # todo optimize use rectangle segments
+                closestId : int = None
+                closestDistance = 1e5
+                # todo optimize using some sort of binary segmentation
+                # also very important, consider using direction of vx,vy to influence the range to become warped in the direction of vx/vy
+                # when considering an object that can change direction very quickly its less of an issue but consider a rolling object like a ball.
                 for key in keys:
-                    kalmanEntry: KalmanEntry = cache.getSavedKalmanData(key)
-                    # right now i am trying to find a match by finding the closest entry and seeing if its within a maximum delta
-                    [oldX, oldY, vx, vy] = kalmanEntry.X
-                    maxRange = (
-                        Calculator.calculateMaxRange(
-                            vx, vy, timeStepSeconds, self.labels[class_idx]
-                        )
-                        + 0.05
-                    )
-                    objectRange = Calculator.getDistance(
-                        x, y, oldX, oldY, vx, vy, timeStepSeconds
-                    )
-                    if objectRange < maxRange and objectRange < closestDistance:
+                    kalmanEntry = cache.getSavedKalmanData(key)
+
+                    oldX, oldY, vx, vy = kalmanEntry.X
+                    maxRange = timeStepMs * np.linalg.norm([vx, vy])
+                    dist = np.linalg.norm([localizationResult.location.x - oldX, localizationResult.location.y - oldY])
+
+                    if dist <= maxRange and dist < closestDistance:
                         closestId = key
-                        closestDistance = objectRange
+                        closestDistance = dist
 
                 if closestId is not None:
                     # found match within range
                     # remove id from possible options and update result entry
-                    singleCameraResults[index][0] = closestId
-                    keySetOfChoice.remove(closestId)
+                    localizationResult.deepsort_id = closestId
+                    keys.remove(closestId)
 
+        # handle any remanining keys
         for keys, cache in zip(allkeys, self.kalmanCaches):
             for remainingKey in keys:
                 out = cache.getSavedKalmanData(remainingKey)

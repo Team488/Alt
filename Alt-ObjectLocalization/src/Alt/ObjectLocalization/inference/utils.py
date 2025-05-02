@@ -2,8 +2,9 @@ import numpy as np
 import cv2
 import time
 from typing import List, Tuple, Callable, Any, Union, Optional
-from Core.LogManager import getChildLogger
-from tools.Constants import YOLOTYPE, Backend
+
+from Alt.Core import getChildLogger
+from Constants.Inference import YoloType, Backend
 
 Sentinel = getChildLogger("Inference_Utils")
 
@@ -280,7 +281,7 @@ def adjustBoxesV11ONNX(
 
 
 def getAdjustBoxesMethod(
-    yoloType: YOLOTYPE, backend: Backend
+    yoloType: YoloType, backend: Backend
 ) -> Callable[[np.ndarray, Tuple[int, ...], float, bool], List[Detection]]:
     """
     Get the appropriate box adjustment function for a given YOLO type and backend
@@ -296,12 +297,38 @@ def getAdjustBoxesMethod(
         RuntimeError: If an unsupported YOLO type is provided
     """
     if backend != Backend.ULTRALYTICS:
-        if yoloType == YOLOTYPE.V5:
+        if yoloType == YoloType.V5:
             return adjustBoxesV5
-        elif yoloType == YOLOTYPE.V11:
+        elif yoloType == YoloType.V11:
             return adjustBoxesV11ONNX
         else:
             Sentinel.fatal(f"Invalid Yolotype not supported yet!: {yoloType}")
             raise RuntimeError(f"Invalid Yolotype not supported: {yoloType}")
     else:
         return None  # ultralytics backend uses its own adjustment
+
+
+def drawBox(frame, bboxXYXY, class_str, conf, color=(10, 100, 255), buffer=8):
+    p1 = np.array(UnitConversion.toint(bboxXYXY[:2]))
+    p2 = np.array(UnitConversion.toint(bboxXYXY[2:]))
+    text = f"{class_str} Conf:{conf:.2f}"
+    cv2.rectangle(frame, p1, p2, color, 3, 0)
+
+    font = cv2.FONT_HERSHEY_PLAIN
+    font_scale = 3
+    thickness = 3
+    (text_width, text_height), _ = cv2.getTextSize(text, font, font_scale, thickness)
+
+    textStart = UnitConversion.toint(p1 - np.array([0, text_height + buffer]))
+    textEnd = UnitConversion.toint(p1 + np.array([text_width + buffer, 0]))
+    cv2.rectangle(frame, textStart, textEnd, color, -1)
+
+    cv2.putText(
+        frame,
+        text,
+        p1 + np.array([int(buffer / 2), -int(buffer / 2)]),
+        font,
+        font_scale,
+        (255, 255, 255),
+        thickness,
+    )

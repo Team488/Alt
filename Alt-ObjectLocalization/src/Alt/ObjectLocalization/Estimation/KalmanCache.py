@@ -1,7 +1,7 @@
 import numpy as np
-from mapinternals.KalmanEntry import KalmanEntry
-from mapinternals.UKF import Ukf
-from tools.Constants import KalmanConstants
+
+from .KalmanEntry import KalmanEntry
+from .UKF import Ukf
 
 """
     Goals for this class
@@ -21,8 +21,11 @@ class KalmanCache:
     def __init__(self) -> None:
         self.savedKalmanData = {}
 
-    def getKeySet(self):
-        return set(self.savedKalmanData.keys())
+    def getKeySet(self, copy : bool = True) -> set[int]:
+        if copy:
+            return set(self.savedKalmanData.keys())
+        else:
+            return self.savedKalmanData.keys()
 
     def saveKalmanData(self, id: int, ukf: Ukf) -> None:
         self.savedKalmanData[id] = KalmanEntry(ukf.baseUKF.x, ukf.baseUKF.P)

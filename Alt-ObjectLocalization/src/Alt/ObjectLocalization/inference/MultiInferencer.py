@@ -1,12 +1,15 @@
 import time
-from typing import List, Tuple, Optional, Any
+from typing import List, Optional
+
 import cv2
 import numpy as np
-from abstract.inferencerBackend import InferencerBackend
-from tools.Constants import ConfigConstants, InferenceMode, Backend
-from tools import UnitConversion
-from Core.LogManager import getChildLogger
-from demos import utils
+from Alt.Core import getChildLogger
+
+from .inferencerBackend import InferencerBackend
+from ..Constants.Inference import Backend
+from .ModelConfig import ModelConfig
+from ..Detections.DetectionResult import DetectionResult
+from . import utils
 
 Sentinel = getChildLogger("Multi_Inferencer")
 
@@ -16,18 +19,18 @@ class MultiInferencer:
     A unified interface for running inference with different backends (RKNN, ONNX, Ultralytics)
     """
 
-    def __init__(self, inferenceMode: InferenceMode) -> None:
+    def __init__(self, modelConfig: ModelConfig) -> None:
         """
         Initialize the multi-inferencer with a specific inference mode
 
         Args:
             inferenceMode: The inference mode to use (defines model, backend, etc.)
         """
-        self.inferenceMode: InferenceMode = inferenceMode
-        self.backend: InferencerBackend = self.__getBackend(self.inferenceMode)
+        self.modelConfig = modelConfig
+        self.backend = self.__getBackend(self.modelConfig)
         self.backend.initialize()
 
-    def __getBackend(self, inferenceMode: InferenceMode) -> InferencerBackend:
+    def __getBackend(self, modelConfig: ModelConfig) -> InferencerBackend:
         """
         Get the appropriate backend based on the inference mode
 
@@ -40,28 +43,34 @@ class MultiInferencer:
         Raises:
             RuntimeError: If an invalid backend is specified
         """
-        backend = inferenceMode.getBackend()
+        backend = modelConfig.getBackend()
         if backend == Backend.RKNN:
-            from inference.rknnInferencer import rknnInferencer
+            from .backends.rknnInferencer import rknnInferencer
 
-            return rknnInferencer(mode=inferenceMode)
+            return rknnInferencer(modelConfig)
 
         if backend == Backend.ONNX:
-            from inference.onnxInferencer import onnxInferencer
+            from .backends.onnxInferencer import onnxInferencer
 
-            return onnxInferencer(mode=inferenceMode)
+            return onnxInferencer(modelConfig)
 
         if backend == Backend.ULTRALYTICS:
-            from inference.ultralyticsInferencer import ultralyticsInferencer
+            from .backends.ultralyticsInferencer import ultralyticsInferencer
 
-            return ultralyticsInferencer(mode=inferenceMode)
+            return ultralyticsInferencer(modelConfig)
+        
+        if backend == Backend.TENSORRT:
+            from .backends.TensorrtInferencer import TensorrtInferencer
+
+            return TensorrtInferencer(modelConfig)
+
 
         Sentinel.fatal(f"Invalid backend provided!: {backend}")
         raise RuntimeError(f"Invalid backend provided: {backend}")
 
     def run(
         self, frame: np.ndarray, minConf: float, drawBoxes: bool = False
-    ) -> Optional[List[Tuple[List[float], float, int]]]:
+    ) -> Optional[List[DetectionResult]]:
         """
         Run inference on a frame
 

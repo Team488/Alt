@@ -1,12 +1,13 @@
 import numpy as np
 from ultralytics import YOLO
 import cv2
-from abstract.inferencerBackend import InferencerBackend
 
+from ..inferencerBackend import InferencerBackend
+from ...Detections.DetectionResult import DetectionResult
 
 class ultralyticsInferencer(InferencerBackend):
     def initialize(self) -> None:
-        self.model = YOLO(self.mode.getModelPath())
+        self.model = YOLO(self.modelConfig.getPath())
 
     def preprocessFrame(self, frame):
         return frame
@@ -14,15 +15,15 @@ class ultralyticsInferencer(InferencerBackend):
     def runInference(self, inputTensor):
         return self.model(inputTensor)
 
-    def postProcessBoxes(self, results, frame, minConf):
+    def postProcessBoxes(self, results, frame, minConf) -> list[DetectionResult]:
         if results != None and results[0] != None:
             boxes = results[0].boxes.xywh.cpu().numpy()
             half = boxes[:, 2:] / 2
             boxes = np.hstack((boxes[:, :2] - half, boxes[:, :2] + half))
             confs = results[0].boxes.conf.cpu()
             ids = results[0].boxes.cls.cpu().numpy().astype(int)
-            # TODO add minconf here
-            return list(zip(boxes, confs, ids))
+            
+            return [DetectionResult(result[0], result[1], result[2]) for result in zip(boxes, confs, ids) if result[2] > minConf]
 
         return []
 

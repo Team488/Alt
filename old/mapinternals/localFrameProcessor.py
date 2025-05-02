@@ -2,19 +2,15 @@ import random
 import time
 import cv2
 import numpy as np
-from mapinternals.deepSortBaseLabler import DeepSortBaseLabler
-from tools import UnitConversion
-from tools.Constants import (
-    CameraIntrinsics,
-    CameraExtrinsics,
-    MapConstants,
-    InferenceMode,
-    ConfigConstants,
-)
-from tools.Units import UnitMode
-from tools.positionEstimator import PositionEstimator
+
+from ..Tracking.deepSortBaseLabler import DeepSortBaseLabler
+from ..Constants.Inference import InferenceMode, ConfigConstants
+
+from Alt.Cameras.Parameters import CameraIntrinsics, CameraExtrinsics
+
+from .positionEstimator import PositionEstimator
 from tools.depthBasedPositionEstimator import DepthBasedPositionEstimator
-from tools.positionTranslations import CameraToRobotTranslator, transformWithYaw
+from .positionTranslations import CameraToRobotTranslator, transformWithYaw
 from inference.MultiInferencer import MultiInferencer
 from demos import utils
 from Core import getChildLogger
@@ -104,7 +100,7 @@ class LocalFrameProcessor:
             return []
 
         # id(unique),bbox,conf,isrobot,features,
-        labledResults = self.baseLabler.getLocalLabels(colorFrame, yoloResults)
+        labledResults = self.baseLabler.labelResults(colorFrame, yoloResults)
 
         if drawBoxes:
             # draw a box with id,conf and relative estimate

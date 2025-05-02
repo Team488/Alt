@@ -434,13 +434,8 @@ class ObjectReferences(Enum):
         return self.value[1]
 
 
-class ConfigConstants:
-    confThreshold = 0.7
 
 
-class KalmanConstants:
-    Q = np.eye(4) * 0.01  # Process noise covariance
-    R = np.eye(2) * 0.01  # Measurement noise covariance
 
 
 class CameraIdOffsets2024(Enum):
@@ -471,16 +466,6 @@ class CameraIdOffsets2025(Enum):
 class TEAM(Enum):
     RED = "red"
     BLUE = "blue"
-
-
-
-
-class LabelingConstants(Enum):
-    MAXFRAMESNOTSEEN = 60  # around 2-3 sec
-
-
-# todo consolidate camera info into one central enum
-# class CAMERA(Enum):
 
 
 def getCameraIfOffset2024(cameraName: str):

@@ -1,23 +1,20 @@
 from enum import Enum
 from ..Units import Types, Conversions
 
-class Field(Enum):
-    @staticmethod
-    def getDefaultLengthType():
-        return Types.Length.CM
+class Field:
+    def __init__(self, width : float, height : float, units : Types.Length = Types.Length.CM):
+        self.width = width
+        self.height = height
+        self.units = units
 
-    @staticmethod
-    def getDefaultRotationType():
-        return Types.Rotation.Rad
-
-    fieldWidth = 1755  # 54' 3" in cm
-    fieldHeight = 805  # 26' 3" in cm
-
-    def __getCM(self) -> float:
-        return self.value
-
-    def getLength(self, lengthType: Types.Length = Types.Length.CM) -> float:
+    def getWidth(self, units: Types.Length = Types.Length.CM) -> float:
         result = Conversions.convertLength(
-            self.__getCM(), fromType=self.getDefaultLengthType(), toType=lengthType
+            self.width, fromType=self.units, toType=units
+        )
+        return result
+    
+    def getHeight(self, units: Types.Length = Types.Length.CM) -> float:
+        result = Conversions.convertLength(
+            self.height, fromType=self.units, toType=units
         )
         return result

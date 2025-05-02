@@ -1,9 +1,6 @@
 # Matrix-Alt-Cameras
 
-**Matrix-Alt-Cameras** is an extension package to the [Matrix-Alt-Core](https://github.com/Team488/Alt/Alt-Core) framework, designed to add camera capabilities to your Alt Agents with minimal setup. This module enables you to easily attach one or more camera streams (e.g., OpenCV, RealSense, OAK-D) to your agents, process frames in real-time, and integrate vision into autonomous systems.
-
-Created by **FRC Team 488** (*Subteam: The Matrix*), this package extends the flexibility of the Alt framework to support robust camera-based tasks like localization, vision tracking, or display overlays.
-
+**Matrix-Alt-Cameras** is an extension package to the [Matrix-Alt-Core](https://pypi.org/project/Matrix-Alt-Core/) framework, designed to add camera capabilities to your Alt Agents with minimal setup. 
 ---
 
 ## 🚀 Quick Start

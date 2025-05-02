@@ -1,11 +1,5 @@
-import os
-import cv2
-import sys
-import argparse
-
-
 import numpy as np
-from inference.utils import rescaleBox
+from .utils import rescaleBox
 
 OBJ_THRESH = 0.25
 NMS_THRESH = 0.45
