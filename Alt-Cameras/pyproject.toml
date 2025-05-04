@@ -27,7 +27,7 @@ dependencies = [
   "scipy == 1.13.1",
   "pycapnp == 2.0.0",
   "depthai == 2.30.0.0",
-  "pyrealsense2"
+  "pyrealsense2 == 2.55.1.6486"
 ]
 
 [tool.setuptools]
