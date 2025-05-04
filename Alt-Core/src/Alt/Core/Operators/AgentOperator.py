@@ -103,7 +103,7 @@ class AgentOperator:
         agentClass: Union[partial, type[Agent]],
         agentName: str,
         proxyDict: multiprocessing.managers.DictProxy,
-    ) -> tuple[multiprocessing.managers.DictProxy[str, Any], queue.Queue]:
+    ) -> tuple[multiprocessing.managers.DictProxy, queue.Queue]:
         for requestName, proxyType in ProxyType.getProxyRequests(agentClass).items():
             # TODO add more
             if proxyType is ProxyType.STREAM:
@@ -263,7 +263,7 @@ class AgentOperator:
         shareOperator: ShareOperator,
         isMainThread: bool,
         stopflag: threading.Event,
-        proxies: multiprocessing.managers.DictProxy[str, Any],
+        proxies: multiprocessing.managers.DictProxy,
         logProxy: queue.Queue,
         runOnCreate: Optional[Callable[[Agent], None]] = None,
     ) -> None:

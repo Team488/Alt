@@ -10,6 +10,7 @@ class AgentExample(Agent):
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.timesRun: int = 0
+        self.nameProp = None
 
     def create(self) -> None:
         # for example here i can create a propery to configure what to call myself
