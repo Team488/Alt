@@ -41,5 +41,5 @@ jobs:
 
       # fix duplicate module naming first
       # - name: run mypy
-      #   run: mypy
+      #   run: mypy .
 
