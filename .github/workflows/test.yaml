@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-      - "**/force-test/**"
+      - "**force-test**"
   pull_request:
   
 jobs:
