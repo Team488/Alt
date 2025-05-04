@@ -5,7 +5,6 @@ from typing import Union, Optional, Callable, Any
 import cv2
 import numpy as np
 
-from Alt.Core import is_instance_of
 from Alt.Core.Agents import Agent
 from Alt.Core.Constants.AgentConstants import ProxyType
 from Alt.Core.Operators.StreamOperator import StreamProxy
