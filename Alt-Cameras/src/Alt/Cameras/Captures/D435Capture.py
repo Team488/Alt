@@ -1,5 +1,7 @@
 from typing import Tuple, Optional
+
 import numpy as np
+
 from .depthCamera import depthCamera
 from ..Parameters.CameraIntrinsics import CameraIntrinsics
 from .Capture import CaptureWIntrinsics
@@ -32,7 +34,7 @@ class D435Capture(depthCamera, CaptureWIntrinsics):
         intr: CameraIntrinsics = self.realsenseHelper.getCameraIntrinsics()
         super().setIntrinsics(intr)
 
-    def getMainFrame(self) -> np.ndarray:
+    def getMainFrame(self) -> Optional[np.ndarray]:
         """
         Get the color frame from the camera
 
@@ -56,7 +58,7 @@ class D435Capture(depthCamera, CaptureWIntrinsics):
 
         return self.realsenseHelper.getFps()
 
-    def getDepthFrame(self) -> np.ndarray:
+    def getDepthFrame(self) -> Optional[np.ndarray]:
         """
         Get the depth frame from the camera
 
@@ -65,7 +67,7 @@ class D435Capture(depthCamera, CaptureWIntrinsics):
         """
         return self.getDepthAndColorFrame()[0]  # linked together
 
-    def getDepthAndColorFrame(self) -> Tuple[np.ndarray, np.ndarray]:
+    def getDepthAndColorFrame(self) -> Tuple[Optional[np.ndarray], Optional[np.ndarray]]:
         """
         Get both the depth and color frames from the camera
 

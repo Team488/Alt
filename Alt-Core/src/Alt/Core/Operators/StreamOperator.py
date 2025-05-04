@@ -66,7 +66,7 @@ class StreamOperator:
         """
         if name in self.streams:
             Sentinel.info(f"Stream {name} already exists.")
-            return self.streams[name]["dict"]
+            return self.streams[name]
 
         streamPath = f"http://{DEVICEIP}:5000/{name}/{self.STREAMPATH}"
         streamProxy = StreamProxy(self.manager.dict(), streamPath)
@@ -165,6 +165,7 @@ class StreamProxy(Proxy):
         """
         self.__streamDict = streamDict
         self.__streamDict["stream_path"] = streamPath
+        self.__streamDict["frame_count"] = 0
 
     def put(self, frame: np.ndarray) -> None:
         """Stores a new video frame in the proxy.
@@ -183,13 +184,13 @@ class StreamProxy(Proxy):
         """
         return self.__streamDict.get("frame")
 
-    def getFrameCount(self) -> Optional[int]:
+    def getFrameCount(self) -> int:
         """Gets the current count of frames stored in the proxy.
 
         Returns:
             Optional[int]: The total number of frames sent, or None if not available.
         """
-        return self.__streamDict.get("frame_count")
+        return self.__streamDict["frame_count"]
 
     def getStreamPath(self) -> str:
         """Gets the URL path of the video stream.
@@ -197,7 +198,7 @@ class StreamProxy(Proxy):
         Returns:
             str: The path where the stream can be accessed.
         """
-        return self.__streamDict.get("stream_path")
+        return self.__streamDict["stream_path"]
 
     def __getstate__(self):
         """Returns the state of the StreamProxy for pickling.

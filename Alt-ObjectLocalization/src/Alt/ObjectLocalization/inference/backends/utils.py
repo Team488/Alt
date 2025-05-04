@@ -1,10 +1,11 @@
 import numpy as np
 import cv2
 import time
-from typing import List, Tuple, Callable, Any, Union, Optional
+from typing import List, Tuple, Callable, Union
 
 from Alt.Core import getChildLogger
-from Constants.Inference import YoloType, Backend
+from Alt.Core.Units import Conversions
+from ...Constants.InferenceC import YoloType, Backend
 
 Sentinel = getChildLogger("Inference_Utils")
 
@@ -308,9 +309,9 @@ def getAdjustBoxesMethod(
         return None  # ultralytics backend uses its own adjustment
 
 
-def drawBox(frame, bboxXYXY, class_str, conf, color=(10, 100, 255), buffer=8):
-    p1 = np.array(UnitConversion.toint(bboxXYXY[:2]))
-    p2 = np.array(UnitConversion.toint(bboxXYXY[2:]))
+def drawBox(frame : np.ndarray, bboxXYXY : tuple, class_str : str, conf : float, color=(10, 100, 255), buffer=8):
+    p1 = np.array(Conversions.toint(bboxXYXY[:2]))
+    p2 = np.array(Conversions.toint(bboxXYXY[2:]))
     text = f"{class_str} Conf:{conf:.2f}"
     cv2.rectangle(frame, p1, p2, color, 3, 0)
 
@@ -319,8 +320,8 @@ def drawBox(frame, bboxXYXY, class_str, conf, color=(10, 100, 255), buffer=8):
     thickness = 3
     (text_width, text_height), _ = cv2.getTextSize(text, font, font_scale, thickness)
 
-    textStart = UnitConversion.toint(p1 - np.array([0, text_height + buffer]))
-    textEnd = UnitConversion.toint(p1 + np.array([text_width + buffer, 0]))
+    textStart = Conversions.toint(p1 - np.array([0, text_height + buffer]))
+    textEnd = Conversions.toint(p1 + np.array([text_width + buffer, 0]))
     cv2.rectangle(frame, textStart, textEnd, color, -1)
 
     cv2.putText(

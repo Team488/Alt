@@ -11,10 +11,9 @@ from . import utils
 class InferencerBackend(ABC):
     def __init__(self, modelConfig: ModelConfig) -> None:
         self.modelConfig = modelConfig
-        self.yoloType = self.model.getYoloType()
-        self.labels = self.model.getLabels()
+        self.objects = modelConfig.getObjects()
         self.adjustBoxes: Callable = utils.getAdjustBoxesMethod(
-            self.yoloType, self.model.getBackend()
+            self.modelConfig.getYoloType(), self.modelConfig.getBackend()
         )
 
     @abstractmethod

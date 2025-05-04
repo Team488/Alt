@@ -6,7 +6,7 @@ from Alt.ObjectLocalization.Estimation.KalmanCache import KalmanCache
 from Alt.ObjectLocalization.Estimation.UKF import Ukf
 from Alt.ObjectLocalization.Estimation.KalmanLabeler import KalmanLabeler
 from Alt.ObjectLocalization.Localization.LocalizationResult import LocalizationResult, DeviceLocalizationResult
-from Alt.ObjectLocalization.Constants.Kalman import LabelingConstants
+from Alt.ObjectLocalization.Constants.KalmanC import LabelingConstants
 
 
 def test_lablerReassignment() -> None:

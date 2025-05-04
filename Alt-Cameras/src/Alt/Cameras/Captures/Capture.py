@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
-from typing import Tuple
+from typing import Tuple, Optional
+
 import numpy as np
+
 from ..Parameters.CameraIntrinsics import CameraIntrinsics
 from ..Parameters.CameraConfig import CameraConfig
 
@@ -18,7 +20,7 @@ class Capture(ABC):
         pass
 
     @abstractmethod
-    def getMainFrame(self) -> np.ndarray:
+    def getMainFrame(self) -> Optional[np.ndarray]:
         """Returns the main capture frame"""
         pass
 
@@ -29,7 +31,11 @@ class Capture(ABC):
 
     def getFrameShape(self) -> Tuple[int, ...]:
         """Returns the shape of the frame"""
-        return self.getMainFrame().shape
+        frame = self.getMainFrame()
+        if frame is not None:
+            return frame.shape
+        
+        raise RuntimeError("Capture mainframe is None!")
 
     @abstractmethod
     def isOpen(self) -> bool:

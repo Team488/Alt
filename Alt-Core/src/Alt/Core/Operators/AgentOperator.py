@@ -8,8 +8,10 @@ import traceback
 import time
 from functools import partial
 from concurrent.futures import ProcessPoolExecutor, Future
-from typing import Any, Dict, Optional, Callable, Union
+from typing import Any, Optional, Callable, Union
+
 from JXTABLES.XTablesClient import XTablesClient
+
 from .ConfigOperator import ConfigOperator
 from .ShareOperator import ShareOperator
 from .StreamOperator import StreamOperator
@@ -47,7 +49,7 @@ class AgentOperator:
         self.__executor: ProcessPoolExecutor = ProcessPoolExecutor()
         self.__stop: threading.Event = manager.Event()  # flag
         self.futures: list[Future] = []
-        self.activeAgentNames = {}
+        self.activeAgentNames : dict[str,int] = {}
         self.mainAgent: Optional[Agent] = None
         self.shareOp = shareOp
         self.streamOp = streamOp
@@ -101,7 +103,7 @@ class AgentOperator:
         agentClass: Union[partial, type[Agent]],
         agentName: str,
         proxyDict: multiprocessing.managers.DictProxy,
-    ) -> Dict[str, Any]:
+    ) -> tuple[multiprocessing.managers.DictProxy[str, Any], queue.Queue]:
         for requestName, proxyType in ProxyType.getProxyRequests(agentClass).items():
             # TODO add more
             if proxyType is ProxyType.STREAM:
@@ -184,7 +186,7 @@ class AgentOperator:
         agentName,
         shareOperator: ShareOperator,
         proxies: multiprocessing.managers.DictProxy,
-        logProxy: multiprocessing.Queue,
+        logProxy: queue.Queue,
         isMainThread: bool,
     ) -> Agent:
 
@@ -200,7 +202,7 @@ class AgentOperator:
         logProperty = agent.propertyOperator.createCustomReadOnlyProperty(
             logTable, "None...", addBasePrefix=False, addOperatorPrefix=False
         )
-        lastLogs = []
+        lastLogs : list[str] = []
 
         logLambda = lambda entry: AgentOperator._handleLog(logProperty, lastLogs, entry)
         lambda_handler = LambdaHandler(logLambda)
@@ -214,7 +216,7 @@ class AgentOperator:
     def _injectNewOperators(
         agent: Agent,
         agentName: str,
-        logProxy: multiprocessing.Queue
+        logProxy: queue.Queue
     ) -> None:
         """Since any agent not on main thread will be in its own process, alot of new objects will have to be created"""
         client = XTablesClient(debug_mode=True)  # one per process
@@ -261,9 +263,9 @@ class AgentOperator:
         shareOperator: ShareOperator,
         isMainThread: bool,
         stopflag: threading.Event,
-        proxies: multiprocessing.managers.DictProxy,
-        logProxy: multiprocessing.Queue,
-        runOnCreate: Callable[[Agent], None] = None,
+        proxies: multiprocessing.managers.DictProxy[str, Any],
+        logProxy: queue.Queue,
+        runOnCreate: Optional[Callable[[Agent], None]] = None,
     ) -> None:
         if not isMainThread:
             signal.signal(signal.SIGINT, signal.SIG_IGN)    
@@ -274,21 +276,21 @@ class AgentOperator:
 
          # helper lambdas
         __setStatus: Callable[
-            [str, str], bool
+            [str], bool
         ] = lambda status: agent.propertyOperator.createCustomReadOnlyProperty(
             f"{agentName}.{AgentOperator.STATUS}", status
         ).set(
             status
         )
         __setErrorLog: Callable[
-            [str, str], bool
+            [str], bool
         ] = lambda error: agent.propertyOperator.createCustomReadOnlyProperty(
             f"{agentName}.{AgentOperator.ERRORS}", error
         ).set(
             error
         )
         __setDescription: Callable[
-            [str, str], bool
+            [str], bool
         ] = lambda description: agent.propertyOperator.createCustomReadOnlyProperty(
             f"{agentName}.{AgentOperator.DESCRIPTION}", description
         ).set(

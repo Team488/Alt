@@ -5,7 +5,7 @@ Sentinel = getChildLogger("Share_Operator")
 
 
 class ShareOperator:
-    """Uses a multiprocessing dict to "share memory" across any agents and orders locally"""
+    """Uses a multiprocessing dict to "share memory" across any agents locally"""
 
     def __init__(self, dict) -> None:
         self.__sharedMap = dict

@@ -39,7 +39,7 @@ jobs:
       - name: Run tests
         run: pytest  # pytest will automatically pick up the pytest.ini settings
 
-      # fix duplicate module naming first
+      # fix all mypy errors first. Still over 100+ (or 250+ if you include missing imports) left
       # - name: run mypy
       #   run: mypy .
 

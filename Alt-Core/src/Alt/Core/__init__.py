@@ -11,9 +11,9 @@ import socket
 import platform
 from enum import Enum
 from .Operators import LogOperator, ConfigOperator
-from . import Neo
+from . import Neo as N
 
-Neo = Neo.Neo 
+Neo = N.Neo 
 getChildLogger = LogOperator.getChildLogger
 staticLoad = ConfigOperator.ConfigOperator.staticLoad
 staticWrite = ConfigOperator.ConfigOperator.staticWrite

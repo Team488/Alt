@@ -5,6 +5,7 @@ from typing import Union, Optional, Callable, Any
 import cv2
 import numpy as np
 
+from Alt.Core import is_instance_of
 from Alt.Core.Agents import Agent
 from Alt.Core.Constants.AgentConstants import ProxyType
 from Alt.Core.Operators.StreamOperator import StreamProxy
@@ -12,8 +13,6 @@ from Alt.Core.Operators.StreamOperator import StreamProxy
 from ..Captures.OpenCVCapture import OpenCVCapture
 from ..Captures.Capture import Capture, CaptureWIntrinsics, ConfigurableCapture
 from ..Captures.depthCamera import depthCamera
-from ..Proto.FramePacket import FramePacket
-from ..Parameters.CameraIntrinsics import CameraIntrinsics
 from .. import canCurrentlyDisplay
 from ..Captures.tools import calibration
 from ..Calibration.CalibrationUtil import CalibrationUtil
@@ -53,10 +52,10 @@ class CameraUsingAgentBase(Agent):
         if self.capture is None:
             raise ValueError("CameraUsingAgentBase requires a capture object")
 
-        self.depthEnabled = issubclass(self.capture.__class__, depthCamera)
-        self.isCv2Backend = issubclass(self.capture.__class__, OpenCVCapture)
-        self.isConfigurable = issubclass(self.capture.__class__, ConfigurableCapture)
-        self.isWIntrinsics = issubclass(self.capture.__class__, CaptureWIntrinsics)
+        self.depthEnabled = isinstance(self.capture.__class__, depthCamera)
+        self.isCv2Backend = isinstance(self.capture.__class__, OpenCVCapture)
+        self.isConfigurable = isinstance(self.capture.__class__, ConfigurableCapture)
+        self.isWIntrinsics = isinstance(self.capture.__class__, CaptureWIntrinsics)
 
         
         
@@ -92,7 +91,7 @@ class CameraUsingAgentBase(Agent):
         if self.showFrames:
             cv2.namedWindow(self.WINDOWNAMECOLOR)
 
-            if self.depthEnabled:
+            if isinstance(self.capture.__class__, depthCamera):
                 cv2.namedWindow(self.WINDOWNAMEDEPTH)
 
 
@@ -118,7 +117,7 @@ class CameraUsingAgentBase(Agent):
             frame = self.capture.getMainFrame()
             retTest = frame is not None
 
-            if self.depthEnabled:
+            if isinstance(self.capture.__class__, depthCamera):
                 depthFrame = self.capture.getDepthFrame()
                 retTest = retTest and depthFrame is not None
         else:
@@ -238,7 +237,7 @@ class CameraUsingAgentBase(Agent):
         with self.timer.run("cap_read"):
             self.hasIngested = True
 
-            if self.depthEnabled:
+            if isinstance(self.capture.__class__, depthCamera):
                 latestFrames = self.capture.getDepthAndColorFrame()
                 if latestFrames is None:
                     raise BrokenPipeError("Camera failed to capture with depth!")

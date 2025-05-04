@@ -1,10 +1,12 @@
-import numpy as np
 from typing import Optional
+
+import cv2
+import numpy as np
+from Alt.Core import Platform, DEVICEPLATFORM
+
 from . import utils
 from .Capture import Capture
 
-import cv2
-from Alt.Core import Platform, DEVICEPLATFORM
 DefaultUseV4L2 = DEVICEPLATFORM == Platform.LINUX
 
 class OpenCVCapture(Capture):
@@ -23,7 +25,6 @@ class OpenCVCapture(Capture):
         self.path: str = capturePath
         self.useV4L2Backend = useV4L2Backend
         self.flushTimeMS: int = flushTimeMS
-        self.cap: Optional[cv2.VideoCapture] = None
 
     def create(self) -> None:
         """
@@ -60,7 +61,7 @@ class OpenCVCapture(Capture):
         return retTest
         
     def __ensureCap(self) -> None:
-        if self.cap is None:
+        if not hasattr(self, 'cap') or self.cap is None:
             raise RuntimeError("Capture not created, call create() first")
 
     def getMainFrame(self) -> np.ndarray:
@@ -108,9 +109,8 @@ class OpenCVCapture(Capture):
         """
         Close the capture and release any resources
         """
-        if self.cap is not None:
-            self.cap.release()
-            self.cap = None
+        self.__ensureCap()
+        self.cap.release()
 
     def setFps(self, fps : int) -> bool:
         self.__ensureCap()
@@ -118,7 +118,7 @@ class OpenCVCapture(Capture):
     
     def setVideoWriter(self, videoWriter: str = "MJPG") -> bool:
         self.__ensureCap()
-        return self.cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*videoWriter))
+        return self.cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*videoWriter)) # type: ignore
     
     def setWidth(self, width : int) -> bool:
         self.__ensureCap()
@@ -128,7 +128,7 @@ class OpenCVCapture(Capture):
         self.__ensureCap()
         return self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
     
-    def setAutoExposure(self, autoExposure : bool, manualExposure : float = None) -> bool:
+    def setAutoExposure(self, autoExposure : bool, manualExposure : Optional[float] = None) -> bool:
         self.__ensureCap()
         propertySet = self.cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 0.75 if autoExposure else 0.25)
         
@@ -136,7 +136,7 @@ class OpenCVCapture(Capture):
             if manualExposure is None:
                 raise RuntimeError("If you are setting autoExposure to false, you must provide a manualExposure!")
             
-            manualSet = self.capture.cap.set(
+            manualSet = self.cap.set(
                 cv2.CAP_PROP_EXPOSURE, manualExposure
             )
 

@@ -1,4 +1,4 @@
-from Constants.Inference import Object, Backend, YoloType
+from ..Constants.InferenceC import Object, Backend, YoloType
 
 class ModelConfig:
     def __init__(self, modelPath : str, objects : list[Object], backend : Backend, yoloType : YoloType):

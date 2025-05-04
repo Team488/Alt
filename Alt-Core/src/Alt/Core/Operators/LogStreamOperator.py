@@ -1,3 +1,4 @@
+import queue
 from flask import Flask, Response, stream_with_context
 import functools
 import multiprocessing
@@ -12,10 +13,10 @@ class LogStreamOperator:
     def __init__(self, app: Flask, manager: multiprocessing.managers.SyncManager):
         self.app = app
         self.manager = manager
-        self.log_streams = {}  # Dictionary to store log queues
+        self.log_streams : dict[str, dict[str, queue.Queue]] = {}  # Dictionary to store log queues
         self.running = True
 
-    def register_log_stream(self, name) -> multiprocessing.Queue:
+    def register_log_stream(self, name : str) -> queue.Queue:
         """Registers a new SSE log stream and returns a Queue for pushing logs to it."""
         if name in self.log_streams:
             Sentinel.info(f"Log stream {name} already exists.")

@@ -3,6 +3,8 @@ import json
 from typing import Optional, Union
 from enum import Enum
 
+import numpy as np
+
 from ..Parameters.CameraCalibration import CameraCalibration
 
 
@@ -73,6 +75,10 @@ class CameraIntrinsics:
 
     def __str__(self):
         return f"({self.getHres()}x{self.getVres()})-(fx:{self.getFx()}|fy:{self.getFy()}|cx:{self.getCx()}|cy:{self.getCy()})"
+    
+    def getCameraMatrix(self) -> np.ndarray:
+        return np.array([[self.getFx(), 0, self.getCx()],[0, self.getFy(), self.getCy()],[0, 0, 1]])
+
 
     @staticmethod
     def getHfov(cameraIntr: "CameraIntrinsics", radians: bool = True):

@@ -1,9 +1,8 @@
 import time
-import cv2
 import logging
 from typing import List, Tuple, Optional
 
-
+import cv2
 
 def flushCapture(cap: cv2.VideoCapture, flushTimeMs: int) -> None:
     """
@@ -17,9 +16,6 @@ def flushCapture(cap: cv2.VideoCapture, flushTimeMs: int) -> None:
     stime = time.time()
     while time.time() - stime < flushS:
         cap.grab()
-
-
-
 
 def getCorrectCameraFeed(
     idxOptions: List[int] = [0, 1], 
@@ -40,7 +36,7 @@ def getCorrectCameraFeed(
             cap = cv2.VideoCapture(idx)
             while cap.isOpened():
                 ret, frame = cap.read()
-                if ret and frame.shape == expectedRes:
+                if ret and frame.shape == expectedRes: # type: ignore
                     return idx
         return None
     except Exception as E:

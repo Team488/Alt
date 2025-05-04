@@ -24,7 +24,7 @@ class CameraCalibration:
 
         return self.__mapX, self.__mapY
 
-    def __getMapXY(self) -> tuple[np.ndarray]:
+    def __getMapXY(self) -> tuple[np.ndarray, np.ndarray]:
         newCameraMatrix, roi = cv2.getOptimalNewCameraMatrix(
             self.cameraMatrix, self.distortionCoeff, self.resolutionWH, 1, self.resolutionWH
         )
@@ -36,6 +36,7 @@ class CameraCalibration:
 
         return mapx, mapy
 
+    @staticmethod
     def fromJsonPath(path : str) -> Optional["CameraCalibration"]:
         try:
             with open(path) as calibration:
@@ -75,3 +76,4 @@ class CameraCalibration:
             sort_keys=True,
             indent=4,
         )
+    

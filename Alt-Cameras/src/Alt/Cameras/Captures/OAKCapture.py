@@ -1,5 +1,7 @@
 from typing import Tuple, Optional
+
 import numpy as np
+
 from .depthCamera import depthCamera
 from .Capture import CaptureWIntrinsics
 from ..Constants.resolution import OAKDLITEResolution
@@ -29,7 +31,7 @@ class OAKCapture(depthCamera, CaptureWIntrinsics):
         self.depthAiHelper = DepthAIHelper(self.res)
         super().setIntrinsics(self.depthAiHelper.getColorIntrinsics())
 
-    def getDepthAndColorFrame(self) -> Tuple[np.ndarray, np.ndarray]:
+    def getDepthAndColorFrame(self) -> Tuple[Optional[np.ndarray], Optional[np.ndarray]]:
         """
         Get both depth and color frames from the camera
 
@@ -41,7 +43,7 @@ class OAKCapture(depthCamera, CaptureWIntrinsics):
 
         return (self.depthAiHelper.getDepthFrame(), self.depthAiHelper.getColorFrame())
 
-    def getDepthFrame(self) -> np.ndarray:
+    def getDepthFrame(self) -> Optional[np.ndarray]:
         """
         Get the depth frame from the camera
 
@@ -53,7 +55,7 @@ class OAKCapture(depthCamera, CaptureWIntrinsics):
 
         return self.depthAiHelper.getDepthFrame()
 
-    def getMainFrame(self) -> np.ndarray:
+    def getMainFrame(self) -> Optional[np.ndarray]:
         """
         Get the color frame from the camera
 
@@ -97,22 +99,3 @@ class OAKCapture(depthCamera, CaptureWIntrinsics):
             self.depthAiHelper.close()
             self.depthAiHelper = None
 
-
-def startDemo() -> None:
-    """
-    Start a demo showing depth and color frames from the OAK camera
-    """
-    import cv2
-
-    cap = OAKCapture(OAKDLITEResolution.OAK1080P)
-    cap.create()
-
-    while cap.isOpen():
-        depth, color = cap.getDepthAndColorFrame()
-        cv2.imshow("depth", depth)
-        cv2.imshow("color", color)
-
-        if cv2.waitKey(1) & 0xFF == ord("q"):
-            break
-
-    cap.close()

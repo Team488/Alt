@@ -2,8 +2,6 @@ from .Captures.OAKCapture import OAKCapture
 from .Captures.D435Capture import D435Capture
 from .Captures.OpenCVCapture import OpenCVCapture
 
-
-
 def isHeadlessDisplay():
     import subprocess
     import sys

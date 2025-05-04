@@ -13,15 +13,6 @@ class PositionLocalizingAgentBase(Agent):
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
-        # Initialize properties that will be set in create()
-        self.xtablesPosTable = None
-        self.locX = None
-        self.locY = None
-        self.locRot = None
-        self.positionOffsetXM = None
-        self.positionOffsetYM = None
-        self.positionOffsetYAWDEG = None
-
         # Initialize robot pose variables
         self.robotPose2dMRAD: Tuple[float, float, float] = (0, 0, 0)
         self.robotPose2dCMRAD: Tuple[float, float, float] = (0, 0, 0)
@@ -29,8 +20,6 @@ class PositionLocalizingAgentBase(Agent):
         self.locTimeStamp: int = -1
 
     def create(self) -> None:
-        super().create()
-
         if self.propertyOperator is None:
             raise ValueError("PropertyOperator not initialized")
 

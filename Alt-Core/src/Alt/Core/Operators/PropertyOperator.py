@@ -1,5 +1,5 @@
 import logging
-from collections.abc import Iterable
+from typing import Sequence
 from typing import Dict, List, Any, Optional, Callable
 from JXTABLES.XTablesClient import XTablesClient
 from JXTABLES import XTableProto_pb2 as XTableProto
@@ -63,7 +63,7 @@ class PropertyOperator:
         return self.__addFullPrefix("")[:-1]  # remove trailing dot
 
     def __updatePropertyCallback(self, ret: Any) -> None:
-        self.__propertyValueMap[ret.key] = self.__getRealType(ret.type, ret.value)
+        self.__propertyValueMap[ret.key] = self.__getRealValue(ret.type, ret.value)
         # Sentinel.debug(f"Property updated | Name: {ret.key} Value : {ret.value}")
 
     def createReadExistingNetworkValueProperty(
@@ -138,7 +138,7 @@ class PropertyOperator:
 
         # if this property already has been created, just give that one.
         if propertyTable in self.__properties:
-            return self.__properties.get(propertyTable)
+            return self.__properties[propertyTable]
 
         # init default in map if not saved from previous run, or if you dont want to use a saved value
         if propertyTable not in self.__propertyValueMap or not loadIfSaved:
@@ -237,7 +237,7 @@ class PropertyOperator:
             self.__xclient.putString(propertyTable, "NULLVALUE")
         elif type(propertyValue) is XTableValues.BezierCurves:
             self.__xclient.putBezierCurves(propertyTable, propertyValue)
-        elif isinstance(propertyValue, Iterable):
+        elif isinstance(propertyValue, Sequence):
             return self.__setNetworkIterable(propertyTable, propertyValue)
         else:
             if not mute:
@@ -245,7 +245,7 @@ class PropertyOperator:
             return False
         return True
 
-    def __setNetworkIterable(self, propertyTable, propertyIterable: Iterable) -> bool:
+    def __setNetworkIterable(self, propertyTable, propertyIterable: Sequence) -> bool:
         if propertyIterable is None:
             return False
 
@@ -280,7 +280,7 @@ class PropertyOperator:
             return self.__xclient.putStringList
         return None
 
-    def __getRealType(self, type, propertyValue) -> bool:
+    def __getRealValue(self, type, propertyValue) -> Any:
         # get real type from xtable bytes
         if (
             type == XTableProto.XTableMessage.Type.UNKNOWN

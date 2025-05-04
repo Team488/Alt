@@ -4,7 +4,7 @@ import cv2
 from decimal import Decimal, ROUND_FLOOR
 from Alt.Core import getChildLogger
 from Alt.Core.Constants.Teams import TEAM
-from ..Constants.Inference import Object
+from ..Constants.InferenceC import Object
 
 Sentinel = getChildLogger("ProbMap")
 class ProbMap:
@@ -40,6 +40,10 @@ class ProbMap:
             np.zeros((self.__internalWidth, self.__internalHeight), dtype=np.float64)
             for _ in self.objects
         ]
+
+    def __check_class_idx(self, class_idx : int):
+        if class_idx < 0 or class_idx > len(self.sizes):
+            raise ValueError(f"Class idx must be from 0 - {len(self.sizes)=}!")
 
     """ RC = row,col format | CR = col,row format"""
 
@@ -314,11 +318,7 @@ class ProbMap:
             objY: Height of the object
             prob: Probability/confidence of the detection (0-1)
         """
-        if class_idx < 0 or class_idx > len(self.probmaps):
-            Sentinel.warning(
-                f"Out of bounds class id provided to addCustomObjectDetection!: {class_idx}"
-            )
-            return
+        self.__check_class_idx(class_idx)
 
         probmap = self.probmaps[class_idx]
         self.__add_detection(probmap, x, y, objX, objY, prob)
@@ -330,9 +330,7 @@ class ProbMap:
         Returns:
             2D numpy array containing probability values
         """
-        if class_idx < 0 or class_idx > len(self.probmaps):
-            Sentinel.warning(f"Out of bounds class id provided to getMap!: {class_idx}")
-            return
+        self.__check_class_idx
 
         return self.probmaps[class_idx].copy()
 
@@ -354,11 +352,7 @@ class ProbMap:
         Args:
             class_idx: Class_id of detection, must match inference mode
         """
-        if class_idx < 0 or class_idx > len(self.probmaps):
-            Sentinel.warning(
-                f"Out of bounds class id provided to displayMap!: {class_idx}"
-            )
-            return
+        self.__check_class_idx(class_idx)
 
         self.__displayHeatMap(self.probmaps[class_idx], self.gameObjWindowName)
 
@@ -394,11 +388,7 @@ class ProbMap:
         Returns:
             heatmap as uint8 numpy array
         """
-        if class_idx < 0 or class_idx > len(self.probmaps):
-            Sentinel.warning(
-                f"Out of bounds class id provided to getHeatMap!: {class_idx}"
-            )
-            return
+        self.__check_class_idx(class_idx)
 
         return self.__getHeatMap(self.probmaps[class_idx])
 
@@ -501,11 +491,7 @@ class ProbMap:
         Returns:
             Tuple of (x, y, probability) for the highest probability location
         """
-        if class_idx < 0 or class_idx > len(self.probmaps):
-            Sentinel.warning(
-                f"Out of bounds class id provided to getHighestGameObject!: {class_idx}"
-            )
-            return
+        self.__check_class_idx(class_idx)
 
         return self.__getHighest(self.probmaps[class_idx])
 
@@ -523,11 +509,7 @@ class ProbMap:
         Returns:
             Tuple of (x, y, probability) for the highest probability location above threshold
         """
-        if class_idx < 0 or class_idx > len(self.probmaps):
-            Sentinel.warning(
-                f"Out of bounds class id provided to getHighestGameObjectT!: {class_idx}"
-            )
-            return
+        self.__check_class_idx(class_idx)
 
         return self.__getHighestT(self.probmaps[class_idx], threshold)
 
@@ -548,11 +530,7 @@ class ProbMap:
         Returns:
             Tuple of (x, y, probability) for the highest probability location in range
         """
-        if class_idx < 0 or class_idx > len(self.probmaps):
-            Sentinel.warning(
-                f"Out of bounds class id provided to getHighestGameObjectWithinRange!: {class_idx}"
-            )
-            return
+        self.__check_class_idx(class_idx)
 
         return self.__getHighestRange(
             self.probmaps[class_idx], posX, posY, rangeX, rangeY
@@ -582,11 +560,7 @@ class ProbMap:
         Returns:
             Tuple of (x, y, probability) for the highest probability location in range above threshold
         """
-        if class_idx < 0 or class_idx > len(self.probmaps):
-            Sentinel.warning(
-                f"Out of bounds class id provided to getHighestGameObjectWithinRangeT!: {class_idx}"
-            )
-            return
+        self.__check_class_idx(class_idx)
 
         return self.__getHighestRangeT(
             self.probmaps[class_idx], posX, posY, rangeX, rangeY, threshold
@@ -671,11 +645,7 @@ class ProbMap:
         Returns:
             List of tuples (x, y, radius, probability) for all detections above threshold
         """
-        if class_idx < 0 or class_idx > len(self.probmaps):
-            Sentinel.warning(
-                f"Out of bounds class id provided to getAllGameObjectsAboveThreshold!: {class_idx}"
-            )
-            return
+        self.__check_class_idx(class_idx)
 
         return self.__getCoordinatesAboveThreshold(self.probmaps[class_idx], threshold)
 
@@ -701,11 +671,7 @@ class ProbMap:
         Returns:
             List of tuples (x, y, radius, probability) for all detections in range above threshold
         """
-        if class_idx < 0 or class_idx > len(self.probmaps):
-            Sentinel.warning(
-                f"Out of bounds class id provided to getAllGameObjectsWithinRangeT!: {class_idx}"
-            )
-            return
+        self.__check_class_idx(class_idx)
 
         return self.__getCoordinatesAboveThresholdRangeLimited(
             self.probmaps[class_idx], posX, posY, rangeX, rangeY, threshold
@@ -803,18 +769,13 @@ class ProbMap:
 
     def clear_maps(self) -> None:
         """Clear both probability maps, resetting all values to zero."""
-        for probmap in self.probmaps:
-            probmap = self.getEmpty()
+        self.probmaps = [self.getEmpty() for _ in self.probmaps]
 
     def getEmpty(self) -> None:
         return np.zeros((self.__internalWidth, self.__internalHeight), dtype=np.float64)
 
     def clear_map(self, class_idx) -> None:
-        if class_idx < 0 or class_idx > len(self.probmaps):
-            Sentinel.warning(
-                f"Out of bounds class id provided to clear_map!: {class_idx}"
-            )
-            return
+        self.__check_class_idx(class_idx)
 
         self.probmaps[class_idx] = self.getEmpty()
 
@@ -889,11 +850,7 @@ class ProbMap:
             class_idx: Class_id of detection, must match inference mode
 
         """
-        if class_idx < 0 or class_idx > len(self.probmaps):
-            Sentinel.warning(
-                f"Out of bounds class id provided to getSpecificRobotValue!: {class_idx}"
-            )
-            return
+        self.__check_class_idx(class_idx)
 
         return self.__getSpecificValue(self.probmaps[class_idx], x, y)
 

@@ -4,7 +4,7 @@ from Alt.Core.Constants.Field import Field
 from ..Estimation.UKF import Ukf
 from ..Estimation.KalmanLabeler import KalmanLabeler
 from ..Estimation.KalmanCache import KalmanCache
-from ..inference.ModelConfig import ModelConfig
+from ..Inference.ModelConfig import ModelConfig
 from ..Localization.LocalizationResult import DeviceLocalizationResult
 from .probmap import ProbMap
 

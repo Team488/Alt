@@ -6,7 +6,7 @@ from Alt.Core.Units import Conversions
 from Alt.Core.Units.Poses import Transform3d
 from Alt.Cameras.Parameters.CameraIntrinsics import CameraIntrinsics
 
-from ..Constants.Inference import Object
+from ..Constants.InferenceC import Object
 from .DepthEstimationMethod import DepthEstimationMethod
 from ..Detections.DetectionResult import DetectionResult
 

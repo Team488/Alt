@@ -6,10 +6,10 @@ import numpy as np
 from Alt.Core import getChildLogger
 
 from .inferencerBackend import InferencerBackend
-from ..Constants.Inference import Backend
+from ..Constants.InferenceC import Backend
 from .ModelConfig import ModelConfig
 from ..Detections.DetectionResult import DetectionResult
-from . import utils
+from .backends import utils
 
 Sentinel = getChildLogger("Multi_Inferencer")
 
@@ -121,12 +121,12 @@ class MultiInferencer:
                 frame, f"FPS: {cumulativeFps:.1f}", (10, 20), 1, 1, (255, 255, 255), 1
             )
 
-            for (bbox, conf, class_id) in processed:
+            for result in processed:
                 # Get the label for this detection
-                label = f"Id out of range!: {class_id}"
-                if len(self.backend.labels) > class_id:
-                    label = self.backend.labels[class_id]
+                label = f"Id out of range!: {result.class_idx}"
+                if len(self.backend.objects) > result.class_idx:
+                    label = self.backend.objects[result.class_idx].name
 
-                utils.drawBox(frame, bbox, label, conf)
+                utils.drawBox(frame, result.bbox, label, result.conf)
 
         return processed

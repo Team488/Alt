@@ -2,8 +2,9 @@ from typing import Optional
 import pyrealsense2 as rs
 import numpy as np
 from ...Parameters.CameraIntrinsics import CameraIntrinsics
+from ...Parameters.CameraCalibration import CameraCalibration
 from ...Constants.resolution import D435IResolution
-from . import calibration
+from .calibration import Calibrator
 
 
 class realsense2Helper:
@@ -28,16 +29,14 @@ class realsense2Helper:
 
         pipeline_profile = self.pipeline.start(self.config)
 
-        self.baked = []
-        self.maps = []
+        self.baked : list[tuple[CameraIntrinsics, np.ndarray]] = []
+        self.calibrations : list[CameraCalibration] = []
         for stream in self.streams:
             intr, coeffs = self.__getBakedIntrinsics(pipeline_profile, stream)
-            mapx, mapy = calibration.createMapXYForUndistortion(
-                distCoeffs=coeffs, cameraIntrinsics=intr
-            )
+            calibration = CameraCalibration(intr.getCameraMatrix(), coeffs, (int(intr.getHres()), int(intr.getVres())))
 
             self.baked.append((intr, coeffs))
-            self.maps.append((mapx, mapy))
+            self.calibrations.append(calibration)
 
     def __verifyExistence(self, serialId : str):
         """ Checks if a device with a cetain serial is plugged in"""
@@ -51,7 +50,7 @@ class realsense2Helper:
 
     def __getBakedIntrinsics(
         self, pipeline_profile, rs_stream
-    ) -> tuple[CameraIntrinsics, list]:
+    ) -> tuple[CameraIntrinsics, np.ndarray]:
 
         intrinsics = (
             pipeline_profile.get_stream(rs_stream)
@@ -75,9 +74,8 @@ class realsense2Helper:
 
         return intr, np.array(intrinsics.coeffs, dtype=np.float32)
 
-    def __dewarp(self, frame, stream_idx):
-        mapx, mapy = self.maps[stream_idx]
-        return calibration.undistortFrame(frame, mapx, mapy)
+    def __dewarp(self, frame, stream_idx : int):
+        return self.calibrations[stream_idx].undistortFrame(frame)
 
     def getCameraIntrinsics(self, stream_idx=COLOR) -> CameraIntrinsics:
         return self.baked[stream_idx][0]

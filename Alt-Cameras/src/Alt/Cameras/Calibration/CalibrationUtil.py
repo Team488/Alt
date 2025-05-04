@@ -2,6 +2,7 @@ import os
 from typing import Optional
 
 from Alt.Core.Utils.files import user_data_dir
+
 from ..Parameters.CameraIntrinsics import CameraIntrinsics
 from ..Parameters.CameraCalibration import CameraCalibration
 

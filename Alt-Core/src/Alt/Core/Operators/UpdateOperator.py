@@ -176,13 +176,8 @@ class UpdateOperator:
         """
         updates: List[Tuple[str, Any]] = []
         for runningPath in self.getCurrentlyRunning(pathFilter):
-            value = self.__propertyOp.createProperty(
+            value = self.__propertyOp.createReadExistingNetworkValueProperty(
                 f"{runningPath}.{updateName}",
-                propertyDefault=None,
-                isCustom=True,
-                addBasePrefix=False,
-                addOperatorPrefix=False,
-                setDefaultOnNetwork=False,
             ).get()
             if value is not None:
                 updates.append((runningPath, value))

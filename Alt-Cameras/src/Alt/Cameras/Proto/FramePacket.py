@@ -1,16 +1,18 @@
 import base64
-import io
 import time
 from typing import Optional
-import capnp
+
 import cv2
-from . import frameNetPacket_capnp
 import numpy as np
+# necessary for the below frameNetPacket import!
+import capnp
+
+from . import frameNetPacket_capnp # type:ignore
 
 
 class FramePacket:
     @staticmethod
-    def createPacket(timeStamp : int, message : str, frame : np.ndarray) -> frameNetPacket_capnp.DataPacket:
+    def createPacket(timeStamp : float, message : str, frame : np.ndarray) -> frameNetPacket_capnp.DataPacket:
         packet = frameNetPacket_capnp.DataPacket.new_message()
         packet.message = message
         packet.timestamp = timeStamp

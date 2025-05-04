@@ -7,7 +7,6 @@ try:
 except ImportError as e:
     raise RuntimeError(f"TensorRT only supported on linux (x86 + arm64)!\n{e}")
 
-from ...Constants.Inference import InferenceMode
 from ..inferencerBackend import InferencerBackend
 from ...Detections.DetectionResult import DetectionResult
 from ..ModelConfig import ModelConfig
@@ -15,19 +14,16 @@ from ..ModelConfig import ModelConfig
 EXPLICIT_BATCH = 1 << int(trt.NetworkDefinitionCreationFlag.EXPLICIT_BATCH)
 TRT_LOGGER = trt.Logger(trt.Logger.INFO)
 
-
-class TensorrtInferencer(InferencerBackend):
+class TensorrtInferencer(InferencerBackend): 
     def __init__(self, modelConfig : ModelConfig) -> None:
         super().__init__(modelConfig)
         self.engine_path = modelConfig.getPath()
-        self.engine = None
-        self.context = None
-        self.stream = None
-        self.bindings = []
-        self.host_inputs = []
-        self.cuda_inputs = []
-        self.host_outputs = []
-        self.cuda_outputs = []
+        
+        self.bindings = [] # type: ignore
+        self.host_inputs = [] # type: ignore
+        self.cuda_inputs = [] # type: ignore
+        self.host_outputs = [] # type: ignore
+        self.cuda_outputs = [] # type: ignore
 
     def initialize(self) -> None:
         """Loads the TensorRT engine and prepares execution context."""
@@ -70,7 +66,7 @@ class TensorrtInferencer(InferencerBackend):
 
     def postProcessBoxes(
         self, results, frame, minConf
-    ) -> list[tuple[list[float, float, float, float], float, int]]:
+    ) -> list[DetectionResult]:
         """Processes raw output from the model to return bounding boxes, confidences, and class IDs."""
         results = self.adjustBoxes(results, frame, minConf)
         return [DetectionResult(results[0], results[1], results[2]) for result in results]

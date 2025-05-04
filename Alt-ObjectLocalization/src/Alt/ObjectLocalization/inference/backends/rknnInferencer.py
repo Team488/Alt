@@ -10,7 +10,7 @@ from Alt.Core import getChildLogger
 
 from . import utils, yolo11RknnUtils
 from ..inferencerBackend import InferencerBackend
-from ...Constants.Inference import YoloType
+from ...Constants.InferenceC import YoloType
 from ...Detections.DetectionResult import DetectionResult
 
 Sentinel = getChildLogger("rknn_inferencer")
@@ -29,7 +29,7 @@ class rknnInferencer(InferencerBackend):
         # print("LD_LIBRARY_PATH:", os.environ["LD_LIBRARY_PATH"])
 
         # load model
-        self.model = self.load_rknn_model(self.mode.getModelPath())
+        self.model = self.load_rknn_model(self.modelConfig.getPath())
 
     # Initialize the RKNN model
     def load_rknn_model(self, model_path):
@@ -64,7 +64,7 @@ class rknnInferencer(InferencerBackend):
         return self.model.inference(inputs=inputTensor)
 
     def postProcessBoxes(self, results, frame, minConf) -> list[DetectionResult]:
-        if self.mode.getYoloType() == YoloType.V5:
+        if self.modelConfig.getYoloType() == YoloType.V5:
             adjusted = self.adjustBoxes(results[0], frame.shape, minConf)
             nmsResults = utils.non_max_suppression(adjusted, conf_threshold=minConf)
             return [DetectionResult(nmsResult[0], nmsResult[1], nmsResult[2]) for nmsResult in nmsResults]

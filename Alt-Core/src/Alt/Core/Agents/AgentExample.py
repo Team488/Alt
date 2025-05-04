@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any
 from .Agent import Agent
 
 
@@ -9,8 +9,6 @@ class AgentExample(Agent):
     """
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
-        self.nameProp = None
-        self.projectNameProp = None
         self.timesRun: int = 0
 
     def create(self) -> None:

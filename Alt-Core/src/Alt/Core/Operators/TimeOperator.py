@@ -38,7 +38,8 @@ class TimeOperator:
             Timer: An instance of Timer for the specified name.
         """
         if timeName in self.timerMap:
-            return self.timerMap.get(timeName)
+            return self.timerMap[timeName]
+        
         timer = self.__createTimer(timeName)
         self.timerMap[timeName] = timer
         return timer
@@ -62,8 +63,6 @@ class TimeOperator:
         return Timer(timeName, timeTable)
 
 from contextlib import contextmanager
-
-Sentinel: Logger = getChildLogger("Timer_Entry")
 
 class Timer:
     """

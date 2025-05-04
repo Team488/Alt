@@ -14,7 +14,7 @@ class VideoWriterAgent(CameraUsingAgentBase):
 
     def create(self) -> None:
         super().create()
-        fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+        fourcc = cv2.VideoWriter_fourcc(*"mp4v") # type: ignore
         self.writer = cv2.VideoWriter(
             self.filePath,
             fourcc,

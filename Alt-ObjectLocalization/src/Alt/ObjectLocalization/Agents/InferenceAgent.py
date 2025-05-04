@@ -1,19 +1,11 @@
-import os
-import cv2
-import time
 from functools import partial
-from typing import Optional, Dict, Any, List, Tuple
-
-import numpy as np
-
-# from JXTABLES.XDashDebugger import XDashDebugger
+from typing import Any
 
 from Alt.Cameras.Agents.CameraUsingAgentBase import CameraUsingAgentBase
 from Alt.Cameras.Captures import CaptureWIntrinsics
 
 from ..Inference.ModelConfig import ModelConfig
 from ..Inference.MultiInferencer import MultiInferencer
-from ..Detections.DetectionResult import DetectionResult
 
 
 class InferenceAgent(CameraUsingAgentBase):
@@ -24,10 +16,6 @@ class InferenceAgent(CameraUsingAgentBase):
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.modelConfig: ModelConfig = kwargs.get("modelConfig", None)
-        self.inf: Optional[MultiInferencer] = None
-        self.confidence = None
-        self.drawBoxes = None
-        self.results: Optional[list[DetectionResult]] = None
 
     def create(self) -> None:
         super().create()

@@ -1,12 +1,13 @@
-from abc import ABC, abstractmethod
-from typing import Tuple
+from typing import Tuple, Optional
+
 import numpy as np
+
 from .Capture import Capture
 from .depthCamera import depthCamera 
 
 
 class FakeCamera(Capture):
-    def __init__(self, name : str = "fakeCam", fakeFrame : np.ndarray = None):
+    def __init__(self, name : str = "fakeCam", fakeFrame : Optional[np.ndarray] = None):
         super().__init__(name)
         self.fakeFrame = fakeFrame or np.ones((640, 480, 3), dtype=np.uint8) * 255
     
@@ -26,7 +27,7 @@ class FakeCamera(Capture):
         pass
 
 class FakeDepthCamera(depthCamera):
-    def __init__(self, name : str = "fakeCam", fakeFrame : np.ndarray = None):
+    def __init__(self, name : str = "fakeCam", fakeFrame : Optional[np.ndarray] = None):
         super().__init__(name)
         self.fakeColor = fakeFrame or np.ones((640, 480, 3), dtype=np.uint8) * 255
         self.fakeDepth = fakeFrame or np.ones((640, 480), dtype=np.uint8) * 255
@@ -34,13 +35,13 @@ class FakeDepthCamera(depthCamera):
     def create(self) -> None:
         pass
 
-    def getDepthAndColorFrame(self) -> Tuple[np.ndarray, np.ndarray]:
+    def getDepthAndColorFrame(self) -> Tuple[Optional[np.ndarray], Optional[np.ndarray]]:
         return (self.fakeDepth, self.fakeColor)
 
-    def getDepthFrame(self) -> np.ndarray:
+    def getDepthFrame(self) -> Optional[np.ndarray]:
         return self.fakeDepth
 
-    def getMainFrame(self) -> np.ndarray:
+    def getMainFrame(self) -> Optional[np.ndarray]:
         return self.fakeColor
 
     def getFps(self) -> int:

@@ -8,12 +8,12 @@ from Alt.Core.Units.Poses import Pose2d, Transform3d
 from Alt.Cameras.Parameters.CameraIntrinsics import CameraIntrinsics
 from Alt.Cameras.Parameters.CameraExtrinsics import CameraExtrinsics
 
-from ..Constants.Inference import DefaultConfigConstants
-from ..inference.ModelConfig import ModelConfig
-from ..inference.MultiInferencer import MultiInferencer
-from ..inference.utils import drawBox
+from ..Constants.InferenceC import DefaultConfigConstants
+from ..Inference.ModelConfig import ModelConfig
+from ..Inference.MultiInferencer import MultiInferencer
+from ..Inference.backends.utils import drawBox
 from ..Tracking.deepSortBaseLabler import DeepSortBaseLabler
-from .positionTranslations import CameraToRobotTranslator, transformWithYaw, transformWithOffset
+from .positionTranslations import CameraToRobotTranslator, transformWithYaw
 from .positionEstimator import RelativePositionEstimator
 from .LocalizationResult import LocalizationResult
 

@@ -34,22 +34,14 @@ def createLogger(loggerName: str):
 
     return logger
 
-
 def setMainLogger(mainLogger: logging.Logger):
     global Sentinel
     Sentinel = mainLogger
 
-
 def createAndSetMain(loggerName: str):
     setMainLogger(createLogger(loggerName))
 
-
-# create and set inital logger
-def initMainLogger():
-    createAndSetMain(f"Core")
-
-
-initMainLogger()
+Sentinel = createLogger("Core")
 
 
 def setLogLevel(level: Union[int, str]) -> None:

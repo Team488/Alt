@@ -3,7 +3,7 @@ import numpy as np
 from Alt.Core import getChildLogger
 
 from .KalmanCache import KalmanCache
-from ..Constants.Kalman import LabelingConstants
+from ..Constants.KalmanC import LabelingConstants
 from ..Localization.LocalizationResult import DeviceLocalizationResult
 
 Sentinel = getChildLogger("Kalman_Labler")

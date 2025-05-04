@@ -21,7 +21,6 @@ from .Operators.StreamOperator import StreamOperator
 from .Operators.LogStreamOperator import LogStreamOperator
 from .Operators import LogOperator
 from .Agents.Agent import Agent
-from .Orders.Order import Order
 
 Sentinel = LogOperator.Sentinel
 
@@ -36,7 +35,7 @@ class Neo:
 
     It handles system signals for graceful shutdown and wraps all initializations in
     Matrix-themed logging. Neo ensures reliable startup, monitoring, and teardown of all
-    running processes. Key responsibilities include agent management, order triggers,
+    running processes. Key responsibilities include agent management
     dashboard launching, and robust process cleanup.
 
     Attributes:
@@ -80,8 +79,8 @@ class Neo:
         self.__isShutdown = False
         self.__isDashboardRunning = False
         # intercept shutdown signals to handle abrupt cleanup
-        signal.signal(signal.SIGINT, handler=self.__handleArchitectKill)
-        signal.signal(signal.SIGTERM, handler=self.__handleArchitectKill)
+        signal.signal(signal.SIGINT, self.__handleArchitectKill)
+        signal.signal(signal.SIGTERM, self.__handleArchitectKill)
 
     def __handleArchitectKill(self, sig, frame) -> None:
         """
@@ -107,32 +106,6 @@ class Neo:
             self.__isShutdown = True
         else:
             Sentinel.debug("Already shut down")
-
-    def addOrderTrigger(self, orderTriggerName: str, orderToRun: type[Order]) -> None:
-        """
-        Adds a new order trigger to the system, creating and injecting dependencies for the specified Order.
-
-        Args:
-            orderTriggerName (str): Name of the trigger to register.
-            orderToRun (type[Order]): The class of the Order to instantiate and register.
-
-        Returns:
-            None
-        """
-        if not self.isShutdown():
-            order = orderToRun()
-            childPropOp = self.__propertyOp.getChild(order.getName())
-            timer = self.__timeOp.getTimer(order.getName())
-            order.inject(
-                self.__xclient,
-                childPropOp,
-                self.__configOp,
-                self.__shareOp,
-                timer,
-            )
-            self.__orderOp.createOrderTrigger(orderTriggerName, order)
-        else:
-            Sentinel.warning("Neo is already shutdown!")
 
     def wakeAgent(self, agentClass: type[Agent], isMainThread=False) -> None:
         """
@@ -164,7 +137,7 @@ class Neo:
         if not self.isShutdown():
             self.__agentOp.waitForAgentsToFinish()
         else:
-            self.Sentinel.warning("Neo has already been shut down!")
+            Sentinel.warning("Neo has already been shut down!")
 
     def runDashboard(self) -> None:
         """

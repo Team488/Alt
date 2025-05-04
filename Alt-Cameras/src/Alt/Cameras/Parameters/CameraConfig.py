@@ -1,5 +1,3 @@
-
-
 class CameraConfig:
     def __init__(self, width : int, height : int, fps : int = None, videoWriter : str = None):
         self.width = width
@@ -7,6 +5,7 @@ class CameraConfig:
         self.fps = fps
         self.videoWriter = videoWriter
 
+    # TODO move to another proper place
     # def setOpenCVCap(self, cap : OpenCVCapture) -> bool:
     #     paramSet = cap.setWidth(self.width)
     #     paramSet = paramSet and cap.setHeight(self.width)

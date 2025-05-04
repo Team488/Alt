@@ -83,7 +83,7 @@ class Calibrator:
 
         if imgpoints:
             Sentinel.info(f"Using: {len(imgpoints)} points")
-            ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(
+            retf, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(
                 objpoints, imgpoints, gray.shape[::-1], None, None
             )
             calibration = CameraCalibration(mtx, dist, imageWH)

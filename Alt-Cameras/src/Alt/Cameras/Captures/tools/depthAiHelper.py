@@ -1,3 +1,5 @@
+from typing import Optional
+
 import numpy as np
 import depthai as dai
 
@@ -12,7 +14,6 @@ class DepthAIHelper:
     def __init__(self, res: OAKDLITEResolution) -> None:
         self.pipeline = dai.Pipeline()
         self.res = res  # Store resolution info
-        self.device = None
         self.load_pipeline(self.pipeline, res)
         self.device = dai.Device(self.pipeline)
         self.intrColor = self.__getBakedIntrinsics(
@@ -33,7 +34,7 @@ class DepthAIHelper:
         camera_id: dai.CameraBoardSocket,
         device: dai.Device,
         res: OAKDLITEResolution,
-    ) -> None:
+    ) -> CameraIntrinsics:
         calibData = device.readCalibration()
         intrinsics = calibData.getCameraIntrinsics(camera_id, res.w, res.h)
         intrinsic_matrix = np.array(intrinsics).reshape(3, 3)
@@ -107,19 +108,19 @@ class DepthAIHelper:
         xoutDepth.setStreamName("depth")
         depthManip.out.link(xoutDepth.input)  # Output resized depth
 
-    def getColorFrame(self) -> np.ndarray:
+    def getColorFrame(self) -> Optional[np.ndarray]:
         if self.device is not None:
             frame = self.color_queue.get()
             if frame is not None:
-                return frame.getCvFrame()
+                return frame.getCvFrame() # type: ignore
         return None
 
-    def getDepthFrame(self) -> np.ndarray:
+    def getDepthFrame(self) -> Optional[np.ndarray]:
         """Returns the depth frame as a NumPy array, resized to match the RGB frame."""
         if self.device is not None:
-            depth_frame = self.depth_queue.get()
-            if depth_frame is not None:
-                depth_frame = depth_frame.getFrame()
+            depth_output = self.depth_queue.get()
+            if depth_output is not None:
+                depth_frame : np.ndarray = depth_output.getCvFrame() # type: ignore
                 depth_downscaled = depth_frame[::4]
                 if np.all(depth_downscaled == 0):
                     min_depth = 0  # Set a default minimum depth value when all elements are zero
@@ -142,4 +143,4 @@ class DepthAIHelper:
         self.device.close()
 
     def isOpen(self) -> bool:
-        return self.device and not self.device.isClosed()
+        return self.device is not None and not self.device.isClosed()
