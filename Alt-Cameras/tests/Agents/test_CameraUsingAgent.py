@@ -2,9 +2,6 @@ from Alt.Core.TestUtils import AgentTests
 from Alt.Cameras.Agents import CameraUsingAgentBase
 from Alt.Cameras.Captures import FakeCamera, FakeDepthCamera
 
-
-
-
 def test_regular_capture():
     class CamTest(CameraUsingAgentBase):
         def __init__(self, **kwargs):
