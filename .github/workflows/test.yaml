@@ -40,3 +40,4 @@ jobs:
 
       - name: run mypy
         run: mypy
+

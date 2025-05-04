@@ -1,6 +1,3 @@
-import matplotlib.pyplot as plt
-import zmq
-
 # import BezierCurve_pb2 as BezierCurve
 import os
 import json

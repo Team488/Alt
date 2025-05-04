@@ -14,12 +14,6 @@ authors = [
   { name = "The Matrix 488", email = "488matrix@gmail.com" }
 ]
 
-urls = {
-  "Homepage" = "https://github.com/Team488/Alt",
-  "Bug Tracker" = "https://github.com/Team488/Alt/issues",
-  "repository" = "https://github.com/Team488/Alt"
-}
-
 classifiers = [
   "Programming Language :: Python :: 3",
   "License :: OSI Approved :: MIT License",
@@ -39,3 +33,8 @@ package-dir = { "" = "src" }
 [tool.setuptools.packages.find]
 where = ["src"]
 namespaces = true
+
+[project.urls]
+"Homepage" = "https://github.com/Team488/Alt"
+"Bug Tracker" = "https://github.com/Team488/Alt/issues"
+"repository" = "https://github.com/Team488/Alt"

@@ -1,3 +1,40 @@
 [build-system]
-requires = ['setuptools>=42']
-build-backend = 'setuptools.build_meta'
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "Matrix-Alt-Dashboard"
+version = "0.0.2"
+description = "Package contains code to run the agent dashboard for Alt Agents"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+
+authors = [
+  { name = "The Matrix 488", email = "488matrix@gmail.com" }
+]
+
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent"
+]
+
+dependencies = [
+  "Matrix-Alt-Core == 0.0.1",
+  "XTablesClient == 5.7.9",
+  "Flask == 3.1.0",
+  "Flask-SocketIO == 5.5.1"
+]
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+namespaces = true
+
+[project.urls]
+"Homepage" = "https://github.com/Team488/Alt"
+"Bug Tracker" = "https://github.com/Team488/Alt/issues"
+"repository" = "https://github.com/Team488/Alt"

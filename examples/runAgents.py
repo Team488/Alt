@@ -1,5 +1,5 @@
 from Alt.Core.Agents import Agent
-from Alt.Cameras.CameraUsingAgent import CameraUsingAgentBase
+from Alt.Cameras.Agents import CameraUsingAgentBase
 from Alt.Cameras.Captures.OpenCVCapture import OpenCVCapture
 
 
