@@ -26,11 +26,11 @@ jobs:
 
       - name: Install all subpackages
         run: |
-          for d in Alt-*; do
-            if [ -f "$d/pyproject.toml" ]; then
-              pip install -e "$d"
-            fi
-          done
+            pip install -e Alt-Core
+            pip install -e Alt-Cameras
+            pip install -e Alt-ObjectLocalization
+            pip install -e Alt-Dashboard
+            pip install -e Alt-Pathplanning
 
       - name: Install test dependencies
         run: pip install pytest
