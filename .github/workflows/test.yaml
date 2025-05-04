@@ -33,7 +33,10 @@ jobs:
             pip install -e Alt-Pathplanning
 
       - name: Install test dependencies
-        run: pip install pytest
+        run: pip install pytest pytest-cov mypy
 
       - name: Run tests
         run: pytest  # pytest will automatically pick up the pytest.ini settings
+
+      - name: run mypy
+        run: mypy
