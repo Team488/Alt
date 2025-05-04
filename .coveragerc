@@ -1,0 +1,13 @@
+[run]
+branch = True
+source = 
+    */src/Alt
+
+[report]
+skip_covered = True
+skip_empty = True
+include_namespace_packages = True
+
+[paths]
+source =
+    */src/Alt

@@ -20,7 +20,7 @@ def _test_interrupting_running_agent(agentClass : type[Agent], numAgents = 4):
     for _ in range(numAgents):
         n.wakeAgent(agentClass)
 
-    time.sleep(10)
+    time.sleep(5)
 
     n.shutDown()
 
@@ -32,7 +32,7 @@ def _test_getting_agent_info(agentClass : type[Agent]):
     agent.getDescription()
     agent.getIntervalMs()
 
-def _test_running_agent_for_some_time(agentClass : type[Agent], n_seconds = 15):
+def _test_running_agent_for_some_time(agentClass : type[Agent], n_seconds = 5):
     print("---------------Starting test_running_agent_for_some_time()---------------")
     
     ensureXTablesServer()

@@ -1,4 +1,4 @@
-from Alt.Core.Tests import AgentTests
+from Alt.Core.TestUtils import AgentTests
 from Alt.Cameras.Agents import CameraUsingAgentBase
 from Alt.Cameras.Captures import FakeCamera, FakeDepthCamera
 
