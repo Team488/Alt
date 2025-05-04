@@ -1,0 +1,56 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "Matrix-Alt-ObjectLocalization"
+version = "0.0.1"
+description = "Extension for the Matrix-Alt-Core package to add object localization tools"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+
+authors = [
+  { name = "The Matrix 488", email = "488matrix@gmail.com" }
+]
+
+urls = {
+  "Homepage" = "https://github.com/Team488/Alt",
+  "Bug Tracker" = "https://github.com/Team488/Alt/issues",
+  "repository" = "https://github.com/Team488/Alt"
+}
+
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent"
+]
+
+dependencies = [
+  "Matrix-Alt-Core == 0.0.1",
+  "Matrix-Alt-Cameras == 0.0.1",
+  "numpy == 2.0.2",
+  "opencv-python == 4.11.0.86",
+  "scipy == 1.13.1",
+  "pycapnp == 2.0.0",
+  "filterpy == 1.4.5",
+  "onnx == 1.17.0",
+  "ultralytics == 8.2.32",
+  "deep_sort @ git+https://github.com/team488/deep_sort@79af029bb17ce867f88c5f96564c3a9824afbdcb"
+]
+
+[project.optional-dependencies]
+tensorrt = [
+  "tensorrt == 10.7.0 ; platform_system == 'Linux' and platform_machine in 'x86_64, aarch64'",
+  "pycuda == 2025.1 ; platform_system == 'Linux' and platform_machine in 'x86_64, aarch64'"
+]
+rknn = [
+  "rknn-toolkit-lite2 == 2.3.2 ; platform_machine == 'aarch64'"
+]
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+namespaces = true
