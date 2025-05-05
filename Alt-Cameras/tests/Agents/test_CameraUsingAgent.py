@@ -29,4 +29,3 @@ def test_depth_capture():
             return "Camera test depth"
     
     AgentTests.test_agent(CamTest)
-
