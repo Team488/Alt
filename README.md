@@ -44,5 +44,6 @@ if __name__ == "__main__":
     n = Neo()
     n.wakeAgent(BlurAgent, isMainThread=True)
     n.shutDown()
+```
 
 As you can see, the boilerplate is minimal, and this is just a glimpse of the many features Alt has to offer!
