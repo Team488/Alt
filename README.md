@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/res/header.png" width="1600" alt="Alt Framework Header" />
+  <img src="docs/res/readmeHeader.png" width="1600" alt="Alt Framework Header" />
 </p>
 
 ---
