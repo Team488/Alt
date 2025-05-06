@@ -28,13 +28,13 @@ class Backend(Enum):
 available_backends = set()
 
 try:
-    from ..inference import rknnInferencer
+    from ..Inference import rknnInferencer
     available_backends.add(Backend.RKNN)
 except ImportError:
     pass
 
 try:
-    from ..inference import TensorrtInferencer
+    from ..Inference import TensorrtInferencer
     available_backends.add(Backend.TENSORRT)
 except ImportError:
     pass
@@ -49,28 +49,4 @@ class Object:
         self.name = name
         self.depthMethod = depthEstimationMethod
         self.sizeCM = sizeCM
-
-
-class Labels:
-    # name, w,h (cm)
-    ROBOT = ("robot", (75, 75))
-    NOTE = ("note", (35, 35))
-    ALGAE = ("algae", (41, 41))
-    CORAL = ("coral", (30, 12))
-
-    @staticmethod
-    def getDefaultLengthType():
-        return Types.Length.CM
-
-    def __str__(self) -> str:
-        return self.value[0]
-
-    def getSize(self, lengthType: Types.Length):
-        return Conversions.convertLength(
-            self.getSizeCm(), self.getDefaultLengthType(), lengthType
-        )
-
-    def getSizeCm(self):
-        return self.value[1]
-
 

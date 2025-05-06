@@ -303,12 +303,12 @@ def getAdjustBoxesMethod(
         elif yoloType == YoloType.V11:
             return adjustBoxesV11ONNX
         else:
-            Sentinel.fatal(f"Invalid Yolotype not supported yet!: {yoloType}")
-            raise RuntimeError(f"Invalid Yolotype not supported: {yoloType}")
+            Sentinel.fatal(f"Invalid Yolotype not supported on anything but ultralytics backend!: {yoloType}")
+            raise RuntimeError(f"Invalid Yolotype not supported on but ultralytics backend!: {yoloType}")
     else:
         return None  # ultralytics backend uses its own adjustment
 
-
+ 
 def drawBox(frame : np.ndarray, bboxXYXY : tuple, class_str : str, conf : float, color=(10, 100, 255), buffer=8):
     p1 = np.array(Conversions.toint(bboxXYXY[:2]))
     p2 = np.array(Conversions.toint(bboxXYXY[2:]))
