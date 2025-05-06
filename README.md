@@ -5,6 +5,7 @@
 ---
 
 # Alt Framework
+TDLR: Alt Framework is a Python framework for running concurrent tasks ("Agents") in their own processes with built-in monitoring, resource creation, and easy extensibility.
 
 Welcome to the **Alt Framework** GitHub repository! This project was designed to accelerate Python development, especially when handling multiple concurrent tasks. Inspired by our team's name, *The Matrix*, Alt is a matrix-themed framework that allows you to easily define "Agents"—entities that execute long-running tasks. Each Agent automatically receives its own resources, complete with built-in logging and monitoring. Additionaly, each agent gets its own process thread——The GIL wont slow down multiple agents running concurrently.
 
