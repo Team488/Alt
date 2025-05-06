@@ -5,11 +5,11 @@ import cv2
 import numpy as np
 from Alt.Core import getChildLogger
 
-from .inferencerBackend import InferencerBackend
-from ..Constants.InferenceC import Backend
-from .ModelConfig import ModelConfig
+from ..Constants.InferenceC import Backend, available_backends
 from ..Detections.DetectionResult import DetectionResult
+from .ModelConfig import ModelConfig
 from .backends import utils
+from .inferencerBackend import InferencerBackend
 
 Sentinel = getChildLogger("Multi_Inferencer")
 
@@ -44,6 +44,10 @@ class MultiInferencer:
             RuntimeError: If an invalid backend is specified
         """
         backend = modelConfig.getBackend()
+
+        if backend not in available_backends:
+            raise RuntimeError(f"The {backend} backend is not available on your device!")
+
         if backend == Backend.RKNN:
             from .backends.rknnInferencer import rknnInferencer
 
