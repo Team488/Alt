@@ -12,6 +12,8 @@ class ParticleFilter:
             0,
             field.getHeight(),
         ]
+        # TODO this currently represents an empty field. Have the Field object also store obstacles in some standardized way (across all classes/modules/packages)
+        self.obstacles = np.ones((field.getHeight(), field.getWidth()), dtype=np.uint8) * 255
 
         # Initialize particles randomly within bounds and velocities within [-1, 1]
         self.particles = np.random.uniform(
