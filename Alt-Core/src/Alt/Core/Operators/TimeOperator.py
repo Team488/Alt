@@ -1,5 +1,13 @@
+"""TimeOperator.py
+
+Provides the TimeOperator and Timer classes for performance monitoring and timing operations.
+
+Classes:
+    TimeOperator: Manages timers and performance measurements.
+    Timer: Measures and records timing information for code blocks.
+"""
+
 import time
-from logging import Logger
 from typing import Dict, Generator
 from .LogOperator import getChildLogger
 from .PropertyOperator import PropertyOperator
@@ -87,7 +95,12 @@ class Timer:
         self.timeTable: PropertyOperator = timeTable
 
     def getName(self) -> str:
-        """Get the name of this timer."""
+        """
+        Get the name of this timer.
+
+        Returns:
+            str: The timer's name.
+        """
         return self.name
 
     def resetMeasurement(self, subTimerName: str = "main") -> None:

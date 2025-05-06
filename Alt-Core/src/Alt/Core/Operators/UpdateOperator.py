@@ -4,6 +4,9 @@ UpdateOperator Module.
 This module defines the `UpdateOperator` class, responsible for managing global updates 
 across multiple running agents. It facilitates adding, subscribing, and deregistering 
 updates while ensuring that conflicts are minimized through locking mechanisms.
+
+Classes:
+    UpdateOperator: Manages global updates, subscriptions, and locking for agent coordination.
 """
 
 import random
@@ -62,9 +65,6 @@ class UpdateOperator:
         Args:
             runnable (Callable[[], None]): The callable to be executed with the lock.
             isAllRunning (bool): Determines whether to use the all running agents lock or current running agents lock.
-
-        Raises:
-            Exception: Propagates any exception thrown by the runnable.
         """
         PATHLOCK = self.ALLPATHLOCK if isAllRunning else self.CURRENTPATHLOCK
         # Add uniform random delay to avoid collision in reading empty lock.

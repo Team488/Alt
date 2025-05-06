@@ -1,7 +1,7 @@
 from abc import abstractmethod
+from enum import Enum
 from typing import Any, Dict, Union
 from functools import partial
-from enum import Enum
 
 
 class ProxyType(Enum):
@@ -15,7 +15,7 @@ class ProxyType(Enum):
     
     @staticmethod
     def getProxyRequests(
-        agentClass: Union[partial]
+        agentClass
     ) -> Dict[str, "ProxyType"]:
         if isinstance(agentClass, partial):
             return ProxyType.__getPartialProxyRequests(agentClass)

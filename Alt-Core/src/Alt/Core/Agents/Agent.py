@@ -1,9 +1,3 @@
-# agents, otherwise known as tasks will be long running "processes"
-# lifespan: 1. create 2. run until shutdown/task finished 2.5 possibly shutdown 3. cleanup.
-# For the most part there will be only one agent running for the whole time
-# NOTE: agents will get objects passed into them via the init. There are the "shared" objects across the whole process.
-# For objects pertaining only to agent, create them in the create method
-
 from abc import ABC, abstractmethod
 from logging import Logger
 from typing import Dict, Optional, Any, ClassVar
@@ -24,8 +18,9 @@ from ..Constants.AgentConstants import Proxy, ProxyType
 
 
 class Agent(ABC):
-    _proxyRequests: ClassVar[dict[str, ProxyType]] = {}
-
+    """
+    Base class for all agents.
+    """
     DEFAULT_LOOP_TIME: int = 0  # 0 ms
     TIMERS = "timers"
 
@@ -197,6 +192,9 @@ class Agent(ABC):
         """ Method to request that a stream proxy will be given to this agent to display streams
             NOTE: you must override requestProxies() and add your calls to this there, or else it will not be used!
         """
+        if not hasattr(cls, '_proxyRequests'):
+            cls._proxyRequests = {}
+
         cls._proxyRequests[proxyName] = proxyType
 
     @classmethod

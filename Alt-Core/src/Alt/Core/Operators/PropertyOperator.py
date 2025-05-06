@@ -1,3 +1,15 @@
+"""PropertyOperator.py
+
+Provides the PropertyOperator class and related classes for managing network properties,
+including editable and read-only properties, and their integration with XTables.
+
+Classes:
+    PropertyOperator: Manages network properties for agents, including creation, updates, and persistence.
+    Property: Represents a readable property.
+    ReadonlyProperty: Represents a writable (read-only from the network) property.
+    LambdaHandler: Logging handler that executes a lambda on each log message.
+"""
+
 import logging
 from typing import Sequence
 from typing import Dict, List, Any, Optional, Callable
@@ -10,8 +22,14 @@ from .LogOperator import getChildLogger
 
 Sentinel = getChildLogger("Property_Operator")
 
-# creates network properties that can be set by xtables
 class PropertyOperator:
+    """
+    Creates and manages network properties that can be set and read by XTables.
+
+    Handles both editable and read-only properties, supports property persistence,
+    and provides methods for property injection and deregistration.
+    """
+
     __OPERATORS: Dict[str, "PropertyOperator"] = {}
 
     def __init__(
@@ -20,6 +38,14 @@ class PropertyOperator:
         configOp: ConfigOperator,
         prefix: str = "",
     ) -> None:
+        """
+        Initializes a PropertyOperator.
+
+        Args:
+            xclient (XTablesClient): The XTables client instance.
+            configOp (ConfigOperator): The configuration operator.
+            prefix (str, optional): Prefix for property names.
+        """
         from .. import DEVICEHOSTNAME
 
         self.__xclient: XTablesClient = xclient
@@ -60,9 +86,21 @@ class PropertyOperator:
         self.__children: List["PropertyOperator"] = []
 
     def getFullPrefix(self) -> str:
+        """
+        Returns the full prefix for this property operator.
+
+        Returns:
+            str: The full prefix.
+        """
         return self.__addFullPrefix("")[:-1]  # remove trailing dot
 
     def __updatePropertyCallback(self, ret: Any) -> None:
+        """
+        Callback for property updates from XTables.
+
+        Args:
+            ret (Any): The update result object.
+        """
         self.__propertyValueMap[ret.key] = self.__getRealValue(ret.type, ret.value)
         # Sentinel.debug(f"Property updated | Name: {ret.key} Value : {ret.value}")
 
@@ -70,7 +108,14 @@ class PropertyOperator:
         self, propertyTable: str, propertyDefault: Any = None
     ):
         """
-        Use to get a property that reads from an existing table on XTables
+        Use to get a property that reads from an existing table on XTables.
+
+        Args:
+            propertyTable (str): The table name to read from.
+            propertyDefault (Any, optional): Default value if not found.
+
+        Returns:
+            Property: The created property.
         """
         return self._createProperty(
             propertyTable,
@@ -91,6 +136,20 @@ class PropertyOperator:
         addOperatorPrefix: bool = True,
         setDefaultOnNetwork: bool = True,   
     ) -> "Property":
+        """
+        Create a custom property with configurable prefix and persistence.
+
+        Args:
+            propertyTable (str): The table name.
+            propertyDefault (Any): Default value.
+            loadIfSaved (bool): Whether to load saved value.
+            addBasePrefix (bool): Whether to add the base prefix.
+            addOperatorPrefix (bool): Whether to add the operator prefix.
+            setDefaultOnNetwork (bool): Whether to push the default value to the network.
+
+        Returns:
+            Property: The created property.
+        """
         return self._createProperty(propertyTable, propertyDefault, loadIfSaved, True, addBasePrefix, addOperatorPrefix, setDefaultOnNetwork)
     
     def createProperty(
@@ -100,6 +159,18 @@ class PropertyOperator:
         loadIfSaved: bool = True,
         setDefaultOnNetwork: bool = True,
     ):
+        """
+        Create a standard property with default prefixing and persistence.
+
+        Args:
+            propertyTable (str): The table name.
+            propertyDefault (Any): Default value.
+            loadIfSaved (bool): Whether to load saved value.
+            setDefaultOnNetwork (bool): Whether to push the default value to the network.
+
+        Returns:
+            Property: The created property.
+        """
         return self._createProperty(propertyTable, propertyDefault, loadIfSaved, False, True, True, setDefaultOnNetwork)
 
     def _createProperty(
@@ -112,19 +183,21 @@ class PropertyOperator:
         addOperatorPrefix: bool,
         setDefaultOnNetwork: bool,
     ) -> "Property":
-        """Creates a network property that you can read from. To avoid conflicts, this property can only be read from, so its not writable.\n
-        For a writable property, use whats called a '''ReadonlyProperty''' \n
+        """
+        Creates a network property that you can read from. To avoid conflicts, this property can only be read from, so its not writable.
+        For a writable property, use a ReadonlyProperty.
 
         Args:
-            propertyTable: str = The table name you wish to read from
-            propertyDefault: Any = What default should it fallback to
-            loadIfSaved: bool = Whether to make the property persistent or not
-            isCustom: bool = Whether to use the custom add...prefix args  below
-            addBasePrefix: bool = Whether to add the base hostname of the system
-            addOperatorPrefix: bool = Whether to add whatever prefix this propertyOperator has. In an agent, this is the agent.getName()
-            setDefaultOnNetwork: bool = Whether to push the default value you have onto the network.
+            propertyTable (str): The table name you wish to read from.
+            propertyDefault (Any): What default should it fallback to.
+            loadIfSaved (bool): Whether to make the property persistent or not.
+            isCustom (bool): Whether to use the custom add...prefix args below.
+            addBasePrefix (bool): Whether to add the base hostname of the system.
+            addOperatorPrefix (bool): Whether to add whatever prefix this propertyOperator has.
+            setDefaultOnNetwork (bool): Whether to push the default value you have onto the network.
 
-
+        Returns:
+            Property: The created property.
         """
         if isCustom:
             if addBasePrefix and addOperatorPrefix:
@@ -174,6 +247,16 @@ class PropertyOperator:
     def createReadOnlyProperty(
         self, propertyName, propertyValue=None
     ) -> "ReadonlyProperty":
+        """
+        Create a read-only property with the given name and value.
+
+        Args:
+            propertyName (str): The property name.
+            propertyValue (Any, optional): The value to set.
+
+        Returns:
+            ReadonlyProperty: The created read-only property.
+        """
         propertyTable = self.__getReadOnlyPropertyTable(propertyName)
         return self.__createReadOnly(propertyTable, propertyValue)
     
@@ -182,6 +265,13 @@ class PropertyOperator:
         propertyTable,
         propertyValue=None,
     ):
+        """
+        Set a property table to a specific value.
+
+        Args:
+            propertyTable (str): The property table name.
+            propertyValue (Any, optional): The value to set.
+        """
         self.createCustomReadOnlyProperty(propertyTable, propertyValue, False, False).set(propertyValue)
 
     def createCustomReadOnlyProperty(
@@ -191,10 +281,19 @@ class PropertyOperator:
         addBasePrefix: bool = True,
         addOperatorPrefix: bool = False,
     ) -> "ReadonlyProperty":
-        """Overrides any extra prefixes that might have been added by getting child property operators
-        NOTE: by default addBasePrefix is True, and will add a base prefix to this property\n
+        """
+        Overrides any extra prefixes that might have been added by getting child property operators.
+        NOTE: by default addBasePrefix is True, and will add a base prefix to this property.
         If you choose to remove the base prefix, be aware that separate devices/processes might write to the same tables
 
+        Args:
+            propertyTable (str): The property table name.
+            propertyValue (Any, optional): The value to set.
+            addBasePrefix (bool): Whether to add the base prefix.
+            addOperatorPrefix (bool): Whether to add the operator prefix.
+
+        Returns:
+            ReadonlyProperty: The created read-only property.
         """
         if addBasePrefix and addOperatorPrefix:
             propertyTable = self.__addFullPrefix(propertyTable)
@@ -204,6 +303,16 @@ class PropertyOperator:
         return self.__createReadOnly(propertyTable, propertyValue)
 
     def __createReadOnly(self, propertyTable, propertyValue=None):
+        """
+        Internal method to create a read-only property.
+
+        Args:
+            propertyTable (str): The property table name.
+            propertyValue (Any, optional): The value to set.
+
+        Returns:
+            ReadonlyProperty: The created read-only property.
+        """
         if propertyTable in self.__readOnlyProperties:
             return self.__readOnlyProperties.get(propertyTable)
 
@@ -218,6 +327,17 @@ class PropertyOperator:
         return readOnlyProp
 
     def __setNetworkValue(self, propertyTable, propertyValue, mute=False) -> bool:
+        """
+        Set a value on the network for a property table.
+
+        Args:
+            propertyTable (str): The property table name.
+            propertyValue (Any): The value to set.
+            mute (bool): If True, suppress error logging.
+
+        Returns:
+            bool: True if the value was set successfully, False otherwise.
+        """
         # send out default to network (could and would overwrite any existing thing in the propertyTable)
         if type(propertyValue) is str:
             self.__xclient.putString(propertyTable, propertyValue)
@@ -246,6 +366,16 @@ class PropertyOperator:
         return True
 
     def __setNetworkIterable(self, propertyTable, propertyIterable: Sequence) -> bool:
+        """
+        Set a sequence value on the network for a property table.
+
+        Args:
+            propertyTable (str): The property table name.
+            propertyIterable (Sequence): The sequence to set.
+
+        Returns:
+            bool: True if the sequence was set successfully, False otherwise.
+        """
         if propertyIterable is None:
             return False
 
@@ -270,6 +400,15 @@ class PropertyOperator:
         return True
 
     def __getListTypeMethod(self, listType: type):
+        """
+        Get the appropriate XTables put method for a list type.
+
+        Args:
+            listType (type): The type of the list elements.
+
+        Returns:
+            callable or None: The put method, or None if not found.
+        """
         if listType == float:
             return self.__xclient.putFloatList
         if listType == bytes:
@@ -281,6 +420,16 @@ class PropertyOperator:
         return None
 
     def __getRealValue(self, type, propertyValue) -> Any:
+        """
+        Convert a network value to its real Python type.
+
+        Args:
+            type: The type identifier from XTables.
+            propertyValue: The value to convert.
+
+        Returns:
+            Any: The converted value.
+        """
         # get real type from xtable bytes
         if (
             type == XTableProto.XTableMessage.Type.UNKNOWN
@@ -315,6 +464,15 @@ class PropertyOperator:
             return None
 
     def getChild(self, prefix: str) -> Optional["PropertyOperator"]:
+        """
+        Get a child PropertyOperator with an additional prefix.
+
+        Args:
+            prefix (str): The prefix for the child operator.
+
+        Returns:
+            Optional[PropertyOperator]: The child PropertyOperator, or None if not found.
+        """
         if not prefix:
             raise ValueError(
                 "PropertyOperator getChild must have a nonempty prefix!"
@@ -335,7 +493,12 @@ class PropertyOperator:
         return child
 
     def deregisterAll(self) -> bool:
-        # unsubscribe from all callbacks
+        """
+        Unsubscribe from all property callbacks and clear property values.
+
+        Returns:
+            bool: True if all were removed, False otherwise.
+        """
         wasAllRemoved = True
         for propertyTable in self.__propertyValueMap.keys():
             wasAllRemoved &= self.__xclient.unsubscribe(
@@ -356,34 +519,84 @@ class PropertyOperator:
 
 
 class Property:
+    """
+    Represents a readable property.
+
+    Args:
+        getFunc (Callable[[], Any]): Function to get the property value.
+        propertyTable (str): The property table name.
+    """
+
     def __init__(
         self, getFunc: Callable[[], Any], propertyTable: str
-    ) -> None:  # lambda to get the property
+    ) -> None:
         self.__getFunc: Callable[[], Any] = getFunc
         self.__propertyTable: str = propertyTable
 
     def get(self) -> Any:
+        """
+        Get the value of the property.
+
+        Returns:
+            Any: The property value.
+        """
         return self.__getFunc()
 
     def getTable(self) -> str:
+        """
+        Get the property table name.
+
+        Returns:
+            str: The property table name.
+        """
         return self.__propertyTable
 
 
 class ReadonlyProperty:
+    """
+    Represents a writable (read-only from the network) property.
+
+    Args:
+        setFunc (Callable[[Any], bool]): Function to set the property value.
+        propertyTable (str): The property table name.
+    """
+
     def __init__(
         self, setFunc: Callable[[Any], bool], propertyTable: str
-    ) -> None:  # lambda to set the read only property
+    ) -> None:
         self.__setFunc: Callable[[Any], bool] = setFunc
         self.__propertyTable: str = propertyTable
 
     def set(self, value: Any) -> bool:
+        """
+        Set the value of the property.
+
+        Args:
+            value (Any): The value to set.
+
+        Returns:
+            bool: True if set successfully, False otherwise.
+        """
         return self.__setFunc(value)
 
     def getTable(self) -> str:
+        """
+        Get the property table name.
+
+        Returns:
+            str: The property table name.
+        """
         return self.__propertyTable
 
 
 class LambdaHandler(logging.Handler):
+    """
+    Logging handler that executes a lambda function on each log message.
+
+    Args:
+        func (Callable[[str], None]): The function to execute on each log message.
+    """
+
     def __init__(self, func: Callable[[str], None]) -> None:
         super().__init__()
         self.func: Callable[
@@ -391,5 +604,11 @@ class LambdaHandler(logging.Handler):
         ] = func  # This function will be executed on each log message
 
     def emit(self, record: logging.LogRecord) -> None:
+        """
+        Emit a log record and execute the lambda function.
+
+        Args:
+            record (logging.LogRecord): The log record to emit.
+        """
         log_entry = self.format(record)  # Format log message
         self.func(log_entry)  # Call the lambda with the log entry

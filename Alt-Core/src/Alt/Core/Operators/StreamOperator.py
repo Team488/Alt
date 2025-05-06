@@ -188,7 +188,7 @@ class StreamProxy(Proxy):
         """Gets the current count of frames stored in the proxy.
 
         Returns:
-            Optional[int]: The total number of frames sent, or None if not available.
+            int: The total number of frames sent.
         """
         return self.__streamDict["frame_count"]
 

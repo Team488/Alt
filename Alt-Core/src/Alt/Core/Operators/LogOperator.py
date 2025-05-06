@@ -1,3 +1,16 @@
+"""LogOperator.py
+
+Provides logging utilities for the application, including creation of loggers,
+setting log levels, and managing a central logger instance.
+
+Functions:
+    createLogger: Creates a logger with a unique name and file handler.
+    setMainLogger: Sets the main logger instance.
+    createAndSetMain: Creates and sets the main logger.
+    setLogLevel: Sets the log level for the central logger.
+    getChildLogger: Gets a child logger derived from the central logger.
+"""
+
 import os
 import socket
 import logging
@@ -14,6 +27,15 @@ UniqueId: Final[str] = socket.gethostname()
 
 
 def createLogger(loggerName: str):
+    """
+    Create a logger with a unique name and file handler.
+
+    Args:
+        loggerName (str): The name of the logger.
+
+    Returns:
+        logging.Logger: The created logger instance.
+    """
     from ..Utils.timeFmt import getTimeStr
 
     fullName = f"{loggerName}[{UniqueId}]"
@@ -35,10 +57,22 @@ def createLogger(loggerName: str):
     return logger
 
 def setMainLogger(mainLogger: logging.Logger):
+    """
+    Set the main logger instance.
+
+    Args:
+        mainLogger (logging.Logger): The logger to set as the main logger.
+    """
     global Sentinel
     Sentinel = mainLogger
 
 def createAndSetMain(loggerName: str):
+    """
+    Create and set the main logger using the given name.
+
+    Args:
+        loggerName (str): The name for the main logger.
+    """
     setMainLogger(createLogger(loggerName))
 
 Sentinel = createLogger("Core")
@@ -46,22 +80,22 @@ Sentinel = createLogger("Core")
 
 def setLogLevel(level: Union[int, str]) -> None:
     """
-    Set the log level for the central logger
+    Set the log level for the central logger.
 
     Args:
-        level: Logging level (can be an integer level or a string name)
+        level (int or str): Logging level (can be an integer level or a string name).
     """
     Sentinel.setLevel(level)
 
 
 def getChildLogger(name: str) -> logging.Logger:
     """
-    Get a child logger derived from the central logger
+    Get a child logger derived from the central logger.
 
     Args:
-        name: Name for the child logger
+        name (str): Name for the child logger.
 
     Returns:
-        A Logger instance with the given name as a child of the central logger
+        logging.Logger: A Logger instance with the given name as a child of the central logger.
     """
     return Sentinel.getChild(name)

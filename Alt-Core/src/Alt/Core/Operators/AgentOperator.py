@@ -1,3 +1,17 @@
+"""AgentOperator.py
+
+This module defines the AgentOperator class, which manages the lifecycle and execution
+of Agent instances, including their initialization, proxy setup, logging, and shutdown.
+It provides mechanisms for running agents in separate processes or threads, handling
+their status, and ensuring proper cleanup.
+
+Classes:
+    AgentOperator: Manages agent processes, proxies, and lifecycle events.
+
+Functions:
+    (All public and private methods of AgentOperator are documented at the class and function level.)
+"""
+
 import logging
 import multiprocessing
 import multiprocessing.managers
@@ -8,7 +22,7 @@ import traceback
 import time
 from functools import partial
 from concurrent.futures import ProcessPoolExecutor, Future
-from typing import Any, Optional, Callable, Union
+from typing import Optional, Callable, Union
 
 from JXTABLES.XTablesClient import XTablesClient
 
@@ -27,6 +41,16 @@ Sentinel = getChildLogger("Agent_Operator")
 
 # subscribes to command request with xtables and then executes when requested
 class AgentOperator:
+    """
+    Manages the lifecycle, execution, and communication of Agent instances.
+
+    Responsibilities include:
+    - Starting and stopping agents, both in the main thread and in subprocesses.
+    - Handling agent proxies for inter-process communication.
+    - Managing agent logging and status reporting.
+    - Ensuring proper cleanup and shutdown of agents.
+    """
+
     STATUS = "status"
     DESCRIPTION = "description"
     ERRORS = "errors"
@@ -37,8 +61,6 @@ class AgentOperator:
     SHUTDOWNTIMER = "shutdown"
     CLOSETIMER = "close"
 
-
-    
     def __init__(
         self,
         manager: multiprocessing.managers.SyncManager,
@@ -46,6 +68,15 @@ class AgentOperator:
         streamOp: StreamOperator,
         logStreamOp : LogStreamOperator
     ) -> None:
+        """
+        Initializes the AgentOperator.
+
+        Args:
+            manager (multiprocessing.managers.SyncManager): Manager for shared objects.
+            shareOp (ShareOperator): Operator for shared data.
+            streamOp (StreamOperator): Operator for stream proxies.
+            logStreamOp (LogStreamOperator): Operator for log stream proxies.
+        """
         self.__executor: ProcessPoolExecutor = ProcessPoolExecutor()
         self.__stop: threading.Event = manager.Event()  # flag
         self.futures: list[Future] = []
@@ -57,6 +88,12 @@ class AgentOperator:
         self.manager = manager
 
     def __setStop(self, stop: bool):
+        """
+        Sets or clears the stop flag for agent execution.
+
+        Args:
+            stop (bool): If True, sets the stop flag; otherwise, clears it.
+        """
         try:
             if stop:
                 self.__stop.set()
@@ -66,20 +103,34 @@ class AgentOperator:
             pass
 
     def stopAndWait(self) -> None:
-        """Stop all agents but allow them to clean up, and wait for them to finish"""
+        """Stop all agents but allow them to clean up, and wait for them to finish."""
         self.__setStop(True)
         self.waitForAgentsToFinish()
         self.__setStop(False)
 
     def stopPermanent(self) -> None:
-        """Set the stop flag permanently (will not be reset)"""
+        """Set the stop flag permanently (will not be reset)."""
         self.__setStop(True)
 
     def __setMainAgent(self, agent: Agent):
+        """
+        Sets the main agent reference.
+
+        Args:
+            agent (Agent): The agent to set as the main agent.
+        """
         self.mainAgent = agent
 
     def getUniqueAgentName(self, agentClass: Union[partial, type[Agent]]):
-        """Handles duplicate agent names"""
+        """
+        Generates a unique name for an agent, handling duplicates.
+
+        Args:
+            agentClass (Union[partial, type[Agent]]): The agent class or partial.
+
+        Returns:
+            str: A unique agent name.
+        """
         if isinstance(agentClass, partial):
             name = agentClass.func.__name__
         else:
@@ -104,6 +155,17 @@ class AgentOperator:
         agentName: str,
         proxyDict: multiprocessing.managers.DictProxy,
     ) -> tuple[multiprocessing.managers.DictProxy, queue.Queue]:
+        """
+        Initializes proxies for the agent, including stream and log proxies.
+
+        Args:
+            agentClass (Union[partial, type[Agent]]): The agent class or partial.
+            agentName (str): The unique agent name.
+            proxyDict (multiprocessing.managers.DictProxy): The proxy dictionary.
+
+        Returns:
+            tuple: (proxyDict, logProxy)
+        """
         for requestName, proxyType in ProxyType.getProxyRequests(agentClass).items():
             # TODO add more
             if proxyType is ProxyType.STREAM:
@@ -117,6 +179,13 @@ class AgentOperator:
         return proxyDict, logProxy
 
     def wakeAgent(self, agentClass: type[Agent], isMainThread: bool) -> None:
+        """
+        Starts an agent, either in the main thread or in a subprocess.
+
+        Args:
+            agentClass (type[Agent]): The agent class to instantiate and run.
+            isMainThread (bool): Whether to run in the main thread.
+        """
         Sentinel.info(f"Waking agent!")
 
         agentName = self.getUniqueAgentName(agentClass)
@@ -173,7 +242,15 @@ class AgentOperator:
         newLog: str,
         maxLogLength: int = 3,
     ) -> None:
+        """
+        Handles log messages for an agent, maintaining a rolling window of recent logs.
 
+        Args:
+            logProperty (ReadonlyProperty): The property to update with log messages.
+            lastLogs (list): The list of recent log messages.
+            newLog (str): The new log message to add.
+            maxLogLength (int): The maximum number of log messages to keep.
+        """
         lastLogs.append(newLog)
         lastLogs = lastLogs[-maxLogLength:]
 
@@ -189,7 +266,20 @@ class AgentOperator:
         logProxy: queue.Queue,
         isMainThread: bool,
     ) -> Agent:
+        """
+        Injects core dependencies and logging into the agent.
 
+        Args:
+            agent (Agent): The agent instance.
+            agentName (str): The agent's unique name.
+            shareOperator (ShareOperator): The shared operator.
+            proxies (DictProxy): The proxy dictionary.
+            logProxy (queue.Queue): The log proxy queue.
+            isMainThread (bool): Whether running in the main thread.
+
+        Returns:
+            Agent: The injected agent.
+        """
         # injecting stuff shared from core
         agent._injectCore(shareOperator, isMainThread, agentName)
         # creating new operators just for this agent and injecting them
@@ -218,7 +308,14 @@ class AgentOperator:
         agentName: str,
         logProxy: queue.Queue
     ) -> None:
-        """Since any agent not on main thread will be in its own process, alot of new objects will have to be created"""
+        """
+        Injects new operator instances and logging handlers into the agent.
+
+        Args:
+            agent (Agent): The agent instance.
+            agentName (str): The agent's unique name.
+            logProxy (queue.Queue): The log proxy queue.
+        """
         client = XTablesClient(debug_mode=True)  # one per process
         client.add_client_version_property(f"MATRIX-ALT-{agentName}")
 
@@ -267,6 +364,20 @@ class AgentOperator:
         logProxy: queue.Queue,
         runOnCreate: Optional[Callable[[Agent], None]] = None,
     ) -> None:
+        """
+        Main agent loop that manages agent lifecycle, including creation, running,
+        shutdown, and cleanup.
+
+        Args:
+            agentClass (type[Agent]): The agent class to instantiate.
+            agentName (str): The agent's unique name.
+            shareOperator (ShareOperator): The shared operator.
+            isMainThread (bool): Whether running in the main thread.
+            stopflag (threading.Event): The stop flag event.
+            proxies (DictProxy): The proxy dictionary.
+            logProxy (queue.Queue): The log proxy queue.
+            runOnCreate (Optional[Callable[[Agent], None]]): Optional callback to run on agent creation.
+        """
         if not isMainThread:
             signal.signal(signal.SIGINT, signal.SIG_IGN)    
             signal.signal(signal.SIGTERM, signal.SIG_IGN)    
@@ -413,10 +524,19 @@ class AgentOperator:
             agent.isCleanedUp = True
 
     def allFinished(self):
+        """
+        Checks if all agent futures have completed.
+
+        Returns:
+            bool: True if all agents are finished, False otherwise.
+        """
         return all(f.done() for f in self.futures)
 
     def waitForAgentsToFinish(self) -> None:
-        """Thread blocking method that waits for any running agents"""
+        """
+        Thread blocking method that waits for any running agents to finish.
+        Also ensures the main agent is properly shut down and cleaned up.
+        """
         if not self.allFinished():
             Sentinel.info("Waiting for async agent to finish...")
             while True:
@@ -450,6 +570,8 @@ class AgentOperator:
             Sentinel.info("Main agent finished")
 
     def shutDownNow(self) -> None:
-        """Threadblocks until executor is finished"""
+        """
+        Blocks the thread until the executor is finished and all agent processes are shut down.
+        """
         self.__executor.shutdown(wait=True, cancel_futures=True)
 
