@@ -4,7 +4,7 @@ import onnxruntime as ort
 
 from Alt.Core import getChildLogger
 
-from ...inference import utils
+from . import utils
 from ..inferencerBackend import InferencerBackend
 from ...Detections.DetectionResult import DetectionResult
 
@@ -40,24 +40,3 @@ class onnxInferencer(InferencerBackend):
         nmsResults = utils.non_max_suppression(adjusted, minConf)
 
         return [DetectionResult(nmsResult[0], nmsResult[1], nmsResult[2]) for nmsResult in nmsResults]
-
-
-def startDemo() -> None:
-    from inference.MultiInferencer import MultiInferencer
-    from tools.Constants import InferenceMode
-
-    inf = MultiInferencer(inferenceMode=InferenceMode.ONNXMEDIUM2025)
-    cap = cv2.VideoCapture("assets/reefscapevid.mp4")
-
-    while cap.isOpened():
-        ret, frame = cap.read()
-        if ret:
-            results = inf.run(frame, 0.7, drawBoxes=True)
-            cv2.imshow("onnx", frame)
-
-        if cv2.waitKey(1) & 0xFF == ord("q"):
-            break
-
-
-if __name__ == "__main__":
-    startDemo()

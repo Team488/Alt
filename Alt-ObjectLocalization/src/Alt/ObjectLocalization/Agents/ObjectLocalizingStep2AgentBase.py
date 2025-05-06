@@ -1,23 +1,13 @@
-import math
 from typing import Optional, Any
 import time
 from functools import partial
 
-from JXTABLES import XTableProto_pb2 as XTableProto
-from JXTABLES import XTableValues_pb2 as XTableValue
-from typing import List
-
-from Alt.Core import DEVICEHOSTNAME
 from Alt.Core.Agents.Agent import Agent
-from Alt.Core.Units.Poses import Pose2d
 from Alt.Core.Constants.Field import Field
-from Alt.Cameras.Agents.CameraUsingAgentBase import CameraUsingAgentBase
-from Alt.Cameras.Parameters.CameraExtrinsics import CameraExtrinsics
 
 from ..Detections.DetectionPacket import DetectionPacket
 from ..Inference.ModelConfig import ModelConfig
 from ..Localization.PipelineStep2 import PipelineStep2
-from ..Localization.LocalizationResult import DeviceLocalizationResult
 from .ObjectLocalizingStep1AgentBase import ObjectLocalizingStep1AgentBase
 
 

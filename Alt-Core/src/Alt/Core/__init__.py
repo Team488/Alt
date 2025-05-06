@@ -64,4 +64,9 @@ def get_platform() -> Platform:
     
 DEVICEPLATFORM = get_platform()
 
+def is_arm64() -> bool:
+    arch = platform.machine()
+    return arch in ("aarch64", "arm64")
+
+ISARM64 = is_arm64()
 

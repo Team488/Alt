@@ -69,4 +69,4 @@ class TensorrtInferencer(InferencerBackend):
     ) -> list[DetectionResult]:
         """Processes raw output from the model to return bounding boxes, confidences, and class IDs."""
         results = self.adjustBoxes(results, frame, minConf)
-        return [DetectionResult(results[0], results[1], results[2]) for result in results]
+        return [DetectionResult(result[0], result[1], result[2]) for result in results]
