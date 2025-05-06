@@ -304,7 +304,7 @@ def getAdjustBoxesMethod(
             return adjustBoxesV11ONNX
         else:
             Sentinel.fatal(f"Invalid Yolotype not supported on anything but ultralytics backend!: {yoloType}")
-            raise RuntimeError(f"Invalid Yolotype not supported on but ultralytics backend!: {yoloType}")
+            raise RuntimeError(f"Invalid Yolotype not supported on anything but ultralytics backend!: {yoloType}")
     else:
         return None  # ultralytics backend uses its own adjustment
 
