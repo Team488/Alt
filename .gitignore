@@ -160,7 +160,7 @@ cython_debug/
 #.idea/
 
 # Common video file extensions
-# *.mp4
+*.mp4
 *.mov
 *.avi
 *.mkv
@@ -173,36 +173,19 @@ cython_debug/
 *.mpeg
 *.ogv
 *.264
-out.mp4
-# *.csv
-
+*.csv
 *.prof
 
 
-# *.pb
-
 *.svg
 
-deep_sort/
 
 *.egg-info
 
-/tmpAssets
-
-!librknnrt.so
+# intellj idea files
 
 .idea
 
-pycapnp/
-
-# saved properties
-src/assets/PROPERTIES/*
-# temp model images
-src/assets/TMPImages/*
-src/assets/TMPCalibration/*
-src/assets/TMPSync/*
-# txt file linking to images
-src/assets/dataset.txt
 # aider(ai assistant) config files
 .aider*
 # monkeytype database
