@@ -15,10 +15,18 @@ release = '2025'
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 extensions = [
-    'sphinx.ext.autodoc',
-    'sphinx.ext.napoleon',        # for Google docstrings
-    'sphinx_autodoc_typehints',    # for cleaner type hints
+    "sphinx.ext.autodoc",
+    "sphinx.ext.napoleon",           # For Google/NumPy style docstrings
+    "sphinx.ext.viewcode",           # Adds source code links
+    "sphinx.ext.autosummary",        # Enables autosummary tables
+    "sphinx_autodoc_typehints",      # Type hint support (optional)
+    "sphinx_markdown_parser",        # for parsing READMEs
 ]
+source_suffix = {
+    ".rst": "restructuredtext",
+    ".md": "markdown",
+}
+autosummary_generate = True          # Auto-generate .rst files for modules
 
 templates_path = ['_templates']
 exclude_patterns = []
@@ -33,5 +41,12 @@ html_static_path = ['_static']
 # Make sure Python finds your modules:
 import os
 import sys
-sys.path.insert(0, os.path.abspath('../../Alt-Core/src'))
-sys.path.insert(0, os.path.abspath('../../Alt-Cameras/src'))
+
+BASE = os.path.abspath(os.path.join("..", ".."))
+sys.path.insert(0, os.path.join(BASE, "Alt-Core", "src"))
+sys.path.insert(0, os.path.join(BASE, "Alt-Cameras", "src"))
+sys.path.insert(0, os.path.join(BASE, "Alt-Dashboard", "src"))
+sys.path.insert(0, os.path.join(BASE, "Alt-ObjectLocalization", "src"))
+sys.path.insert(0, os.path.join(BASE, "Alt-Pathplanning", "src"))
+
+
