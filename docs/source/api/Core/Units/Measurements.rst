@@ -1,5 +1,5 @@
-Alt.Core.Units.Measurements
-===========================
+Measurements
+============
 
 .. automodule:: Alt.Core.Units.Measurements
    :members:

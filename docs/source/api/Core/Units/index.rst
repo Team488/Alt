@@ -1,9 +1,8 @@
-Core/Units
-==========
-
+Units
+=====
 .. toctree::
    :maxdepth: 2
-   :caption: Core/Units
+   :caption: Units
 
    Conversions
    Measurements

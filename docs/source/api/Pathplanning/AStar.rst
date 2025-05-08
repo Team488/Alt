@@ -1,5 +1,5 @@
-Alt.Pathplanning.AStar
-======================
+AStar
+=====
 
 .. automodule:: Alt.Pathplanning.AStar
    :members:

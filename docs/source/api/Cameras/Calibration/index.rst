@@ -1,8 +1,7 @@
-Cameras/Calibration
-===================
-
+Calibration
+===========
 .. toctree::
    :maxdepth: 2
-   :caption: Cameras/Calibration
+   :caption: Calibration
 
    CalibrationUtil

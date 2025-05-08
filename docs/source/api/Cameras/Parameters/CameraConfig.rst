@@ -1,5 +1,5 @@
-Alt.Cameras.Parameters.CameraConfig
-===================================
+CameraConfig
+============
 
 .. automodule:: Alt.Cameras.Parameters.CameraConfig
    :members:

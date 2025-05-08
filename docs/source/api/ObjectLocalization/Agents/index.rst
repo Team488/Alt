@@ -1,9 +1,8 @@
-ObjectLocalization/Agents
-=========================
-
+Agents
+======
 .. toctree::
    :maxdepth: 2
-   :caption: ObjectLocalization/Agents
+   :caption: Agents
 
    InferenceAgent
    ObjectLocalizingStep1AgentBase

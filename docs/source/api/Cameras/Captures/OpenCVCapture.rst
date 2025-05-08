@@ -1,5 +1,5 @@
-Alt.Cameras.Captures.OpenCVCapture
-==================================
+OpenCVCapture
+=============
 
 .. automodule:: Alt.Cameras.Captures.OpenCVCapture
    :members:

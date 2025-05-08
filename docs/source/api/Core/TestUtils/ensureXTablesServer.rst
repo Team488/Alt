@@ -1,5 +1,5 @@
-Alt.Core.TestUtils.ensureXTablesServer
-======================================
+ensureXTablesServer
+===================
 
 .. automodule:: Alt.Core.TestUtils.ensureXTablesServer
    :members:

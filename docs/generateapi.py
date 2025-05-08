@@ -1,4 +1,4 @@
-import os
+import shutil
 from pathlib import Path
 
 NAMESPACE_PKGS = [
@@ -21,12 +21,12 @@ def get_module_path(src_dir: Path, py_file: Path):
 def should_skip(py_file: Path):
     return py_file.name == "__init__.py" or (not SHOW_PRIVATE and py_file.name.startswith("_"))
 
-def write_module_rst(module_name: str, out_path: Path):
+def write_module_rst(file_name, full_module_name: str, out_path: Path):
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    content = f"""{module_name}
-{'=' * len(module_name)}
+    content = f"""{file_name}
+{'=' * len(file_name)}
 
-.. automodule:: {module_name}
+.. automodule:: {full_module_name}
    :members:
    :undoc-members:
    :show-inheritance:
@@ -36,11 +36,9 @@ def write_module_rst(module_name: str, out_path: Path):
 def write_index_rst(folder_path: Path):
     """Generates an index.rst inside `folder_path` that links all .rst files and subfolders."""
     index_path = folder_path / "index.rst"
-    rel_root = folder_path.relative_to(OUTPUT_ROOT)
-    title = rel_root.as_posix() or "API"
+    title = folder_path.name
     content = f"""{title}
 {'=' * len(title)}
-
 .. toctree::
    :maxdepth: 2
    :caption: {title}
@@ -66,9 +64,10 @@ def write_package_tree(pkg_path: Path, namespace_name: str, src_dir: Path):
         if should_skip(py_file):
             continue
         rel_path = get_module_path(src_dir, py_file)
-        module_name = ".".join(["Alt"] + list(rel_path.parts))  # full dotted path
+        file_name = rel_path.name
+        full_module_name = ".".join(["Alt"] + list(rel_path.parts))  # full dotted path
         rst_out_path = out_root / rel_path.with_suffix(".rst")
-        write_module_rst(module_name, rst_out_path)
+        write_module_rst(file_name, full_module_name, rst_out_path)
 
     # Create index.rst recursively
     for dir_path in sorted(out_root.rglob("*"), key=lambda p: -len(p.parts)):
@@ -106,6 +105,13 @@ def write_global_index(namespace_names: list[str]):
 
 # Main process
 if __name__ == "__main__":
+    # try delete old api dir
+    try:
+        shutil.rmtree(str(OUTPUT_ROOT))
+    except Exception as e:
+        pass
+
+
     namespace_names = []
 
     for pkg_str in NAMESPACE_PKGS:

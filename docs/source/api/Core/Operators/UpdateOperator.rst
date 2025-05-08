@@ -1,5 +1,5 @@
-Alt.Core.Operators.UpdateOperator
-=================================
+UpdateOperator
+==============
 
 .. automodule:: Alt.Core.Operators.UpdateOperator
    :members:

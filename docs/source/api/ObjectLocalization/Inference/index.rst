@@ -1,9 +1,8 @@
-ObjectLocalization/Inference
-============================
-
+Inference
+=========
 .. toctree::
    :maxdepth: 2
-   :caption: ObjectLocalization/Inference
+   :caption: Inference
 
    inferencerBackend
    ModelConfig

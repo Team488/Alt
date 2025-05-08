@@ -1,5 +1,5 @@
-Alt.Core.Utils.NtUtils
-======================
+NtUtils
+=======
 
 .. automodule:: Alt.Core.Utils.NtUtils
    :members:

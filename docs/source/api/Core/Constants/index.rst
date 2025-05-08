@@ -1,9 +1,8 @@
-Core/Constants
-==============
-
+Constants
+=========
 .. toctree::
    :maxdepth: 2
-   :caption: Core/Constants
+   :caption: Constants
 
    AgentConstants
    Field

@@ -1,5 +1,5 @@
-Alt.Core.Constants.AgentConstants
-=================================
+AgentConstants
+==============
 
 .. automodule:: Alt.Core.Constants.AgentConstants
    :members:

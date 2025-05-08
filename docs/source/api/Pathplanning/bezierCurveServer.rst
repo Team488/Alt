@@ -1,5 +1,5 @@
-Alt.Pathplanning.bezierCurveServer
-==================================
+bezierCurveServer
+=================
 
 .. automodule:: Alt.Pathplanning.bezierCurveServer
    :members:

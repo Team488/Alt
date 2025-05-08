@@ -1,5 +1,5 @@
-Alt.ObjectLocalization.Estimation.particleFilter
-================================================
+particleFilter
+==============
 
 .. automodule:: Alt.ObjectLocalization.Estimation.particleFilter
    :members:

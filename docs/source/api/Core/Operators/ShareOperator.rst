@@ -1,5 +1,5 @@
-Alt.Core.Operators.ShareOperator
-================================
+ShareOperator
+=============
 
 .. automodule:: Alt.Core.Operators.ShareOperator
    :members:

@@ -1,5 +1,5 @@
-Alt.Core.Neo
-============
+Neo
+===
 
 .. automodule:: Alt.Core.Neo
    :members:

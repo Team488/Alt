@@ -1,5 +1,5 @@
-Alt.Pathplanning.nmc.fastMarchingMethodServer
-=============================================
+fastMarchingMethodServer
+========================
 
 .. automodule:: Alt.Pathplanning.nmc.fastMarchingMethodServer
    :members:

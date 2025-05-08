@@ -1,5 +1,5 @@
-Alt.Cameras.Captures.utils
-==========================
+utils
+=====
 
 .. automodule:: Alt.Cameras.Captures.utils
    :members:

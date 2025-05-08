@@ -1,5 +1,5 @@
-Alt.Cameras.Captures.tools.calibration
-======================================
+calibration
+===========
 
 .. automodule:: Alt.Cameras.Captures.tools.calibration
    :members:

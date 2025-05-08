@@ -1,5 +1,5 @@
-Alt.Core.Operators.TimeOperator
-===============================
+TimeOperator
+============
 
 .. automodule:: Alt.Core.Operators.TimeOperator
    :members:

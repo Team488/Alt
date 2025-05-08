@@ -1,9 +1,8 @@
-Cameras/Agents
-==============
-
+Agents
+======
 .. toctree::
    :maxdepth: 2
-   :caption: Cameras/Agents
+   :caption: Agents
 
    CameraUsingAgentBase
    VideoWriterAgent

@@ -1,9 +1,8 @@
-Core/TestUtils
-==============
-
+TestUtils
+=========
 .. toctree::
    :maxdepth: 2
-   :caption: Core/TestUtils
+   :caption: TestUtils
 
    AgentTests
    ensureXTablesServer

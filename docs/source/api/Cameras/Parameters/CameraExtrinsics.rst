@@ -1,5 +1,5 @@
-Alt.Cameras.Parameters.CameraExtrinsics
-=======================================
+CameraExtrinsics
+================
 
 .. automodule:: Alt.Cameras.Parameters.CameraExtrinsics
    :members:

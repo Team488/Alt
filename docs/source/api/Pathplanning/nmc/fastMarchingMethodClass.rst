@@ -1,5 +1,5 @@
-Alt.Pathplanning.nmc.fastMarchingMethodClass
-============================================
+fastMarchingMethodClass
+=======================
 
 .. automodule:: Alt.Pathplanning.nmc.fastMarchingMethodClass
    :members:

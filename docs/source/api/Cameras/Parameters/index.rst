@@ -1,9 +1,8 @@
-Cameras/Parameters
-==================
-
+Parameters
+==========
 .. toctree::
    :maxdepth: 2
-   :caption: Cameras/Parameters
+   :caption: Parameters
 
    CameraCalibration
    CameraConfig

@@ -1,5 +1,5 @@
-Alt.Core.Operators.LogOperator
-==============================
+LogOperator
+===========
 
 .. automodule:: Alt.Core.Operators.LogOperator
    :members:

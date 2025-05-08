@@ -1,5 +1,5 @@
-Alt.Core.Units.Poses
-====================
+Poses
+=====
 
 .. automodule:: Alt.Core.Units.Poses
    :members:

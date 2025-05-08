@@ -1,5 +1,5 @@
-Alt.Pathplanning.CalculateBestPath
-==================================
+CalculateBestPath
+=================
 
 .. automodule:: Alt.Pathplanning.CalculateBestPath
    :members:

@@ -1,5 +1,5 @@
-Alt.ObjectLocalization.Inference.backends.TensorrtInferencer
-============================================================
+TensorrtInferencer
+==================
 
 .. automodule:: Alt.ObjectLocalization.Inference.backends.TensorrtInferencer
    :members:

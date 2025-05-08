@@ -1,5 +1,5 @@
-Alt.Core.Constants.Teams
-========================
+Teams
+=====
 
 .. automodule:: Alt.Core.Constants.Teams
    :members:

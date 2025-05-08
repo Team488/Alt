@@ -1,5 +1,5 @@
-Alt.Core.Units.Conversions
-==========================
+Conversions
+===========
 
 .. automodule:: Alt.Core.Units.Conversions
    :members:

@@ -1,5 +1,5 @@
-Alt.Cameras.Parameters.CameraCalibration
-========================================
+CameraCalibration
+=================
 
 .. automodule:: Alt.Cameras.Parameters.CameraCalibration
    :members:

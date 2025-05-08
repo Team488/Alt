@@ -1,5 +1,5 @@
-Alt.Pathplanning.nmc.fastMarchingMethodRPC
-==========================================
+fastMarchingMethodRPC
+=====================
 
 .. automodule:: Alt.Pathplanning.nmc.fastMarchingMethodRPC
    :members:

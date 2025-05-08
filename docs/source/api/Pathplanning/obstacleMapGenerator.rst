@@ -1,5 +1,5 @@
-Alt.Pathplanning.obstacleMapGenerator
-=====================================
+obstacleMapGenerator
+====================
 
 .. automodule:: Alt.Pathplanning.obstacleMapGenerator
    :members:

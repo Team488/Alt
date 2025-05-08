@@ -1,5 +1,5 @@
-Alt.ObjectLocalization.Tracking.deepSortBaseLabler
-==================================================
+deepSortBaseLabler
+==================
 
 .. automodule:: Alt.ObjectLocalization.Tracking.deepSortBaseLabler
    :members:

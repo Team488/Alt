@@ -1,5 +1,5 @@
-Alt.Core.TestUtils.AgentTests
-=============================
+AgentTests
+==========
 
 .. automodule:: Alt.Core.TestUtils.AgentTests
    :members:

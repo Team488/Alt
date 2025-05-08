@@ -1,5 +1,5 @@
-Alt.ObjectLocalization.Localization.PipelineStep1
-=================================================
+PipelineStep1
+=============
 
 .. automodule:: Alt.ObjectLocalization.Localization.PipelineStep1
    :members:

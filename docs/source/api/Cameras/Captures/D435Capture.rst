@@ -1,5 +1,5 @@
-Alt.Cameras.Captures.D435Capture
-================================
+D435Capture
+===========
 
 .. automodule:: Alt.Cameras.Captures.D435Capture
    :members:

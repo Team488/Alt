@@ -1,5 +1,5 @@
-Alt.Pathplanning.nmc.BezierCurve_pb2
-====================================
+BezierCurve_pb2
+===============
 
 .. automodule:: Alt.Pathplanning.nmc.BezierCurve_pb2
    :members:

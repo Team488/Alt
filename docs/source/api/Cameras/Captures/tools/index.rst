@@ -1,9 +1,8 @@
-Cameras/Captures/tools
-======================
-
+tools
+=====
 .. toctree::
    :maxdepth: 2
-   :caption: Cameras/Captures/tools
+   :caption: tools
 
    calibration
    depthAiHelper

@@ -1,5 +1,5 @@
-Alt.Dashboard.dashboard
-=======================
+dashboard
+=========
 
 .. automodule:: Alt.Dashboard.dashboard
    :members:

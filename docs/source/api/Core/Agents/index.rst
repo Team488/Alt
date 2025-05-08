@@ -1,9 +1,8 @@
-Core/Agents
-===========
-
+Agents
+======
 .. toctree::
    :maxdepth: 2
-   :caption: Core/Agents
+   :caption: Agents
 
    Agent
    AgentExample

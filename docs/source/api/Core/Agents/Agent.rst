@@ -1,5 +1,5 @@
-Alt.Core.Agents.Agent
-=====================
+Agent
+=====
 
 .. automodule:: Alt.Core.Agents.Agent
    :members:

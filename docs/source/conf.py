@@ -15,7 +15,6 @@ release = '2025'
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 extensions = [
-    "sphinx.ext.autodoc",
     "sphinx.ext.napoleon",           # For Google/NumPy style docstrings
     "sphinx.ext.viewcode",           # Adds source code links
     "sphinx.ext.autosummary",        # Enables autosummary tables
@@ -26,8 +25,6 @@ source_suffix = {
     ".rst": "restructuredtext",
     ".md": "markdown",
 }
-autosummary_generate = True          # Auto-generate .rst files for modules
-
 templates_path = ['_templates']
 exclude_patterns = []
 

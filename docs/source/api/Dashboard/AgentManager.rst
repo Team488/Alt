@@ -1,5 +1,5 @@
-Alt.Dashboard.AgentManager
-==========================
+AgentManager
+============
 
 .. automodule:: Alt.Dashboard.AgentManager
    :members:

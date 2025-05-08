@@ -1,5 +1,5 @@
-Alt.Cameras.Captures.tools.depthAiHelper
-========================================
+depthAiHelper
+=============
 
 .. automodule:: Alt.Cameras.Captures.tools.depthAiHelper
    :members:

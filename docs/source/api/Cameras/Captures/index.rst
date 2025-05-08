@@ -1,9 +1,8 @@
-Cameras/Captures
-================
-
+Captures
+========
 .. toctree::
    :maxdepth: 2
-   :caption: Cameras/Captures
+   :caption: Captures
 
    Capture
    D435Capture

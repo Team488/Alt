@@ -1,5 +1,5 @@
-Alt.ObjectLocalization.Estimation.KalmanLabeler
-===============================================
+KalmanLabeler
+=============
 
 .. automodule:: Alt.ObjectLocalization.Estimation.KalmanLabeler
    :members:

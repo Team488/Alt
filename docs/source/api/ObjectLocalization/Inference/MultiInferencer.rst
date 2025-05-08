@@ -1,5 +1,5 @@
-Alt.ObjectLocalization.Inference.MultiInferencer
-================================================
+MultiInferencer
+===============
 
 .. automodule:: Alt.ObjectLocalization.Inference.MultiInferencer
    :members:

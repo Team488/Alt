@@ -1,5 +1,5 @@
-Alt.Cameras.Captures.OAKCapture
-===============================
+OAKCapture
+==========
 
 .. automodule:: Alt.Cameras.Captures.OAKCapture
    :members:

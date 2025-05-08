@@ -1,5 +1,5 @@
-Alt.Core.Utils.network
-======================
+network
+=======
 
 .. automodule:: Alt.Core.Utils.network
    :members:

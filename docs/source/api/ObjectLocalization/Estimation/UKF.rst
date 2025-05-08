@@ -1,5 +1,5 @@
-Alt.ObjectLocalization.Estimation.UKF
-=====================================
+UKF
+===
 
 .. automodule:: Alt.ObjectLocalization.Estimation.UKF
    :members:

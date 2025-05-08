@@ -1,9 +1,8 @@
-ObjectLocalization/Estimation
-=============================
-
+Estimation
+==========
 .. toctree::
    :maxdepth: 2
-   :caption: ObjectLocalization/Estimation
+   :caption: Estimation
 
    KalmanCache
    KalmanEntry

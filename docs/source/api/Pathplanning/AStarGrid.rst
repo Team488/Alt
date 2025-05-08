@@ -1,5 +1,5 @@
-Alt.Pathplanning.AStarGrid
-==========================
+AStarGrid
+=========
 
 .. automodule:: Alt.Pathplanning.AStarGrid
    :members:

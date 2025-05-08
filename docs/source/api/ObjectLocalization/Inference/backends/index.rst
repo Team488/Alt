@@ -1,9 +1,8 @@
-ObjectLocalization/Inference/backends
-=====================================
-
+backends
+========
 .. toctree::
    :maxdepth: 2
-   :caption: ObjectLocalization/Inference/backends
+   :caption: backends
 
    onnxInferencer
    rknnInferencer

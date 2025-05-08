@@ -1,5 +1,5 @@
-Alt.ObjectLocalization.Tracking.robotTracker
-============================================
+robotTracker
+============
 
 .. automodule:: Alt.ObjectLocalization.Tracking.robotTracker
    :members:

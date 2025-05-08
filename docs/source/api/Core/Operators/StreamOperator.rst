@@ -1,5 +1,5 @@
-Alt.Core.Operators.StreamOperator
-=================================
+StreamOperator
+==============
 
 .. automodule:: Alt.Core.Operators.StreamOperator
    :members:

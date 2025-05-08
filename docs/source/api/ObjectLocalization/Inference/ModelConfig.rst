@@ -1,5 +1,5 @@
-Alt.ObjectLocalization.Inference.ModelConfig
-============================================
+ModelConfig
+===========
 
 .. automodule:: Alt.ObjectLocalization.Inference.ModelConfig
    :members:

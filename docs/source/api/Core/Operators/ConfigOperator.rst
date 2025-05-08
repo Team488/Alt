@@ -1,5 +1,5 @@
-Alt.Core.Operators.ConfigOperator
-=================================
+ConfigOperator
+==============
 
 .. automodule:: Alt.Core.Operators.ConfigOperator
    :members:

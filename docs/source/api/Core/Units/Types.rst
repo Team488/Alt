@@ -1,5 +1,5 @@
-Alt.Core.Units.Types
-====================
+Types
+=====
 
 .. automodule:: Alt.Core.Units.Types
    :members:

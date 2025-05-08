@@ -1,5 +1,5 @@
-Alt.Core.Utils.XTutils
-======================
+XTutils
+=======
 
 .. automodule:: Alt.Core.Utils.XTutils
    :members:

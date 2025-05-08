@@ -1,5 +1,5 @@
-Alt.Core.Agents.PositionLocalizingAgentBase
-===========================================
+PositionLocalizingAgentBase
+===========================
 
 .. automodule:: Alt.Core.Agents.PositionLocalizingAgentBase
    :members:

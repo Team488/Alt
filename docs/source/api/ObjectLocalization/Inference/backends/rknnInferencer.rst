@@ -1,5 +1,5 @@
-Alt.ObjectLocalization.Inference.backends.rknnInferencer
-========================================================
+rknnInferencer
+==============
 
 .. automodule:: Alt.ObjectLocalization.Inference.backends.rknnInferencer
    :members:

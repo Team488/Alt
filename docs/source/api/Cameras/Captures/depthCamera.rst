@@ -1,5 +1,5 @@
-Alt.Cameras.Captures.depthCamera
-================================
+depthCamera
+===========
 
 .. automodule:: Alt.Cameras.Captures.depthCamera
    :members:

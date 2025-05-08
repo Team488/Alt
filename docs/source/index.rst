@@ -11,5 +11,6 @@ Alt documentation
    :caption: Contents:
 
    api/index
+   gettingstarted/index
    ...
 

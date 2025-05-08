@@ -1,5 +1,5 @@
-Alt.ObjectLocalization.Inference.backends.ultralyticsInferencer
-===============================================================
+ultralyticsInferencer
+=====================
 
 .. automodule:: Alt.ObjectLocalization.Inference.backends.ultralyticsInferencer
    :members:

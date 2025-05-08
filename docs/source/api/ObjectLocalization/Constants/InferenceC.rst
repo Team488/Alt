@@ -1,5 +1,5 @@
-Alt.ObjectLocalization.Constants.InferenceC
-===========================================
+InferenceC
+==========
 
 .. automodule:: Alt.ObjectLocalization.Constants.InferenceC
    :members:

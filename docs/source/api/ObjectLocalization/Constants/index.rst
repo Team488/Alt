@@ -1,9 +1,8 @@
-ObjectLocalization/Constants
-============================
-
+Constants
+=========
 .. toctree::
    :maxdepth: 2
-   :caption: ObjectLocalization/Constants
+   :caption: Constants
 
    InferenceC
    KalmanC

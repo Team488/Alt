@@ -1,5 +1,5 @@
-Alt.ObjectLocalization.Tracking.TrackedDetectionResult
-======================================================
+TrackedDetectionResult
+======================
 
 .. automodule:: Alt.ObjectLocalization.Tracking.TrackedDetectionResult
    :members:

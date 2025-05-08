@@ -1,5 +1,5 @@
-Alt.Pathplanning.PathFind
-=========================
+PathFind
+========
 
 .. automodule:: Alt.Pathplanning.PathFind
    :members:

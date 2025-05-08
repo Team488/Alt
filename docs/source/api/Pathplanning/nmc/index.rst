@@ -1,9 +1,8 @@
-Pathplanning/nmc
-================
-
+nmc
+===
 .. toctree::
    :maxdepth: 2
-   :caption: Pathplanning/nmc
+   :caption: nmc
 
    BezierCurve_pb2
    fastMarchingMethodClass

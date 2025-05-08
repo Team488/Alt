@@ -1,5 +1,5 @@
-Alt.ObjectLocalization.Localization.DepthEstimationMethod
-=========================================================
+DepthEstimationMethod
+=====================
 
 .. automodule:: Alt.ObjectLocalization.Localization.DepthEstimationMethod
    :members:

@@ -1,5 +1,5 @@
-Alt.Cameras.Captures.FakeCapture
-================================
+FakeCapture
+===========
 
 .. automodule:: Alt.Cameras.Captures.FakeCapture
    :members:

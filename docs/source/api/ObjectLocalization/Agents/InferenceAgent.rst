@@ -1,5 +1,5 @@
-Alt.ObjectLocalization.Agents.InferenceAgent
-============================================
+InferenceAgent
+==============
 
 .. automodule:: Alt.ObjectLocalization.Agents.InferenceAgent
    :members:

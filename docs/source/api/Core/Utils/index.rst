@@ -1,9 +1,8 @@
-Core/Utils
-==========
-
+Utils
+=====
 .. toctree::
    :maxdepth: 2
-   :caption: Core/Utils
+   :caption: Utils
 
    files
    network

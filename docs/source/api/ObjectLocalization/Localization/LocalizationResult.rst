@@ -1,5 +1,5 @@
-Alt.ObjectLocalization.Localization.LocalizationResult
-======================================================
+LocalizationResult
+==================
 
 .. automodule:: Alt.ObjectLocalization.Localization.LocalizationResult
    :members:

@@ -1,5 +1,5 @@
-Alt.ObjectLocalization.Inference.inferencerBackend
-==================================================
+inferencerBackend
+=================
 
 .. automodule:: Alt.ObjectLocalization.Inference.inferencerBackend
    :members:

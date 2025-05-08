@@ -1,5 +1,5 @@
-Alt.ObjectLocalization.Localization.probmap
-===========================================
+probmap
+=======
 
 .. automodule:: Alt.ObjectLocalization.Localization.probmap
    :members:

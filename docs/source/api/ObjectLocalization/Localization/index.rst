@@ -1,9 +1,8 @@
-ObjectLocalization/Localization
-===============================
-
+Localization
+============
 .. toctree::
    :maxdepth: 2
-   :caption: ObjectLocalization/Localization
+   :caption: Localization
 
    DepthEstimationMethod
    LocalizationResult

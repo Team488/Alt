@@ -1,5 +1,5 @@
-Alt.ObjectLocalization.Constants.KalmanC
-========================================
+KalmanC
+=======
 
 .. automodule:: Alt.ObjectLocalization.Constants.KalmanC
    :members:

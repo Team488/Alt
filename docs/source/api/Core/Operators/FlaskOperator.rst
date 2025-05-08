@@ -1,5 +1,5 @@
-Alt.Core.Operators.FlaskOperator
-================================
+FlaskOperator
+=============
 
 .. automodule:: Alt.Core.Operators.FlaskOperator
    :members:

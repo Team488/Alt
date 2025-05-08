@@ -1,5 +1,5 @@
-Alt.Cameras.Agents.VideoWriterAgent
-===================================
+VideoWriterAgent
+================
 
 .. automodule:: Alt.Cameras.Agents.VideoWriterAgent
    :members:

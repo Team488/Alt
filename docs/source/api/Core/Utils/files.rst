@@ -1,5 +1,5 @@
-Alt.Core.Utils.files
-====================
+files
+=====
 
 .. automodule:: Alt.Core.Utils.files
    :members:

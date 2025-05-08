@@ -1,5 +1,5 @@
-Alt.Cameras.Constants.resolution
-================================
+resolution
+==========
 
 .. automodule:: Alt.Cameras.Constants.resolution
    :members:

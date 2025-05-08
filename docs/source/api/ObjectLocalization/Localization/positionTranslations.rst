@@ -1,5 +1,5 @@
-Alt.ObjectLocalization.Localization.positionTranslations
-========================================================
+positionTranslations
+====================
 
 .. automodule:: Alt.ObjectLocalization.Localization.positionTranslations
    :members:

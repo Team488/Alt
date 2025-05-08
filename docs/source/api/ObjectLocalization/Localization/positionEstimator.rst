@@ -1,5 +1,5 @@
-Alt.ObjectLocalization.Localization.positionEstimator
-=====================================================
+positionEstimator
+=================
 
 .. automodule:: Alt.ObjectLocalization.Localization.positionEstimator
    :members:

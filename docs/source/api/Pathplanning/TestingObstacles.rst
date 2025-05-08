@@ -1,5 +1,5 @@
-Alt.Pathplanning.TestingObstacles
-=================================
+TestingObstacles
+================
 
 .. automodule:: Alt.Pathplanning.TestingObstacles
    :members:

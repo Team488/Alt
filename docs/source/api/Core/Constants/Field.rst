@@ -1,5 +1,5 @@
-Alt.Core.Constants.Field
-========================
+Field
+=====
 
 .. automodule:: Alt.Core.Constants.Field
    :members:

@@ -1,8 +1,7 @@
-Cameras/Proto
-=============
-
+Proto
+=====
 .. toctree::
    :maxdepth: 2
-   :caption: Cameras/Proto
+   :caption: Proto
 
    FramePacket

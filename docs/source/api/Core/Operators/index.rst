@@ -1,9 +1,8 @@
-Core/Operators
-==============
-
+Operators
+=========
 .. toctree::
    :maxdepth: 2
-   :caption: Core/Operators
+   :caption: Operators
 
    AgentOperator
    ConfigOperator

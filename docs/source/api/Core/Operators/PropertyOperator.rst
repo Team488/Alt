@@ -1,5 +1,5 @@
-Alt.Core.Operators.PropertyOperator
-===================================
+PropertyOperator
+================
 
 .. automodule:: Alt.Core.Operators.PropertyOperator
    :members:

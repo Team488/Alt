@@ -1,5 +1,5 @@
-Alt.Pathplanning.utils
-======================
+utils
+=====
 
 .. automodule:: Alt.Pathplanning.utils
    :members:

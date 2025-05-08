@@ -1,9 +1,8 @@
-ObjectLocalization/Tracking
-===========================
-
+Tracking
+========
 .. toctree::
    :maxdepth: 2
-   :caption: ObjectLocalization/Tracking
+   :caption: Tracking
 
    deepSortBaseLabler
    robotTracker

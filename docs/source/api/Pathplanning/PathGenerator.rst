@@ -1,5 +1,5 @@
-Alt.Pathplanning.PathGenerator
-==============================
+PathGenerator
+=============
 
 .. automodule:: Alt.Pathplanning.PathGenerator
    :members:

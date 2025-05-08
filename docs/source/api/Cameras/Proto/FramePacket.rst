@@ -1,5 +1,5 @@
-Alt.Cameras.Proto.FramePacket
-=============================
+FramePacket
+===========
 
 .. automodule:: Alt.Cameras.Proto.FramePacket
    :members:

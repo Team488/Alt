@@ -1,5 +1,5 @@
-Alt.ObjectLocalization.Agents.ObjectLocalizingStep2AgentBase
-============================================================
+ObjectLocalizingStep2AgentBase
+==============================
 
 .. automodule:: Alt.ObjectLocalization.Agents.ObjectLocalizingStep2AgentBase
    :members:

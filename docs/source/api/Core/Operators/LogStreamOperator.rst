@@ -1,5 +1,5 @@
-Alt.Core.Operators.LogStreamOperator
-====================================
+LogStreamOperator
+=================
 
 .. automodule:: Alt.Core.Operators.LogStreamOperator
    :members:

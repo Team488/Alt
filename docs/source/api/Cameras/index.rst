@@ -1,6 +1,5 @@
 Cameras
 =======
-
 .. toctree::
    :maxdepth: 2
    :caption: Cameras

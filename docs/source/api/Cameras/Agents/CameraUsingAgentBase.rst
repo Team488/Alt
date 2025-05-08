@@ -1,5 +1,5 @@
-Alt.Cameras.Agents.CameraUsingAgentBase
-=======================================
+CameraUsingAgentBase
+====================
 
 .. automodule:: Alt.Cameras.Agents.CameraUsingAgentBase
    :members:

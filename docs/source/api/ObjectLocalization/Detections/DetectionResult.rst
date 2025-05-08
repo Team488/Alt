@@ -1,5 +1,5 @@
-Alt.ObjectLocalization.Detections.DetectionResult
-=================================================
+DetectionResult
+===============
 
 .. automodule:: Alt.ObjectLocalization.Detections.DetectionResult
    :members:

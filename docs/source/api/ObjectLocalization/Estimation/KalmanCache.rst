@@ -1,5 +1,5 @@
-Alt.ObjectLocalization.Estimation.KalmanCache
-=============================================
+KalmanCache
+===========
 
 .. automodule:: Alt.ObjectLocalization.Estimation.KalmanCache
    :members:

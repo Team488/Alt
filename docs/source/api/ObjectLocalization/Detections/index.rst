@@ -1,9 +1,8 @@
-ObjectLocalization/Detections
-=============================
-
+Detections
+==========
 .. toctree::
    :maxdepth: 2
-   :caption: ObjectLocalization/Detections
+   :caption: Detections
 
    DetectionPacket
    DetectionResult

@@ -1,5 +1,5 @@
-Alt.ObjectLocalization.Detections.DetectionPacket
-=================================================
+DetectionPacket
+===============
 
 .. automodule:: Alt.ObjectLocalization.Detections.DetectionPacket
    :members:

@@ -1,5 +1,5 @@
-Alt.Core.Utils.timeFmt
-======================
+timeFmt
+=======
 
 .. automodule:: Alt.Core.Utils.timeFmt
    :members:

@@ -1,5 +1,5 @@
-Alt.ObjectLocalization.Estimation.KalmanEntry
-=============================================
+KalmanEntry
+===========
 
 .. automodule:: Alt.ObjectLocalization.Estimation.KalmanEntry
    :members:
