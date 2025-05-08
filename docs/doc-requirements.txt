@@ -6,3 +6,5 @@ sphinx-rtd-theme>=1.2.2
 sphinx-markdown-parser>=0.2.4
 # Support for Google/NumPy style docstrings
 sphinxcontrib-napoleon>=0.7
+# autodoc type hints
+sphinx-autodoc-typehints>=3.0.0
