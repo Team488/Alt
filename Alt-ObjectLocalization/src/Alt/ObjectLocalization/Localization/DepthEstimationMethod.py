@@ -1,7 +1,11 @@
 from abc import abstractmethod, ABC
+from typing import Optional
 
 import numpy as np
 from Alt.Cameras.Parameters.CameraIntrinsics import CameraIntrinsics
+from Alt.Core import getChildLogger
+
+Sentinel = getChildLogger("Depth_Estimation_Methods")
 
 class DepthEstimationMethod(ABC):
     @abstractmethod
@@ -14,14 +18,21 @@ class DepthEstimationMethod(ABC):
         pass
 
 class KnownSizeMethod(DepthEstimationMethod):
-    def getDepthEstimateCM(self, croppedColorBBoxFrame : np.ndarray, cameraIntrinsics : CameraIntrinsics) -> float:
+    def getDepthEstimateCM(self, croppedColorBBoxFrame : np.ndarray, cameraIntrinsics : CameraIntrinsics) -> Optional[float]:
         """ Given a cropped color frame of the objects bounding box, return a depth estimate"""
         if self.isHorizontalSize():
             focalLength = cameraIntrinsics.getFx()
         else:
             focalLength = cameraIntrinsics.getFy()
 
-        return self.__calculateDistance(self.getObjectSizeCM(), self.getObjectSizePixels(croppedColorBBoxFrame), focalLength)
+        sizeCM = self.getObjectSizeCM()
+        sizePX = self.getObjectSizePixels(croppedColorBBoxFrame)
+
+        if sizeCM is not None and sizePX is not None:
+            return self.__calculateDistance(sizeCM, sizePX, focalLength)
+        
+        Sentinel.warning(f"{sizeCM is None=} | {sizePX is None=}")
+        return None
 
     def usesDepth(self) -> bool:
         return False
@@ -31,11 +42,11 @@ class KnownSizeMethod(DepthEstimationMethod):
         return (knownSize * focalLengthPixels) / (currentSizePixels)
 
     @abstractmethod
-    def getObjectSizePixels(self, croppedColorBBoxFrame : np.ndarray):
+    def getObjectSizePixels(self, croppedColorBBoxFrame : np.ndarray) -> Optional[float]:
         pass
 
     @abstractmethod
-    def getObjectSizeCM(self):
+    def getObjectSizeCM(self) -> Optional[float]:
         pass
     
     @abstractmethod
