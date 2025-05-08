@@ -19,20 +19,14 @@ sphinx:
 # See https://docs.readthedocs.io/en/stable/guides/reproducible-builds.html
 python:
   install:
+    - requirements: docs/doc-requirements.txt
     - method: pip
-      requirements: docs/doc-requirements.txt
+      path: ./Alt-Core
     - method: pip
-      path: Alt-Core
-      editable: true
+      path: ./Alt-Cameras
     - method: pip
-      path: Alt-Cameras
-      editable: true
+      path: ./Alt-Dashboard
     - method: pip
-      path: Alt-Dashboard
-      editable: true
+      path: ./Alt-ObjectLocalization
     - method: pip
-      path: Alt-ObjectLocalization
-      editable: true
-    - method: pip
-      path: Alt-Pathplanning
-      editable: true
+      path: ./Alt-Pathplanning
