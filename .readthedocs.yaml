@@ -18,21 +18,21 @@ sphinx:
 # declare the Python requirements required to build your documentation
 # See https://docs.readthedocs.io/en/stable/guides/reproducible-builds.html
 python:
-   install:
-   - method: pip
-     requirements: docs/doc-requirements.txt
-   - method: pip
-     path: Alt-Core
-     editable: true
-   - method: pip
-     path: Alt-Cameras
-     editable: true
-   - method: pip
-     path: Alt-Dashboard
-     editable: true
-   - method: pip
-     path: Alt-ObjectLocalization
-     editable: true
-   - method: pip
-     path: Alt-Pathplanning
-     editable: true
+  install:
+    - method: pip
+      requirements: docs/doc-requirements.txt
+    - method: pip
+      path: Alt-Core
+      editable: true
+    - method: pip
+      path: Alt-Cameras
+      editable: true
+    - method: pip
+      path: Alt-Dashboard
+      editable: true
+    - method: pip
+      path: Alt-ObjectLocalization
+      editable: true
+    - method: pip
+      path: Alt-Pathplanning
+      editable: true
