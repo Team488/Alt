@@ -14,6 +14,51 @@ Thanks to the included extension packages, you can add new functionality to your
 [API Documentation (Coming Soon)](https://github.com/team488/alt)  
 [Project Documentation (Coming Soon)](https://github.com/team488/alt)
 
+## Getting Started
+To use this project, you can either download the packages from pypi, or for the latest version clone this repository and then install it directly
+
+
+### Pip Install:
+```shell
+    # Core packagae
+    pip install Matrix-Alt-Core
+
+    # extension packages
+    # Cameras
+    pip install Matrix-Alt-Cameras
+    # Dashboard
+    pip install Matrix-Alt-Dashboard
+    # Object localization/Ml tasks
+    pip install Matrix-Alt-ObjectLocalization
+    # Pathplanning tasks
+    pip install Matrix-Alt-Pathplanning
+```
+
+### Direct Install
+
+``` shell
+    # clone and enter to repo
+    git clone https://github.com/Team488/Alt.git
+    cd Alt
+
+    # Core packagae
+    pip install ./Alt-Core
+
+    # extension packages
+    # Cameras
+    pip install ./Alt-Cameras
+    # Dashboard
+    pip install ./Alt-Dashboard
+    # Object localization/Ml tasks
+    pip install ./Alt-ObjectLocalization
+    # Pathplanning tasks
+    pip install ./Alt-Pathplanning
+
+
+```
+
+
+
 ## Example: Blurring a Webcam Feed
 
 Here's a simple example of reading from a webcam and applying a blur effect:
