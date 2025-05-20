@@ -51,7 +51,7 @@ class CameraUsingAgentBase(Agent, BindableAgent):
         capture : Union[Capture, depthCamera, OpenCVCapture, ConfigurableCapture, CaptureWIntrinsics],
         showFrames : bool = False,
     ):
-        return super().bind(capture=capture, showFrames=showFrames)
+        return cls.__getBindedAgent(capture=capture, showFrames=showFrames)
 
     def __init__(
         self, 

@@ -29,7 +29,7 @@ class ObjectLocalizingStep1AgentBase(CameraUsingAgentBase, PositionLocalizingAge
         modelConfig: ModelConfig,
         showFrames: bool = False,
     ):
-        return super().bind(capture=capture, cameraExtrinsics=cameraExtrinsics, modelConfig=modelConfig, showFrames=showFrames)
+        return cls.__getBindedAgent(capture=capture, cameraExtrinsics=cameraExtrinsics, modelConfig=modelConfig, showFrames=showFrames)
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)

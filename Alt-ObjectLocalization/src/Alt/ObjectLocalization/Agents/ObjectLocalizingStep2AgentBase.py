@@ -25,7 +25,7 @@ class ObjectLocalizingStep2AgentBase(Agent, BindableAgent):
         modelConfig: ModelConfig,
         field: Field,
     ):
-        return super().bind(modelConfig=modelConfig, field=field)
+        return cls.__getBindedAgent(modelConfig=modelConfig, field=field)
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)

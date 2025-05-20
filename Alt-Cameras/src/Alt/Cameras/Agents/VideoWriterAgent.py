@@ -9,7 +9,7 @@ from ..Captures import Capture
 class VideoWriterAgent(CameraUsingAgentBase, BindableAgent):
     @classmethod
     def bind(cls, capture: Capture, savePath: str, showFrames: bool):
-        return super().bind(capture=capture, savePath=savePath, showFrames=showFrames)
+        return cls.__getBindedAgent(capture=capture, savePath=savePath, showFrames=showFrames)
     
     def __init__(self, capture: Capture, savePath: str, showFrames: bool, **kwargs):
         super().__init__(capture=capture, showFrames=showFrames, **kwargs)
