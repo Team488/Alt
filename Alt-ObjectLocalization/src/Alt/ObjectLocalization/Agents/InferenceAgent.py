@@ -2,7 +2,7 @@ from typing import Any
 
 from Alt.Core.Agents import BindableAgent
 from Alt.Cameras.Agents.CameraUsingAgentBase import CameraUsingAgentBase
-from Alt.Cameras.Captures import CaptureWIntrinsics
+from Alt.Cameras.Captures import Capture
 
 from ..Inference.ModelConfig import ModelConfig
 from ..Inference.MultiInferencer import MultiInferencer
@@ -14,7 +14,7 @@ class InferenceAgent(CameraUsingAgentBase, BindableAgent):
     """
     @classmethod
     def bind(cls, 
-        capture: CaptureWIntrinsics,
+        capture: Capture,
         modelConfig: ModelConfig,
         showFrames: bool = False,
     ):
