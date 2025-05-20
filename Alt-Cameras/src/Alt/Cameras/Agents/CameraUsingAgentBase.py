@@ -18,17 +18,22 @@ from ..Calibration.CalibrationUtil import CalibrationUtil
 
 
 class CameraUsingAgentBase(Agent):
-    FRAMEPOSTFIX = "Frame"
-    FRAMETOGGLEPOSTFIX = "SendFrame"
-    CALIBTIMEPERPICTURE = "TimePerPictureS"
-    CALIBTOGGLEPOSTFIX = "StartCalib"
-    CALIBIDEALSHAPEWPOSTFIX = "CALIBGOALSHAPEW"
-    CALIBIDEALSHAPEHPOSTFIX = "CALIBGOALSHAPEH"
-    CALIBIDEALCOUNT = "NUMCALIBPICTURES"
-    ISCHARUCOCALIB = "ISCHARUCOCALIB"
-    DEFAULTCALIBCOUNT = 100
-    CALIBRATIONPREFIX = "Calibrations"
-    CAMERASTREAMNAME = "cameraStream"
+    # calibration
+    CALIBTIMEPERPICTURE = "TimePerPictureS" # how long to wait between pictures (Seconds)
+    CALIBTOGGLEPOSTFIX = "StartCalib" # toggle name to start calibration
+    CALIBIDEALSHAPEWPOSTFIX = "CALIBGOALSHAPEW" # requested width for calibration
+    CALIBIDEALSHAPEHPOSTFIX = "CALIBGOALSHAPEH" # requested height for calibration
+    CALIBIDEALCOUNT = "NUMCALIBPICTURES" # number of calibration pictures to take
+    DEFAULTCALIBCOUNT = 100 # default 100 pictures
+    ISCHARUCOCALIB = "ISCHARUCOCALIB" # true = board is charuco board, false = normal checkerboard
+    
+    # camera stream
+    CAMERASTREAMNAME = "cameraStream" # name for the camera stream
+    
+    # camera gui display
+    WINDOWNAMEDEPTH: str = "depth_frame" # color frame name
+    WINDOWNAMECOLOR: str = "color_frame" # depth frame name
+
 
     @classmethod
     def requestProxies(cls):
@@ -43,27 +48,28 @@ class CameraUsingAgentBase(Agent):
     NOTE: This means you cannot run this class as is
     """
 
-    def __init__(self, **kwargs: Any) -> None:
+    def __init__(
+        self, 
+        capture : Union[Capture, depthCamera, OpenCVCapture, ConfigurableCapture, CaptureWIntrinsics],
+        showFrames : bool = False,
+        **kwargs: Any
+    ) -> None:
         super().__init__(**kwargs)
-        self.capture: Union[
-            Capture, depthCamera, OpenCVCapture, ConfigurableCapture, CaptureWIntrinsics
-        ] = kwargs.get("capture", None)
-        if self.capture is None:
+        
+        if capture is None:
             raise ValueError("CameraUsingAgentBase requires a capture object")
+        
+        self.capture = capture
 
         self.depthEnabled = isinstance(self.capture.__class__, depthCamera)
         self.isCv2Backend = isinstance(self.capture.__class__, OpenCVCapture)
         self.isConfigurable = isinstance(self.capture.__class__, ConfigurableCapture)
         self.isWIntrinsics = isinstance(self.capture.__class__, CaptureWIntrinsics)
 
-        
-        
-
-        self.showFrames: bool = kwargs.get("showFrames", False)
+        self.showFrames = showFrames
         self.hasIngested: bool = False
         self.exit: bool = False
-        self.WINDOWNAMEDEPTH: str = "depth_frame"
-        self.WINDOWNAMECOLOR: str = "color_frame"
+        
         self.latestFrameDEPTH: Optional[np.ndarray] = None
         self.latestFrameMain: Optional[np.ndarray] = None
         self.calibActive: bool = False

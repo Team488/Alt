@@ -15,10 +15,10 @@ class OpenCVCapture(Capture):
 
     def __init__(self, name : str, capturePath: str, useV4L2Backend : bool = DefaultUseV4L2, flushTimeMS: int = -1) -> None:
         """
-        Initialize a file capture with the specified video file path
+        Initialize a opencv capture with the specified video file path
 
         Args:
-            videoFilePath: Path to the video file
+            videoFilePath: Path to the opencv camera stream (could be a file, network location, camera, etc)
             flushTimeMS: Time in milliseconds to flush the capture buffer (default: -1, no flush)
         """
         super().__init__(name)
