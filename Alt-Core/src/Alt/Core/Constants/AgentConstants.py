@@ -1,6 +1,6 @@
 from abc import abstractmethod
 from enum import Enum
-from typing import Any, Dict, Union
+from typing import Any, Dict
 from functools import partial
 
 

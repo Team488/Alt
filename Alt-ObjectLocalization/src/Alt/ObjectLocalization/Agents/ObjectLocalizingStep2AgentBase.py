@@ -1,8 +1,7 @@
 from typing import Optional, Any
 import time
-from functools import partial
 
-from Alt.Core.Agents.Agent import Agent
+from Alt.Core.Agents import Agent, BindableAgent
 from Alt.Core.Constants.Field import Field
 
 from ..Detections.DetectionPacket import DetectionPacket
@@ -11,15 +10,22 @@ from ..Localization.PipelineStep2 import PipelineStep2
 from .ObjectLocalizingStep1AgentBase import ObjectLocalizingStep1AgentBase
 
 
-class ObjectLocalizingStep2AgentBase(Agent):
+class ObjectLocalizingStep2AgentBase(Agent, BindableAgent):
     """Agent -> (CameraUsingAgentBase, PositionLocalizingAgentBase) -> ObjectLocalizingAgentBase
 
-    Adds inference and object localization capabilites to an agent, processing frames and sending detections
-    NOTE: Requires extra arguments passed in somehow, for example using Functools partial or extending the class"""
+        Adds inference and object localization capabilites to an agent, processing frames and sending detections
+    """
 
     DETECTIONPOSTFIX = "Detections"
 
     # TODO this subscriber into a map then check if its updated and then grab latest from the map stuff (below), needs to be consolidated into a single class
+
+    @classmethod
+    def bind(cls, 
+        modelConfig: ModelConfig,
+        field: Field,
+    ):
+        return super().bind(modelConfig=modelConfig, field=field)
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
@@ -114,13 +120,3 @@ class ObjectLocalizingStep2AgentBase(Agent):
         return True
 
 
-def ObjectLocalizingStep2AgentPartial(
-    modelConfig: ModelConfig,
-    field: Field,
-) -> Any:
-    """Returns a partially completed frame processing agent. All you have to do is pass it into neo"""
-    return partial(
-        ObjectLocalizingStep2AgentBase,
-        modelConfig=modelConfig,
-        field=field,
-    )

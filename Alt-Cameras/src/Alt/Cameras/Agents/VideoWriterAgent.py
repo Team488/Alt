@@ -1,12 +1,16 @@
-from functools import partial
 from typing import Any, Optional
 import cv2
 
+from Alt.Core.Agents import BindableAgent
 from .CameraUsingAgentBase import CameraUsingAgentBase
 from ..Captures import Capture
 
 
-class VideoWriterAgent(CameraUsingAgentBase):
+class VideoWriterAgent(CameraUsingAgentBase, BindableAgent):
+    @classmethod
+    def bind(cls, capture: Capture, savePath: str, showFrames: bool):
+        return super().bind(capture=capture, savePath=savePath, showFrames=showFrames)
+    
     def __init__(self, capture: Capture, savePath: str, showFrames: bool, **kwargs):
         super().__init__(capture=capture, showFrames=showFrames, **kwargs)
         self.filePath: str = savePath
@@ -40,12 +44,3 @@ class VideoWriterAgent(CameraUsingAgentBase):
 
     def getDescription(self) -> str:
         return "Ingests-Camera-Writes-Frames-To-File"
-
-
-def partialVideoWriterAgent(
-    capture: Capture, savePath: str, showFrames: bool = False
-) -> Any:
-    """Returns a partially completed VideoWriterAgent that ingests camera frames and writes them to a file"""
-    return partial(
-        VideoWriterAgent, capture=capture, savePath=savePath, showFrames=showFrames
-    )

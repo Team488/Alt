@@ -1,9 +1,9 @@
 import math
 from typing import Optional, Any
 import time
-from functools import partial
 
 from Alt.Core import DEVICEHOSTNAME
+from Alt.Core.Agents import BindableAgent
 from Alt.Core.Agents.PositionLocalizingAgentBase import PositionLocalizingAgentBase
 from Alt.Core.Units.Poses import Pose2d
 from Alt.Cameras.Agents.CameraUsingAgentBase import CameraUsingAgentBase
@@ -15,13 +15,21 @@ from ..Inference.ModelConfig import ModelConfig
 from ..Localization.PipelineStep1 import PipelineStep1
 from ..Localization.LocalizationResult import DeviceLocalizationResult
 
-class ObjectLocalizingStep1AgentBase(CameraUsingAgentBase, PositionLocalizingAgentBase):
-    """Agent -> (CameraUsingAgentBase, PositionLocalizingAgentBase) -> ObjectLocalizingAgentBase
-
-    Adds inference and object localization capabilites to an agent, processing frames and sending detections
-    NOTE: Requires extra arguments passed in somehow, for example using Functools partial or extending the class"""
-
+class ObjectLocalizingStep1AgentBase(CameraUsingAgentBase, PositionLocalizingAgentBase, BindableAgent):
+    """ Agent -> (CameraUsingAgentBase, PositionLocalizingAgentBase) -> ObjectLocalizingAgentBase
+        Adds inference and object localization capabilites to an agent, processing frames and sending detections
+    """
     DETECTIONPOSTFIX = "Detections"
+
+    @classmethod
+    def bind(
+        cls,
+        capture: CaptureWIntrinsics,
+        cameraExtrinsics: CameraExtrinsics,
+        modelConfig: ModelConfig,
+        showFrames: bool = False,
+    ):
+        return super().bind(capture=capture, cameraExtrinsics=cameraExtrinsics, modelConfig=modelConfig, showFrames=showFrames)
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
@@ -70,19 +78,3 @@ class ObjectLocalizingStep1AgentBase(CameraUsingAgentBase, PositionLocalizingAge
     
     def isRunning(self):
         return True
-
-
-def ObjectLocalizingStep1AgentPartial(
-    capture: CaptureWIntrinsics,
-    cameraExtrinsics: CameraExtrinsics,
-    modelConfig: ModelConfig,
-    showFrames: bool = False,
-) -> Any:
-    """Returns a partially completed frame processing agent. All you have to do is pass it into neo"""
-    return partial(
-        ObjectLocalizingStep1AgentBase,
-        capture=capture,
-        cameraExtrinsics=cameraExtrinsics,
-        modelConfig=modelConfig,
-        showFrames=showFrames,
-    )

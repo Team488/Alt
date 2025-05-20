@@ -1,11 +1,9 @@
-import os
 import time
-import datetime
-from typing import Union, Optional, Callable, Any
+from typing import Union, Optional, Any
 import cv2
 import numpy as np
 
-from Alt.Core.Agents import Agent
+from Alt.Core.Agents import Agent, BindableAgent
 from Alt.Core.Constants.AgentConstants import ProxyType
 from Alt.Core.Operators.StreamOperator import StreamProxy
 
@@ -17,7 +15,7 @@ from ..Captures.tools import calibration
 from ..Calibration.CalibrationUtil import CalibrationUtil
 
 
-class CameraUsingAgentBase(Agent):
+class CameraUsingAgentBase(Agent, BindableAgent):
     # calibration
     CALIBTIMEPERPICTURE = "TimePerPictureS" # how long to wait between pictures (Seconds)
     CALIBTOGGLEPOSTFIX = "StartCalib" # toggle name to start calibration
@@ -44,9 +42,16 @@ class CameraUsingAgentBase(Agent):
     """Agent -> CameraUsingAgentBase
 
     Adds camera ingestion capabilites to an agent. When used with a localizing agent, it matches timestamps aswell
-    NOTE: Requires extra arguments passed in somehow and you should always be extending this class, and use partial constructors further up
-    NOTE: This means you cannot run this class as is
+    NOTE: This is not a fully concrete class
     """
+    
+    @classmethod
+    def bind(
+        cls, 
+        capture : Union[Capture, depthCamera, OpenCVCapture, ConfigurableCapture, CaptureWIntrinsics],
+        showFrames : bool = False,
+    ):
+        return super().bind(capture=capture, showFrames=showFrames)
 
     def __init__(
         self, 
@@ -309,6 +314,9 @@ class CameraUsingAgentBase(Agent):
     def forceShutdown(self) -> None:
         super().forceShutdown()
         self.capture.close()
+
+    def getDescription(self):
+        return "Camera Using Agent"
 
 
 

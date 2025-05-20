@@ -32,7 +32,7 @@ from .StreamOperator import StreamOperator
 from .TimeOperator import TimeOperator, Timer
 from .UpdateOperator import UpdateOperator
 from .LogStreamOperator import LogStreamOperator
-from ..Agents.Agent import Agent
+from ..Agents import Agent, BindableAgent
 from .PropertyOperator import LambdaHandler, PropertyOperator, ReadonlyProperty
 from .LogOperator import getChildLogger
 from ..Constants.AgentConstants import ProxyType
@@ -427,6 +427,20 @@ class AgentOperator:
         """Initialization part #1 Create agent"""
         try:
             agent: Agent = agentClass()
+        except TypeError as e:
+            # constructor misssing arguments
+            # three possible mistakes.
+            # 1) agentClass forgot to implement the bindableAgent interface and call bind before with arguments
+            # 2) agentClass implemented the bindableAgent interface, it was called, but the bind method didint bind ALL arguments
+            # 3) agentClass was passed in rather than agentClass.bind(...), which would return a partial
+
+            if isinstance(agentClass, partial):
+                # bind method must have been called, thus it is case 2)
+                raise RuntimeError(f"The bind method of {agentClass} did not cover all arguments!\n{e}")
+            else:
+                if(issubclass(agentClass, bindableAgent))
+
+        try:
 
             """ Initialization part #3. Inject objects in agent"""
             AgentOperator._injectAgent(

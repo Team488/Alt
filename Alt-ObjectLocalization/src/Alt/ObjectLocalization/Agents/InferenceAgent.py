@@ -1,6 +1,6 @@
-from functools import partial
 from typing import Any
 
+from Alt.Core.Agents import BindableAgent
 from Alt.Cameras.Agents.CameraUsingAgentBase import CameraUsingAgentBase
 from Alt.Cameras.Captures import CaptureWIntrinsics
 
@@ -8,14 +8,21 @@ from ..Inference.ModelConfig import ModelConfig
 from ..Inference.MultiInferencer import MultiInferencer
 
 
-class InferenceAgent(CameraUsingAgentBase):
+class InferenceAgent(CameraUsingAgentBase, BindableAgent):
     """Agent -> CameraUsingAgentBase -> InferenceAgent
     Adds inference capabilites to an agent, processing frames
-    NOTE: Requires extra arguments passed in somehow, for example using Functools partial or extending the class"""
+    """
+    @classmethod
+    def bind(cls, 
+        capture: CaptureWIntrinsics,
+        modelConfig: ModelConfig,
+        showFrames: bool = False,
+    ):
+        return super().bind(capture=capture, modelConfig=modelConfig, showFrames=showFrames)
 
-    def __init__(self, **kwargs: Any) -> None:
+    def __init__(self, modelConfig : ModelConfig, **kwargs: Any) -> None:
         super().__init__(**kwargs)
-        self.modelConfig: ModelConfig = kwargs.get("modelConfig", None)
+        self.modelConfig = modelConfig
 
     def create(self) -> None:
         super().create()
@@ -44,17 +51,3 @@ class InferenceAgent(CameraUsingAgentBase):
 
     def getDescription(self) -> str:
         return "Ingest_Camera_Run_Ai_Model"
-
-
-def InferenceAgentPartial(
-    capture: CaptureWIntrinsics,
-    modelConfig: ModelConfig,
-    showFrames: bool = False,
-) -> Any:
-    """Returns a partially completed frame processing agent. All you have to do is pass it into neo"""
-    return partial(
-        InferenceAgent,
-        capture=capture,
-        modelConfig=modelConfig,
-        showFrames=showFrames,
-    )
