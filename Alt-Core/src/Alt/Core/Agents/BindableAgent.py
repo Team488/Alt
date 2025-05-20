@@ -12,7 +12,12 @@ class BindableAgent(Agent):
     def bind(cls, *args, **kwargs) -> partial:
         """ To make it clearer what arguments an agent needs, please override this bind method and specify the same input arguments as the agents __init__
             At the moment, this is the only way to change the static method signature of bind, so people know what arguments to provide. 
-            In the method body, you can just call super().bind() with the input arguments
+            In the method body, you can just call super().bind() with the input arguments.
+
+            NOTE: if multiple subclasses implement the bind method, the best workaround (because each super().bind() call would just be the class above),
+            is to call cls.__getPartial
+
+            If A implements/extends BindableAgent, and B extends A, use cls.__getPartial, rather than super().bind()
 
             Example:
             ``` python
@@ -28,8 +33,8 @@ class BindableAgent(Agent):
                     # init things....
             ```
         """
-        return cls.__getPartial(**kwargs)
+        return cls.__getPartial(*args, **kwargs)
 
     @classmethod
-    def __getPartial(cls, **kwargs) -> partial:
-        return partial(cls, **kwargs)
+    def __getPartial(cls, *args, **kwargs) -> partial:
+        return partial(cls, *args, **kwargs)
