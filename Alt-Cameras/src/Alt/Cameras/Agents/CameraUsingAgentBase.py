@@ -16,6 +16,12 @@ from ..Calibration.CalibrationUtil import CalibrationUtil
 
 
 class CameraUsingAgentBase(Agent, BindableAgent):
+    """
+    Main superclass for any agent that needs to use a camera. It is reccomended to extend this rather than create a separate agent class.
+    Adds calibration support, automatic mjpeg streaming, camera status checking, and depth camera support
+    """
+    
+    
     # calibration
     CALIBTIMEPERPICTURE = "TimePerPictureS" # how long to wait between pictures (Seconds)
     CALIBTOGGLEPOSTFIX = "StartCalib" # toggle name to start calibration
