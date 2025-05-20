@@ -5,7 +5,7 @@ import numpy as np
 
 from ..Detections.DetectionResult import DetectionResult
 from .ModelConfig import ModelConfig
-from . import utils
+from .backends import utils
 
 
 class InferencerBackend(ABC):

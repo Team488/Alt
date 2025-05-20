@@ -22,5 +22,5 @@ struct XYZ {
 }
 
 struct DataArray {
-    data @1 :List(Float64);                   # Raw data as a list of signed 8-bit integers
+    data @0 :List(Float64);                   # Raw data as a list of signed 8-bit integers
 }
