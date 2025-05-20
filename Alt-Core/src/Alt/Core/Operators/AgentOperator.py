@@ -436,9 +436,17 @@ class AgentOperator:
 
             if isinstance(agentClass, partial):
                 # bind method must have been called, thus it is case 2)
-                raise RuntimeError(f"The bind method of {agentClass} did not cover all arguments!\n{e}")
+                raise RuntimeError(f"The bind method of {agentClass} did not cover all arguments! It must cover EVERY argument in __init__() \n{e}")
             else:
-                if(issubclass(agentClass, bindableAgent))
+                if(issubclass(agentClass, BindableAgent)):
+                    # bind method wasnt called, case 3
+                    raise RuntimeError(f"""{agentClass} is a bindable agent! You must called {agentClass}'s bind() method,\n
+                                        provide arguments, and then pass in the returned object instead! \n{e}""")
+                else:
+                    # no bind method, but there should be, case 1
+                    raise RuntimeError(f"""{agentClass} needs input arguments!. You must implement the bindableAgent interface,\n
+                                        override the bind() method with necessary arguments (same as __init__), then call bind() and pass in the returned object instead! \n{e}""")
+
 
         try:
 
