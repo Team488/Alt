@@ -18,7 +18,7 @@ class InferenceAgent(CameraUsingAgentBase, BindableAgent):
         modelConfig: ModelConfig,
         showFrames: bool = False,
     ):
-        return cls.__getBindedAgent(capture=capture, modelConfig=modelConfig, showFrames=showFrames)
+        return cls._getBindedAgent(capture=capture, modelConfig=modelConfig, showFrames=showFrames)
 
     def __init__(self, modelConfig : ModelConfig, **kwargs: Any) -> None:
         super().__init__(**kwargs)

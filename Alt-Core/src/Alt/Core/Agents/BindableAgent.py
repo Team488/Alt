@@ -11,7 +11,7 @@ class BindableAgent:
     def bind(cls, *args, **kwargs) -> partial:
         """ To make it clearer what arguments an agent needs, please override this bind method and specify the same input arguments as the agents __init__
             At the moment, this is the only way to change the static method signature of bind, so people know what arguments to provide. 
-            In the method body, you can just call cls.__getBindedAgent() with the input arguments.
+            In the method body, you can just call cls._getBindedAgent() with the input arguments.
 
             Example:
             ``` python
@@ -20,7 +20,7 @@ class BindableAgent:
                 @classmethod
                 def bind(arg1 : str, arg2 : int, ....):
                     # you can use keyword or positional arguments, but it should match your constructor
-                    return cls.__getBindedAgent(arg1, arg2=arg2, ....)
+                    return cls._getBindedAgent(arg1, arg2=arg2, ....)
 
                 def __init__(arg1 : str, arg2 : int, ....):
                     # same signature as above, ensures that when neo gets the bound agent, it needs no extra arguments
@@ -30,5 +30,5 @@ class BindableAgent:
         pass
 
     @classmethod
-    def __getBindedAgent(cls, *args, **kwargs) -> partial:
+    def _getBindedAgent(cls, *args, **kwargs) -> partial:
         return partial(cls, *args, **kwargs)
