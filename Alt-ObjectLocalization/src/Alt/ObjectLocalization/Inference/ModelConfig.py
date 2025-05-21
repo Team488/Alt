@@ -18,4 +18,4 @@ class ModelConfig:
         return self.backend
     
     def getYoloType(self) -> YoloType:
-        return self.YoloType
+        return self.yoloType
