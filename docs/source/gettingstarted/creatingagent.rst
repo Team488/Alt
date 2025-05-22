@@ -185,15 +185,15 @@ Agents can request proxies for inter-process communication. First, declare what 
 Best Practices
 -------------
 
-1. Always call ``super().__init__()`` in your agent's constructor
-2. Use the injected ``Sentinel`` logger for debugging
+1. Always call ``super()`` methods before your own agent methods. 
+This is extremly important when you are extending off other agents that perform their own processing first.
+***Python will not enforce this***. You must be aware of it yourself
+2. Use the injected ``Sentinel`` logger for debugging. It is plumbed in with other telemetry
 3. Clean up resources in ``onClose()``
 4. Handle errors gracefully in ``forceShutdown()``
 5. Use properties for configuration instead of hard-coded values
-6. Request only the proxies you need
-7. Set appropriate run intervals to avoid consuming too much CPU
-
-Remember that every agent runs in separate process, so be careful with shared resources and state.
+6. Any initialization code that needs injected agent objects must be put into create() or later. The __init__() method wont have them at that time
+7. Remember that every agent runs in separate process, so be careful with shared resources and state.
 
 
 :doc:`runningagent`.
