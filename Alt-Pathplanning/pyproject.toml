@@ -23,7 +23,6 @@ classifiers = [
 dependencies = [
   "Matrix-Alt-Core == 0.0.1",
   "scikit-fmm~=2025.1.29",
-  "cupy==13.4.1",
   "XTablesClient == 5.7.9",
   "numpy == 2.0.2"
 ]
