@@ -2,14 +2,14 @@ import shutil
 from pathlib import Path
 
 NAMESPACE_PKGS = [
-    "../Alt-Core",
-    "../Alt-Cameras",
-    "../Alt-Dashboard",
-    "../Alt-ObjectLocalization",
-    "../Alt-Pathplanning",
+    "Alt-Core",
+    "Alt-Cameras",
+    "Alt-Dashboard",
+    "Alt-ObjectLocalization",
+    "Alt-Pathplanning",
 ]
 
-OUTPUT_ROOT = Path("source/api")
+OUTPUT_ROOT = Path("docs/source/api")
 SHOW_PRIVATE = False
 
 def strip_alt_prefix(pkg_path: Path):

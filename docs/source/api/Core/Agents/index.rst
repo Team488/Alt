@@ -6,4 +6,5 @@ Agents
 
    Agent
    AgentExample
+   BindableAgent
    PositionLocalizingAgentBase
