@@ -29,7 +29,22 @@ jobs:
       - name: Generate New API Docs
         run: python docs/generateapi.py
 
-      # - name: Trigger ReadTheDocs Build (Optional)
+      - name: Commit and push changes
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add .
+          if ! git diff --cached --quiet; then
+            git commit -m "Auto-update API docs"
+            git push origin main
+          else
+            echo "No changes to commit."
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+
+      # - name: Trigger ReadTheDocs Build (create secrets first)
       #   run: |
       #     curl -X POST -d "" \
       #       -H "Authorization: Token ${{ secrets.RTD_TOKEN }}" \
