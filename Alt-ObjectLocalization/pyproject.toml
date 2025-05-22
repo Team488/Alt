@@ -29,7 +29,7 @@ dependencies = [
   "pycapnp == 2.0.0",
   "filterpy == 1.4.5",
   "onnx == 1.17.0",
-  "onnxruntime == 1.20.0",
+  "onnxruntime == 1.19.0",
   "ultralytics == 8.2.32",
   "tensorflow == 2.19.0",
   "deep_sort @ git+https://github.com/team488/deep_sort@79af029bb17ce867f88c5f96564c3a9824afbdcb"
