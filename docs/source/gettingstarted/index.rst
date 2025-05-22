@@ -5,4 +5,5 @@ Getting Started
    :maxdepth: 2
    :caption: Modules
 
-   vscode
+   creatingagent
+   runningagent
