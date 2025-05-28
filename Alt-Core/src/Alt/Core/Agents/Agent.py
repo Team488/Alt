@@ -178,7 +178,7 @@ class Agent(ABC):
     # ----- proxy methods -----
     def __ensureProxies(self):
         for proxyName, proxyType in self._getProxyRequests().items():
-            if proxyName not in self.__proxies or type(self.__proxies[proxyName]) is proxyType:
+            if proxyName not in self.__proxies or type(self.__proxies[proxyName]) is not proxyType:
                 print(type(self.__proxies[proxyName]) is proxyType)
                 raise RuntimeError(f"Agent proxies are not correcty initialized!\n{self._getProxyRequests()=}\n{self.__proxies.items()=}")
 
