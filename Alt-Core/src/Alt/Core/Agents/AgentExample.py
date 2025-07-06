@@ -1,12 +1,13 @@
 from typing import Any
-from .Agent import Agent
+from .Agent import AgentBase
 
 
-class AgentExample(Agent):
-    """ This example agent shows how simple it can be to create a task.
-        
-        This agent creates a name property (which allows you to change its name), and then it tells it to you 50 times before ending. 
+class AgentExample(AgentBase):
+    """This example agent shows how simple it can be to create a task.
+
+    This agent creates a name property (which allows you to change its name), and then it tells it to you 50 times before ending.
     """
+
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.timesRun: int = 0
@@ -36,7 +37,9 @@ class AgentExample(Agent):
         # task cleanup here
         # for example, i can tell the world that my time has come
         if self.nameProp is not None:
-            self.Sentinel.info(f"My time has come. Never forget the name {self.nameProp.get()}!")
+            self.Sentinel.info(
+                f"My time has come. Never forget the name {self.nameProp.get()}!"
+            )
 
     def isRunning(self) -> bool:
         # condition to keep task running here

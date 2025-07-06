@@ -1,10 +1,10 @@
 from typing import Tuple, Any
 
-from .Agent import Agent
+from .Agent import AgentBase
 from ..Utils import NtUtils
 
 
-class PositionLocalizingAgentBase(Agent):
+class PositionLocalizingAgentBase(AgentBase):
     """Agent -> PositionLocalizingAgentBase
 
     Extending Agent with Localizing capabilites. Supports only XTables
