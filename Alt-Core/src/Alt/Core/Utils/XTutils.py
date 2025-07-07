@@ -6,6 +6,8 @@ This module provides:
 - A function to convert a sequence of points into a list of XTableValues_pb2.Coordinate objects.
 """
 
+from __future__ import annotations
+
 from typing import List, Sequence, Union, Tuple
 from JXTABLES import XTableValues_pb2
 

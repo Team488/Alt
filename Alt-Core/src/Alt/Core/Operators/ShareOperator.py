@@ -6,6 +6,8 @@ Classes:
     ShareOperator: Uses a multiprocessing dict to share memory across agents.
 """
 
+from __future__ import annotations
+
 from typing import Any, Optional
 from .LogOperator import getChildLogger
 

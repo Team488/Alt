@@ -7,6 +7,8 @@ Classes:
     LogStreamOperator: Registers and manages log streams for SSE endpoints.
 """
 
+from __future__ import annotations
+
 import queue
 from flask import Flask, Response, stream_with_context
 import functools
@@ -28,7 +30,9 @@ class LogStreamOperator:
         log_streams (dict): Dictionary to store log queues.
         running (bool): Indicates if the log stream operator is running.
     """
+
     LOGPATH = "logs"
+
     def __init__(self, app: Flask, manager: multiprocessing.managers.SyncManager):
         """
         Initializes the LogStreamOperator.
@@ -39,10 +43,12 @@ class LogStreamOperator:
         """
         self.app = app
         self.manager = manager
-        self.log_streams : dict[str, dict[str, queue.Queue]] = {}  # Dictionary to store log queues
+        self.log_streams: dict[
+            str, dict[str, queue.Queue]
+        ] = {}  # Dictionary to store log queues
         self.running = True
 
-    def register_log_stream(self, name : str) -> queue.Queue:
+    def register_log_stream(self, name: str) -> queue.Queue:
         """
         Registers a new SSE log stream and returns a Queue for pushing logs to it.
 
@@ -89,6 +95,7 @@ class LogStreamOperator:
         Returns:
             function: The Flask view function for the log stream.
         """
+
         @functools.wraps(generator_func)
         def view_func():
             response = Response(

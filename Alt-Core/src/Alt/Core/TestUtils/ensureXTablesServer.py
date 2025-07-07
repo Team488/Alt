@@ -1,9 +1,14 @@
+from __future__ import annotations
+
 import requests
 import subprocess
 import socket
 from ..Utils.files import __get_user_data_dir, download_file
 
-__LATESTXTABLEPATH = "https://github.com/Kobeeeef/XTABLES/releases/download/v5.0.0/XTABLES.jar"
+__LATESTXTABLEPATH = (
+    "https://github.com/Kobeeeef/XTABLES/releases/download/v5.0.0/XTABLES.jar"
+)
+
 
 # Function to check if MDNS hostname is resolved
 def __check_mdns_exists(hostname):
@@ -14,6 +19,7 @@ def __check_mdns_exists(hostname):
     except socket.gaierror:
         print(f"{hostname} not found")
         return False
+
 
 # Function to check if port 4880 is open
 def __check_port_open(host="localhost", port=4880):
@@ -26,6 +32,7 @@ def __check_port_open(host="localhost", port=4880):
         return True
     except (socket.timeout, socket.error):
         return False
+
 
 # Ensure XTables server is running
 def ensureXTablesServer():
@@ -56,7 +63,11 @@ def ensureXTablesServer():
     # Attempt to start the server using Java
     try:
         # Use Popen to run the process asynchronously
-        process = subprocess.Popen(["java", "-jar", str(xtables_path)], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        process = subprocess.Popen(
+            ["java", "-jar", str(xtables_path)],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
         print(f"Started XTables server in the background with PID {process.pid}")
 
         # Optionally, you can read the process output asynchronously if needed
@@ -70,4 +81,3 @@ def ensureXTablesServer():
         print(f"Java not found or XTables jar missing! {e}")
     except subprocess.CalledProcessError as e:
         print(f"Java ran but XTables failed to start properly! {e}")
-

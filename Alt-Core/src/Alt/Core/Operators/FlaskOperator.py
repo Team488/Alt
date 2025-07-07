@@ -7,13 +7,12 @@ Classes:
     FlaskOperator: Manages the lifecycle of a Flask server in a separate thread.
 """
 
+from __future__ import annotations
+
 import threading
 from flask import Flask
 from werkzeug.serving import make_server
 from .LogOperator import getChildLogger
-
-
-
 
 
 Sentinel = getChildLogger("Stream_Operator")
@@ -31,6 +30,7 @@ class FlaskOperator:
         server_thread (threading.Thread): The thread running the server.
         running (bool): Indicates if the server is running.
     """
+
     PORT = 5000
     HOST = "0.0.0.0"
 
@@ -77,4 +77,3 @@ class FlaskOperator:
 
         self.server_thread.join()
         Sentinel.info("Flask Server stopped.")
-

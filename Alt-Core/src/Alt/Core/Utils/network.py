@@ -9,6 +9,8 @@ This module provides:
 - A function to programmatically determine the local IP address.
 """
 
+from __future__ import annotations
+
 import socket
 
 DEVICEHOSTNAME = socket.gethostname()
@@ -38,7 +40,3 @@ def get_local_ip():
 
 
 DEVICEIP = get_local_ip()
-
-
-
-

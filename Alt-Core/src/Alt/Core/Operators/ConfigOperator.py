@@ -13,6 +13,8 @@ Functions:
     (All public and private methods are documented at the class and function level.)
 """
 
+from __future__ import annotations
+
 import os
 import json
 import codecs
@@ -26,10 +28,12 @@ from ..Utils.files import user_data_dir
 
 Sentinel = getChildLogger("Config_Operator")
 
+
 class ConfigType(Enum):
     """
     Enum representing supported configuration file types and their load/save handlers.
     """
+
     NUMPY = "numpy"
     JSON = "json"
 
@@ -119,6 +123,7 @@ class ConfigType(Enum):
             return ConfigType.save_json(path, content)
         else:
             raise ValueError(f"Unsupported config type: {self}")
+
 
 class ConfigOperator:
     """
@@ -248,11 +253,9 @@ class ConfigOperator:
             List[str]: List of config file names.
         """
         return list(self.configMap.keys())
-    
+
     @staticmethod
-    def staticLoad(
-        fileName: str
-    ) -> Optional[Tuple[Any, float]]:
+    def staticLoad(fileName: str) -> Optional[Tuple[Any, float]]:
         """
         Load a file from one of the configured save paths and return its content and modification time.
 
@@ -281,11 +284,9 @@ class ConfigOperator:
                 Sentinel.debug(f"{path} does not exist!")
 
         return None
-    
+
     @staticmethod
-    def staticWrite(
-        filename: str, content: Any, config_type: ConfigType
-    ) -> bool:
+    def staticWrite(filename: str, content: Any, config_type: ConfigType) -> bool:
         """
         Try to save content to all configured save paths using the given config type.
 
@@ -309,5 +310,3 @@ class ConfigOperator:
                 Sentinel.debug(e)
                 Sentinel.info(f"Failed to write to {file_path}")
         return success
-
-

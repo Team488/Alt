@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from collections.abc import Iterable
 from typing import Any, Union, TypeVar, Callable, Tuple, cast
 from . import Types, Measurements
@@ -50,7 +52,7 @@ def cmtoy(cm: NumericType) -> float:
 
 
 def toint(
-    value: Union[Iterable[NumericType], NumericType]
+    value: Union[Iterable[NumericType], NumericType],
 ) -> Union[Tuple[int, ...], int, None]:
     """
     Convert numeric value(s) to integer

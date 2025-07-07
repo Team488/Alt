@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+
 def test_get_proxy_requests():
     from functools import partial
     from Alt.Core.Agents import AgentBase

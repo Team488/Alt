@@ -11,6 +11,8 @@ Functions:
     getChildLogger: Gets a child logger derived from the central logger.
 """
 
+from __future__ import annotations
+
 import os
 import socket
 import logging
@@ -43,9 +45,7 @@ def createLogger(loggerName: str):
     logger.setLevel(LOGLEVEL)
 
     if not logger.handlers:
-        log_filename = os.path.join(
-            BASELOGDIR, f"{fullName}_{getTimeStr()}.log"
-        )
+        log_filename = os.path.join(BASELOGDIR, f"{fullName}_{getTimeStr()}.log")
         file_handler = logging.FileHandler(log_filename, mode="a", encoding="utf-8")
         file_handler.setFormatter(
             logging.Formatter(
@@ -55,6 +55,7 @@ def createLogger(loggerName: str):
         logger.addHandler(file_handler)
 
     return logger
+
 
 def setMainLogger(mainLogger: logging.Logger):
     """
@@ -66,6 +67,7 @@ def setMainLogger(mainLogger: logging.Logger):
     global Sentinel
     Sentinel = mainLogger
 
+
 def createAndSetMain(loggerName: str):
     """
     Create and set the main logger using the given name.
@@ -74,6 +76,7 @@ def createAndSetMain(loggerName: str):
         loggerName (str): The name for the main logger.
     """
     setMainLogger(createLogger(loggerName))
+
 
 Sentinel = createLogger("Core")
 

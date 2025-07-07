@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import cast
 from ..Units import Types, Conversions
 

@@ -1,5 +1,11 @@
-from typing import Any
+from __future__ import annotations
+
+from typing import Any, Optional, TYPE_CHECKING
+
 from .Agent import AgentBase
+
+if TYPE_CHECKING:
+    from Core.Operators.PropertyOperator import Property
 
 
 class AgentExample(AgentBase):
@@ -11,7 +17,7 @@ class AgentExample(AgentBase):
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.timesRun: int = 0
-        self.nameProp = None
+        self.nameProp: Optional[Property] = None
 
     def create(self) -> None:
         # for example here i can create a propery to configure what to call myself
@@ -29,6 +35,7 @@ class AgentExample(AgentBase):
         # for example, i can tell the world what im called
 
         self.timesRun += 1
+        assert self.nameProp is not None
         name = self.nameProp.get()
         self.projectNameProp.set(name)
         self.Sentinel.info(f"My name is {name}")
