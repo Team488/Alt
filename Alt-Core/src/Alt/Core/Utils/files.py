@@ -8,6 +8,8 @@ This module provides:
 - A simple file downloader using HTTP(S).
 """
 
+from __future__ import annotations
+
 import os
 import platform
 import requests
@@ -15,6 +17,7 @@ import tempfile
 from pathlib import Path
 
 APPNAME = "Alt"
+
 
 def __get_user_data_dir() -> Path:
     """
@@ -32,7 +35,11 @@ def __get_user_data_dir() -> Path:
     system = platform.system()
 
     if system == "Windows":
-        base_dir = Path(os.getenv('LOCALAPPDATA') or os.getenv('APPDATA'))
+        local_app_data = os.getenv("LOCALAPPDATA")
+        app_data = os.getenv("APPDATA")
+        assert local_app_data is not None
+        assert app_data is not None
+        base_dir = Path(local_app_data or app_data)
     elif system == "Darwin":  # MacOS
         base_dir = Path.home() / "Library" / "Application Support"
     else:  # Linux and others
@@ -42,7 +49,8 @@ def __get_user_data_dir() -> Path:
     app_dir.mkdir(parents=True, exist_ok=True)
     return app_dir
 
-user_data_dir = __get_user_data_dir() 
+
+user_data_dir = __get_user_data_dir()
 
 
 def __get_user_tmp_dir() -> Path:
@@ -60,7 +68,7 @@ def __get_user_tmp_dir() -> Path:
     system = platform.system()
 
     if system == "Windows":
-        base_tmp = Path(os.getenv('TEMP') or tempfile.gettempdir())
+        base_tmp = Path(os.getenv("TEMP") or tempfile.gettempdir())
     elif system == "Darwin":  # macOS
         base_tmp = Path("/tmp")
     else:  # Linux and others
@@ -70,7 +78,8 @@ def __get_user_tmp_dir() -> Path:
     app_tmp_dir.mkdir(parents=True, exist_ok=True)
     return app_tmp_dir
 
-user_tmp_dir = __get_user_tmp_dir() 
+
+user_tmp_dir = __get_user_tmp_dir()
 
 
 def download_file(url, target_path: Path) -> None:

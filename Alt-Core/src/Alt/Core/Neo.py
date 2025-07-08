@@ -10,6 +10,8 @@ and shutdown messages reflect a playful Matrix theme, while providing reliable i
 management for the entire application.
 """
 
+from __future__ import annotations
+
 import os
 import signal
 from multiprocessing import Manager
@@ -71,11 +73,17 @@ class Neo:
         Sentinel.info("Starting flask server")
         self.__flaskOp.start()
         Sentinel.info("Creating Stream Operator")
-        self.__streamOp = StreamOperator(app=self.__flaskOp.getApp(), manager=self.__manager)
+        self.__streamOp = StreamOperator(
+            app=self.__flaskOp.getApp(), manager=self.__manager
+        )
         Sentinel.info("Creating log stream operator")
-        self.__logStreamOp = LogStreamOperator(app=self.__flaskOp.getApp(), manager=self.__manager)
+        self.__logStreamOp = LogStreamOperator(
+            app=self.__flaskOp.getApp(), manager=self.__manager
+        )
         Sentinel.info("Creating Agent operator")
-        self.__agentOp = AgentOperator(self.__manager, self.__shareOp, self.__streamOp, self.__logStreamOp)
+        self.__agentOp = AgentOperator(
+            self.__manager, self.__shareOp, self.__streamOp, self.__logStreamOp
+        )
         self.__isShutdown = False
         self.__isDashboardRunning = False
         # intercept shutdown signals to handle abrupt cleanup
@@ -152,9 +160,12 @@ class Neo:
             self.__isDashboardRunning = True
             try:
                 from Alt.Dashboard import dashboard
+
                 dashboard.mainAsync()
             except ImportError:
-                Sentinel.fatal("To run the dashboard you must first install the pip package!\nRun:\npip install Alt-Dashboard")
+                Sentinel.fatal(
+                    "To run the dashboard you must first install the pip package!\nRun:\npip install Alt-Dashboard"
+                )
         else:
             Sentinel.debug("Dashboard already running or neo shutdown")
 

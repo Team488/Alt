@@ -12,6 +12,8 @@ Functions:
     (All public and private methods of AgentOperator are documented at the class and function level.)
 """
 
+from __future__ import annotations
+
 import logging
 import multiprocessing
 import multiprocessing.managers
@@ -32,12 +34,13 @@ from .StreamOperator import StreamOperator
 from .TimeOperator import TimeOperator, Timer
 from .UpdateOperator import UpdateOperator
 from .LogStreamOperator import LogStreamOperator
-from ..Agents import Agent, BindableAgent
+from ..Agents import Agent, BindableAgent, TAgent
 from .PropertyOperator import LambdaHandler, PropertyOperator, ReadonlyProperty
 from .LogOperator import getChildLogger
 from ..Constants.AgentConstants import ProxyType
 
 Sentinel = getChildLogger("Agent_Operator")
+
 
 # subscribes to command request with xtables and then executes when requested
 class AgentOperator:
@@ -66,7 +69,7 @@ class AgentOperator:
         manager: multiprocessing.managers.SyncManager,
         shareOp: ShareOperator,
         streamOp: StreamOperator,
-        logStreamOp : LogStreamOperator
+        logStreamOp: LogStreamOperator,
     ) -> None:
         """
         Initializes the AgentOperator.
@@ -80,7 +83,7 @@ class AgentOperator:
         self.__executor: ProcessPoolExecutor = ProcessPoolExecutor()
         self.__stop: threading.Event = manager.Event()  # flag
         self.futures: list[Future] = []
-        self.activeAgentNames : dict[str,int] = {}
+        self.activeAgentNames: dict[str, int] = {}
         self.mainAgent: Optional[Agent] = None
         self.shareOp = shareOp
         self.streamOp = streamOp
@@ -169,10 +172,8 @@ class AgentOperator:
         for requestName, proxyType in ProxyType.getProxyRequests(agentClass).items():
             # TODO add more
             if proxyType is ProxyType.STREAM:
-                proxyDict[
-                    requestName
-                ] = self.streamOp.register_stream(agentName)
-        
+                proxyDict[requestName] = self.streamOp.register_stream(agentName)
+
         # always create log queue
         logProxy = self.logStreamOp.register_log_stream(agentName)
 
@@ -280,6 +281,7 @@ class AgentOperator:
         Returns:
             Agent: The injected agent.
         """
+        assert agent is not None
         # injecting stuff shared from core
         agent._injectCore(shareOperator, isMainThread, agentName)
         # creating new operators just for this agent and injecting them
@@ -292,7 +294,7 @@ class AgentOperator:
         logProperty = agent.propertyOperator.createCustomReadOnlyProperty(
             logTable, "None...", addBasePrefix=False, addOperatorPrefix=False
         )
-        lastLogs : list[str] = []
+        lastLogs: list[str] = []
 
         logLambda = lambda entry: AgentOperator._handleLog(logProperty, lastLogs, entry)
         lambda_handler = LambdaHandler(logLambda)
@@ -304,9 +306,7 @@ class AgentOperator:
 
     @staticmethod
     def _injectNewOperators(
-        agent: Agent,
-        agentName: str,
-        logProxy: queue.Queue
+        agent: Agent, agentName: str, logProxy: queue.Queue
     ) -> None:
         """
         Injects new operator instances and logging handlers into the agent.
@@ -326,11 +326,11 @@ class AgentOperator:
         updateOp = UpdateOperator(client, propertyOp)
         timeOp = TimeOperator(propertyOp)
         logger = getChildLogger(agentName)
-        
+
         # add sse handling automatically
         class SSELogHandler(logging.Handler):
             closed = False
-            
+
             def emit(self, record):
                 if not self.closed:
                     try:
@@ -340,9 +340,13 @@ class AgentOperator:
                         self.closed = True
 
         sse_handler = SSELogHandler()
-        sse_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
+        sse_handler.setFormatter(
+            logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+        )
 
         logger.addHandler(sse_handler)
+
+        assert agent is not None
 
         agent._injectNEW(
             xclient=client,
@@ -355,7 +359,7 @@ class AgentOperator:
 
     @staticmethod
     def _startAgentLoop(
-        agentClass: type[Agent],
+        agentClass: type[TAgent],
         agentName: str,
         shareOperator: ShareOperator,
         isMainThread: bool,
@@ -379,13 +383,49 @@ class AgentOperator:
             runOnCreate (Optional[Callable[[Agent], None]]): Optional callback to run on agent creation.
         """
         if not isMainThread:
-            signal.signal(signal.SIGINT, signal.SIG_IGN)    
-            signal.signal(signal.SIGTERM, signal.SIG_IGN)    
+            signal.signal(signal.SIGINT, signal.SIG_IGN)
+            signal.signal(signal.SIGTERM, signal.SIG_IGN)
             # we use our own interrupts to stop the pool, so ignore signals from sigint
 
         """Main agent loop that manages agent lifecycle"""
 
-         # helper lambdas
+        # variables kept through agents life
+        failed: bool = False
+        progressStr: str = "starting"
+        stop = False
+
+        """Initialization part #1 Create agent"""
+        try:
+            agent: Agent = agentClass()
+        except TypeError as e:
+            # constructor misssing arguments
+            # three possible mistakes.
+            # 1) agentClass forgot to implement the bindableAgent interface and call bind before with arguments
+            # 2) agentClass implemented the bindableAgent interface, it was called, but the bind method didint bind ALL arguments
+            # 3) agentClass was passed in rather than agentClass.bind(...), which would return a partial
+
+            if isinstance(agentClass, partial):
+                # bind method must have been called, thus it is case 2)
+                raise RuntimeError(
+                    f"The bind method of {agentClass} did not cover all arguments! It must cover EVERY argument in __init__() \n{e}"
+                )
+            else:
+                if issubclass(agentClass, BindableAgent):
+                    # bind method wasnt called, case 3
+                    raise RuntimeError(
+                        f"""{agentClass} is a bindable agent! You must called {agentClass}'s bind() method,\n
+                                        provide arguments, and then pass in the returned object instead! \n{e}"""
+                    )
+                else:
+                    # no bind method, but there should be, case 1
+                    raise RuntimeError(
+                        f"""{agentClass} needs input arguments!. You must implement the bindableAgent interface,\n
+                                        override the bind() method with necessary arguments (same as __init__), then call bind() and pass in the returned object instead! \n{e}"""
+                    )
+
+        assert agent is not None
+
+        # helper lambdas
         __setStatus: Callable[
             [str], bool
         ] = lambda status: agent.propertyOperator.createCustomReadOnlyProperty(
@@ -416,48 +456,16 @@ class AgentOperator:
             __setErrorLog(tb)
             Sentinel.error(tb)
 
-        
-
-        # variables kept through agents life
-        failed: bool = False
-        progressStr: str = "starting"
-        stop = False
-
-
-        """Initialization part #1 Create agent"""
-        try:
-            agent: Agent = agentClass()
-        except TypeError as e:
-            # constructor misssing arguments
-            # three possible mistakes.
-            # 1) agentClass forgot to implement the bindableAgent interface and call bind before with arguments
-            # 2) agentClass implemented the bindableAgent interface, it was called, but the bind method didint bind ALL arguments
-            # 3) agentClass was passed in rather than agentClass.bind(...), which would return a partial
-
-            if isinstance(agentClass, partial):
-                # bind method must have been called, thus it is case 2)
-                raise RuntimeError(f"The bind method of {agentClass} did not cover all arguments! It must cover EVERY argument in __init__() \n{e}")
-            else:
-                if(issubclass(agentClass, BindableAgent)):
-                    # bind method wasnt called, case 3
-                    raise RuntimeError(f"""{agentClass} is a bindable agent! You must called {agentClass}'s bind() method,\n
-                                        provide arguments, and then pass in the returned object instead! \n{e}""")
-                else:
-                    # no bind method, but there should be, case 1
-                    raise RuntimeError(f"""{agentClass} needs input arguments!. You must implement the bindableAgent interface,\n
-                                        override the bind() method with necessary arguments (same as __init__), then call bind() and pass in the returned object instead! \n{e}""")
-
-
         try:
 
-            """ Initialization part #3. Inject objects in agent"""
+            """Initialization part #3. Inject objects in agent"""
             AgentOperator._injectAgent(
                 agent, agentName, shareOperator, proxies, logProxy, isMainThread
             )
             """ On main thread this is how its set as main agent"""
             if isMainThread and runOnCreate is not None:
                 runOnCreate(agent)
-        
+
         except Exception as e:
             __handleException(e)
             failed = True
@@ -467,7 +475,6 @@ class AgentOperator:
 
         __setDescription(agent.getDescription())
         __setStatus(progressStr)
-       
 
         # use agents own timer
         timer: Timer = agent.getTimer()
@@ -584,10 +591,8 @@ class AgentOperator:
                 self.mainAgent._cleanup()
 
             self.mainAgent.propertyOperator.createCustomReadOnlyProperty(
-            f"{self.mainAgent.agentName}.{AgentOperator.STATUS}", ""
-            ).set(
-                "shutdown interrupt"
-            )
+                f"{self.mainAgent.agentName}.{AgentOperator.STATUS}", ""
+            ).set("shutdown interrupt")
 
             Sentinel.info("Main agent finished")
 
@@ -596,4 +601,3 @@ class AgentOperator:
         Blocks the thread until the executor is finished and all agent processes are shut down.
         """
         self.__executor.shutdown(wait=True, cancel_futures=True)
-

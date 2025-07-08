@@ -1,13 +1,15 @@
 """
 UpdateOperator Module.
 
-This module defines the `UpdateOperator` class, responsible for managing global updates 
-across multiple running agents. It facilitates adding, subscribing, and deregistering 
+This module defines the `UpdateOperator` class, responsible for managing global updates
+across multiple running agents. It facilitates adding, subscribing, and deregistering
 updates while ensuring that conflicts are minimized through locking mechanisms.
 
 Classes:
     UpdateOperator: Manages global updates, subscriptions, and locking for agent coordination.
 """
+
+from __future__ import annotations
 
 import random
 import time
@@ -19,13 +21,14 @@ from .LogOperator import getChildLogger
 
 Sentinel = getChildLogger("Update_Operator")
 
+
 class UpdateOperator:
     """
     Manages global updates for multiple agents.
 
-    The `UpdateOperator` class provides functionalities to create, set, 
-    and get global updates among agents. It handles subscriptions to updates 
-    and ensures there are no conflicts in the updates being processed 
+    The `UpdateOperator` class provides functionalities to create, set,
+    and get global updates among agents. It handles subscriptions to updates
+    and ensures there are no conflicts in the updates being processed
     by employing locking mechanisms.
 
     Attributes:
@@ -44,7 +47,9 @@ class UpdateOperator:
     EMPTYLOCK: int = -1
     BUSYLOCK: int = 1
 
-    def __init__(self, xclient: XTablesClient, propertyOperator: PropertyOperator) -> None:
+    def __init__(
+        self, xclient: XTablesClient, propertyOperator: PropertyOperator
+    ) -> None:
         """Initializes the UpdateOperator with the given XTablesClient and PropertyOperator.
 
         Args:
@@ -70,13 +75,13 @@ class UpdateOperator:
         # Add uniform random delay to avoid collision in reading empty lock.
         delay = random.uniform(0, 0.1)  # Max 100ms
         time.sleep(delay)
-        
+
         if self.__xclient.getDouble(PATHLOCK) is not None:
             while self.__xclient.getDouble(PATHLOCK) != self.EMPTYLOCK:
                 time.sleep(0.01)  # Wait for lock to open
 
         self.__xclient.putDouble(PATHLOCK, self.BUSYLOCK)
-        
+
         try:
             runnable()
         except Exception as e:
@@ -90,6 +95,7 @@ class UpdateOperator:
         Args:
             uniqueUpdateName (str): The unique update name to be added to the running agents list.
         """
+
         def add(isAllRunning: bool):
             RUNNINGPATH = (
                 self.ALLRUNNINGAGENTPATHS
@@ -102,13 +108,15 @@ class UpdateOperator:
             if uniqueUpdateName not in existingNames:
                 existingNames.append(uniqueUpdateName)
             self.__xclient.putStringList(RUNNINGPATH, existingNames)
-        
+
         addAll = lambda: add(True)
         addCur = lambda: add(False)
         self.withLock(addAll, isAllRunning=True)  # Always add to all running
         self.withLock(addCur, isAllRunning=False)  # Also always add to current running
 
-    def getCurrentlyRunning(self, pathFilter: Optional[Callable[[str], bool]] = None) -> List[str]:
+    def getCurrentlyRunning(
+        self, pathFilter: Optional[Callable[[str], bool]] = None
+    ) -> List[str]:
         """Gets a filtered list of currently running agent paths.
 
         Args:
@@ -141,7 +149,9 @@ class UpdateOperator:
             addOperatorPrefix=True,
         ).set(value)
 
-    def createGlobalUpdate(self, updateName: str, default: Any = None, loadIfSaved: bool = True) -> Property:
+    def createGlobalUpdate(
+        self, updateName: str, default: Any = None, loadIfSaved: bool = True
+    ) -> Property:
         """Creates a global update with a specified name, default value, and load options.
 
         Args:
@@ -227,7 +237,7 @@ class UpdateOperator:
         newSubscribers: List[str] = []
         runningPaths = self.getCurrentlyRunning(pathFilter)
         fullTables: Set[str] = set()
-        
+
         for runningPath in runningPaths:
             fullTable = f"{runningPath}.{updateName}"
             fullTables.add(fullTable)
@@ -276,6 +286,7 @@ class UpdateOperator:
 
     def deregister(self) -> None:
         """Deregisters the agent and cleans up all subscriptions."""
+
         def remove():
             existingNames = self.__xclient.getStringList(
                 self.CURRENTLYRUNNINGAGENTPATHS
@@ -287,8 +298,10 @@ class UpdateOperator:
                     existingNames.remove(self.uniqueUpdateName)
             self.__xclient.putStringList(self.CURRENTLYRUNNINGAGENTPATHS, existingNames)
 
-        self.withLock(remove, isAllRunning=False)  # Only currently running removes paths
-        
+        self.withLock(
+            remove, isAllRunning=False
+        )  # Only currently running removes paths
+
         for updateName, fullTables in self.__subscribedUpdates.items():
             runOnClose = self.__subscribedRunOnClose.get(updateName)
             subscriber = self.__subscribedSubscriber.get(updateName)

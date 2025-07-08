@@ -7,12 +7,15 @@ Classes:
     Timer: Measures and records timing information for code blocks.
 """
 
+from __future__ import annotations
+
 import time
 from typing import Dict, Generator
 from .LogOperator import getChildLogger
 from .PropertyOperator import PropertyOperator
 
 Sentinel = getChildLogger("Time Operator")
+
 
 class TimeOperator:
     """
@@ -47,7 +50,7 @@ class TimeOperator:
         """
         if timeName in self.timerMap:
             return self.timerMap[timeName]
-        
+
         timer = self.__createTimer(timeName)
         self.timerMap[timeName] = timer
         return timer
@@ -70,7 +73,9 @@ class TimeOperator:
             raise ValueError(f"Could not create property child for timer {timeName}")
         return Timer(timeName, timeTable)
 
+
 from contextlib import contextmanager
+
 
 class Timer:
     """

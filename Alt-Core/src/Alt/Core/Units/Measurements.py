@@ -1,6 +1,9 @@
+from __future__ import annotations
+
 import math
 from dataclasses import dataclass
 from Alt.Core.Units import Types, Conversions
+
 
 @dataclass
 class Length:
@@ -105,6 +108,8 @@ class Length:
         if lengthType == Types.Length.FT:
             return cls.fromFeet(length)
 
+        assert False, f"Unexpected lengthType: '{lengthType}'"
+
     def getCm(self) -> float:
         """
         Returns the length in centimeters.
@@ -155,6 +160,8 @@ class Length:
             return self.getYards()
         if lengthType == Types.Length.FT:
             return self.getFeet()
+
+        assert False, f"Unexpected lengthType: '{lengthType}'"
 
     @classmethod
     def convert(cls, value: float, fromL: Types.Length, toL: Types.Length) -> float:
@@ -222,11 +229,15 @@ class Rotation:
         return obj
 
     @classmethod
-    def fromRotationType(cls, length: float, rotationType: Types.Rotation) -> "Rotation":
+    def fromRotationType(
+        cls, length: float, rotationType: Types.Rotation
+    ) -> "Rotation":
         if rotationType == Types.Rotation.Rad:
             return cls.fromRadians(length)
         if rotationType == Types.Rotation.Deg:
             return cls.fromDegrees(length)
+
+        assert False, f"Unexpected rotationType: '{rotationType}'"
 
     def getDegrees(self) -> float:
         """
@@ -254,6 +265,8 @@ class Rotation:
             return self.getRadians()
         if rotationType == Types.Rotation.Deg:
             return self.getDegrees()
+
+        assert False, f"Unexpected rotationType: '{rotationType}'"
 
     @classmethod
     def convert(cls, value: float, fromR: Types.Rotation, toR: Types.Rotation) -> float:

@@ -1,10 +1,12 @@
 """
 This module provides a streaming service using Flask and multiprocessing.
 It allows the registration and management of multiple video streams,
-handling frame capture and serving them as MJPEG over HTTP. 
+handling frame capture and serving them as MJPEG over HTTP.
 The StreamOperator class manages the streams, while the StreamProxy
 class serves as a wrapper for accessing and manipulating the stream data between processes.
 """
+
+from __future__ import annotations
 
 import functools
 import multiprocessing
@@ -20,6 +22,7 @@ from ..Constants.AgentConstants import Proxy
 from ..Utils.network import DEVICEIP
 
 Sentinel = getChildLogger("Stream_Operator")
+
 
 class StreamOperator:
     """Handles the management of multiple MJPEG video streams.
@@ -37,9 +40,9 @@ class StreamOperator:
         manager (multiprocessing.managers.SyncManager): Manager for multiprocessing.
         running (bool): Flag to indicate if the server is running.
     """
-    
+
     STREAMPATH = "stream.mjpg"
-    
+
     def __init__(self, app: Flask, manager: multiprocessing.managers.SyncManager):
         """Initializes a StreamOperator instance.
 
@@ -72,7 +75,7 @@ class StreamOperator:
         streamProxy = StreamProxy(self.manager.dict(), streamPath)
 
         self.streams[name] = streamProxy
-        
+
         def generate_frames(streamProxy: StreamProxy):
             """Generator function to yield MJPEG frames from the stream proxy.
 
@@ -97,10 +100,12 @@ class StreamOperator:
                     b"--frame\r\n"
                     b"Content-Type: image/jpeg\r\n\r\n" + jpeg.tobytes() + b"\r\n\r\n"
                 )
-        
+
         self.app.add_url_rule(
             f"/{name}/{self.STREAMPATH}",
-            view_func=self._create_view_func(lambda : generate_frames(streamProxy), name),
+            view_func=self._create_view_func(
+                lambda: generate_frames(streamProxy), name
+            ),
         )
         Sentinel.info(f"Registered new stream: {name} at '{name}/{self.STREAMPATH}'")
         return streamProxy
@@ -115,12 +120,14 @@ class StreamOperator:
         Returns:
             function: A Flask view function for serving the video stream.
         """
+
         @functools.wraps(generate_frames_func)
         def view_func():
             return Response(
                 stream_with_context(generate_frames_func()),  # Stream with context
                 mimetype="multipart/x-mixed-replace; boundary=frame",
             )
+
         view_func.__name__ = f"stream_{name}_view"
         return view_func
 
@@ -145,6 +152,7 @@ class StreamOperator:
             del self.streams[name]
             Sentinel.info(f"Closed stream: {name}")
 
+
 class StreamProxy(Proxy):
     """Wrapper for accessing and manipulating a stream from another process.
 
@@ -155,7 +163,7 @@ class StreamProxy(Proxy):
         __streamDict (managers.DictProxy): The underlying dictionary proxy
         holding stream data.
     """
-    
+
     def __init__(self, streamDict: managers.DictProxy, streamPath: str):
         """Initializes a StreamProxy instance.
 

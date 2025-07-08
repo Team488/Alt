@@ -6,10 +6,12 @@ This module provides:
 - A function to get the current time or a given time as a formatted string.
 """
 
+from __future__ import annotations
+
 from time import localtime, strftime
 
 
-def getTimeStr(time = None):
+def getTimeStr(time=None):
     """
     Returns a formatted time string.
 
