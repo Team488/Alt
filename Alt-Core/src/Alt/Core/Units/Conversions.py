@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 from typing import Any, Union, TypeVar, Callable, Tuple, cast
 from . import Types, Measurements
-from ..Constants import Field
+from ..Constants.Field import Field
 
 # Type variables for better typing
 NumericType = Union[float, int]
@@ -76,7 +76,7 @@ def invertY(y: NumericType, lengthType: Types.Length = Types.Length.CM) -> float
     Returns:
         Inverted Y coordinate (field height - Y)
     """
-    return Field.fieldHeight.getLength(lengthType) - y
+    return Field.getInstance().getHeight(lengthType) - y
 
 
 def invertX(x: NumericType, lengthType: Types.Length = Types.Length.CM) -> float:
@@ -89,7 +89,7 @@ def invertX(x: NumericType, lengthType: Types.Length = Types.Length.CM) -> float
     Returns:
         Inverted X coordinate (field width - X)
     """
-    return Field.fieldWidth.getLength(lengthType) - x
+    return Field.getInstance().getWidth(lengthType) - x
 
 
 def convertLength(

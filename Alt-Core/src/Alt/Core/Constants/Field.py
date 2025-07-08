@@ -1,10 +1,19 @@
 from __future__ import annotations
 
-from typing import cast
-from ..Units import Types, Conversions
+from typing import Optional, cast
+
+from ..Units import Conversions, Types
 
 
 class Field:
+    _instance: Optional[Field] = None
+
+    @classmethod
+    def getInstance(cls):
+        if cls._instance is None:
+            cls._instance = cls(17.55, 8.05, Types.Length.M)
+        return cls._instance
+
     def __init__(
         self, width: float, height: float, units: Types.Length = Types.Length.CM
     ):

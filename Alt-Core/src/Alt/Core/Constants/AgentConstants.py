@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from abc import abstractmethod
 from enum import Enum
-from typing import Any, Dict
 from functools import partial
+from typing import Any, Dict, cast
 
 from Alt.Core.Agents import Agent
 
@@ -28,8 +28,9 @@ class ProxyType(Enum):
     def __getPartialProxyRequests(
         agentClass: partial[type[Agent]],
     ) -> Dict[str, "ProxyType"]:
-        agentClass.func.requestProxies()
-        return agentClass.func._getProxyRequests()
+        agentClassType = cast(Agent, agentClass.func)
+        agentClassType.requestProxies()
+        return agentClassType._getProxyRequests()
 
     @staticmethod
     def __getAgentProxyRequests(agentClass: Agent) -> Dict[str, "ProxyType"]:
