@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 from typing import Any, Union, TypeVar, Callable, Tuple, cast
 from . import Types, Measurements
-from ..Constants.Field import Field
+from ..Constants import Field
 
 # Type variables for better typing
 NumericType = Union[float, int]
