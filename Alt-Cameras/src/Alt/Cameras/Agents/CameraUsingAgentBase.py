@@ -3,9 +3,9 @@ from typing import Union, Optional, Any
 import cv2
 import numpy as np
 
-from Alt.Core.Agents import Agent, BindableAgent
+from Alt.Core.Agents import AgentBase, BindableAgent
 from Alt.Core.Constants.AgentConstants import ProxyType
-from Alt.Core.Operators.StreamOperator import StreamProxy
+from Alt.Core.Operators.StreamProxy import StreamProxy
 
 from ..Captures.OpenCVCapture import OpenCVCapture
 from ..Captures.Capture import Capture, CaptureWIntrinsics, ConfigurableCapture
@@ -15,7 +15,7 @@ from ..Captures.tools import calibration
 from ..Calibration.CalibrationUtil import CalibrationUtil
 
 
-class CameraUsingAgentBase(Agent, BindableAgent):
+class CameraUsingAgentBase(AgentBase, BindableAgent):
     """
     Main superclass for any agent that needs to use a camera. It is reccomended to extend this rather than create a separate agent class.
     Adds calibration support, automatic mjpeg streaming, camera status checking, and depth camera support

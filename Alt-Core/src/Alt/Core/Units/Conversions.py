@@ -3,7 +3,6 @@ from __future__ import annotations
 from collections.abc import Iterable
 from typing import Any, Union, TypeVar, Callable, Tuple, cast
 from . import Types, Measurements
-from ..Constants import Field
 
 # Type variables for better typing
 NumericType = Union[float, int]
@@ -64,32 +63,6 @@ def toint(
         The input value(s) converted to integer, or None if conversion fails
     """
     return __convert(value, int)
-
-
-def invertY(y: NumericType, lengthType: Types.Length = Types.Length.CM) -> float:
-    """
-    Invert the Y coordinate relative to field height
-
-    Args:
-        yCM: Y coordinate in units specified, or by default CM
-
-    Returns:
-        Inverted Y coordinate (field height - Y)
-    """
-    return Field.getInstance().getHeight(lengthType) - y
-
-
-def invertX(x: NumericType, lengthType: Types.Length = Types.Length.CM) -> float:
-    """
-    Invert the X coordinate relative to field width
-
-    Args:
-        xCM: X coordinate in the units specified, or by default CM
-
-    Returns:
-        Inverted X coordinate (field width - X)
-    """
-    return Field.getInstance().getWidth(lengthType) - x
 
 
 def convertLength(

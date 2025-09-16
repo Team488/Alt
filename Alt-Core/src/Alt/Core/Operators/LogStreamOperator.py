@@ -18,6 +18,7 @@ from .LogOperator import getChildLogger
 
 Sentinel = getChildLogger("Log_Stream_Operator")
 
+LOGPATH = "logs"
 
 class LogStreamOperator:
     """
@@ -30,8 +31,6 @@ class LogStreamOperator:
         log_streams (dict): Dictionary to store log queues.
         running (bool): Indicates if the log stream operator is running.
     """
-
-    LOGPATH = "logs"
 
     def __init__(self, app: Flask, manager: multiprocessing.managers.SyncManager):
         """
@@ -77,7 +76,7 @@ class LogStreamOperator:
                     continue
 
         self.app.add_url_rule(
-            f"/{name}/{self.LOGPATH}",
+            f"/{name}/{LOGPATH}",
             view_func=self._create_log_view_func(generate_logs, name),
         )
 

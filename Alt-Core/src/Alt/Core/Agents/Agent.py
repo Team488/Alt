@@ -7,15 +7,16 @@ from typing import Any, Dict, Optional, Protocol, TypeVar, TYPE_CHECKING
 from JXTABLES.XTablesClient import XTablesClient
 
 from ..Utils.network import DEVICEIP
+from ..Operators.LogStreamOperator import LOGPATH
+from ..Operators.StreamProxy import StreamProxy
+
 
 if TYPE_CHECKING:
     from ..Constants.AgentConstants import Proxy, ProxyType
     from ..Constants.Teams import TEAM
     from ..Operators.ConfigOperator import ConfigOperator
-    from ..Operators.LogStreamOperator import LogStreamOperator
     from ..Operators.PropertyOperator import PropertyOperator
     from ..Operators.ShareOperator import ShareOperator
-    from ..Operators.StreamOperator import StreamProxy
     from ..Operators.TimeOperator import TimeOperator, Timer
     from ..Operators.UpdateOperator import UpdateOperator
 
@@ -173,6 +174,9 @@ class AgentBase(ABC):
             if isinstance(proxy, StreamProxy):
                 streamPaths.append(f"{proxyName}|{proxy.getStreamPath()}")
 
+                print(f"STREAM PROXY PATH: {proxy.getStreamPath()}")
+
+
         self.propertyOperator.createCustomReadOnlyProperty(
             "streamPaths", streamPaths, addBasePrefix=True, addOperatorPrefix=True
         )
@@ -210,11 +214,13 @@ class AgentBase(ABC):
     def _runOwnCreate(self):
         """The agent wants to do its own stuff too... okay."""
 
-        logIp = f"http://{DEVICEIP}:5000/{self.agentName}/{LogStreamOperator.LOGPATH}"
+        logIp = f"http://{DEVICEIP}:5000/{self.agentName}/{LOGPATH}"
 
         self.propertyOperator.createCustomReadOnlyProperty(
             "logIP", logIp, addBasePrefix=True, addOperatorPrefix=True
         )
+
+        print(f"LOGIP: {logIp}")
 
         self.__ensureProxies()
         self._updateNetworkProxyInfo()
@@ -272,12 +278,10 @@ class AgentBase(ABC):
 
     # ----- proxy methods -----
     def __ensureProxies(self) -> None:
-        for proxyName, proxyType in self._getProxyRequests().items():
+        for proxyName, _ in self._getProxyRequests().items():
             if (
                 proxyName not in self.__proxies
-                or type(self.__proxies[proxyName]) is not proxyType
             ):
-                print(type(self.__proxies[proxyName]) is proxyType)
                 raise RuntimeError(
                     f"Agent proxies are not correcty initialized!\n{self._getProxyRequests()=}\n{self.__proxies.items()=}"
                 )
