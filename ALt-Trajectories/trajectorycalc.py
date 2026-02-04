@@ -3,7 +3,6 @@ import json
 import os
 from pathlib import Path
 
-
 # constants
 # Coord system = cartesian is Z=height, x=radial, y = tangential relative to hub, spherical is radial from robot to goal
 m = 0.475 / 2.205  # lb -> kg  [0.448 - 0.5]
