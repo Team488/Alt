@@ -3,6 +3,7 @@ import json
 import os
 from pathlib import Path
 
+
 # constants
 # Coord system = cartesian is Z=height, x=radial, y = tangential relative to hub, spherical is radial from robot to goal
 m = 0.475 / 2.205  # lb -> kg  [0.448 - 0.5]
@@ -27,7 +28,7 @@ def calc_distances() -> list[tuple[float, float, float]]:
             theta_i = math.radians(ten_theta / 10.0)
             theta = theta_i
             target_z = zf - zi
-            has_hit_z_before = False
+            has_hit_z_twice = False
             z = 0
             x = 0
             t = 0
@@ -35,19 +36,20 @@ def calc_distances() -> list[tuple[float, float, float]]:
             v_x = math.cos(theta) * vi
             v_z = math.sin(theta) * vi
             prev_hit_z = False
+            hit = True
 
-            while not has_hit_z_before and not math.isclose(z, target_z, rel_tol=0.1):
-                is_close = math.isclose(z, target_z, rel_tol=0.1)
+            while not has_hit_z_twice:
 
-                if is_close:
+
+                if z>target_z:
                     prev_hit_z = True
 
-                if prev_hit_z and not is_close:
-                    has_hit_z_before = True
+                if prev_hit_z and z<target_z:
+                    has_hit_z_twice = True
 
                 effect_of_drag = (-Cd * rho * x_Area * v**2) / (2 * m)
                 accel_x = effect_of_drag * math.cos(theta)
-                accel_z = effect_of_drag * math.sin(theta)
+                accel_z = effect_of_drag * math.sin(theta) + g
 
                 v_x += accel_x * dt
                 v_z += accel_z * dt
@@ -58,7 +60,14 @@ def calc_distances() -> list[tuple[float, float, float]]:
 
                 v = math.sqrt(v_x**2 + v_z**2)
                 theta = math.atan(v_z / v_x)
-            result.append((x, math.degrees(theta_i), vi))
+                if z < 0:  # exit condition if the ball never goes about z_target
+                    x = 0
+                    has_hit_z_twice = True
+                    hit = False
+            if hit:
+                result.append((x, math.degrees(theta_i), vi))
+
+
 
     return result
 
