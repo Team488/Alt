@@ -27,25 +27,15 @@ def calc_distances() -> list[tuple[float, float, float]]:
             theta_i = math.radians(ten_theta / 10.0)
             theta = theta_i
             target_z = zf - zi
-            has_hit_z_twice = False
             z = 0
             x = 0
             t = 0
             v = vi
             v_x = math.cos(theta) * vi
             v_z = math.sin(theta) * vi
-            prev_hit_z = False
-            hit = False
-            missed = False
 
-            while not hit and not missed:
-
-                if z>target_z:
-                    prev_hit_z = True
-
-                if prev_hit_z and z<target_z:
-                    hit = True
-
+            # While the velocity is moving up and we're still above target_z
+            while v_z > 0 or z > target_z:
                 effect_of_drag = (-Cd * rho * x_Area * v**2) / (2 * m)
                 accel_x = effect_of_drag * math.cos(theta)
                 accel_z = effect_of_drag * math.sin(theta) + g
@@ -59,14 +49,11 @@ def calc_distances() -> list[tuple[float, float, float]]:
 
                 v = math.sqrt(v_x**2 + v_z**2)
                 theta = math.atan(v_z / v_x)
-                if z < 0:  # exit condition if the ball never goes about z_target
-                    missed = True
-                    
-            if hit:
+
+            if math.isclose(z, target_z, rel_tol=0.01):
                 result.append((x, math.degrees(theta_i), vi))
 
-
-
+    result = sorted(result, key=lambda x: (x[2], x[0]))
     return result
 
 
