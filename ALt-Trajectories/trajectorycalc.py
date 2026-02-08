@@ -16,7 +16,7 @@ zf = 72 * (1 / 12 / 3.281)  # in -> m
 x_goal = 6.12  # m  the max distance is 6.12m
 Cd = 0.47  # drag coeff sphere in 10^4 - 10^5 reynolds num
 g = -9.81  # m/s^2
-dt = 0.01
+dt = 0.001
 
 
 def calc_distances() -> list[tuple[float, float, float]]:
@@ -50,7 +50,7 @@ def calc_distances() -> list[tuple[float, float, float]]:
                 v = math.sqrt(v_x**2 + v_z**2)
                 theta = math.atan(v_z / v_x)
 
-            if math.isclose(z, target_z, rel_tol=0.01):
+            if math.isclose(z, target_z, rel_tol=0.05):
                 result.append((x, math.degrees(theta_i), vi))
 
     result = sorted(result, key=lambda x: (x[2], x[0]))
@@ -71,11 +71,11 @@ def create_distance_map():
             result["velocity"] = vi
             grouped[(rounded_distance, vi)] = result
 
-    results = [val for val in grouped.values()]
     return results
 
 
 directory = Path(__file__).parent
+trajectories = create_distance_map()
 
 with open(os.path.join(directory, "trajectories.json"), "w") as file:
-    file.write(json.dumps(create_distance_map(), indent=2))
+    file.write(json.dumps(trajectories, indent=2))
