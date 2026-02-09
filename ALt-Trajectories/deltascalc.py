@@ -13,30 +13,25 @@ def calc_deltas(trajectories):
     prev_x = 0
     prev_vel = 0
     for val in sorted_trajectories:
-        if prev_vel != val["velocity"]:
-            prev_vel = val["velocity"]
-            prev_theta = val["theta"]
-            prev_x = val["distance"]
-            continue
+        if prev_vel == val["velocity"] and not math.isclose(
+            prev_x + 0.01, val["distance"], rel_tol=0.02
+        ):
+            delta_distance = val["distance"] - prev_x
+            delta_theta = val["theta"] - prev_theta
+            delta = {
+                "delta_distance": delta_distance,
+                "delta_theta": delta_theta,
+                "proportion": delta_distance / delta_theta,
+                "veocity": val["velocity"],
+                "current_theta": val["theta"],
+                "previous_distance": prev_x,
+                "distance": val["distance"],
+            }
+            deltas.append(delta)
 
-        if math.isclose(prev_x + 0.01, val["distance"], rel_tol=0.02):
-            prev_x = val["distance"]
-            prev_theta = val["theta"]
-            continue
-
-        delta_distance = val["distance"] - prev_x
-        delta_theta = val["theta"] - prev_theta
-        delta = {
-            "delta_distance": delta_distance,
-            "delta_theta": delta_theta,
-            "proportion": delta_distance / delta_theta,
-            "veocity": val["velocity"],
-            "current_theta": val["theta"],
-            "previous_distance": prev_x,
-            "distance": val["distance"],
-        }
+        prev_vel = val["velocity"]
+        prev_theta = val["theta"]
         prev_x = val["distance"]
-        deltas.append(delta)
 
     return deltas
 
