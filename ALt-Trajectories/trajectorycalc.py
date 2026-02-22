@@ -71,6 +71,7 @@ def create_distance_map():
             result["velocity"] = vi
             grouped[(rounded_distance, vi)] = result
 
+    results = [val for val in grouped.values()]
     return results
 
 
