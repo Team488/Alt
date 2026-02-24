@@ -43,7 +43,7 @@ def calc_distances() -> list[tuple[float, float, float]]:
                 if z>target_z:
                     prev_hit_z = True
 
-                if prev_hit_z and z<target_z:
+                if prev_hit_z and z<=target_z:
                     hit = True
 
                 effect_of_drag = (-Cd * rho * x_Area * v**2) / (2 * m)
@@ -53,6 +53,9 @@ def calc_distances() -> list[tuple[float, float, float]]:
                 v_x += accel_x * dt
                 v_z += accel_z * dt
 
+                prev_x = x
+                prev_z = z
+                
                 x += v_x * dt
                 z += v_z * dt
                 t += dt
@@ -63,7 +66,10 @@ def calc_distances() -> list[tuple[float, float, float]]:
                     missed = True
                     
             if hit:
+                if not math.isclose(z,target_z, rel_tol = 0.0005):
+                    x = x - (x - x_prev) * (z - target_z) / (z - z_prev)
                 result.append((x, math.degrees(theta_i), vi))
+
 
 
 
