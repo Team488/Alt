@@ -1,0 +1,107 @@
+import math
+import json
+import os
+from pathlib import Path
+import numpy as np
+#Looking at distance to shoot from turret to floor
+# constants
+# Coord system = cartesian is Z=height, x=radial, y = tangential relative to hub, spherical is radial from robot to goal
+m = 0.5 / 2.205  # lb -> kg  [0.448 - 0.5]
+ball_Diam = 5.91 * (1 / 12 / 3.281)  # in -> m
+ball_radius = ball_Diam / 2
+x_Area = 3.14159 * ball_radius**2  # cross sectional area
+rho = 1.225  # kg/m^3
+xi = 0  # m
+zi = 18 * (1 / 12 / 3.281)  # in -> m
+zf = (72) * (1 / 12 / 3.281)  # in -> m
+x_goal = 6.12  # m  the max distance is 6.12m
+Cd = 0.47  # drag coeff sphere in 10^4 - 10^5 reynolds num
+g = -9.81  # m/s^2
+dt = 0.002
+
+
+
+
+# RPM = 3800
+def calc_distances() -> list[tuple[float, float, float]]:
+    servo_values = 0
+    angle_values = 73.2
+
+
+
+    result = []
+    xlin_max = 0.00000001
+    # for each in data_set:
+    for RPM in range(2400, 5000, 20):
+        vi = RPM * 0.0033 - 2.7648
+        servo_i = servo_values
+        theta_i = math.radians(angle_values)
+        target_z = zf - zi
+        theta = theta_i
+        z = 0
+        x = 0
+        t = 0
+        v = vi
+        v_x = math.cos(theta) * vi
+        v_z = math.sin(theta) * vi
+
+        # While the velocity is moving up and we're still above target_z
+        while (v_z >= 0 or z >= target_z ): #and z< target_z:
+            effect_of_drag = (-Cd * rho * x_Area * v**2) / (2 * m )
+            accel_x = effect_of_drag * math.cos(theta)
+            accel_z = effect_of_drag * math.sin(theta) + g
+
+            v_x += accel_x * dt
+            v_z += accel_z * dt
+
+            prev_x = x*1.0
+            prev_z = z*1.0
+            x += v_x * dt
+            z += v_z * dt
+            t += dt
+
+            v = math.sqrt(v_x**2 + v_z**2)
+            theta = math.atan(v_z / v_x)
+
+        if math.isclose(z, target_z, rel_tol=1) and prev_z>target_z:
+        # if math.isclose(z, target_z, rel_tol=1) and prev_z < target_z and z > target_z:
+            xlin = x
+            if abs(z-target_z)>0.01:
+                x = x-(x-prev_x)*(z-target_z)/(z-prev_z)
+                # print(v_z*dt, v_z,dt)
+                # print(z-target_z,z-prev_z,z)
+            xlin_max = max(xlin_max,abs(x-xlin))
+            result.append((x, math.degrees(theta_i), vi, servo_i, RPM))
+
+
+    result = sorted(result, key=lambda x: (x[0], x[1]))
+    # result = sorted(result, key=lambda x: ( -x[1],-x[0]))
+    return result
+
+
+def create_distance_map():
+    distance_values = calc_distances()
+
+    grouped = {}
+    for val in distance_values:
+        [d, theta, vi, servo, RotPerMin] = val
+        rounded_distance = round(d, 3)
+        # if (rounded_distance, vi) not in grouped:
+        result = {}
+        result["distance"] = round(rounded_distance,3)
+        result["theta"] = round(theta, 3)
+        result["velocity"] = round(vi,3)
+        result["servo"] = round(servo, 6)
+        result["RPM"] = RotPerMin
+        # grouped[(rounded_distance, vi)] = result
+        grouped[(theta, rounded_distance)] = result
+    results = [val for val in grouped.values()]
+
+    return results
+
+
+directory = Path(__file__).parent
+trajectories = create_distance_map()
+
+with open(os.path.join(directory, f"trajectories.json"),"w") as file: #_3800RPM_dist_theta_vi.json"), "w") as file:
+    file.write(json.dumps(trajectories, indent=2))
