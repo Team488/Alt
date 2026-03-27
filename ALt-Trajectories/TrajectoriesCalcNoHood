@@ -33,7 +33,7 @@ def calc_distances() -> list[tuple[float, float, float]]:
     xlin_max = 0.00000001
     # for each in data_set:
     for RPM in range(2400, 5000, 20):
-        vi = RPM * 0.0033 - 2.7648
+        vi = RPM * 0.0027 - 1.9771
         servo_i = servo_values
         theta_i = math.radians(angle_values)
         target_z = zf - zi
